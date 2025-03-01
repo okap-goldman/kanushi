@@ -1,11 +1,15 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Video as VideoIcon, Upload, Play, Pause } from 'lucide-react';
+import { ArrowLeft, Video as VideoIcon, Upload, Play, Pause, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { uploadVideo, YouTubeUploadError } from '@/lib/youtube';
+import { auth } from '@/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function VideoPostPage() {
   const navigate = useNavigate();
@@ -15,12 +19,22 @@ export default function VideoPostPage() {
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoChunksRef = useRef<Blob[]>([]);
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  
+  // エラーメッセージをクリアする
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const startRecording = async () => {
     try {
@@ -49,7 +63,7 @@ export default function VideoPostPage() {
       setIsRecording(true);
     } catch (error) {
       console.error('録画の開始に失敗しました:', error);
-      alert('録画の開始に失敗しました。カメラとマイクへのアクセスを許可してください。');
+      setError('録画の開始に失敗しました。カメラとマイクへのアクセスを許可してください。');
     }
   };
 
@@ -85,13 +99,51 @@ export default function VideoPostPage() {
 
   const handleSubmit = async () => {
     if (!videoBlob) {
-      alert('動画を録画または選択してください。');
+      setError('動画を録画または選択してください。');
       return;
     }
 
-    // TODO: Implement video upload and post submission
-    console.log({ videoBlob, description, isPublic });
-    navigate('/');
+    if (!auth.currentUser) {
+      setError('ログインが必要です。');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // YouTubeに動画をアップロード
+      const embedUrl = await uploadVideo(videoBlob, {
+        title: `動画投稿 ${new Date().toLocaleString('ja-JP')}`,
+        description: description,
+        isPublic: isPublic
+      });
+
+      // Firestoreに投稿データを保存
+      const post = {
+        userId: auth.currentUser.uid,
+        content: embedUrl,
+        caption: description,
+        mediaType: 'video' as const,
+        visibility: isPublic ? 'public' : 'unlisted' as const,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      await addDoc(collection(db, 'posts'), post);
+
+      // ホーム画面に遷移
+      navigate('/');
+    } catch (error) {
+      console.error('動画投稿エラー:', error);
+      if (error instanceof YouTubeUploadError) {
+        setError(error.message);
+      } else {
+        setError('動画の投稿に失敗しました。もう一度お試しください。');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -109,13 +161,26 @@ export default function VideoPostPage() {
           <h1 className="text-lg font-semibold">動画投稿</h1>
           <Button
             onClick={handleSubmit}
-            disabled={!videoBlob}
+            disabled={!videoBlob || isLoading}
           >
-            投稿する
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                投稿中...
+              </>
+            ) : (
+              '投稿する'
+            )}
           </Button>
         </div>
 
         <div className="py-6 space-y-6">
+          {/* エラーメッセージ */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+              {error}
+            </div>
+          )}
           {/* 公開設定 */}
           <div className="flex items-center justify-between">
             <Label htmlFor="public-switch">公開設定</Label>
@@ -140,6 +205,7 @@ export default function VideoPostPage() {
                 muted
                 playsInline
                 className="w-full aspect-video rounded-lg bg-black"
+                // @ts-ignore - srcObject is not in the type definitions but is a valid property
                 srcObject={streamRef.current}
               />
             )}
@@ -225,4 +291,4 @@ export default function VideoPostPage() {
       </div>
     </div>
   );
-} 
+}            
