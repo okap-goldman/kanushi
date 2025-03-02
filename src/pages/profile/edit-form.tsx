@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Camera, Mic, Square, Play, Pause, ChevronRight } from 'lucide-react';
+import { Camera, Mic, Square, Play, Pause, ChevronRight, RefreshCw } from 'lucide-react';
 import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   Select,
@@ -13,6 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from '@/contexts/AuthContext';
+import { uploadImage, uploadAudio } from '@/lib/storage';
+import { updateUserProfile } from '@/lib/firebase';
 
 interface ProfileEditFormProps {
   profile: {
@@ -29,6 +32,7 @@ interface ProfileEditFormProps {
 }
 
 export default function ProfileEditForm({ profile, onSubmit, onCancel }: ProfileEditFormProps) {
+  const { user } = useAuth();
   const [name, setName] = useState(profile.name);
   const [username, setUsername] = useState(profile.username);
   const [bio, setBio] = useState(profile.bio);
@@ -37,7 +41,12 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
   const [isRecording, setIsRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(profile.bioAudioUrl);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [pronouns, setPronouns] = useState(profile.pronouns || '');
+  const [gender, setGender] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [showRecordingUI, setShowRecordingUI] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -47,8 +56,22 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // ファイルサイズのバリデーション (5MB以下)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, image: '画像サイズは5MB以下にしてください' }));
+        return;
+      }
+      
+      // ファイルタイプのバリデーション
+      if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+        setErrors(prev => ({ ...prev, image: '対応していないファイル形式です。JPEG、PNG、GIF、WebPのみ対応しています。' }));
+        return;
+      }
+      
+      setImageFile(file);
       const url = URL.createObjectURL(file);
       setImagePreview(url);
+      setErrors(prev => ({ ...prev, image: '' }));
     }
   };
 
@@ -67,6 +90,11 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         const audioUrl = URL.createObjectURL(audioBlob);
         setAudioUrl(audioUrl);
+        
+        // BlobからFileオブジェクトを作成
+        const audioFile = new File([audioBlob], `voice-${Date.now()}.wav`, { type: 'audio/wav' });
+        setAudioFile(audioFile);
+        
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -74,7 +102,7 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
       setIsRecording(true);
     } catch (error) {
       console.error('録音の開始に失敗しました:', error);
-      alert('録音の開始に失敗しました。マイクへのアクセスを許可してください。');
+      setErrors(prev => ({ ...prev, audio: '録音の開始に失敗しました。マイクへのアクセスを許可してください。' }));
     }
   };
 
@@ -96,17 +124,77 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
     }
   };
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!name.trim()) {
+      newErrors.name = '名前を入力してください';
+    } else if (name.length > 50) {
+      newErrors.name = '名前は50文字以内で入力してください';
+    }
+    
+    if (!bio.trim()) {
+      newErrors.bio = '自己紹介を入力してください';
+    } else if (bio.length > 280) {
+      newErrors.bio = '自己紹介は280文字以内で入力してください';
+    }
+    
+    if (externalLink && !externalLink.startsWith('http://') && !externalLink.startsWith('https://')) {
+      newErrors.externalLink = '有効なURLを入力してください（http://またはhttps://で始まる必要があります）';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const updateAudio = () => {
+    if (window.confirm('本当に更新しますか？')) {
+      // 音声の更新処理
+      console.log('音声を更新します');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim() || !bio.trim()) {
-      alert('名前と自己紹介文を入力してください。');
+    if (!validateForm()) {
       return;
     }
-
-    // TODO: Implement profile update
-    console.log({ name, username, bio, externalLink, imagePreview, audioUrl, pronouns });
-    onSubmit();
+    
+    setIsSubmitting(true);
+    
+    try {
+      // 画像のアップロード処理
+      let profileIconUrl = profile.image;
+      if (imageFile) {
+        profileIconUrl = await uploadImage(imageFile);
+      }
+      
+      // 音声のアップロード処理
+      let profileAudioUrl = profile.bioAudioUrl;
+      if (audioFile) {
+        profileAudioUrl = await uploadAudio(audioFile);
+      }
+      
+      // ユーザープロファイルの更新
+      if (user) {
+        await updateUserProfile(user.uid, {
+          user_name: name,
+          profile_icon_url: profileIconUrl,
+          profile_audio_url: profileAudioUrl,
+          shop_link_url: externalLink,
+          is_shop_link: externalLink.includes('shop'),
+          introduction: bio
+        });
+      }
+      
+      onSubmit();
+    } catch (error) {
+      console.error('プロフィール更新エラー:', error);
+      setErrors(prev => ({ ...prev, submit: 'プロフィールの更新に失敗しました。もう一度お試しください。' }));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -189,20 +277,20 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
             </div>
           </div>
 
-          {/* 代名詞の性別 */}
+          {/* 性別 */}
           <div className="space-y-2">
-            <Label htmlFor="pronouns">代名詞の性別</Label>
-            <Select value={pronouns} onValueChange={setPronouns}>
+            <Label htmlFor="gender">性別</Label>
+            <Select value={gender} onValueChange={setGender}>
               <SelectTrigger
-                id="pronouns"
+                id="gender"
                 className="border-0 border-b rounded-none focus:ring-0 px-0"
               >
-                <SelectValue placeholder="代名詞の性別を選択" />
+                <SelectValue placeholder="性別を選択" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="he">彼 (he/him)</SelectItem>
-                <SelectItem value="she">彼女 (she/her)</SelectItem>
-                <SelectItem value="they">その他 (they/them)</SelectItem>
+                <SelectItem value="male">男性</SelectItem>
+                <SelectItem value="female">女性</SelectItem>
+                <SelectItem value="other">その他</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -242,37 +330,78 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
           {/* 自己紹介音声 */}
           <div className="space-y-4">
             <Label>自己紹介音声</Label>
-            <div className="flex justify-center space-x-4">
-              {!audioUrl ? (
-                <Button
-                  type="button"
-                  size="lg"
-                  variant={isRecording ? 'destructive' : 'default'}
-                  className="w-16 h-16 rounded-full"
-                  onClick={isRecording ? stopRecording : startRecording}
-                >
-                  {isRecording ? (
-                    <Square className="h-6 w-6" />
-                  ) : (
-                    <Mic className="h-6 w-6" />
-                  )}
-                </Button>
+            <div className="flex flex-col items-center space-y-4">
+              {showRecordingUI ? (
+                <div className="flex flex-col items-center space-y-4">
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant={isRecording ? 'destructive' : 'default'}
+                    className="w-16 h-16 rounded-full"
+                    onClick={isRecording ? stopRecording : startRecording}
+                  >
+                    {isRecording ? (
+                      <Square className="h-6 w-6" />
+                    ) : (
+                      <Mic className="h-6 w-6" />
+                    )}
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    {isRecording ? '録音中...' : '録音を開始'}
+                  </p>
+                </div>
               ) : (
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="outline"
-                  className="w-16 h-16 rounded-full"
-                  onClick={togglePlayback}
-                >
-                  {isPlaying ? (
-                    <Pause className="h-6 w-6" />
+                <div className="flex flex-col items-center space-y-4 w-full">
+                  {audioUrl ? (
+                    <div className="flex flex-col items-center space-y-4 w-full">
+                      <Button
+                        type="button"
+                        size="lg"
+                        variant="outline"
+                        className="w-16 h-16 rounded-full"
+                        onClick={togglePlayback}
+                      >
+                        {isPlaying ? (
+                          <Pause className="h-6 w-6" />
+                        ) : (
+                          <Play className="h-6 w-6" />
+                        )}
+                      </Button>
+                      <div className="flex space-x-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowRecordingUI(true)}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          再録音
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="default"
+                          onClick={updateAudio}
+                        >
+                          更新
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
-                    <Play className="h-6 w-6" />
+                    <Button
+                      type="button"
+                      variant="default"
+                      onClick={() => setShowRecordingUI(true)}
+                    >
+                      <Mic className="h-4 w-4 mr-2" />
+                      録音する
+                    </Button>
                   )}
-                </Button>
+                </div>
               )}
             </div>
+
+            {errors.audio && (
+              <p className="text-sm text-red-500 mt-1 text-center">{errors.audio}</p>
+            )}
 
             {audioUrl && (
               <audio
@@ -282,30 +411,6 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
                 className="hidden"
               />
             )}
-          </div>
-
-          {/* プロアカウントへの切り替え */}
-          <div className="pt-4">
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full text-blue-500 justify-start px-0 font-normal hover:bg-transparent"
-              onClick={() => {/* TODO: Implement pro account switch */}}
-            >
-              プロアカウントに切り替える
-            </Button>
-          </div>
-
-          {/* 個人の情報の設定 */}
-          <div className="pt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full text-blue-500 justify-start px-0 font-normal hover:bg-transparent"
-              onClick={() => {/* TODO: Implement personal info settings */}}
-            >
-              個人の情報の設定
-            </Button>
           </div>
         </div>
       </div>
