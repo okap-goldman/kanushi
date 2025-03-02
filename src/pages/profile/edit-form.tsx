@@ -153,6 +153,7 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
       console.log('音声を更新します');
     }
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
