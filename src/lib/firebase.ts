@@ -1,6 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+import type { User } from '@/types/user';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -15,6 +17,7 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 
 interface CreateTextPostData {
   userId: string;
@@ -39,4 +42,28 @@ export const createTextPost = async (data: CreateTextPostData) => {
   };
   
   return await addDoc(collection(db, 'posts'), post);
+};
+
+export const updateUserProfile = async (userId: string, userData: Partial<User>): Promise<User> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    
+    // 現在のユーザーデータを取得
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+      throw new Error('ユーザーが見つかりません');
+    }
+    
+    const updatedData = {
+      ...userSnap.data(),
+      ...userData,
+      updated_at: new Date().toISOString()
+    };
+    
+    await setDoc(userRef, updatedData);
+    return updatedData as User;
+  } catch (error) {
+    console.error('プロフィール更新エラー:', error);
+    throw new Error('プロフィールの更新に失敗しました');
+  }
 };

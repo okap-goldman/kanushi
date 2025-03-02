@@ -13,6 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from '@/contexts/AuthContext';
+import { uploadImage, uploadAudio } from '@/lib/storage';
+import { updateUserProfile } from '@/lib/firebase';
 
 interface ProfileEditFormProps {
   profile: {
@@ -29,6 +32,7 @@ interface ProfileEditFormProps {
 }
 
 export default function ProfileEditForm({ profile, onSubmit, onCancel }: ProfileEditFormProps) {
+  const { user } = useAuth();
   const [name, setName] = useState(profile.name);
   const [username, setUsername] = useState(profile.username);
   const [bio, setBio] = useState(profile.bio);
@@ -38,6 +42,10 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
   const [audioUrl, setAudioUrl] = useState<string | null>(profile.bioAudioUrl);
   const [isPlaying, setIsPlaying] = useState(false);
   const [pronouns, setPronouns] = useState(profile.pronouns || '');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -47,8 +55,22 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // ファイルサイズのバリデーション (5MB以下)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, image: '画像サイズは5MB以下にしてください' }));
+        return;
+      }
+      
+      // ファイルタイプのバリデーション
+      if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+        setErrors(prev => ({ ...prev, image: '対応していないファイル形式です。JPEG、PNG、GIF、WebPのみ対応しています。' }));
+        return;
+      }
+      
+      setImageFile(file);
       const url = URL.createObjectURL(file);
       setImagePreview(url);
+      setErrors(prev => ({ ...prev, image: '' }));
     }
   };
 
@@ -67,6 +89,11 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         const audioUrl = URL.createObjectURL(audioBlob);
         setAudioUrl(audioUrl);
+        
+        // BlobからFileオブジェクトを作成
+        const audioFile = new File([audioBlob], `voice-${Date.now()}.wav`, { type: 'audio/wav' });
+        setAudioFile(audioFile);
+        
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -74,7 +101,7 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
       setIsRecording(true);
     } catch (error) {
       console.error('録音の開始に失敗しました:', error);
-      alert('録音の開始に失敗しました。マイクへのアクセスを許可してください。');
+      setErrors(prev => ({ ...prev, audio: '録音の開始に失敗しました。マイクへのアクセスを許可してください。' }));
     }
   };
 
@@ -96,17 +123,70 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
     }
   };
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!name.trim()) {
+      newErrors.name = '名前を入力してください';
+    } else if (name.length > 50) {
+      newErrors.name = '名前は50文字以内で入力してください';
+    }
+    
+    if (!bio.trim()) {
+      newErrors.bio = '自己紹介を入力してください';
+    } else if (bio.length > 280) {
+      newErrors.bio = '自己紹介は280文字以内で入力してください';
+    }
+    
+    if (externalLink && !externalLink.startsWith('http://') && !externalLink.startsWith('https://')) {
+      newErrors.externalLink = '有効なURLを入力してください（http://またはhttps://で始まる必要があります）';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim() || !bio.trim()) {
-      alert('名前と自己紹介文を入力してください。');
+    if (!validateForm()) {
       return;
     }
-
-    // TODO: Implement profile update
-    console.log({ name, username, bio, externalLink, imagePreview, audioUrl, pronouns });
-    onSubmit();
+    
+    setIsSubmitting(true);
+    
+    try {
+      // 画像のアップロード処理
+      let profileIconUrl = profile.image;
+      if (imageFile) {
+        profileIconUrl = await uploadImage(imageFile);
+      }
+      
+      // 音声のアップロード処理
+      let profileAudioUrl = profile.bioAudioUrl;
+      if (audioFile) {
+        profileAudioUrl = await uploadAudio(audioFile);
+      }
+      
+      // ユーザープロファイルの更新
+      if (user) {
+        await updateUserProfile(user.uid, {
+          user_name: name,
+          profile_icon_url: profileIconUrl,
+          profile_audio_url: profileAudioUrl,
+          shop_link_url: externalLink,
+          is_shop_link: externalLink.includes('shop'),
+          introduction: bio
+        });
+      }
+      
+      onSubmit();
+    } catch (error) {
+      console.error('プロフィール更新エラー:', error);
+      setErrors(prev => ({ ...prev, submit: 'プロフィールの更新に失敗しました。もう一度お試しください。' }));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -128,10 +208,14 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
             variant="ghost"
             className="text-blue-500 text-base font-normal hover:bg-transparent"
             onClick={handleSubmit}
+            disabled={isSubmitting}
           >
-            完了
+            {isSubmitting ? '処理中...' : '完了'}
           </Button>
         </div>
+        {errors.submit && (
+          <p className="text-sm text-red-500 mt-2 text-center">{errors.submit}</p>
+        )}
         <DialogDescription className="sr-only">
           プロフィール情報の編集フォーム
         </DialogDescription>
@@ -160,6 +244,9 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
               className="hidden"
               onChange={handleImageSelect}
             />
+            {errors.image && (
+              <p className="text-sm text-red-500 mt-1">{errors.image}</p>
+            )}
           </div>
 
           {/* 名前とユーザーネーム */}
@@ -171,9 +258,12 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={50}
-                className="border-0 border-b rounded-none focus-visible:ring-0 px-0"
+                className={`border-0 border-b rounded-none focus-visible:ring-0 px-0 ${errors.name ? 'border-red-500' : ''}`}
                 placeholder="名前を入力"
               />
+              {errors.name && (
+                <p className="text-sm text-red-500 mt-1">{errors.name}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -215,18 +305,25 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               maxLength={280}
-              className="min-h-[100px] border-0 border-b rounded-none focus-visible:ring-0 resize-none px-0"
+              className={`min-h-[100px] border-0 border-b rounded-none focus-visible:ring-0 resize-none px-0 ${errors.bio ? 'border-red-500' : ''}`}
               placeholder="自己紹介を入力してください"
             />
-            <p className="text-sm text-muted-foreground text-right">
-              {bio.length}/280文字
-            </p>
+            <div className="flex justify-between">
+              <div>
+                {errors.bio && (
+                  <p className="text-sm text-red-500">{errors.bio}</p>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground text-right">
+                {bio.length}/280文字
+              </p>
+            </div>
           </div>
 
           {/* リンク */}
           <div className="space-y-2">
             <Label htmlFor="external-link">リンク</Label>
-            <div className="relative border-b">
+            <div className={`relative border-b ${errors.externalLink ? 'border-red-500' : ''}`}>
               <Input
                 id="external-link"
                 type="url"
@@ -237,6 +334,9 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
               />
               <ChevronRight className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             </div>
+            {errors.externalLink && (
+              <p className="text-sm text-red-500 mt-1">{errors.externalLink}</p>
+            )}
           </div>
 
           {/* 自己紹介音声 */}
@@ -273,6 +373,10 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
                 </Button>
               )}
             </div>
+
+            {errors.audio && (
+              <p className="text-sm text-red-500 mt-1 text-center">{errors.audio}</p>
+            )}
 
             {audioUrl && (
               <audio
