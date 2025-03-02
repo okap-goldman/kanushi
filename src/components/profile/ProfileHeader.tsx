@@ -16,7 +16,7 @@ interface ProfileHeaderProps {
   setSelectedTab: (tab: string) => void;
 }
 
-export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps) {
+export function ProfileHeader({ isPlaying, handlePlayVoice, selectedTab, setSelectedTab }: ProfileHeaderProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
