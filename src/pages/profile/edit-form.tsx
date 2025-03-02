@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Camera, Mic, Square, Play, Pause, ChevronRight } from 'lucide-react';
+import { Camera, Mic, Square, Play, Pause, ChevronRight, RefreshCw } from 'lucide-react';
 import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   Select,
@@ -41,11 +41,12 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
   const [isRecording, setIsRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(profile.bioAudioUrl);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [pronouns, setPronouns] = useState(profile.pronouns || '');
+  const [gender, setGender] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [showRecordingUI, setShowRecordingUI] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -146,6 +147,12 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
     return Object.keys(newErrors).length === 0;
   };
 
+  const updateAudio = () => {
+    if (window.confirm('本当に更新しますか？')) {
+      // 音声の更新処理
+      console.log('音声を更新します');
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -279,20 +286,20 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
             </div>
           </div>
 
-          {/* 代名詞の性別 */}
+          {/* 性別 */}
           <div className="space-y-2">
-            <Label htmlFor="pronouns">代名詞の性別</Label>
-            <Select value={pronouns} onValueChange={setPronouns}>
+            <Label htmlFor="gender">性別</Label>
+            <Select value={gender} onValueChange={setGender}>
               <SelectTrigger
-                id="pronouns"
+                id="gender"
                 className="border-0 border-b rounded-none focus:ring-0 px-0"
               >
-                <SelectValue placeholder="代名詞の性別を選択" />
+                <SelectValue placeholder="性別を選択" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="he">彼 (he/him)</SelectItem>
-                <SelectItem value="she">彼女 (she/her)</SelectItem>
-                <SelectItem value="they">その他 (they/them)</SelectItem>
+                <SelectItem value="male">男性</SelectItem>
+                <SelectItem value="female">女性</SelectItem>
+                <SelectItem value="other">その他</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -342,35 +349,72 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
           {/* 自己紹介音声 */}
           <div className="space-y-4">
             <Label>自己紹介音声</Label>
-            <div className="flex justify-center space-x-4">
-              {!audioUrl ? (
-                <Button
-                  type="button"
-                  size="lg"
-                  variant={isRecording ? 'destructive' : 'default'}
-                  className="w-16 h-16 rounded-full"
-                  onClick={isRecording ? stopRecording : startRecording}
-                >
-                  {isRecording ? (
-                    <Square className="h-6 w-6" />
-                  ) : (
-                    <Mic className="h-6 w-6" />
-                  )}
-                </Button>
+            <div className="flex flex-col items-center space-y-4">
+              {showRecordingUI ? (
+                <div className="flex flex-col items-center space-y-4">
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant={isRecording ? 'destructive' : 'default'}
+                    className="w-16 h-16 rounded-full"
+                    onClick={isRecording ? stopRecording : startRecording}
+                  >
+                    {isRecording ? (
+                      <Square className="h-6 w-6" />
+                    ) : (
+                      <Mic className="h-6 w-6" />
+                    )}
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    {isRecording ? '録音中...' : '録音を開始'}
+                  </p>
+                </div>
               ) : (
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="outline"
-                  className="w-16 h-16 rounded-full"
-                  onClick={togglePlayback}
-                >
-                  {isPlaying ? (
-                    <Pause className="h-6 w-6" />
+                <div className="flex flex-col items-center space-y-4 w-full">
+                  {audioUrl ? (
+                    <div className="flex flex-col items-center space-y-4 w-full">
+                      <Button
+                        type="button"
+                        size="lg"
+                        variant="outline"
+                        className="w-16 h-16 rounded-full"
+                        onClick={togglePlayback}
+                      >
+                        {isPlaying ? (
+                          <Pause className="h-6 w-6" />
+                        ) : (
+                          <Play className="h-6 w-6" />
+                        )}
+                      </Button>
+                      <div className="flex space-x-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowRecordingUI(true)}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          再録音
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="default"
+                          onClick={updateAudio}
+                        >
+                          更新
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
-                    <Play className="h-6 w-6" />
+                    <Button
+                      type="button"
+                      variant="default"
+                      onClick={() => setShowRecordingUI(true)}
+                    >
+                      <Mic className="h-4 w-4 mr-2" />
+                      録音する
+                    </Button>
                   )}
-                </Button>
+                </div>
               )}
             </div>
 
@@ -386,30 +430,6 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
                 className="hidden"
               />
             )}
-          </div>
-
-          {/* プロアカウントへの切り替え */}
-          <div className="pt-4">
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full text-blue-500 justify-start px-0 font-normal hover:bg-transparent"
-              onClick={() => {/* TODO: Implement pro account switch */}}
-            >
-              プロアカウントに切り替える
-            </Button>
-          </div>
-
-          {/* 個人の情報の設定 */}
-          <div className="pt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full text-blue-500 justify-start px-0 font-normal hover:bg-transparent"
-              onClick={() => {/* TODO: Implement personal info settings */}}
-            >
-              個人の情報の設定
-            </Button>
           </div>
         </div>
       </div>
