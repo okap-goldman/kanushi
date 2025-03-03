@@ -34,6 +34,29 @@ export function ProfileHeader({ isPlaying, handlePlayVoice, selectedTab, setSele
 
   useEffect(() => {
     if (user) {
+      // 開発環境でのモックユーザー対応
+      const isDevelopment = import.meta.env.MODE === 'development';
+      const testingEmail = import.meta.env.VITE_TESTING_GOOGLE_MAIL;
+      
+      if (isDevelopment && testingEmail && user.uid === '12345678') {
+        // ローカルストレージからモックユーザープロフィールを取得
+        const storedProfile = localStorage.getItem('mockUserProfile');
+        if (storedProfile) {
+          const mockProfile = JSON.parse(storedProfile);
+          setProfileData({
+            name: mockProfile.user_name || '名称未設定',
+            username: mockProfile.user_name || 'username',
+            image: mockProfile.profile_icon_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+            bio: mockProfile.introduction || '',
+            bioAudioUrl: mockProfile.profile_audio_url || '',
+            externalLink: mockProfile.shop_link_url || '',
+            pronouns: ''
+          });
+          return;
+        }
+      }
+      
+      // 通常の処理
       setProfileData({
         name: user.user_name || '名称未設定',
         username: user.user_name || 'username',
@@ -64,21 +87,43 @@ export function ProfileHeader({ isPlaying, handlePlayVoice, selectedTab, setSele
   const handleProfileUpdate = () => {
     // プロフィールが更新されたら、最新のデータを取得して表示を更新
     if (user) {
-      const userRef = doc(db, 'users', user.uid);
-      getDoc(userRef).then((docSnap) => {
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
+      // 開発環境でのモックユーザー対応
+      const isDevelopment = import.meta.env.MODE === 'development';
+      const testingEmail = import.meta.env.VITE_TESTING_GOOGLE_MAIL;
+      
+      if (isDevelopment && testingEmail && user.uid === '12345678') {
+        // ローカルストレージからモックユーザープロフィールを取得
+        const storedProfile = localStorage.getItem('mockUserProfile');
+        if (storedProfile) {
+          const mockProfile = JSON.parse(storedProfile);
           setProfileData({
-            name: userData.user_name || '名称未設定',
-            username: userData.user_name || 'username',
-            image: userData.profile_icon_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
-            bio: userData.introduction || '',
-            bioAudioUrl: userData.profile_audio_url || '',
-            externalLink: userData.shop_link_url || '',
+            name: mockProfile.user_name || '名称未設定',
+            username: mockProfile.user_name || 'username',
+            image: mockProfile.profile_icon_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+            bio: mockProfile.introduction || '',
+            bioAudioUrl: mockProfile.profile_audio_url || '',
+            externalLink: mockProfile.shop_link_url || '',
             pronouns: ''
           });
         }
-      });
+      } else {
+        // 通常の処理
+        const userRef = doc(db, 'users', user.uid);
+        getDoc(userRef).then((docSnap) => {
+          if (docSnap.exists()) {
+            const userData = docSnap.data();
+            setProfileData({
+              name: userData.user_name || '名称未設定',
+              username: userData.user_name || 'username',
+              image: userData.profile_icon_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+              bio: userData.introduction || '',
+              bioAudioUrl: userData.profile_audio_url || '',
+              externalLink: userData.shop_link_url || '',
+              pronouns: ''
+            });
+          }
+        });
+      }
     }
     setIsEditDialogOpen(false);
   };
