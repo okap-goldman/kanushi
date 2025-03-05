@@ -55,6 +55,30 @@ export const uploadImage = async (
       }
     };
     
+    // 開発環境での処理
+    const isDevelopment = import.meta.env.MODE === 'development';
+    if (isDevelopment) {
+      console.log('開発環境: Firebase Storage Emulatorを使用します');
+      
+      try {
+        // ファイルアップロード（メタデータを含める）
+        const snapshot = await uploadBytes(storageRef, file, metadata);
+        
+        // ダウンロードURL取得
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return downloadURL;
+      } catch (storageError) {
+        console.warn('開発環境: Firebase Storageへのアップロードに失敗しました。ローカルURLを返します。', storageError);
+        
+        // 開発環境ではエラーが発生した場合、ローカルURLを返す
+        // これにより、開発環境でもUIテストが可能になる
+        const localUrl = URL.createObjectURL(file);
+        console.log('開発環境: ローカルURLを生成しました:', localUrl);
+        return localUrl;
+      }
+    }
+    
+    // 本番環境での処理
     // ファイルアップロード（メタデータを含める）
     const snapshot = await uploadBytes(storageRef, file, metadata);
     
@@ -100,6 +124,30 @@ export const uploadAudio = async (
       }
     };
     
+    // 開発環境での処理
+    const isDevelopment = import.meta.env.MODE === 'development';
+    if (isDevelopment) {
+      console.log('開発環境: Firebase Storage Emulatorを使用します');
+      
+      try {
+        // ファイルアップロード（メタデータを含める）
+        const snapshot = await uploadBytes(storageRef, file, metadata);
+        
+        // ダウンロードURL取得
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return downloadURL;
+      } catch (storageError) {
+        console.warn('開発環境: Firebase Storageへのアップロードに失敗しました。ローカルURLを返します。', storageError);
+        
+        // 開発環境ではエラーが発生した場合、ローカルURLを返す
+        // これにより、開発環境でもUIテストが可能になる
+        const localUrl = URL.createObjectURL(file);
+        console.log('開発環境: ローカルURLを生成しました:', localUrl);
+        return localUrl;
+      }
+    }
+    
+    // 本番環境での処理
     // ファイルアップロード（メタデータを含める）
     const snapshot = await uploadBytes(storageRef, file, metadata);
     
