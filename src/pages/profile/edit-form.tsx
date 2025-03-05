@@ -216,10 +216,14 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
             variant="ghost"
             className="text-blue-500 text-base font-normal hover:bg-transparent"
             onClick={handleSubmit}
+            disabled={isSubmitting}
           >
-            完了
+            {isSubmitting ? '処理中...' : '完了'}
           </Button>
         </div>
+        {errors.submit && (
+          <p className="text-sm text-red-500 mt-2 text-center">{errors.submit}</p>
+        )}
         <DialogDescription className="sr-only">
           プロフィール情報の編集フォーム
         </DialogDescription>
@@ -248,6 +252,9 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
               className="hidden"
               onChange={handleImageSelect}
             />
+            {errors.image && (
+              <p className="text-sm text-red-500 mt-1">{errors.image}</p>
+            )}
           </div>
 
           {/* 名前とユーザーネーム */}
@@ -259,9 +266,12 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={50}
-                className="border-0 border-b rounded-none focus-visible:ring-0 px-0"
+                className={`border-0 border-b rounded-none focus-visible:ring-0 px-0 ${errors.name ? 'border-red-500' : ''}`}
                 placeholder="名前を入力"
               />
+              {errors.name && (
+                <p className="text-sm text-red-500 mt-1">{errors.name}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -303,18 +313,25 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               maxLength={280}
-              className="min-h-[100px] border-0 border-b rounded-none focus-visible:ring-0 resize-none px-0"
+              className={`min-h-[100px] border-0 border-b rounded-none focus-visible:ring-0 resize-none px-0 ${errors.bio ? 'border-red-500' : ''}`}
               placeholder="自己紹介を入力してください"
             />
-            <p className="text-sm text-muted-foreground text-right">
-              {bio.length}/280文字
-            </p>
+            <div className="flex justify-between">
+              <div>
+                {errors.bio && (
+                  <p className="text-sm text-red-500">{errors.bio}</p>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground text-right">
+                {bio.length}/280文字
+              </p>
+            </div>
           </div>
 
           {/* リンク */}
           <div className="space-y-2">
             <Label htmlFor="external-link">リンク</Label>
-            <div className="relative border-b">
+            <div className={`relative border-b ${errors.externalLink ? 'border-red-500' : ''}`}>
               <Input
                 id="external-link"
                 type="url"
@@ -325,6 +342,9 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
               />
               <ChevronRight className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             </div>
+            {errors.externalLink && (
+              <p className="text-sm text-red-500 mt-1">{errors.externalLink}</p>
+            )}
           </div>
 
           {/* 自己紹介音声 */}

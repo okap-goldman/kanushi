@@ -2,9 +2,12 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Store, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ProfileEditForm from "@/pages/profile/edit-form";
+import { useAuth } from "@/contexts/AuthContext";
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface ProfileHeaderProps {
   isPlaying: boolean;
@@ -13,38 +16,116 @@ interface ProfileHeaderProps {
   setSelectedTab: (tab: string) => void;
 }
 
-const dummyProfile = {
-  name: "心の探求者",
-  username: "seeker_of_heart",
-  image: "https://api.dicebear.com/7.x/avataaars/svg?seed=1",
-  bio: "地球での使命:人々の心に光を灯し、内なる平安への道を示すこと",
-  bioAudioUrl: "https://s328.podbean.com/pb/4b3e15298687315db3070972aaa50fee/676f0aab/data1/fs91/20007750/uploads/6b592.m4a?pbss=abbaab44-f1dd-5725-bf73-452199e42c01",
-  externalLink: "https://example.com/shop",
-  pronouns: "they"
-};
-
-export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps) {
+export function ProfileHeader({ isPlaying, handlePlayVoice, selectedTab, setSelectedTab }: ProfileHeaderProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [profileData, setProfileData] = useState({
+    name: user?.user_name || '名称未設定',
+    username: user?.user_name || 'username',
+    image: user?.profile_icon_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+    bio: user?.introduction || '',
+    bioAudioUrl: user?.profile_audio_url || '',
+    externalLink: user?.shop_link_url || '',
+    pronouns: ''
+  });
+
+  useEffect(() => {
+    if (user) {
+      // 開発環境でのモックユーザー対応
+      const isDevelopment = import.meta.env.MODE === 'development';
+      const testingEmail = import.meta.env.VITE_TESTING_GOOGLE_MAIL;
+      
+      if (isDevelopment && testingEmail && user.uid === '12345678') {
+        // ローカルストレージからモックユーザープロフィールを取得
+        const storedProfile = localStorage.getItem('mockUserProfile');
+        if (storedProfile) {
+          const mockProfile = JSON.parse(storedProfile);
+          setProfileData({
+            name: mockProfile.user_name || '名称未設定',
+            username: mockProfile.user_name || 'username',
+            image: mockProfile.profile_icon_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+            bio: mockProfile.introduction || '',
+            bioAudioUrl: mockProfile.profile_audio_url || '',
+            externalLink: mockProfile.shop_link_url || '',
+            pronouns: ''
+          });
+          return;
+        }
+      }
+      
+      // 通常の処理
+      setProfileData({
+        name: user.user_name || '名称未設定',
+        username: user.user_name || 'username',
+        image: user.profile_icon_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+        bio: user.introduction || '',
+        bioAudioUrl: user.profile_audio_url || '',
+        externalLink: user.shop_link_url || '',
+        pronouns: ''
+      });
+    }
+  }, [user]);
 
   const toggleAudio = () => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio(dummyProfile.bioAudioUrl);
+    if (!audioRef.current && profileData.bioAudioUrl) {
+      audioRef.current = new Audio(profileData.bioAudioUrl);
     }
 
-    if (isAudioPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
+    if (audioRef.current) {
+      if (isAudioPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsAudioPlaying(!isAudioPlaying);
     }
-    setIsAudioPlaying(!isAudioPlaying);
   };
 
   const handleProfileUpdate = () => {
+    // プロフィールが更新されたら、最新のデータを取得して表示を更新
+    if (user) {
+      // 開発環境でのモックユーザー対応
+      const isDevelopment = import.meta.env.MODE === 'development';
+      const testingEmail = import.meta.env.VITE_TESTING_GOOGLE_MAIL;
+      
+      if (isDevelopment && testingEmail && user.uid === '12345678') {
+        // ローカルストレージからモックユーザープロフィールを取得
+        const storedProfile = localStorage.getItem('mockUserProfile');
+        if (storedProfile) {
+          const mockProfile = JSON.parse(storedProfile);
+          setProfileData({
+            name: mockProfile.user_name || '名称未設定',
+            username: mockProfile.user_name || 'username',
+            image: mockProfile.profile_icon_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+            bio: mockProfile.introduction || '',
+            bioAudioUrl: mockProfile.profile_audio_url || '',
+            externalLink: mockProfile.shop_link_url || '',
+            pronouns: ''
+          });
+        }
+      } else {
+        // 通常の処理
+        const userRef = doc(db, 'users', user.uid);
+        getDoc(userRef).then((docSnap) => {
+          if (docSnap.exists()) {
+            const userData = docSnap.data();
+            setProfileData({
+              name: userData.user_name || '名称未設定',
+              username: userData.user_name || 'username',
+              image: userData.profile_icon_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+              bio: userData.introduction || '',
+              bioAudioUrl: userData.profile_audio_url || '',
+              externalLink: userData.shop_link_url || '',
+              pronouns: ''
+            });
+          }
+        });
+      }
+    }
     setIsEditDialogOpen(false);
-    // TODO: Implement profile update logic
   };
 
   return (
@@ -66,8 +147,8 @@ export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps
           </Button>
 
           <Avatar className="h-24 w-24">
-            <AvatarImage src={dummyProfile.image} />
-            <AvatarFallback>UN</AvatarFallback>
+            <AvatarImage src={profileData.image} />
+            <AvatarFallback>{profileData.name[0] || 'UN'}</AvatarFallback>
           </Avatar>
 
           <Button
@@ -83,7 +164,7 @@ export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps
 
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2">
-            <h1 className="text-2xl font-bold">{dummyProfile.name}</h1>
+            <h1 className="text-2xl font-bold">{profileData.name}</h1>
             <Button
               variant="ghost"
               size="icon"
@@ -94,10 +175,10 @@ export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps
               <span className="sr-only">プロフィールを編集</span>
             </Button>
           </div>
-          <p className="text-sm text-muted-foreground">@{dummyProfile.username}</p>
-          <p className="text-sm text-muted-foreground">ID: 123456789</p>
+          <p className="text-sm text-muted-foreground">@{profileData.username}</p>
+          <p className="text-sm text-muted-foreground">ID: {user?.user_id || '123456789'}</p>
           <p className="text-muted-foreground max-w-md">
-            {dummyProfile.bio}
+            {profileData.bio}
           </p>
         </div>
 
@@ -124,7 +205,7 @@ export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-md p-0">
           <ProfileEditForm
-            profile={dummyProfile}
+            profile={profileData}
             onSubmit={handleProfileUpdate}
             onCancel={() => setIsEditDialogOpen(false)}
           />

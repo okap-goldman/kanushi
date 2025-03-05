@@ -8,6 +8,14 @@ const DEFAULT_OPTIONS: UploadImageOptions = {
   allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 };
 
+interface UploadAudioOptions {
+  allowedTypes?: string[];
+}
+
+const DEFAULT_AUDIO_OPTIONS: UploadAudioOptions = {
+  allowedTypes: ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a']
+};
+
 const s3Client = new S3Client({
   region: import.meta.env.VITE_WASABI_REGION,
   endpoint: `https://s3.${import.meta.env.VITE_WASABI_REGION}.wasabisys.com`,
@@ -21,6 +29,13 @@ export class ImageUploadError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'ImageUploadError';
+  }
+}
+
+export class AudioUploadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AudioUploadError';
   }
 }
 
@@ -54,19 +69,15 @@ export const uploadImage = async (
   }
 };
 
-export class AudioUploadError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'AudioUploadError';
-  }
-}
 
-export const uploadAudio = async (file: File): Promise<string> => {
+export const uploadAudio = async (
+  file: File,
+  options: UploadAudioOptions = DEFAULT_AUDIO_OPTIONS
+): Promise<string> => {
   // バリデーション
-  const allowedTypes = ['audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/ogg'];
-  if (!allowedTypes.includes(file.type)) {
+  if (!options.allowedTypes?.includes(file.type)) {
     throw new AudioUploadError(
-      '対応していないファイル形式です。MP3、WAV、OGGのみ対応しています。'
+      '対応していないファイル形式です。WAV、MP3、MP4、M4Aのみ対応しています。'
     );
   }
 
