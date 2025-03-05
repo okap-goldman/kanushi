@@ -53,3 +53,38 @@ export const uploadImage = async (
     );
   }
 };
+
+export class AudioUploadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AudioUploadError';
+  }
+}
+
+export const uploadAudio = async (file: File): Promise<string> => {
+  // バリデーション
+  const allowedTypes = ['audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/ogg'];
+  if (!allowedTypes.includes(file.type)) {
+    throw new AudioUploadError(
+      '対応していないファイル形式です。MP3、WAV、OGGのみ対応しています。'
+    );
+  }
+
+  try {
+    const fileName = `${Date.now()}-${file.name}`;
+    const command = new PutObjectCommand({
+      Bucket: import.meta.env.VITE_WASABI_BUCKET,
+      Key: `audios/${fileName}`,
+      Body: file,
+      ContentType: file.type
+    });
+
+    await s3Client.send(command);
+    return `https://s3.${import.meta.env.VITE_WASABI_REGION}.wasabisys.com/${import.meta.env.VITE_WASABI_BUCKET}/audios/${fileName}`;
+  } catch (error) {
+    console.error('Audio upload error:', error);
+    throw new AudioUploadError(
+      'アップロードに失敗しました。もう一度お試しください。'
+    );
+  }
+};

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -39,4 +39,22 @@ export const createTextPost = async (data: CreateTextPostData) => {
   };
   
   return await addDoc(collection(db, 'posts'), post);
+};
+
+interface UserProfileData {
+  user_name?: string;
+  profile_icon_url?: string;
+  profile_audio_url?: string;
+  shop_link_url?: string;
+  is_shop_link?: boolean;
+  introduction?: string;
+  pronouns?: string;
+}
+
+export const updateUserProfile = async (userId: string, data: UserProfileData) => {
+  const userRef = doc(db, 'users', userId);
+  return await updateDoc(userRef, {
+    ...data,
+    updated_at: new Date().toISOString()
+  });
 };
