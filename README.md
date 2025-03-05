@@ -97,3 +97,4 @@ src/
 - `screen_transition.md`: 画面遷移図
 - `screen_user_interface.md`: 画面・ユーザーインターフェース
 - `api_specifications.yaml`: API仕様
+- `tests/profile_unit_test_spec.md`: プロフィール画面の単体テスト仕様書
