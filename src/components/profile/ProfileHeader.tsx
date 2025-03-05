@@ -8,6 +8,7 @@ import ProfileEditForm from "@/pages/profile/edit-form";
 import { useAuth } from "@/contexts/AuthContext";
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { SoundCloudPlayer } from '@/components/SoundCloudPlayer';
 
 interface ProfileHeaderProps {
   isPlaying: boolean;
@@ -70,18 +71,9 @@ export function ProfileHeader({ isPlaying, handlePlayVoice, selectedTab, setSele
   }, [user]);
 
   const toggleAudio = () => {
-    if (!audioRef.current && profileData.bioAudioUrl) {
-      audioRef.current = new Audio(profileData.bioAudioUrl);
-    }
-
-    if (audioRef.current) {
-      if (isAudioPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsAudioPlaying(!isAudioPlaying);
-    }
+    // SoundCloudプレーヤーを使用するため、この関数は不要になりました
+    // ただし、互換性のためにボタンの表示状態を切り替える機能は残します
+    setIsAudioPlaying(!isAudioPlaying);
   };
 
   const handleProfileUpdate = () => {
@@ -180,6 +172,11 @@ export function ProfileHeader({ isPlaying, handlePlayVoice, selectedTab, setSele
           <p className="text-muted-foreground max-w-md">
             {profileData.bio}
           </p>
+          {profileData.bioAudioUrl && (
+            <div className="mt-2">
+              <SoundCloudPlayer url={profileData.bioAudioUrl} className="w-full" />
+            </div>
+          )}
         </div>
 
         <div className="flex gap-8 border rounded-lg p-4 w-full max-w-md justify-between">

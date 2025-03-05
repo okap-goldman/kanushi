@@ -10,7 +10,7 @@ describe('User Update', () => {
       body: {
         user_name: 'Updated Name',
         profile_icon_url: 'https://example.com/icon.jpg',
-        profile_audio_url: 'https://example.com/audio.mp3',
+        profile_audio_url: 'https://soundcloud.com/example/audio',
         shop_link_url: 'https://example.com/shop',
         is_shop_link: true,
         introduction: 'Updated introduction'
@@ -26,7 +26,7 @@ describe('User Update', () => {
         user_id: expect.any(Number),
         user_name: 'Updated Name',
         profile_icon_url: 'https://example.com/icon.jpg',
-        profile_audio_url: 'https://example.com/audio.mp3',
+        profile_audio_url: 'https://soundcloud.com/example/audio',
         shop_link_url: 'https://example.com/shop',
         is_shop_link: true,
         introduction: 'Updated introduction',

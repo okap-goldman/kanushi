@@ -28,7 +28,7 @@
 - メディア管理
   - 動画投稿 → YouTube API
   - 画像投稿 → Box API
-  - 音声投稿 → PodBean API
+  - 音声投稿 → SoundCloud API
 - 決済機能
   - イベント参加 → Stripe API
   - ショップ購入 → Stripe API
@@ -96,7 +96,7 @@
   - UI: 未実装
 - [ ] 音声投稿
   - API: 未実装
-  - PodBean API連携: 未実装
+  - SoundCloud API連携: 実装済み
   - UI: 未実装
 - [ ] テキスト投稿
   - API: 未実装
@@ -207,7 +207,7 @@
 - [ ] CDN・キャッシュサーバー
   - Box連携: 未実装
   - YouTube連携: 未実装
-  - PodBean連携: 未実装
+  - SoundCloud連携: 実装済み
 - [ ] HTTPS通信
   - API: 仕様定義のみ（全エンドポイントでHTTPS必須）
   - 実装: 未実装

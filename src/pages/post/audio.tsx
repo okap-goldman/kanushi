@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Mic, Square, Play, Pause, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { uploadAudio } from '@/lib/storage';
 
 export default function AudioPostPage() {
   const navigate = useNavigate();
@@ -79,9 +80,20 @@ export default function AudioPostPage() {
       return;
     }
 
-    // TODO: Implement audio upload and post submission
-    console.log({ audioBlob, description });
-    navigate('/');
+    try {
+      // Create a File object from the Blob
+      const audioFile = new File([audioBlob], `voice-${Date.now()}.wav`, { type: 'audio/wav' });
+      
+      // Upload to SoundCloud
+      const audioUrl = await uploadAudio(audioFile);
+      
+      // TODO: Save the post with the audio URL
+      console.log({ audioUrl, description });
+      navigate('/');
+    } catch (error) {
+      console.error('音声のアップロードに失敗しました:', error);
+      alert('音声のアップロードに失敗しました。もう一度お試しください。');
+    }
   };
 
   return (
@@ -182,4 +194,4 @@ export default function AudioPostPage() {
       </div>
     </div>
   );
-} 
+}  

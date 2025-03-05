@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from './firebase';
+import { uploadToSoundCloud } from './soundcloud';
 
 interface UploadImageOptions {
   allowedTypes?: string[];
@@ -89,23 +90,10 @@ export const uploadAudio = async (
   }
 
   try {
-    const fileName = `${Date.now()}-${file.name}`;
-    const storageRef = ref(storage, `audios/${fileName}`);
-    
-    // メタデータを設定（CORSの問題対応）
-    const metadata = {
-      contentType: file.type,
-      customMetadata: {
-        'Access-Control-Allow-Origin': '*'
-      }
-    };
-    
-    // ファイルアップロード（メタデータを含める）
-    const snapshot = await uploadBytes(storageRef, file, metadata);
-    
-    // ダウンロードURL取得
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    return downloadURL;
+    // SoundCloudにアップロード
+    const title = `Voice ${new Date().toISOString()}`;
+    const soundcloudUrl = await uploadToSoundCloud(file, title);
+    return soundcloudUrl;
   } catch (error) {
     console.error('Audio upload error:', error);
     // より詳細なエラーメッセージをログに出力
