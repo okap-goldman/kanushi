@@ -24,7 +24,7 @@ const useEmulator = import.meta.env.MODE === 'development';
 if (useEmulator) {
   console.log('Firebase Emulators を使用します');
   connectAuthEmulator(auth, 'http://localhost:9099');
-  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectFirestoreEmulator(db, 'localhost', 8088);
   connectStorageEmulator(storage, 'localhost', 9199);
 }
 
