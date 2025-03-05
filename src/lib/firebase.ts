@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, addDoc, doc, setDoc, getDoc } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, collection, addDoc, doc, setDoc, getDoc, connectFirestoreEmulator } from 'firebase/firestore';
+import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import type { User } from '@/types/user';
 
 const firebaseConfig = {
@@ -18,6 +18,15 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// エミュレーターの設定
+const useEmulator = import.meta.env.MODE === 'development';
+if (useEmulator) {
+  console.log('Firebase Emulators を使用します');
+  connectAuthEmulator(auth, 'http://localhost:9099');
+  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectStorageEmulator(storage, 'localhost', 9199);
+}
 
 interface CreateTextPostData {
   userId: string;
