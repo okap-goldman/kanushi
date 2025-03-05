@@ -1,69 +1,99 @@
-# Welcome to your Lovable project
+# Kanushi - 目醒め人のためのSNS
 
-## Project info
+## プロジェクト概要
+Kanushiは「目醒め」をテーマにした、共感・学び合い・自己表現ができるコミュニティSNSです。本当に深い繋がりを重視し、ユーザー同士の意味のある交流を促進します。
 
-**URL**: https://lovable.dev/projects/cb76fb72-28c3-412c-b9ee-1fa5f7de603f
+## 開発環境のセットアップ
 
-## How can I edit this code?
+### 必要条件
+- Node.js (v18以上)
+- npm (v9以上)
+- Firebase CLI (`npm install -g firebase-tools`)
 
-There are several ways of editing your application.
+### インストール手順
+```sh
+# リポジトリをクローン
+git clone https://github.com/okap-goldman/kanushi.git
+cd kanushi
 
-**Use Lovable**
+# 依存パッケージをインストール
+npm install
+```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/cb76fb72-28c3-412c-b9ee-1fa5f7de603f) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### 環境変数の設定
+`.env.example`ファイルを`.env`にコピーして、必要な環境変数を設定してください。
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+cp .env.example .env
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+主な環境変数：
+- Firebase設定（API Key, Auth Domain, Project ID, Storage Bucket, Messaging Sender ID, App ID）
+- テスト用Googleアカウント情報
 
-# Step 3: Install the necessary dependencies.
-npm i
+### プロジェクトの起動方法
+1. Firebaseエミュレーターを起動
+```sh
+firebase emulators:start
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+2. 別のターミナルタブで開発サーバーを起動
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## プロジェクト構成
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### 技術スタック
+- フロントエンド: React, TypeScript, Vite
+- UI: shadcn-ui, Tailwind CSS
+- 状態管理: React Query, Context API
+- ルーティング: React Router
+- バックエンド: Firebase (Authentication, Firestore, Storage)
+- テスト: Jest, React Testing Library
 
-**Use GitHub Codespaces**
+### ディレクトリ構造
+```
+src/
+├── __tests__/     # テストファイル
+├── components/    # UIコンポーネント
+├── contexts/      # Reactコンテキスト
+├── controllers/   # ビジネスロジック
+├── hooks/         # カスタムフック
+├── lib/           # ユーティリティ関数
+├── pages/         # ページコンポーネント
+├── tests/         # テストユーティリティ
+└── types/         # TypeScript型定義
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Firebase情報
+- 関連アカウント: kazuki.iztn993@gmail.com
+- エミュレーターポート:
+  - Auth: 9099
+  - Firestore: 8088
+  - Storage: 9199
 
-## What technologies are used for this project?
+## 主な機能
+- ユーザー管理（Google認証）
+- フォロー機能（ファミリー/ウォッチ）
+- タイムライン機能
+- プロフィール機能
+- 検索・AIチャット機能
+- イベント機能
+- ショップ機能
 
-This project is built with .
+## 開発ワークフロー
+1. `develop`ブランチから新しいブランチを作成
+2. 変更を実装
+3. テストを実行 (`npm test`)
+4. リントを実行 (`npm run lint`)
+5. PRを作成して`develop`ブランチにマージ
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/cb76fb72-28c3-412c-b9ee-1fa5f7de603f) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+## 詳細ドキュメント
+詳細な仕様や実装状況については、`docs/`ディレクトリ内のドキュメントを参照してください：
+- `requirements_definition.md`: 要件定義
+- `implementation_status.md`: 実装状況
+- `entity_relationship.md`: エンティティ関連図
+- `screen_transition.md`: 画面遷移図
+- `screen_user_interface.md`: 画面・ユーザーインターフェース
+- `api_specifications.yaml`: API仕様
