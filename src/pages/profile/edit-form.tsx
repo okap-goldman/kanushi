@@ -47,6 +47,7 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [showRecordingUI, setShowRecordingUI] = useState(false);
+  const [recordingComplete, setRecordingComplete] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -96,10 +97,15 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
         setAudioFile(audioFile);
         
         stream.getTracks().forEach(track => track.stop());
+        
+        // 録音完了状態に設定
+        setRecordingComplete(true);
       };
 
       mediaRecorder.start();
       setIsRecording(true);
+      // 録音開始時に録音完了状態をリセット
+      setRecordingComplete(false);
     } catch (error) {
       console.error('録音の開始に失敗しました:', error);
       setErrors(prev => ({ ...prev, audio: '録音の開始に失敗しました。マイクへのアクセスを許可してください。' }));
@@ -195,6 +201,23 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // 音声確認後に再録音するためのメソッド
+  const handleReRecord = () => {
+    // 録音完了状態をリセット
+    setRecordingComplete(false);
+    // 既存のオーディオURL（あれば）を解放
+    if (audioUrl && audioUrl !== profile.bioAudioUrl) {
+      URL.revokeObjectURL(audioUrl);
+    }
+    // 新しい録音を開始
+    startRecording();
+  };
+
+  // 録音確認後に録音完了とするメソッド
+  const confirmRecording = () => {
+    setShowRecordingUI(false);
   };
 
   return (
@@ -353,22 +376,67 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
             <div className="flex flex-col items-center space-y-4">
               {showRecordingUI ? (
                 <div className="flex flex-col items-center space-y-4">
-                  <Button
-                    type="button"
-                    size="lg"
-                    variant={isRecording ? 'destructive' : 'default'}
-                    className="w-16 h-16 rounded-full"
-                    onClick={isRecording ? stopRecording : startRecording}
-                  >
-                    {isRecording ? (
-                      <Square className="h-6 w-6" />
-                    ) : (
-                      <Mic className="h-6 w-6" />
-                    )}
-                  </Button>
-                  <p className="text-sm text-muted-foreground">
-                    {isRecording ? '録音中...' : '録音を開始'}
-                  </p>
+                  {recordingComplete ? (
+                    // 録音完了後の音声確認UI
+                    <div className="flex flex-col items-center space-y-4 w-full">
+                      <div className="text-center mb-2">
+                        <p className="text-sm text-green-600 font-semibold">録音完了</p>
+                        <p className="text-xs text-muted-foreground">再生ボタンをタップして音声を確認してください</p>
+                      </div>
+                      
+                      <Button
+                        type="button"
+                        size="lg"
+                        variant="outline"
+                        className="w-16 h-16 rounded-full"
+                        onClick={togglePlayback}
+                      >
+                        {isPlaying ? (
+                          <Pause className="h-6 w-6" />
+                        ) : (
+                          <Play className="h-6 w-6" />
+                        )}
+                      </Button>
+                      
+                      <div className="flex space-x-4 mt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleReRecord}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          再録音
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="default"
+                          onClick={confirmRecording}
+                        >
+                          確定
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    // 録音中/録音開始前のUI
+                    <div className="flex flex-col items-center space-y-4">
+                      <Button
+                        type="button"
+                        size="lg"
+                        variant={isRecording ? 'destructive' : 'default'}
+                        className="w-16 h-16 rounded-full"
+                        onClick={isRecording ? stopRecording : startRecording}
+                      >
+                        {isRecording ? (
+                          <Square className="h-6 w-6" />
+                        ) : (
+                          <Mic className="h-6 w-6" />
+                        )}
+                      </Button>
+                      <p className="text-sm text-muted-foreground">
+                        {isRecording ? '録音中...' : '録音を開始'}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center space-y-4 w-full">
@@ -387,23 +455,14 @@ export default function ProfileEditForm({ profile, onSubmit, onCancel }: Profile
                           <Play className="h-6 w-6" />
                         )}
                       </Button>
-                      <div className="flex space-x-4">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setShowRecordingUI(true)}
-                        >
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                          再録音
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="default"
-                          onClick={updateAudio}
-                        >
-                          更新
-                        </Button>
-                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowRecordingUI(true)}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        再録音
+                      </Button>
                     </div>
                   ) : (
                     <Button
