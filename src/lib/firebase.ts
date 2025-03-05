@@ -79,6 +79,16 @@ export const updateUserProfile = async (userId: string, userData: Partial<User>)
       localStorage.setItem('mockUserProfile', JSON.stringify(mockUserData));
       console.log('開発環境: モックユーザープロフィールを更新しました', mockUserData);
       
+      // 開発環境でもFirestoreにユーザードキュメントを作成/更新する
+      // これにより、他の機能がFirestoreからユーザー情報を取得できるようになる
+      try {
+        const userRef = doc(db, 'users', userId);
+        await setDoc(userRef, mockUserData);
+        console.log('開発環境: Firestoreにモックユーザープロフィールを保存しました');
+      } catch (firestoreError) {
+        console.warn('開発環境: Firestoreへの保存に失敗しましたが、ローカルストレージには保存されています', firestoreError);
+      }
+      
       return mockUserData as User;
     }
     
@@ -88,7 +98,24 @@ export const updateUserProfile = async (userId: string, userData: Partial<User>)
     // 現在のユーザーデータを取得
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) {
-      throw new Error('ユーザーが見つかりません');
+      // ユーザードキュメントが存在しない場合は新規作成
+      const newUserData = {
+        user_id: parseInt(userId.slice(0, 8), 16),
+        uid: userId,
+        user_name: userData.user_name || '名称未設定',
+        email: userData.email || '',
+        profile_icon_url: userData.profile_icon_url || null,
+        profile_audio_url: userData.profile_audio_url || null,
+        shop_link_url: userData.shop_link_url || null,
+        is_shop_link: userData.is_shop_link || false,
+        introduction: userData.introduction || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...userData
+      };
+      
+      await setDoc(userRef, newUserData);
+      return newUserData as User;
     }
     
     const updatedData = {
