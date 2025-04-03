@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { Post } from "@/components/Post";
+import { ApiTest } from "@/components/ApiTest";
 import { useState } from "react";
 import {
   AlertDialog,
@@ -155,6 +156,10 @@ const Index = () => {
       <Navbar />
       
       <main className="container mx-auto px-4 pt-24 pb-8">
+        <div className="mb-8">
+          <ApiTest />
+        </div>
+
         <div className="flex justify-center gap-2 mb-8">
           <Button
             variant={timelineType === "family" ? "default" : "outline"}
