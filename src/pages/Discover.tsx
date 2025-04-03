@@ -14,34 +14,24 @@ export default function Discover() {
   const [currentSection, setCurrentSection] = useState<Section>("main");
 
   const renderSection = () => {
-    switch (currentSection) {
-      case "analysis":
-        return (
-          <Card className="p-4">
-            <AnalysisSection />
-          </Card>
-        );
-      case "regional":
-        return (
-          <Card className="p-4">
-            <RegionalActivitySection />
-          </Card>
-        );
-      case "events":
-        return (
-          <Card className="p-4">
-            <EventsSection />
-          </Card>
-        );
-      case "recommended":
-        return (
-          <Card className="p-4">
-            <RecommendedPostsSection />
-          </Card>
-        );
-      default:
-        return (
-          <div className="grid gap-4 md:grid-cols-2">
+    if (currentSection !== "main") {
+      const sectionComponents = {
+        analysis: AnalysisSection,
+        regional: RegionalActivitySection,
+        events: EventsSection,
+        recommended: RecommendedPostsSection
+      };
+      const Component = sectionComponents[currentSection];
+      return (
+        <Card className="p-4 md:p-6">
+          <Component />
+        </Card>
+      );
+    }
+
+    return (
+      <div className="space-y-8">
+        <div className="grid gap-4 md:grid-cols-2">
             <Card 
               className="p-6 cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => setCurrentSection("analysis")}
