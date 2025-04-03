@@ -47,9 +47,21 @@
 - **パッケージマネージャー**: npm / bun
 - **バージョン管理**: Git
 - **コードエディタ**: Visual Studio Code
-- **テスト**: Jest
+- **AIアシスタント**: GitHub Copilot, Cursor IDE
 - **リンター**: ESLint
 - **フォーマッター**: Prettier
+- **環境変数**:
+  - NODE_ENV=development で自動ログイン機能が有効化
+  - VITE_TESTING_GOOGLE_MAIL で開発環境用のテストメールアドレス指定
+  - PLAYWRIGHT_BROWSERS_PATH、PLAYWRIGHT_MCP_PROFILE_DIRでMCP設定
+
+### UI検証ツール
+
+- **ブラウザ検証**: Playwright MCP Server
+  - Claude AIでのUI操作・検証を容易にするプロジェクト固有の設定
+  - 主要ブラウザ対応（Chromium, Firefox, WebKit）
+  - シングルトンロック問題の自動解決
+  - プロセス管理の自動化
 
 ### CI/CD
 
@@ -130,6 +142,22 @@ src/
   ├── types/               # TypeScript型定義
   └── utils/               # ユーティリティ関数
 ```
+
+## 認証システム
+
+### 認証フロー
+
+1. **通常の認証フロー**
+   - Firebase Authenticationを使用したGoogle OAuth 2.0認証
+   - 利用規約同意の確認
+   - AuthContextによる認証状態の管理
+   - PrivateRouteコンポーネントによる認証状態に基づくルート保護
+
+2. **開発環境での自動ログイン**
+   - NODE_ENV=developmentの場合に有効
+   - テストユーザー情報の自動生成（.envのVITE_TESTING_GOOGLE_MAILを使用）
+   - 利用規約への自動同意
+   - ログインページ経由せずにアプリケーションに直接アクセス可能
 
 ### バックエンドアーキテクチャ
 
@@ -466,3 +494,15 @@ flowchart TD
    - APIキーの安全な管理
    - 最小権限の原則
    - 定期的な監査
+
+### テスト・検証環境
+
+- **単体テスト**: Jest, React Testing Library
+- **E2Eテスト**: Playwright Test
+- **MCP**: Playwright MCP Server (@executeautomation/playwright-mcp-server)
+  - カスタムポート: 4455
+  - 専用プロファイルディレクトリ: `/tmp/kanushi-playwright-profile` 
+  - 専用ブラウザディレクトリ: `/tmp/kanushi-playwright-browsers`
+  - 起動スクリプト: `start-mcp.sh` (既存プロセス検出、シングルトンロック削除、環境変数設定)
+  - 停止スクリプト: `stop-mcp.sh` (プロセス終了、ポート解放確認)
+- **コードカバレッジ**: Jest

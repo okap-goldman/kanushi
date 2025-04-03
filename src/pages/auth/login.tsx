@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -7,23 +7,18 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const isDevelopment = import.meta.env.MODE === 'development';
+  const testingEmail = import.meta.env.VITE_TESTING_GOOGLE_MAIL;
+  
+  // 開発環境では自動的に利用規約に同意
+  const [agreedToTerms, setAgreedToTerms] = useState(isDevelopment);
+  
   const { user, isInitialized, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  
-  const isDevelopment = import.meta.env.MODE === 'development';
-  const testingEmail = import.meta.env.VITE_TESTING_GOOGLE_MAIL;
 
-  useEffect(() => {
-    if (isInitialized && user) {
-      const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
-    }
-  }, [user, isInitialized, navigate, location]);
-
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = useCallback(async () => {
     if (!agreedToTerms) {
       toast({
         title: 'エラー',
@@ -47,7 +42,19 @@ export default function LoginPage() {
         variant: 'destructive',
       });
     }
-  };
+  }, [agreedToTerms, login, toast]);
+
+  useEffect(() => {
+    if (isInitialized && user) {
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
+    }
+    
+    // 開発環境では自動的にログイン
+    if (isDevelopment && testingEmail && isInitialized && !user) {
+      handleGoogleLogin();
+    }
+  }, [user, isInitialized, navigate, location, isDevelopment, testingEmail, handleGoogleLogin]);
 
   if (!isInitialized) {
     return <div className="flex items-center justify-center min-h-screen">

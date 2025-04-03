@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@executeautomation/playwright-mcp-server", "--port", "4455"],
+      "env": {
+        "PLAYWRIGHT_BROWSERS_PATH": "/tmp/kanushi-playwright-browsers",
+        "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "0"
+      }
+    }
+  }
+} 

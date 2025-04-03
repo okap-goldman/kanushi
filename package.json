@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "migrate": "node --loader ts-node/esm server/run-migrations.js",
+    "playwright:mcp": "PLAYWRIGHT_BROWSERS_PATH=/tmp/kanushi-playwright-browsers PLAYWRIGHT_MCP_PROFILE_DIR=/tmp/kanushi-playwright-profile npx playwright-mcp-server --port 4455"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.750.0",
@@ -83,6 +85,7 @@
     "@babel/preset-react": "^7.26.3",
     "@babel/preset-typescript": "^7.26.0",
     "@eslint/js": "^9.9.0",
+    "@playwright/test": "^1.51.1",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",

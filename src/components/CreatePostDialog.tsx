@@ -14,12 +14,13 @@ interface CreatePostDialogProps {
 
 // API レスポンスの型定義
 interface PostResponse {
-  post_id?: number;
-  [key: string]: any;
+  post_id: number;
+  [key: string]: unknown;
 }
 
 export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
   const [selectedPostType, setSelectedPostType] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const postTypes = [
@@ -35,7 +36,7 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
 
   const handleTextSubmit = async (title: string, text_content: string) => {
     try {
-      // @ts-ignore createPost の仮実装のため、型エラーを一時的に無視
+      // @ts-expect-error createPost の仮実装のため、型エラーを一時的に無視
       const response = await createPost({
         body: {
           title,
@@ -43,7 +44,7 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
           post_type: 'text',
           visibility: 'public', // 仮の値
         },
-      });
+      }) as PostResponse;
 
       if (response && response.post_id) {
         toast({
@@ -65,18 +66,33 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
   };
 
   const handleVideoSubmit = async (videoFile: File, description: string, isPublic: boolean) => {
+    if (!videoFile) {
+      toast({
+        title: "エラー",
+        description: "動画ファイルが選択されていません。",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
     try {
-      // @ts-ignore createPost の仮実装のため、型エラーを一時的に無視
+      console.log(`動画投稿を開始: ${videoFile.name}, サイズ: ${videoFile.size}バイト`);
+      
+      // @ts-expect-error createPost の仮実装のため、型エラーを一時的に無視
       const response = await createPost({
         body: {
           video_file: videoFile,
+          title: description.substring(0, 50), // 説明文の最初の50文字をタイトルとして使用
           description,
           post_type: 'video',
           visibility: isPublic ? 'public' : 'private',
         },
-      });
+      }) as PostResponse;
 
       if (response && response.post_id) {
+        console.log(`動画投稿成功: post_id=${response.post_id}`);
         toast({
           title: "投稿成功",
           description: "動画投稿が作成されました。YouTubeへのアップロードを開始しました。",
@@ -84,24 +100,36 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
         onClose();
         setSelectedPostType(null); // フォームをリセット
       } else {
-        throw new Error('Failed to create post');
+        throw new Error('レスポンスにpost_idが含まれていません');
       }
     } catch (error) {
+      console.error('動画投稿エラー:', error);
       toast({
         title: "エラー",
-        description: error instanceof Error ? error.message : "投稿に失敗しました。",
+        description: error instanceof Error ? error.message : "投稿に失敗しました。再度お試しください。",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open && !isLoading) {
+        onClose();
+      }
+    }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>新規投稿を作成</DialogTitle>
         </DialogHeader>
-        {!selectedPostType ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-4"></div>
+            <p className="text-sm text-gray-500">処理中...</p>
+          </div>
+        ) : !selectedPostType ? (
           <div className="grid grid-cols-2 gap-4">
             {postTypes.map(({ icon: Icon, label, value }) => (
               <Button

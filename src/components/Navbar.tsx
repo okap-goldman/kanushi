@@ -12,12 +12,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { PlusIcon, SearchIcon, MessageSquareIcon, UserIcon } from "lucide-react";
 
 export function Navbar() {
   const { toast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -37,29 +43,40 @@ export function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-          Kuripura
-        </span>
+    <header className="fixed top-0 left-0 right-0 bg-white border-b z-50">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center">
+          <h1 className="text-xl font-bold">目醒め人SNS</h1>
+        </div>
         
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
+        <div className="flex items-center space-x-4">
+          <Button 
+            onClick={() => setIsCreatePostOpen(true)} 
+            variant="outline" 
             size="icon"
-            onClick={() => setShowNotifications(true)}
+            aria-label="新規投稿を作成"
           >
+            <PlusIcon className="h-5 w-5" />
+          </Button>
+          
+          <Button variant="outline" size="icon" onClick={() => setIsSearchOpen(true)} aria-label="検索">
+            <SearchIcon className="h-5 w-5" />
+          </Button>
+          
+          <Button variant="outline" size="icon" onClick={() => setIsNotificationsOpen(true)} aria-label="通知">
             <Bell className="h-5 w-5" />
           </Button>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/messages")}
-          >
+          <Button variant="outline" size="icon" onClick={() => setIsChatOpen(true)} aria-label="AIチャット">
             <MessageCircle className="h-5 w-5" />
           </Button>
           
+          <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(true)} className="relative" aria-label="メニュー">
+            <User className="h-5 w-5" />
+          </Button>
+        </div>
+        
+        <div className="flex items-center gap-4">
           {user ? (
             <Button
               variant="ghost"
@@ -104,6 +121,6 @@ export function Navbar() {
           </ScrollArea>
         </DialogContent>
       </Dialog>
-    </nav>
+    </header>
   );
 }

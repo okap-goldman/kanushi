@@ -17,4 +17,5 @@ export interface VideoPost extends Post {
   description?: string;
   youtube_url: string;
   thumbnail_url?: string;
+  upload_id?: number | null;
 }

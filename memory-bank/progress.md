@@ -18,6 +18,11 @@
   - Firebaseの認証状態監視（onAuthStateChanged）
   - PrivateRouteによるルート保護
   - ローディング状態の表示
+- [x] 開発環境での自動ログイン機能
+  - NODE_ENV=developmentのときに自動的にテストユーザーでログイン
+  - 利用規約に自動的に同意
+  - AuthContextでのテストユーザー作成
+  - ログインページでの自動ログイン実行
 
 #### プロフィール設定
 - [x] プロフィール情報の編集
@@ -297,17 +302,25 @@
 
 ### 開発環境の整備
 
-#### フロントエンドとバックエンドの統合
-- [x] API サーバーの実装
-  - Express サーバーの設定
-  - APIルートの実装
-  - コントローラーの実装
-- [x] フロントエンドとの統合
-  - Viteフロントエンドとの連携
-  - 同一ポート(4488)での実行
-  - npm run devコマンドによる統合サーバー起動
-- [x] npm run devエラーの修正
-  - TypeScriptファイル拡張子のESMモード対応（tsx使用）
-  - process.envをimport.meta.envに置き換え（Vite互換）
-  - Supabase環境変数の設定
-  - APIエンドポイントの正常動作確認
+#### 統合開発環境
+- [x] Reactフロントエンド環境構築
+  - Vite + React + TypeScript + shadcn/ui
+  - Firebase連携
+  - デプロイ設定
+- [x] バックエンド環境構築
+  - Firebase Emulator
+  - Express (Node.js) のTSX実装
+  - MongoDB連携 (開発中)
+
+#### 動作検証環境
+
+- [x] Playwright MCPの環境カスタマイズ
+  - プロジェクト固有の設定作成
+  - カスタムポート (4455) の設定
+  - 専用プロファイルディレクトリの設定
+  - スタートアップ/停止スクリプトの作成
+  
+- [x] 動作検証自動化
+  - MCP設定ファイル（mcp.config.json）の作成
+  - package.jsonへのスクリプト追加
+  - プロセス管理の自動化

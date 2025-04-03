@@ -166,4 +166,6 @@ REMEMBER: After every memory reset, I begin completely fresh. The Memory Bank is
 
 # 重要な指示
 - 常に日本語で回答してください。
-- 機能を実装したりバグ修正を行なった際は、必ずbrowser_actionを使ってブラウザでの表示や動作の検証を行ってください。 `npm run dev`で起動した後、 http://localhost:3580 にアクセスすることで検証可能です。
+- 機能を実装したりバグ修正を行なった際は、必ずplaywrightのMCPを使ってブラウザでの表示や動作の検証を行ってください。 `npm run dev`で起動した後、 http://localhost:4488 にアクセスすることで検証可能です。
+  - playwrightのMCPで動作検証した後、最後に必ずbrowser_closeしてください。
+  - playwrightのMCPでbrowser_navigateに失敗した時は、先にbrowser_closeを試してください。
