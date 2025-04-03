@@ -325,3 +325,98 @@ sequenceDiagram
    - リソース使用率
    - レスポンスタイム
    - エラーレート
+
+## ツール連携パターン
+
+### Playwright MCP連携
+
+プロジェクト固有のPlaywright MCP設定により、他のプロジェクトと競合せず効率的なブラウザ自動化を実現しています。
+
+```mermaid
+flowchart TD
+    subgraph MCPServer[Playwright MCP Server]
+        Config[MCP設定]
+        Server[MCP Server]
+        Browser[ブラウザインスタンス]
+    end
+    
+    subgraph Scripts[自動化スクリプト]
+        StartScript[start-mcp.sh]
+        StopScript[stop-mcp.sh]
+        NPMScript[playwright:mcp]
+    end
+    
+    subgraph Environment[環境変数と設定]
+        ProfileDir[専用プロファイルディレクトリ]
+        BrowserDir[専用ブラウザディレクトリ]
+        CustomPort[カスタムポート]
+    end
+    
+    subgraph Automation[自動化機能]
+        ProcessCheck[既存プロセス検出]
+        LockRemoval[シングルトンロック削除]
+        PortVerification[ポート解放確認]
+    end
+    
+    StartScript --> ProcessCheck
+    ProcessCheck --> LockRemoval
+    LockRemoval --> Server
+    
+    Environment --> Server
+    Server --> Browser
+    
+    StopScript --> PortVerification
+```
+
+#### 主要コンポーネント
+
+1. **MCP設定ファイル**
+   - `mcp.config.json`: MCPサーバーの設定
+   - `playwright.config.mcp.ts`: Playwrightの設定
+
+2. **実行スクリプト**
+   - `start-mcp.sh`: サーバーの起動と初期化
+   - `stop-mcp.sh`: サーバーの停止と後処理
+   - `package.json`の`playwright:mcp`スクリプト
+
+3. **環境変数と設定**
+   - カスタムポート: 4455
+   - 専用プロファイルディレクトリ
+   - 専用ブラウザディレクトリ
+
+4. **自動化機能**
+   - 既存プロセスのチェックと停止
+   - シングルトンロックファイルの削除
+   - ポートの解放確認
+
+#### 使用フロー
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Script as 起動スクリプト
+    participant Process as プロセス管理
+    participant Lock as ロック管理
+    participant Env as 環境変数
+    participant MCP as MCP Server
+    
+    User->>+Script: start-mcp.sh実行
+    Script->>+Process: 既存プロセス確認
+    Process-->>-Script: プロセス情報
+    alt 既存プロセスあり
+        Script->>Process: プロセス終了
+    end
+    Script->>+Lock: SingletonLock確認
+    alt ロックファイルあり
+        Script->>Lock: ロックファイル削除
+    end
+    Script->>+Env: 環境変数設定
+    Script->>+MCP: サーバー起動
+    MCP-->>-User: 起動完了メッセージ
+    
+    User->>+Script: stop-mcp.sh実行
+    Script->>+MCP: サーバー停止
+    Script->>+Process: ポート解放確認
+    Process-->>-Script: 確認結果
+    Script-->>-User: 停止完了メッセージ
+```

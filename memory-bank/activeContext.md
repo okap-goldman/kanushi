@@ -269,3 +269,51 @@
   - process.envをimport.meta.envに置き換え（Vite互換）
   - Supabase環境変数の設定
   - APIエンドポイントの正常動作確認
+
+## 技術的更新
+
+### Playwright MCPの設定
+
+このプロジェクトでは、他のプロジェクトとの競合を避けるためにプロジェクト固有のPlaywright MCPを設定しました：
+
+#### 特徴
+
+- カスタムポート: 4455を使用（デフォルトとの競合を回避）
+- 専用プロファイルディレクトリ: `/tmp/kanushi-playwright-profile`
+- 専用ブラウザディレクトリ: `/tmp/kanushi-playwright-browsers`
+
+#### 設定ファイル
+
+- `playwright.config.mcp.ts`: プロジェクト固有のPlaywright設定
+- `mcp.config.json`: MCP固有の設定
+- `start-mcp.sh`と`stop-mcp.sh`: 起動/停止用スクリプト
+- `package.json`: `playwright:mcp`スクリプト追加
+
+この設定により、他のMCPプロセスと競合せずに動作検証ができるようになり、開発効率が向上しました。
+
+#### 使用方法
+
+1. MCPを起動する:
+```bash
+# スクリプト方式
+./start-mcp.sh
+
+# npm方式
+npm run playwright:mcp
+```
+
+2. MCPを停止する:
+```bash
+./stop-mcp.sh
+```
+
+3. 自動プロセス管理:
+   - 既存プロセスの検出と停止
+   - 専用のシングルトンロック管理
+   - 環境変数の自動設定
+
+#### トラブルシューティング
+
+- ポート競合: `lsof -i:4455` で確認
+- プロファイルロック: `rm /tmp/kanushi-playwright-profile/SingletonLock`
+- プロセス競合: `ps aux | grep playwright` で確認

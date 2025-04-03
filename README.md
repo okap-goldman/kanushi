@@ -98,3 +98,44 @@ src/
 - `screen_user_interface.md`: 画面・ユーザーインターフェース
 - `api_specifications.yaml`: API仕様
 - `tests/profile_unit_test_spec.md`: プロフィール画面の単体テスト仕様書
+
+## Playwright MCPの設定
+
+本プロジェクトでは、プロジェクト固有のPlaywright MCPを設定しています。これにより、他のプロジェクトで実行中のMCPと競合することなく利用できます。
+
+### 特徴
+
+- カスタムポート: 4455を使用
+- 専用プロファイルディレクトリ: `/tmp/kanushi-playwright-profile`
+- 専用ブラウザディレクトリ: `/tmp/kanushi-playwright-browsers`
+
+### 使い方
+
+1. MCPサーバーを起動する
+
+```bash
+# スクリプトで起動
+./start-mcp.sh
+
+# または直接実行
+npm run playwright:mcp
+```
+
+2. MCPサーバーを停止する
+
+```bash
+./stop-mcp.sh
+```
+
+### トラブルシューティング
+
+他のMCP実行中にエラーが発生する場合、以下を確認してください：
+
+1. ポート競合: 他のプロセスが4455ポートを使用していないか確認
+2. プロファイルのロック: `/tmp/kanushi-playwright-profile/SingletonLock` ファイルを削除
+3. 他のMCPプロセス: `ps aux | grep playwright` で確認し、必要に応じて終了
+
+詳細な設定は以下のファイルを参照してください：
+- `playwright.config.mcp.ts`: Playwrightテスト設定
+- `mcp.config.json`: MCP設定
+- `start-mcp.sh`, `stop-mcp.sh`: 起動/停止スクリプト
