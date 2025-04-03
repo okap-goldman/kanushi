@@ -18,6 +18,11 @@
   - Firebaseの認証状態監視（onAuthStateChanged）
   - PrivateRouteによるルート保護
   - ローディング状態の表示
+- [x] 開発環境での自動ログイン機能
+  - NODE_ENV=developmentのときに自動的にテストユーザーでログイン
+  - 利用規約に自動的に同意
+  - AuthContextでのテストユーザー作成
+  - ログインページでの自動ログイン実行
 
 #### プロフィール設定
 - [x] プロフィール情報の編集

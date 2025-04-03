@@ -50,6 +50,9 @@
 - **テスト**: Jest
 - **リンター**: ESLint
 - **フォーマッター**: Prettier
+- **環境変数**:
+  - NODE_ENV=development で自動ログイン機能が有効化
+  - VITE_TESTING_GOOGLE_MAIL で開発環境用のテストメールアドレス指定
 
 ### CI/CD
 
@@ -130,6 +133,22 @@ src/
   ├── types/               # TypeScript型定義
   └── utils/               # ユーティリティ関数
 ```
+
+## 認証システム
+
+### 認証フロー
+
+1. **通常の認証フロー**
+   - Firebase Authenticationを使用したGoogle OAuth 2.0認証
+   - 利用規約同意の確認
+   - AuthContextによる認証状態の管理
+   - PrivateRouteコンポーネントによる認証状態に基づくルート保護
+
+2. **開発環境での自動ログイン**
+   - NODE_ENV=developmentの場合に有効
+   - テストユーザー情報の自動生成（.envのVITE_TESTING_GOOGLE_MAILを使用）
+   - 利用規約への自動同意
+   - ログインページ経由せずにアプリケーションに直接アクセス可能
 
 ### バックエンドアーキテクチャ
 

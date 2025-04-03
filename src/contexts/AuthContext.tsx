@@ -31,6 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const isDevelopment = import.meta.env.MODE === 'development';
+  const testingEmail = import.meta.env.VITE_TESTING_GOOGLE_MAIL;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -40,7 +42,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const appUser = createUserFromFirebase(firebaseUser);
           setUser(appUser);
         } else {
-          setUser(null);
+          // 開発環境では自動的にテストユーザーでログイン
+          if (isDevelopment && testingEmail) {
+            console.log('開発環境: テストユーザーで自動ログイン');
+            const mockUser = {
+              uid: '12345678',
+              displayName: 'Test User',
+              email: testingEmail,
+              photoURL: 'https://example.com/default-avatar.png'
+            };
+            const appUser = createUserFromFirebase(mockUser);
+            setUser(appUser);
+          } else {
+            setUser(null);
+          }
         }
       } catch (error) {
         console.error('Auth state change error:', error);
@@ -54,14 +69,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [isDevelopment, testingEmail]);
 
   const login = async () => {
     try {
       setIsLoading(true);
-      const isDevelopment = import.meta.env.MODE === 'development';
-      const testingEmail = import.meta.env.VITE_TESTING_GOOGLE_MAIL;
-
+      
       if (isDevelopment && testingEmail) {
         // 開発環境でのバイパス
         const mockUser = {

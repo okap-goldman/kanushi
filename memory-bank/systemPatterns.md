@@ -174,6 +174,42 @@ flowchart TD
     Discover --> EventList[イベント一覧]
 ```
 
+## 認証パターン
+
+### 本番環境での認証フロー
+
+```mermaid
+sequenceDiagram
+    User->>+App: ログインページにアクセス
+    App->>+User: 利用規約同意チェックボックス表示
+    User->>+App: 利用規約に同意
+    User->>+App: Googleログインボタンクリック
+    App->>+Firebase: Google認証リクエスト
+    Firebase->>+Google: OAuth認証リダイレクト
+    Google->>+User: Googleログイン画面表示
+    User->>+Google: 認証情報入力・承認
+    Google->>+Firebase: 認証トークン
+    Firebase->>+App: ユーザー情報
+    App->>+User: ホームページへリダイレクト
+```
+
+### 開発環境での自動ログインフロー
+
+```mermaid
+sequenceDiagram
+    User->>+App: 任意のページにアクセス
+    App->>+AuthContext: 初期化
+    AuthContext->>+App: NODE_ENV確認
+    Note over AuthContext,App: development環境の場合
+    AuthContext->>+App: テストユーザー自動作成
+    App->>+User: ホームページ表示
+    Note over AuthContext,App: ログインページにアクセスした場合
+    App->>+LoginPage: 表示
+    LoginPage->>+LoginPage: 利用規約に自動同意
+    LoginPage->>+AuthContext: 自動ログイン実行
+    AuthContext->>+App: ホームページへリダイレクト
+```
+
 ## 通信パターン
 
 ### API通信
