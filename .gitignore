@@ -27,3 +27,6 @@ dist-ssr
 .env.development
 
 nohup.out
+test-results
+playwright-report
+dev-files

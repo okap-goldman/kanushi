@@ -87,33 +87,60 @@ export const createPost = async (req: AuthenticatedRequest, res: Response) => {
         return res.status(400).json({ message: 'Missing required fields: video_file' });
       }
 
-      // ここではYouTube APIとの連携を仮実装
-      // 実際の実装では、YouTubeにアップロードし、URLを取得する処理が必要
-      const youtube_url = await uploadVideoToYouTube(video_file, title || 'Untitled', description || '');
-      const thumbnail_url = `https://img.youtube.com/vi/${extractVideoId(youtube_url)}/hqdefault.jpg`;
+      try {
+        console.log(`動画投稿処理開始: ${video_file.name}, サイズ: ${video_file.size}バイト`);
+        
+        // ファイルサイズのバリデーション（例: 100MB以下）
+        const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+        if (video_file.size > MAX_FILE_SIZE) {
+          return res.status(400).json({ message: 'File size exceeds the limit (100MB)' });
+        }
 
-      const { data, error } = await supabase
-        .from('POSTS')
-        .insert<VideoPost>({
-          user_id: userId,
-          title: title,
-          description: description,
-          youtube_url: youtube_url,
-          thumbnail_url: thumbnail_url,
-          post_type: 'video',
-          visibility: visibility,
-        })
-        .select();
+        // ファイル形式のバリデーション
+        const allowedTypes = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo'];
+        if (!allowedTypes.includes(video_file.type)) {
+          return res.status(400).json({ 
+            message: 'Unsupported file format. Please use MP4, MOV, WEBM or AVI'
+          });
+        }
+        
+        // YouTubeにアップロード（仮実装）
+        const youtube_url = await uploadVideoToYouTube(video_file, title || 'Untitled', description || '');
+        const thumbnail_url = `https://img.youtube.com/vi/${extractVideoId(youtube_url)}/hqdefault.jpg`;
 
-      if (error) {
-        throw error;
+        console.log(`動画のYouTubeアップロード完了: ${youtube_url}`);
+
+        const { data, error } = await supabase
+          .from('POSTS')
+          .insert<VideoPost>({
+            user_id: userId,
+            title: title || 'Untitled', // タイトルがない場合のデフォルト値
+            description: description || '',
+            youtube_url: youtube_url,
+            thumbnail_url: thumbnail_url,
+            post_type: 'video',
+            visibility: visibility,
+            created_at: new Date().toISOString(),
+          })
+          .select();
+
+        if (error) {
+          console.error('Supabaseへの投稿保存エラー:', error);
+          throw error;
+        }
+
+        if (!data || data.length === 0) {
+          throw new Error('Failed to create post');
+        }
+
+        newPost = data[0];
+        console.log(`動画投稿処理完了: post_id=${newPost.post_id}`);
+      } catch (videoError) {
+        console.error('動画投稿処理エラー:', videoError);
+        return res.status(500).json({ 
+          message: videoError instanceof Error ? videoError.message : 'Failed to process video upload' 
+        });
       }
-
-      if (!data || data.length === 0) {
-        throw new Error('Failed to create post');
-      }
-
-      newPost = data[0];
     }
     else {
       return res.status(400).json({ message: 'Invalid post type' });
@@ -128,16 +155,29 @@ export const createPost = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 // YouTubeにビデオをアップロードする関数（仮実装）
-// 実際の実装では、YouTube Data APIを使用して実装する
 async function uploadVideoToYouTube(videoFile: File, title: string, description: string): Promise<string> {
-  // 実際のアップロード処理の代わりに、ダミーのYouTube URLを返す
-  // この部分は後でYouTube Data APIを使った実装に置き換える
-  console.log(`Uploading video: ${videoFile.name}, Title: ${title}, Description: ${description}`);
+  // 開発環境かどうかを確認
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  if (isDevelopment) {
+    console.log('開発環境: YouTube APIの代わりにダミーURLを生成します');
+    console.log(`処理中の動画: ${videoFile.name}, タイトル: ${title}, サイズ: ${videoFile.size}バイト`);
+    
+    // 開発環境では処理時間をシミュレート
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // ダミーのYouTube動画IDを生成
+    const dummyVideoId = `dev_video_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+    return `https://www.youtube.com/watch?v=${dummyVideoId}`;
+  }
+  
+  // 本番環境: 実際のYouTube Data APIを使用（仮実装）
+  console.log(`YouTube APIを使用した動画アップロード: ${videoFile.name}, タイトル: ${title}`);
   
   // ダミーのYouTube動画IDを生成
   const dummyVideoId = `video_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
   
-  // 本番環境では実際のYouTube URLを返す
+  // 本番環境では実際のYouTube URLを返す処理を実装
   return `https://www.youtube.com/watch?v=${dummyVideoId}`;
 }
 

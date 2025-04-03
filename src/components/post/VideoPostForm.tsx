@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,7 @@ export function VideoPostForm({ onSubmit }: VideoPostFormProps) {
   const [isPublic, setIsPublic] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTestMode, setIsTestMode] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoChunksRef = useRef<Blob[]>([]);
@@ -85,6 +86,37 @@ export function VideoPostForm({ onSubmit }: VideoPostFormProps) {
       setIsPlaying(!isPlaying);
     }
   };
+
+  const loadTestVideo = async () => {
+    try {
+      // テスト用の動画ファイルをフェッチ
+      const response = await fetch('/movie.mov');
+      const blob = await response.blob();
+      
+      // Fileオブジェクトに変換
+      const file = new File([blob], 'movie.mov', { type: 'video/quicktime' });
+      
+      // 状態を更新
+      setVideoFile(file);
+      const url = URL.createObjectURL(file);
+      setVideoUrl(url);
+      setDescription('テスト用動画投稿');
+      
+      console.log('テスト用動画を読み込みました');
+    } catch (error) {
+      console.error('テスト用動画の読み込みに失敗しました:', error);
+    }
+  };
+
+  // テストモード検出
+  useEffect(() => {
+    // URLにtest=trueパラメータがある場合、自動的にテスト動画を読み込む
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('test') === 'true') {
+      setIsTestMode(true);
+      loadTestVideo();
+    }
+  }, []);
 
   const handleSubmit = async () => {
     if (!videoFile) {
@@ -176,6 +208,12 @@ export function VideoPostForm({ onSubmit }: VideoPostFormProps) {
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   動画を選択
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={loadTestVideo}
+                >
+                  テスト動画を使用
                 </Button>
               </div>
             </div>
