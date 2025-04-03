@@ -71,9 +71,9 @@ export default function Discover() {
                 あなたにおすすめの投稿をピックアップ
               </p>
             </Card>
-          </div>
-        );
-    }
+        </div>
+      </div>
+    );
   };
 
   return (
