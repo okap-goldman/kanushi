@@ -1,5 +1,21 @@
+/**
+ * ユーザー関連のコントローラーモジュール
+ * 
+ * ユーザー情報の取得、更新、およびフォロー関連の機能を提供します。
+ * ユーザープロフィール、フォロー/フォロワーリストなどの操作をサポートしています。
+ */
 import { Request, Response } from 'express';
 
+/**
+ * ユーザー情報を取得するコントローラー関数
+ * 
+ * 指定されたユーザーIDに基づいてユーザー情報を取得します。
+ * 現在はモックデータを返していますが、実際のアプリケーションではデータベースから取得します。
+ * 
+ * @param {Request} req - リクエストオブジェクト
+ * @param {Response} res - レスポンスオブジェクト
+ * @returns {Promise<Response>} ユーザー情報またはエラーメッセージを含むレスポンス
+ */
 export const getUserInfo = async (req: Request, res: Response) => {
   const { user_id } = req.params;
 
@@ -31,6 +47,16 @@ export const getUserInfo = async (req: Request, res: Response) => {
   });
 };
 
+/**
+ * ユーザーのフォロー一覧を取得するコントローラー関数
+ * 
+ * 指定されたユーザーIDがフォローしているユーザーのリストを取得します。
+ * 現在はモックデータを返していますが、実際のアプリケーションではデータベースから取得します。
+ * 
+ * @param {Request} req - リクエストオブジェクト
+ * @param {Response} res - レスポンスオブジェクト
+ * @returns {Promise<Response>} フォロー一覧またはエラーメッセージを含むレスポンス
+ */
 export const getUserFollowing = async (req: Request, res: Response) => {
   const { user_id } = req.params;
 
@@ -66,6 +92,16 @@ export const getUserFollowing = async (req: Request, res: Response) => {
   });
 };
 
+/**
+ * ユーザー情報を更新するコントローラー関数
+ * 
+ * 指定されたユーザーIDのユーザー情報を更新します。
+ * ユーザー名、プロフィールアイコンURL、ショップリンク、ショップリンク表示フラグなどを更新できます。
+ * 
+ * @param {Request} req - リクエストオブジェクト
+ * @param {Response} res - レスポンスオブジェクト
+ * @returns {Promise<Response>} 更新されたユーザー情報またはエラーメッセージを含むレスポンス
+ */
 export const updateUserInfo = async (req: Request, res: Response) => {
   const { user_id } = req.params;
   const { user_name, profile_icon_url, shop_link_url, is_shop_link } = req.body;
@@ -106,6 +142,16 @@ export const updateUserInfo = async (req: Request, res: Response) => {
   });
 };
 
+/**
+ * ユーザーのフォロワー一覧を取得するコントローラー関数
+ * 
+ * 指定されたユーザーIDをフォローしているユーザーのリストを取得します。
+ * 現在はモックデータを返していますが、実際のアプリケーションではデータベースから取得します。
+ * 
+ * @param {Request} req - リクエストオブジェクト
+ * @param {Response} res - レスポンスオブジェクト
+ * @returns {Promise<Response>} フォロワー一覧またはエラーメッセージを含むレスポンス
+ */
 export const getUserFollowers = async (req: Request, res: Response) => {
   const { user_id } = req.params;
 

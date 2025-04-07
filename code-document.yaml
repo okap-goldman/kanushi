@@ -1,0 +1,1986 @@
+root:
+  path: /Users/izutanikazuki/kzp/kanushi
+  files:
+    - name: eslint.config.js
+      path: eslint.config.js
+      externalImports:
+        - '@eslint/js'
+        - globals
+        - eslint-plugin-react-hooks
+        - eslint-plugin-react-refresh
+        - typescript-eslint
+    - name: jest.config.ts
+      path: jest.config.ts
+    - name: playwright.config.mcp.ts
+      path: playwright.config.mcp.ts
+      externalImports:
+        - '@playwright/test'
+        - path
+        - os
+    - name: playwright.config.ts
+      path: playwright.config.ts
+      externalImports:
+        - '@playwright/test'
+    - name: postcss.config.js
+      path: postcss.config.js
+    - name: tailwind.config.ts
+      path: tailwind.config.ts
+      externalImports:
+        - tailwindcss
+        - tailwindcss-animate
+    - name: vite.config.ts
+      path: vite.config.ts
+      externalImports:
+        - vite
+        - '@vitejs/plugin-react-swc'
+        - path
+        - lovable-tagger
+        - http
+        - vite
+  directories:
+    server:
+      name: server
+      files:
+        - name: index.ts
+          path: server/index.ts
+          externalImports:
+            - express
+            - vite
+            - url
+            - path
+            - http
+          internalImports:
+            - ../src/lib/supabase
+          functions:
+            - name: startServer
+        - name: run-migrations.js
+          path: server/run-migrations.js
+          fileDescription: マイグレーションスクリプトを実行するヘルパー
+          externalImports:
+            - fs
+            - path
+            - url
+            - '@supabase/supabase-js'
+            - dotenv
+          functions:
+            - name: runMigrations
+    src:
+      name: src
+      files:
+        - name: App.tsx
+          path: src/App.tsx
+          externalImports:
+            - '@tanstack/react-query'
+            - react-router-dom
+          internalImports:
+            - '@/components/ui/toaster'
+            - '@/components/ui/sonner'
+            - '@/components/ui/tooltip'
+            - '@/contexts/AuthContext'
+            - '@/pages/auth/login'
+            - '@/components/PrivateRoute'
+            - ./pages/Index
+            - ./pages/Profile
+            - ./pages/Search
+            - ./pages/Discover
+            - ./components/FooterNav
+            - '@/pages/events'
+            - '@/pages/chat/[id]'
+            - '@/pages/messages'
+            - '@/pages/notifications'
+            - '@/pages/post/text'
+            - '@/pages/post/image'
+          functions:
+            - name: AppContent
+              description: |-
+                アプリケーションのメインコンテンツコンポーネント
+
+                ルーティングとグローバルプロバイダーを管理し、アプリケーションの主要なコンテンツを表示します。
+                ログインページ以外では共通のフッターナビゲーションを表示します。
+              returns:
+                type: JSX.Element
+                description: アプリケーションのメインコンテンツ
+            - name: App
+              description: |-
+                アプリケーションのルートコンポーネント
+
+                ブラウザルーターを設定し、React Router v7の機能を有効にして
+                アプリケーションコンテンツをラップします。
+              returns:
+                type: JSX.Element
+                description: アプリケーションのルートコンポーネント
+        - name: main.tsx
+          path: src/main.tsx
+          fileDescription: |-
+            メインエントリーポイントファイル
+            Reactアプリケーションのルートコンポーネントをレンダリングするためのエントリーポイントです。
+            StrictModeを有効にしてアプリケーションをレンダリングします。
+          externalImports:
+            - react-dom/client
+            - react
+          internalImports:
+            - ./App.tsx
+            - ./index.css
+        - name: vite-env.d.ts
+          path: src/vite-env.d.ts
+      directories:
+        __tests__:
+          name: __tests__
+          files:
+            - name: setup.ts
+              path: src/__tests__/setup.ts
+              externalImports:
+                - '@jest/globals'
+                - '@testing-library/jest-dom'
+          directories:
+            follows:
+              name: follows
+              files:
+                - name: create-follow.test.ts
+                  path: src/__tests__/follows/create-follow.test.ts
+                  internalImports:
+                    - ../utils/test-utils
+                    - ../../controllers/follows
+                - name: unfollow.test.ts
+                  path: src/__tests__/follows/unfollow.test.ts
+                  internalImports:
+                    - ../utils/test-utils
+                    - ../../controllers/follows
+            posts:
+              name: posts
+              files:
+                - name: PostContent.test.tsx
+                  path: src/__tests__/posts/PostContent.test.tsx
+                  externalImports:
+                    - react
+                    - '@testing-library/react'
+                    - '@testing-library/jest-dom'
+                    - '@jest/globals'
+                  internalImports:
+                    - '@/components/post/PostContent'
+                - name: text-post.test.tsx
+                  path: src/__tests__/posts/text-post.test.tsx
+                  externalImports:
+                    - '@jest/globals'
+                  internalImports:
+                    - '@/lib/firebase'
+                    - '@/lib/firebase'
+                    - '@/types/user'
+            users:
+              name: users
+              files:
+                - name: followers.test.ts
+                  path: src/__tests__/users/followers.test.ts
+                  internalImports:
+                    - ../utils/test-utils
+                    - ../../controllers/users
+                - name: user-following.test.ts
+                  path: src/__tests__/users/user-following.test.ts
+                  internalImports:
+                    - ../utils/test-utils
+                    - ../../controllers/users
+                - name: user-info.test.ts
+                  path: src/__tests__/users/user-info.test.ts
+                  internalImports:
+                    - ../utils/test-utils
+                    - ../../controllers/users
+                - name: user-update.test.ts
+                  path: src/__tests__/users/user-update.test.ts
+                  internalImports:
+                    - ../utils/test-utils
+                    - ../../controllers/users
+            utils:
+              name: utils
+              files:
+                - name: test-utils.ts
+                  path: src/__tests__/utils/test-utils.ts
+                  externalImports:
+                    - express
+                    - jsonwebtoken
+                  functions:
+                    - name: createMockRequest
+                    - name: createMockResponse
+                    - name: generateTestToken
+        components:
+          name: components
+          files:
+            - name: ApiTest.tsx
+              path: src/components/ApiTest.tsx
+              fileDescription: |-
+                API接続テストモジュール
+                バックエンドAPIとの接続状態をテストするためのコンポーネントを提供します。
+                APIエンドポイントからのレスポンスを表示し、接続状態を確認できます。
+              externalImports:
+                - react
+              internalImports:
+                - '@/components/ui/button'
+                - '@/components/ui/card'
+              functions:
+                - name: ApiTest
+                  description: |-
+                    APIテストコンポーネント
+
+                    バックエンドAPIとの接続状態をテストし、結果を表示するコンポーネントです。
+                    自動的にAPIエンドポイントにリクエストを送信し、レスポンスを表示します。
+                    また、手動で再テストを行うボタンも提供します。
+                  returns:
+                    type: JSX.Element
+                    description: APIテストコンポーネント
+            - name: CreatePostDialog.tsx
+              path: src/components/CreatePostDialog.tsx
+              fileDescription: |-
+                投稿作成ダイアログモジュール
+                ユーザーが新しい投稿を作成するためのダイアログコンポーネントを提供します。
+                テキスト、動画、音声、ストーリーなど、複数の投稿タイプをサポートしています。
+              externalImports:
+                - lucide-react
+                - react
+              internalImports:
+                - '@/components/ui/dialog'
+                - '@/components/ui/button'
+                - '@/components/post/TextPostForm'
+                - '@/components/post/VideoPostForm'
+                - '@/controllers/posts'
+                - '@/hooks/use-toast'
+              functions:
+                - name: CreatePostDialog
+                  description: |-
+                    投稿作成ダイアログコンポーネント
+
+                    ユーザーが選択した投稿タイプに基づいて適切なフォームを表示し、
+                    投稿の作成処理を行います。作成中はローディング表示、成功・失敗時には
+                    トースト通知を表示します。
+                  returns:
+                    type: JSX.Element
+                    description: 投稿作成ダイアログコンポーネント
+                  params:
+                    - name: props
+                      type: CreatePostDialogProps
+                      description: コンポーネントのプロパティ
+                    - name: props
+                      type: boolean
+                      description: '- ダイアログの表示状態'
+                    - name: props
+                      type: Function
+                      description: '- ダイアログを閉じるコールバック'
+            - name: FooterNav.tsx
+              path: src/components/FooterNav.tsx
+              fileDescription: |-
+                フッターナビゲーションモジュール
+                アプリケーションの下部に固定されたナビゲーションバーを提供します。
+                ホーム、検索、投稿作成、ディスカバー、イベント、プロフィールへのリンクを含みます。
+              externalImports:
+                - lucide-react
+                - react-router-dom
+                - react
+              internalImports:
+                - ./CreatePostDialog
+              functions:
+                - name: FooterNav
+                  description: |-
+                    フッターナビゲーションコンポーネント
+
+                    アプリケーションの下部に固定されたナビゲーションバーを表示します。
+                    現在のパスに応じてアクティブなリンクをハイライト表示します。
+                    投稿作成ボタンをクリックすると投稿作成ダイアログを表示します。
+                  returns:
+                    type: JSX.Element
+                    description: フッターナビゲーションコンポーネント
+            - name: Navbar.tsx
+              path: src/components/Navbar.tsx
+              fileDescription: |-
+                ナビゲーションバーモジュール
+                アプリケーションの上部に固定されたナビゲーションバーを提供します。
+                新規投稿作成、検索、通知、メッセージ、ユーザーメニューなどの機能へのアクセスを提供します。
+              externalImports:
+                - lucide-react
+                - react
+                - react-router-dom
+                - lucide-react
+              internalImports:
+                - '@/components/ui/button'
+                - '@/hooks/use-toast'
+                - '@/components/ui/dialog'
+                - '@/components/ui/scroll-area'
+                - '@/components/ui/avatar'
+                - '@/contexts/AuthContext'
+              functions:
+                - name: Navbar
+                  description: |-
+                    ナビゲーションバーコンポーネント
+
+                    アプリケーションの上部に表示される固定ナビゲーションバーです。
+                    アプリケーション名、各種機能ボタン（投稿作成、検索、通知など）、
+                    ユーザー関連の操作（プロフィール表示、ログアウトなど）を提供します。
+                  returns:
+                    type: JSX.Element
+                    description: ナビゲーションバーコンポーネント
+            - name: Post.tsx
+              path: src/components/Post.tsx
+              fileDescription: |-
+                投稿コンポーネントモジュール
+                ソーシャルメディア風の投稿表示コンポーネントを提供します。
+                テキスト、画像、動画、音声などの各種メディアタイプをサポートしています。
+              externalImports:
+                - react
+              internalImports:
+                - '@/components/ui/card'
+                - ./post/PostHeader
+                - ./post/PostContent
+                - ./post/PostActions
+                - ./post/PostComments
+                - '@/components/ui/dialog'
+              functions:
+                - name: Post
+                  description: |-
+                    投稿コンポーネント
+
+                    テキスト、画像、動画、音声などの各種メディアタイプに対応した投稿を表示します。
+                    投稿をクリックすると詳細表示ダイアログが開き、コメントの表示・追加も可能です。
+                  returns:
+                    type: JSX.Element
+                    description: 投稿コンポーネント
+                  params:
+                    - name: props
+                      type: PostProps
+                      description: 投稿コンポーネントのプロパティ
+                    - name: props
+                      type: Object
+                      description: '- 投稿者情報'
+                    - name: props
+                      type: string
+                      description: '- 投稿内容'
+                    - name: props
+                      type: '"text" | "image" | "video" | "audio"'
+                      description: '- 投稿のメディアタイプ'
+            - name: PrivateRoute.tsx
+              path: src/components/PrivateRoute.tsx
+              fileDescription: |-
+                プライベートルートコンポーネントモジュール
+                認証されたユーザーのみがアクセスできるルートを提供します。
+                認証されていないユーザーはログインページにリダイレクトされます。
+              externalImports:
+                - react-router-dom
+                - react
+              internalImports:
+                - '@/contexts/AuthContext'
+              functions:
+                - name: PrivateRoute
+                  description: |-
+                    プライベートルートコンポーネント
+
+                    認証状態を確認し、認証されているユーザーのみ子コンポーネントを表示します。
+                    認証されていない場合、ログインページにリダイレクトします。
+                    認証情報の読み込み中はローディングスピナーを表示します。
+                  returns:
+                    type: JSX.Element
+                    description: 認証状態に基づいて表示されるコンポーネント
+                  params:
+                    - name: props
+                      type: Object
+                      description: コンポーネントのプロパティ
+            - name: RichTextEditor.tsx
+              path: src/components/RichTextEditor.tsx
+              fileDescription: |-
+                リッチテキストエディタモジュール
+                シンプルなリッチテキストエディタコンポーネントを提供します。
+                Tiptapライブラリを使用して、テキストの書式設定機能（太字、斜体など）を備えています。
+              externalImports:
+                - react
+                - '@tiptap/react'
+                - '@tiptap/starter-kit'
+                - '@tiptap/extension-bold'
+                - '@tiptap/extension-italic'
+              functions:
+                - name: RichTextEditor
+          directories:
+            chat:
+              name: chat
+              files:
+                - name: ChatHeader.tsx
+                  path: src/components/chat/ChatHeader.tsx
+                  externalImports:
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/avatar'
+                  functions:
+                    - name: ChatHeader
+                - name: ChatMessage.tsx
+                  path: src/components/chat/ChatMessage.tsx
+                  internalImports:
+                    - '@/components/ui/avatar'
+                  functions:
+                    - name: ChatMessage
+                - name: MessageInput.tsx
+                  path: src/components/chat/MessageInput.tsx
+                  externalImports:
+                    - lucide-react
+                    - react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/input'
+                  functions:
+                    - name: MessageInput
+                - name: MessageList.tsx
+                  path: src/components/chat/MessageList.tsx
+                  internalImports:
+                    - '@/lib/utils'
+                    - '@/components/ui/avatar'
+                  functions:
+                    - name: MessageList
+            discover:
+              name: discover
+              files:
+                - name: AnalysisDetailView.tsx
+                  path: src/components/discover/AnalysisDetailView.tsx
+                  externalImports:
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/dialog'
+                  functions:
+                    - name: AnalysisDetailView
+                - name: AnalysisSection.tsx
+                  path: src/components/discover/AnalysisSection.tsx
+                  externalImports:
+                    - lucide-react
+                    - react
+                  internalImports:
+                    - '@/components/ui/card'
+                    - '@/components/ui/badge'
+                    - '@/components/ui/scroll-area'
+                    - '@/components/ui/separator'
+                    - ./AnalysisDetailView
+                  functions:
+                    - name: AnalysisSection
+                - name: EventsSection.tsx
+                  path: src/components/discover/EventsSection.tsx
+                  externalImports:
+                    - lucide-react
+                    - react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/card'
+                    - '@/components/ui/dialog'
+                    - '@/components/ui/input'
+                    - '@/components/ui/label'
+                    - '@/components/ui/textarea'
+                    - '@/components/ui/badge'
+                  functions:
+                    - name: EventsSection
+                - name: JapanMap3D.tsx
+                  path: src/components/discover/JapanMap3D.tsx
+                  externalImports:
+                    - react
+                    - three
+                  functions:
+                    - name: JapanMap3D
+                - name: RecommendedPostsSection.tsx
+                  path: src/components/discover/RecommendedPostsSection.tsx
+                  externalImports:
+                    - lucide-react
+                  internalImports:
+                    - '@/components/Post'
+                    - '@/lib/data'
+                  functions:
+                    - name: RecommendedPostsSection
+                - name: RegionalActivitySection.tsx
+                  path: src/components/discover/RegionalActivitySection.tsx
+                  externalImports:
+                    - lucide-react
+                    - react
+                  internalImports:
+                    - '@/components/ui/card'
+                    - '@/components/ui/badge'
+                    - '@/components/ui/select'
+                    - ./RegionDetailView
+                  functions:
+                    - name: RegionalActivitySection
+                - name: RegionCharacteristics.tsx
+                  path: src/components/discover/RegionCharacteristics.tsx
+                  internalImports:
+                    - '@/components/ui/card'
+                  functions:
+                    - name: RegionCharacteristics
+                - name: RegionDetailView.tsx
+                  path: src/components/discover/RegionDetailView.tsx
+                  externalImports:
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/dialog'
+                    - '@/components/ui/scroll-area'
+                    - ./RegionCharacteristics
+                    - ./RegionEvents
+                    - ./RegionPeople
+                    - ./RegionSpecialties
+                  functions:
+                    - name: RegionDetailView
+                - name: RegionEvents.tsx
+                  path: src/components/discover/RegionEvents.tsx
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/card'
+                  functions:
+                    - name: RegionEvents
+                - name: RegionPeople.tsx
+                  path: src/components/discover/RegionPeople.tsx
+                  internalImports:
+                    - '@/components/ui/card'
+                  functions:
+                    - name: RegionPeople
+                - name: RegionSpecialties.tsx
+                  path: src/components/discover/RegionSpecialties.tsx
+                  externalImports:
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/card'
+                    - '@/components/ui/button'
+                    - '@/components/ui/use-toast'
+                  functions:
+                    - name: RegionSpecialties
+            events:
+              name: events
+              files:
+                - name: EventCard.tsx
+                  path: src/components/events/EventCard.tsx
+                  externalImports:
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/card'
+                    - '@/components/ui/button'
+                    - '@/components/ui/badge'
+                  functions:
+                    - name: EventCard
+                - name: EventFilter.tsx
+                  path: src/components/events/EventFilter.tsx
+                  externalImports:
+                    - lucide-react
+                    - date-fns
+                    - date-fns/locale
+                    - react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/input'
+                    - '@/components/ui/label'
+                    - '@/components/ui/popover'
+                    - '@/components/ui/calendar'
+                    - '@/lib/utils'
+                    - '@/components/ui/select'
+                  functions:
+                    - name: EventFilter
+            layout:
+              name: layout
+              files:
+                - name: footer.tsx
+                  path: src/components/layout/footer.tsx
+                  externalImports:
+                    - lucide-react
+                    - react-router-dom
+                  internalImports:
+                    - '@/components/ui/button'
+                  functions:
+                    - name: Footer
+                - name: header.tsx
+                  path: src/components/layout/header.tsx
+                  externalImports:
+                    - lucide-react
+                    - react-router-dom
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/contexts/AuthContext'
+                    - '@/components/ui/use-toast'
+                  functions:
+                    - name: Header
+            post:
+              name: post
+              files:
+                - name: post-card.tsx
+                  path: src/components/post/post-card.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/avatar'
+                    - '@/components/ui/dialog'
+                    - '@/components/ui/textarea'
+                  functions:
+                    - name: PostCard
+                - name: PostActions.tsx
+                  path: src/components/post/PostActions.tsx
+                  externalImports:
+                    - lucide-react
+                    - react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/dialog'
+                    - '@/lib/utils'
+                  functions:
+                    - name: PostActions
+                - name: PostComments.tsx
+                  path: src/components/post/PostComments.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/input'
+                    - '@/components/ui/avatar'
+                    - '@/hooks/use-toast'
+                  functions:
+                    - name: PostComments
+                - name: PostContent.tsx
+                  path: src/components/post/PostContent.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                    - react-markdown
+                  internalImports:
+                    - '@/components/ui/button'
+                  functions:
+                    - name: PostContent
+                - name: PostHeader.tsx
+                  path: src/components/post/PostHeader.tsx
+                  internalImports:
+                    - '@/components/ui/avatar'
+                  functions:
+                    - name: PostHeader
+                - name: TextPostForm.tsx
+                  path: src/components/post/TextPostForm.tsx
+                  externalImports:
+                    - react
+                  internalImports:
+                    - '@/components/ui/input'
+                    - '@/components/ui/textarea'
+                    - '@/components/ui/button'
+                  functions:
+                    - name: TextPostForm
+                - name: VideoPostForm.tsx
+                  path: src/components/post/VideoPostForm.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/textarea'
+                    - '@/components/ui/label'
+                    - '@/components/ui/switch'
+                    - '@/components/ui/progress'
+                  functions:
+                    - name: VideoPostForm
+            profile:
+              name: profile
+              files:
+                - name: ProfileHeader.tsx
+                  path: src/components/profile/ProfileHeader.tsx
+                  fileDescription: |-
+                    プロフィールヘッダーモジュール
+                    ユーザープロフィールの上部セクションを表示するコンポーネントを提供します。
+                    プロフィール画像、名前、自己紹介、統計情報、音声再生機能などが含まれています。
+                  externalImports:
+                    - lucide-react
+                    - react-router-dom
+                    - react
+                    - firebase/firestore
+                  internalImports:
+                    - '@/components/ui/avatar'
+                    - '@/components/ui/button'
+                    - '@/components/ui/dialog'
+                    - '@/pages/profile/edit-form'
+                    - '@/contexts/AuthContext'
+                    - '@/lib/firebase'
+                  functions:
+                    - name: ProfileHeader
+                      description: |-
+                        プロフィールヘッダーコンポーネント
+
+                        ユーザープロフィールの上部セクションを表示します。プロフィール画像、名前、
+                        自己紹介文、音声プロフィール再生機能、ショップリンク、統計情報などを含みます。
+                        プロフィール編集機能も統合されています。
+                      returns:
+                        type: JSX.Element
+                        description: プロフィールヘッダーコンポーネント
+                      params:
+                        - name: props
+                          type: ProfileHeaderProps
+                          description: コンポーネントのプロパティ
+                - name: ProfileTabs.tsx
+                  path: src/components/profile/ProfileTabs.tsx
+                  fileDescription: |-
+                    プロフィールタブモジュール
+                    ユーザープロフィールのタブ付きセクションを提供します。
+                    メディア、音声、テキスト、ハイライト、イベントなどの異なるコンテンツタイプを
+                    整理して表示します。
+                  internalImports:
+                    - '@/components/ui/tabs'
+                    - '@/components/ui/card'
+                    - '@/components/Post'
+                    - '@/lib/data'
+                  functions:
+                    - name: ProfileTabs
+                      description: |-
+                        プロフィールタブコンポーネント
+
+                        ユーザープロフィールの異なるコンテンツタイプを表示するためのタブインターフェースを提供します。
+                        メディア、音声、テキスト、ハイライト、イベントなどのタブが含まれています。
+                        各タブは関連するコンテンツタイプのデータを表示します。
+                      returns:
+                        type: JSX.Element
+                        description: プロフィールタブコンポーネント
+                      params:
+                        - name: props
+                          type: ProfileTabsProps
+                          description: コンポーネントのプロパティ
+                        - name: props
+                          type: string
+                          description: '- 現在選択されているタブ'
+                        - name: props
+                          type: Function
+                          description: '- 投稿が選択されたときのハンドラー関数'
+            ui:
+              name: ui
+              files:
+                - name: accordion.tsx
+                  path: src/components/ui/accordion.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-accordion'
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                - name: alert-dialog.tsx
+                  path: src/components/ui/alert-dialog.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-alert-dialog'
+                  internalImports:
+                    - '@/lib/utils'
+                    - '@/components/ui/button'
+                  functions:
+                    - name: AlertDialogHeader
+                    - name: AlertDialogFooter
+                - name: alert.tsx
+                  path: src/components/ui/alert.tsx
+                  externalImports:
+                    - react
+                    - class-variance-authority
+                  internalImports:
+                    - '@/lib/utils'
+                - name: aspect-ratio.tsx
+                  path: src/components/ui/aspect-ratio.tsx
+                  externalImports:
+                    - '@radix-ui/react-aspect-ratio'
+                - name: avatar.tsx
+                  path: src/components/ui/avatar.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-avatar'
+                  internalImports:
+                    - '@/lib/utils'
+                - name: badge.tsx
+                  path: src/components/ui/badge.tsx
+                  externalImports:
+                    - react
+                    - class-variance-authority
+                  internalImports:
+                    - '@/lib/utils'
+                    - ./badge/variants
+                  functions:
+                    - name: Badge
+                - name: breadcrumb.tsx
+                  path: src/components/ui/breadcrumb.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-slot'
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                  functions:
+                    - name: BreadcrumbSeparator
+                    - name: BreadcrumbEllipsis
+                - name: button.tsx
+                  path: src/components/ui/button.tsx
+                  fileDescription: |-
+                    ボタンコンポーネントモジュール
+                    アプリケーション全体で使用される汎用的なボタンコンポーネントを提供します。
+                    様々なスタイルバリアントとサイズをサポートし、アクセシビリティに配慮しています。
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-slot'
+                    - class-variance-authority
+                  internalImports:
+                    - '@/lib/utils'
+                    - ./button/variants
+                - name: calendar.tsx
+                  path: src/components/ui/calendar.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                    - react-day-picker
+                  internalImports:
+                    - '@/lib/utils'
+                    - '@/components/ui/button'
+                  functions:
+                    - name: Calendar
+                - name: card.tsx
+                  path: src/components/ui/card.tsx
+                  fileDescription: |-
+                    カードコンポーネントモジュール
+                    アプリケーション全体で使用される汎用的なカードコンポーネントセットを提供します。
+                    コンテンツをグループ化し、視覚的に区切るための一貫したデザインパターンを実装しています。
+                  externalImports:
+                    - react
+                  internalImports:
+                    - '@/lib/utils'
+                - name: carousel.tsx
+                  path: src/components/ui/carousel.tsx
+                  externalImports:
+                    - react
+                    - embla-carousel-react
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                    - '@/components/ui/button'
+                  functions:
+                    - name: useCarousel
+                - name: chart.tsx
+                  path: src/components/ui/chart.tsx
+                  externalImports:
+                    - react
+                    - recharts
+                  internalImports:
+                    - '@/lib/utils'
+                  functions:
+                    - name: useChart
+                    - name: getPayloadConfigFromPayload
+                    - name: ChartStyle
+                - name: checkbox.tsx
+                  path: src/components/ui/checkbox.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-checkbox'
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                - name: collapsible.tsx
+                  path: src/components/ui/collapsible.tsx
+                  externalImports:
+                    - '@radix-ui/react-collapsible'
+                - name: command.tsx
+                  path: src/components/ui/command.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-dialog'
+                    - cmdk
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                    - '@/components/ui/dialog'
+                  functions:
+                    - name: CommandDialog
+                    - name: CommandShortcut
+                - name: context-menu.tsx
+                  path: src/components/ui/context-menu.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-context-menu'
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                  functions:
+                    - name: ContextMenuShortcut
+                - name: dialog.tsx
+                  path: src/components/ui/dialog.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-dialog'
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                  functions:
+                    - name: DialogHeader
+                    - name: DialogFooter
+                - name: drawer.tsx
+                  path: src/components/ui/drawer.tsx
+                  externalImports:
+                    - react
+                    - vaul
+                  internalImports:
+                    - '@/lib/utils'
+                  functions:
+                    - name: Drawer
+                    - name: DrawerHeader
+                    - name: DrawerFooter
+                - name: dropdown-menu.tsx
+                  path: src/components/ui/dropdown-menu.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-dropdown-menu'
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                  functions:
+                    - name: DropdownMenuShortcut
+                - name: form.tsx
+                  path: src/components/ui/form.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-label'
+                    - '@radix-ui/react-slot'
+                    - react-hook-form
+                  internalImports:
+                    - '@/lib/utils'
+                    - '@/components/ui/label'
+                    - ./form/context
+                    - ./form/hooks
+                  functions:
+                    - name: useFormField
+                    - name: FormField
+                - name: hover-card.tsx
+                  path: src/components/ui/hover-card.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-hover-card'
+                  internalImports:
+                    - '@/lib/utils'
+                - name: input-otp.tsx
+                  path: src/components/ui/input-otp.tsx
+                  externalImports:
+                    - react
+                    - input-otp
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                - name: input.tsx
+                  path: src/components/ui/input.tsx
+                  externalImports:
+                    - react
+                  internalImports:
+                    - '@/lib/utils'
+                - name: label.tsx
+                  path: src/components/ui/label.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-label'
+                    - class-variance-authority
+                  internalImports:
+                    - '@/lib/utils'
+                - name: menubar.tsx
+                  path: src/components/ui/menubar.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-menubar'
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                  functions:
+                    - name: MenubarShortcut
+                - name: navigation-menu.tsx
+                  path: src/components/ui/navigation-menu.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-navigation-menu'
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                    - ./navigation-menu/styles
+                - name: pagination.tsx
+                  path: src/components/ui/pagination.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                    - '@/components/ui/button'
+                  functions:
+                    - name: Pagination
+                    - name: PaginationLink
+                    - name: PaginationPrevious
+                    - name: PaginationNext
+                    - name: PaginationEllipsis
+                - name: popover.tsx
+                  path: src/components/ui/popover.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-popover'
+                  internalImports:
+                    - '@/lib/utils'
+                - name: progress.tsx
+                  path: src/components/ui/progress.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-progress'
+                  internalImports:
+                    - '@/lib/utils'
+                - name: radio-group.tsx
+                  path: src/components/ui/radio-group.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-radio-group'
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                - name: resizable.tsx
+                  path: src/components/ui/resizable.tsx
+                  externalImports:
+                    - lucide-react
+                    - react-resizable-panels
+                  internalImports:
+                    - '@/lib/utils'
+                  functions:
+                    - name: ResizablePanelGroup
+                    - name: ResizableHandle
+                - name: scroll-area.tsx
+                  path: src/components/ui/scroll-area.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-scroll-area'
+                  internalImports:
+                    - '@/lib/utils'
+                - name: select.tsx
+                  path: src/components/ui/select.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-select'
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                - name: separator.tsx
+                  path: src/components/ui/separator.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-separator'
+                  internalImports:
+                    - '@/lib/utils'
+                - name: sheet.tsx
+                  path: src/components/ui/sheet.tsx
+                  externalImports:
+                    - '@radix-ui/react-dialog'
+                    - class-variance-authority
+                    - lucide-react
+                    - react
+                  internalImports:
+                    - '@/lib/utils'
+                  functions:
+                    - name: SheetHeader
+                    - name: SheetFooter
+                - name: sidebar.tsx
+                  path: src/components/ui/sidebar.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-slot'
+                    - class-variance-authority
+                    - lucide-react
+                  internalImports:
+                    - '@/hooks/use-mobile'
+                    - '@/lib/utils'
+                    - '@/components/ui/button'
+                    - '@/components/ui/input'
+                    - '@/components/ui/separator'
+                    - '@/components/ui/sheet'
+                    - '@/components/ui/skeleton'
+                    - '@/components/ui/tooltip'
+                    - ./sidebar/constants
+                    - ./sidebar/context
+                    - ./sidebar/hooks
+                    - ./sidebar/styles
+                - name: skeleton.tsx
+                  path: src/components/ui/skeleton.tsx
+                  internalImports:
+                    - '@/lib/utils'
+                  functions:
+                    - name: Skeleton
+                - name: slider.tsx
+                  path: src/components/ui/slider.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-slider'
+                  internalImports:
+                    - '@/lib/utils'
+                - name: sonner.tsx
+                  path: src/components/ui/sonner.tsx
+                  externalImports:
+                    - next-themes
+                    - sonner
+                  functions:
+                    - name: Toaster
+                - name: switch.tsx
+                  path: src/components/ui/switch.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-switch'
+                  internalImports:
+                    - '@/lib/utils'
+                - name: table.tsx
+                  path: src/components/ui/table.tsx
+                  externalImports:
+                    - react
+                  internalImports:
+                    - '@/lib/utils'
+                - name: tabs.tsx
+                  path: src/components/ui/tabs.tsx
+                  fileDescription: |-
+                    タブコンポーネントモジュール
+                    アプリケーション全体で使用される汎用的なタブインターフェースコンポーネントを提供します。
+                    Radix UIのタブプリミティブをベースにしたアクセシブルなタブ実装です。
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-tabs'
+                  internalImports:
+                    - '@/lib/utils'
+                - name: textarea.tsx
+                  path: src/components/ui/textarea.tsx
+                  externalImports:
+                    - react
+                  internalImports:
+                    - '@/lib/utils'
+                - name: toast.tsx
+                  path: src/components/ui/toast.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-toast'
+                    - class-variance-authority
+                    - lucide-react
+                  internalImports:
+                    - '@/lib/utils'
+                - name: toaster.tsx
+                  path: src/components/ui/toaster.tsx
+                  internalImports:
+                    - '@/hooks/use-toast'
+                    - '@/components/ui/toast'
+                  functions:
+                    - name: Toaster
+                - name: toggle-group.tsx
+                  path: src/components/ui/toggle-group.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-toggle-group'
+                    - class-variance-authority
+                  internalImports:
+                    - '@/lib/utils'
+                    - '@/components/ui/toggle'
+                - name: toggle.tsx
+                  path: src/components/ui/toggle.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-toggle'
+                    - class-variance-authority
+                  internalImports:
+                    - '@/lib/utils'
+                    - ./toggle/variants
+                - name: tooltip.tsx
+                  path: src/components/ui/tooltip.tsx
+                  externalImports:
+                    - react
+                    - '@radix-ui/react-tooltip'
+                  internalImports:
+                    - '@/lib/utils'
+                - name: use-toast.ts
+                  path: src/components/ui/use-toast.ts
+                  internalImports:
+                    - '@/hooks/use-toast'
+              directories:
+                badge:
+                  name: badge
+                  files:
+                    - name: variants.ts
+                      path: src/components/ui/badge/variants.ts
+                      externalImports:
+                        - class-variance-authority
+                button:
+                  name: button
+                  files:
+                    - name: variants.ts
+                      path: src/components/ui/button/variants.ts
+                      externalImports:
+                        - class-variance-authority
+                form:
+                  name: form
+                  files:
+                    - name: context.ts
+                      path: src/components/ui/form/context.ts
+                      externalImports:
+                        - react
+                      internalImports:
+                        - ./types
+                    - name: hooks.ts
+                      path: src/components/ui/form/hooks.ts
+                      externalImports:
+                        - react
+                        - react-hook-form
+                      internalImports:
+                        - ./context
+                      functions:
+                        - name: useFormField
+                    - name: types.ts
+                      path: src/components/ui/form/types.ts
+                      externalImports:
+                        - react-hook-form
+                navigation-menu:
+                  name: navigation-menu
+                  files:
+                    - name: styles.ts
+                      path: src/components/ui/navigation-menu/styles.ts
+                      externalImports:
+                        - class-variance-authority
+                sidebar:
+                  name: sidebar
+                  files:
+                    - name: constants.ts
+                      path: src/components/ui/sidebar/constants.ts
+                    - name: context.ts
+                      path: src/components/ui/sidebar/context.ts
+                      externalImports:
+                        - react
+                      internalImports:
+                        - ./types
+                    - name: hooks.ts
+                      path: src/components/ui/sidebar/hooks.ts
+                      externalImports:
+                        - react
+                      internalImports:
+                        - ./context
+                      functions:
+                        - name: useSidebar
+                    - name: styles.ts
+                      path: src/components/ui/sidebar/styles.ts
+                      externalImports:
+                        - class-variance-authority
+                    - name: types.ts
+                      path: src/components/ui/sidebar/types.ts
+                toggle:
+                  name: toggle
+                  files:
+                    - name: variants.ts
+                      path: src/components/ui/toggle/variants.ts
+                      externalImports:
+                        - class-variance-authority
+        contexts:
+          name: contexts
+          files:
+            - name: AuthContext.tsx
+              path: src/contexts/AuthContext.tsx
+              fileDescription: |-
+                認証コンテキストモジュール
+                ユーザー認証の状態とメソッドを提供するコンテキストです。
+                Firebase Authenticationを使用してユーザーのログイン・ログアウト機能を提供します。
+              externalImports:
+                - react
+                - firebase/auth
+              internalImports:
+                - '@/types/user'
+                - '@/lib/firebase'
+              functions:
+                - name: AuthProvider
+                  description: |-
+                    認証プロバイダーコンポーネント
+
+                    アプリケーション全体に認証状態と認証機能を提供します。
+                    Firebase Authenticationの状態変更を監視し、ユーザー情報を管理します。
+                    開発環境では自動的にテストユーザーでログインできる機能も提供します。
+                  returns:
+                    type: JSX.Element
+                    description: 認証プロバイダーコンポーネント
+                  params:
+                    - name: props
+                      type: Object
+                      description: コンポーネントのプロパティ
+                - name: createUserFromFirebase
+                - name: useAuth
+        controllers:
+          name: controllers
+          files:
+            - name: follows.ts
+              path: src/controllers/follows.ts
+              fileDescription: |-
+                フォロー関連のコントローラーモジュール
+                ユーザー間のフォロー関係を管理する機能を提供します。
+                フォローの作成と解除の操作をサポートしています。
+              externalImports:
+                - express
+              functions:
+                - name: createFollow
+                - name: unfollow
+            - name: posts.ts
+              path: src/controllers/posts.ts
+              fileDescription: |-
+                投稿関連のコントローラーモジュール
+                投稿の作成、取得、更新、削除などの機能を提供します。
+                Supabaseを使用してデータの永続化を行い、テキスト投稿や動画投稿などの
+                複数の投稿タイプをサポートしています。
+              externalImports:
+                - express
+              internalImports:
+                - ../lib/supabase
+                - ../types/post
+              functions:
+                - name: uploadVideoToYouTube
+                  description: |-
+                    YouTubeに動画をアップロードする関数
+
+                    開発環境では模擬的な処理を行い、本番環境では実際のYouTube Data APIを使用します。
+                    アップロード進捗の更新も行います。
+                  returns:
+                    type: Promise<string>
+                    description: アップロードされた動画のYouTube URL
+                  params:
+                    - name: videoFile
+                      type: File
+                      description: アップロードする動画ファイル
+                    - name: title
+                      type: string
+                      description: 動画のタイトル
+                    - name: description
+                      type: string
+                      description: 動画の説明
+                - name: extractVideoId
+                  description: |-
+                    YouTube URLから動画IDを抽出する関数
+
+                    様々な形式のYouTube URLから動画IDを抽出します。
+                  returns:
+                    type: string
+                    description: 抽出された動画ID
+                  params:
+                    - name: url
+                      type: string
+                      description: YouTubeのURL
+                - name: createPost
+            - name: users.ts
+              path: src/controllers/users.ts
+              fileDescription: |-
+                ユーザー関連のコントローラーモジュール
+                ユーザー情報の取得、更新、およびフォロー関連の機能を提供します。
+                ユーザープロフィール、フォロー/フォロワーリストなどの操作をサポートしています。
+              externalImports:
+                - express
+              functions:
+                - name: getUserInfo
+                - name: getUserFollowing
+                - name: updateUserInfo
+                - name: getUserFollowers
+        hooks:
+          name: hooks
+          files:
+            - name: use-mobile.tsx
+              path: src/hooks/use-mobile.tsx
+              fileDescription: |-
+                モバイルデバイス検出フックモジュール
+                現在の画面幅がモバイル向けかどうかを判定するためのカスタムフックを提供します。
+                レスポンシブなUIの実装に役立ちます。
+              externalImports:
+                - react
+              functions:
+                - name: useIsMobile
+                  description: |-
+                    現在の画面がモバイルサイズかどうかを判定するカスタムフック
+
+                    このフックは画面のサイズを監視し、モバイルブレークポイント以下の場合はtrueを返します。
+                    コンポーネント内で使用することで、画面サイズに応じた条件付きレンダリングが可能になります。
+                  returns:
+                    type: boolean
+                    description: 現在の画面がモバイルサイズの場合はtrue、そうでない場合はfalse
+            - name: use-toast.ts
+              path: src/hooks/use-toast.ts
+              fileDescription: |-
+                トースト通知システムモジュール
+                アプリケーション全体で使用できるトースト通知機能を提供します。
+                このモジュールは通知の表示、更新、削除などの操作を管理します。
+              externalImports:
+                - react
+              internalImports:
+                - '@/components/ui/toast'
+              functions:
+                - name: genId
+                  description: トースト通知の一意識別子を生成する関数
+                  returns:
+                    type: string
+                    description: 生成された一意識別子
+                - name: dispatch
+                  description: アクションをディスパッチし、状態を更新する関数
+                  params:
+                    - name: action
+                      type: Action
+                      description: ディスパッチするアクション
+                - name: toast
+                  description: トースト通知を作成する関数
+                  returns:
+                    type: Function
+                    description: update - トースト通知を更新する関数
+                  params:
+                    - name: props
+                      type: Toast
+                      description: トースト通知のプロパティ
+                - name: useToast
+                  description: |-
+                    トースト通知を使用するためのカスタムフック
+
+                    このフックを使用すると、コンポーネント内からトースト通知を表示、更新、削除できます。
+                  returns:
+                    type: Function
+                    description: dismiss - 指定されたトースト通知または全てのトースト通知を閉じる関数
+                - name: addToRemoveQueue
+                - name: reducer
+        lib:
+          name: lib
+          files:
+            - name: data.ts
+              path: src/lib/data.ts
+              fileDescription: |-
+                データモジュール
+                アプリケーションで使用するサンプルデータやモックデータを提供します。
+                開発やテスト環境で使用するためのデータ構造が定義されています。
+                サンプル投稿データ
+                テスト用の投稿データの配列です。テキスト、画像、音声などの
+                異なるメディアタイプの投稿サンプルが含まれています。
+            - name: firebase.ts
+              path: src/lib/firebase.ts
+              fileDescription: |-
+                Firebaseの初期化と関連機能モジュール
+                Firebaseの初期化、認証、Firestore、ストレージへの接続を管理します。
+                また、テキスト投稿の作成やユーザープロフィールの更新などの機能も提供します。
+              externalImports:
+                - firebase/app
+                - firebase/auth
+                - firebase/firestore
+                - firebase/storage
+              internalImports:
+                - '@/types/user'
+              functions:
+                - name: createTextPost
+                - name: updateUserProfile
+            - name: playwright-tests.ts
+              path: src/lib/playwright-tests.ts
+              fileDescription: |-
+                Playwrightテストモジュール
+                アプリケーションのUIおよび機能テストを自動化するためのPlaywrightテストスイートを提供します。
+                実際のユーザー操作をシミュレートし、UI要素の表示や機能が期待通りに動作することを検証します。
+              externalImports:
+                - '@playwright/test'
+            - name: storage.ts
+              path: src/lib/storage.ts
+              fileDescription: |-
+                ストレージモジュール
+                画像や音声ファイルのアップロード機能を提供します。
+                Firebase StorageとAWS S3への接続とファイルの格納を管理します。
+              externalImports:
+                - '@aws-sdk/client-s3'
+                - firebase/storage
+              internalImports:
+                - ./firebase
+              functions:
+                - name: uploadImage
+                - name: uploadAudio
+            - name: supabase.ts
+              path: src/lib/supabase.ts
+              fileDescription: |-
+                Supabaseクライアント設定モジュール
+                Supabaseへの接続を管理し、アプリケーション全体で使用できるクライアントインスタンスを提供します。
+                サーバーサイド（Node.js）とクライアントサイド（ブラウザ）の両方の環境に対応しています。
+              externalImports:
+                - '@supabase/supabase-js'
+            - name: utils.ts
+              path: src/lib/utils.ts
+              fileDescription: |-
+                ユーティリティ関数モジュール
+                アプリケーション全体で使用される共通ユーティリティ関数を提供します。
+              externalImports:
+                - clsx
+                - tailwind-merge
+              functions:
+                - name: cn
+                  description: |-
+                    クラス名を結合するユーティリティ関数
+
+                    clsxとtailwind-mergeを組み合わせて、条件付きクラス名を効率的に結合します。
+                    Tailwindのクラス名の衝突を解決し、最適化された形で結合します。
+                  returns:
+                    type: string
+                    description: 最適化された結合クラス名
+                  params:
+                    - name: inputs
+                      type: ...ClassValue[]
+                      description: 結合するクラス名（配列、オブジェクト、文字列など）
+        pages:
+          name: pages
+          files:
+            - name: Discover.tsx
+              path: src/pages/Discover.tsx
+              externalImports:
+                - react
+                - lucide-react
+              internalImports:
+                - '@/components/ui/card'
+                - '@/components/ui/scroll-area'
+                - '@/components/discover/AnalysisSection'
+                - '@/components/discover/RegionalActivitySection'
+                - '@/components/discover/EventsSection'
+                - '@/components/discover/RecommendedPostsSection'
+                - '@/components/ui/button'
+              functions:
+                - name: Discover
+            - name: Index.tsx
+              path: src/pages/Index.tsx
+              externalImports:
+                - react
+              internalImports:
+                - '@/components/ui/button'
+                - '@/components/Navbar'
+                - '@/components/Post'
+                - '@/components/ApiTest'
+                - '@/components/ui/alert-dialog'
+              functions:
+                - name: Index
+            - name: notifications.tsx
+              path: src/pages/notifications.tsx
+              externalImports:
+                - lucide-react
+                - react-router-dom
+              internalImports:
+                - '@/components/ui/button'
+                - '@/components/ui/card'
+                - '@/components/ui/scroll-area'
+              functions:
+                - name: NotificationsPage
+            - name: Profile.tsx
+              path: src/pages/Profile.tsx
+              externalImports:
+                - react
+              internalImports:
+                - '@/components/ui/dialog'
+                - '@/components/FooterNav'
+                - '@/components/profile/ProfileHeader'
+                - '@/components/profile/ProfileTabs'
+                - '@/components/Post'
+                - '@/types/post'
+              functions:
+                - name: Profile
+            - name: Search.tsx
+              path: src/pages/Search.tsx
+              externalImports:
+                - react
+                - lucide-react
+              internalImports:
+                - '@/components/ui/button'
+                - '@/components/ui/input'
+                - '@/components/ui/card'
+                - '@/components/ui/scroll-area'
+                - '@/hooks/use-toast'
+                - '@/components/chat/ChatMessage'
+              functions:
+                - name: Search
+            - name: timeline.tsx
+              path: src/pages/timeline.tsx
+              externalImports:
+                - react
+              internalImports:
+                - '@/components/ui/button'
+                - '@/components/ui/tabs'
+                - '@/components/post/post-card'
+              functions:
+                - name: TimelinePage
+          directories:
+            auth:
+              name: auth
+              files:
+                - name: login.tsx
+                  path: src/pages/auth/login.tsx
+                  externalImports:
+                    - react
+                    - react-router-dom
+                    - react-icons/fc
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/checkbox'
+                    - '@/components/ui/use-toast'
+                    - '@/contexts/AuthContext'
+                  functions:
+                    - name: LoginPage
+            chat:
+              name: chat
+              files:
+                - name: '[id].tsx'
+                  path: src/pages/chat/[id].tsx
+                  externalImports:
+                    - react-router-dom
+                  internalImports:
+                    - '@/components/chat/ChatHeader'
+                    - '@/components/chat/MessageList'
+                    - '@/components/chat/MessageInput'
+                  functions:
+                    - name: ChatPage
+            discovery:
+              name: discovery
+              files:
+                - name: index.tsx
+                  path: src/pages/discovery/index.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/tabs'
+                    - '@/components/ui/card'
+                    - '@/components/ui/button'
+                    - '@/components/ui/avatar'
+                  functions:
+                    - name: DiscoveryPage
+              directories:
+                analytics:
+                  name: analytics
+                  files:
+                    - name: '[id].tsx'
+                      path: src/pages/discovery/analytics/[id].tsx
+                      externalImports:
+                        - next/router
+                        - lucide-react
+                      internalImports:
+                        - '@/components/ui/button'
+                        - '@/components/ui/card'
+                      functions:
+                        - name: AnalyticsDetailPage
+                locations:
+                  name: locations
+                  files:
+                    - name: '[id].tsx'
+                      path: src/pages/discovery/locations/[id].tsx
+                      externalImports:
+                        - next/router
+                        - lucide-react
+                      internalImports:
+                        - '@/components/ui/button'
+                        - '@/components/ui/card'
+                        - '@/components/ui/tabs'
+                        - '@/pages/events/event-card'
+                        - '@/components/post/post-card'
+                      functions:
+                        - name: LocationDetailPage
+                recommendations:
+                  name: recommendations
+                  files:
+                    - name: '[id].tsx'
+                      path: src/pages/discovery/recommendations/[id].tsx
+                      externalImports:
+                        - next/router
+                        - react
+                        - lucide-react
+                      internalImports:
+                        - '@/components/ui/button'
+                        - '@/components/ui/card'
+                        - '@/components/ui/tabs'
+                        - '@/components/ui/avatar'
+                        - '@/components/post/post-card'
+                      functions:
+                        - name: RecommendationDetailPage
+            events:
+              name: events
+              files:
+                - name: event-card.tsx
+                  path: src/pages/events/event-card.tsx
+                  externalImports:
+                    - lucide-react
+                    - date-fns
+                    - date-fns/locale
+                  internalImports:
+                    - '@/components/ui/avatar'
+                  functions:
+                    - name: EventCard
+                - name: event-detail.tsx
+                  path: src/pages/events/event-detail.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                    - date-fns
+                    - date-fns/locale
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/avatar'
+                    - '@/components/post/post-card'
+                  functions:
+                    - name: EventDetail
+                - name: event-form.tsx
+                  path: src/pages/events/event-form.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/input'
+                    - '@/components/ui/textarea'
+                    - '@/components/ui/label'
+                    - '@/components/ui/switch'
+                  functions:
+                    - name: EventForm
+                - name: index.tsx
+                  path: src/pages/events/index.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/events/EventCard'
+                    - '@/components/events/EventFilter'
+                  functions:
+                    - name: EventsPage
+            messages:
+              name: messages
+              files:
+                - name: index.tsx
+                  path: src/pages/messages/index.tsx
+                  externalImports:
+                    - react-router-dom
+                  internalImports:
+                    - '@/components/ui/avatar'
+                    - '@/components/ui/badge'
+                    - '@/components/FooterNav'
+                  functions:
+                    - name: MessagesPage
+            post:
+              name: post
+              files:
+                - name: audio.tsx
+                  path: src/pages/post/audio.tsx
+                  externalImports:
+                    - react
+                    - react-router-dom
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/textarea'
+                    - '@/components/ui/label'
+                    - '@/lib/utils'
+                  functions:
+                    - name: AudioPostPage
+                - name: image.tsx
+                  path: src/pages/post/image.tsx
+                  externalImports:
+                    - react
+                    - react-router-dom
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/textarea'
+                    - '@/components/ui/label'
+                    - '@/components/ui/carousel'
+                    - '@/lib/utils'
+                    - '@/lib/storage'
+                  functions:
+                    - name: ImagePostPage
+                - name: index.tsx
+                  path: src/pages/post/index.tsx
+                  externalImports:
+                    - react-router-dom
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                  functions:
+                    - name: PostTypePage
+                - name: text.tsx
+                  path: src/pages/post/text.tsx
+                  externalImports:
+                    - react
+                    - react-router-dom
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/switch'
+                    - '@/components/ui/label'
+                    - '@/components/ui/use-toast'
+                    - '@/lib/firebase'
+                    - '@/lib/storage'
+                    - '@/contexts/AuthContext'
+                    - '@/components/RichTextEditor'
+                  functions:
+                    - name: TextPostPage
+                - name: video.tsx
+                  path: src/pages/post/video.tsx
+                  externalImports:
+                    - react
+                    - react-router-dom
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/textarea'
+                    - '@/components/ui/label'
+                    - '@/components/ui/switch'
+                    - '@/lib/utils'
+                  functions:
+                    - name: VideoPostPage
+            profile:
+              name: profile
+              files:
+                - name: edit-form.tsx
+                  path: src/pages/profile/edit-form.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/input'
+                    - '@/components/ui/textarea'
+                    - '@/components/ui/label'
+                    - '@/components/ui/avatar'
+                    - '@/components/ui/dialog'
+                    - '@/components/ui/select'
+                    - '@/contexts/AuthContext'
+                    - '@/lib/storage'
+                    - '@/lib/firebase'
+                  functions:
+                    - name: ProfileEditForm
+                - name: index.tsx
+                  path: src/pages/profile/index.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/tabs'
+                    - '@/components/ui/avatar'
+                    - '@/components/post/post-card'
+                    - '@/components/ui/dialog'
+                    - ./edit-form
+                  functions:
+                    - name: ProfilePage
+            search:
+              name: search
+              files:
+                - name: chat-message.tsx
+                  path: src/pages/search/chat-message.tsx
+                  internalImports:
+                    - '@/components/ui/avatar'
+                    - '@/lib/utils'
+                  functions:
+                    - name: ChatMessage
+                - name: index.tsx
+                  path: src/pages/search/index.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/input'
+                    - '@/components/ui/tabs'
+                    - '@/components/post/post-card'
+                    - ./chat-message
+                  functions:
+                    - name: SearchPage
+            shop:
+              name: shop
+              files:
+                - name: index.tsx
+                  path: src/pages/shop/index.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/input'
+                    - '@/components/ui/select'
+                    - '@/components/ui/dialog'
+                    - ./product-card
+                    - ./product-detail
+                  functions:
+                    - name: ShopPage
+                - name: product-card.tsx
+                  path: src/pages/shop/product-card.tsx
+                  internalImports:
+                    - '@/components/ui/avatar'
+                  functions:
+                    - name: ProductCard
+                - name: product-detail.tsx
+                  path: src/pages/shop/product-detail.tsx
+                  externalImports:
+                    - react
+                    - lucide-react
+                  internalImports:
+                    - '@/components/ui/button'
+                    - '@/components/ui/avatar'
+                  functions:
+                    - name: ProductDetail
+        tests:
+          name: tests
+          files:
+            - name: api.test.ts
+              path: src/tests/api.test.ts
+              externalImports:
+                - vitest
+                - axios
+        types:
+          name: types
+          files:
+            - name: post.ts
+              path: src/types/post.ts
+              fileDescription: >-
+                投稿関連モデルの型定義
+
+                アプリケーションで使用される各種投稿タイプの型を定義します。
+
+                基本的な投稿インターフェースとそれを拡張した各種メディアタイプの投稿が含まれています。
+
+                基本投稿インターフェース
+
+                すべての投稿タイプの基本となるインターフェース
+
+                @interface Post
+
+                @property {number} [post_id] - 投稿ID（新規作成時はundefined）
+
+                @property {number} user_id - 投稿者のユーザーID
+
+                @property {string} post_type - 投稿タイプを示す文字列
+
+                @property {string} [created_at] -
+                投稿作成日時（ISO形式の文字列、新規作成時はundefined）
+
+                @property {string} [updated_at] -
+                投稿更新日時（ISO形式の文字列、新規作成時はundefined）
+
+                @property {'public' | 'private' | 'followers'} visibility -
+                投稿の公開範囲
+            - name: user.ts
+              path: src/types/user.ts
+              fileDescription: >-
+                ユーザーモデルの型定義
+
+                アプリケーション全体で使用されるユーザー情報の型を定義します。
+
+                Firebase認証との連携も含まれています。
+
+                ユーザーの型定義
+
+                @typedef {Object} User
+
+                @property {number} user_id - ユーザーの一意識別子（数値）
+
+                @property {string} uid - FirebaseのUID
+
+                @property {string} user_name - ユーザー名
+
+                @property {string} email - メールアドレス
+
+                @property {string | null} profile_icon_url -
+                プロフィールアイコンのURL（設定されていない場合はnull）
+
+                @property {string | null} profile_audio_url -
+                プロフィール音声のURL（設定されていない場合はnull）
+
+                @property {string | null} shop_link_url -
+                ショップリンクのURL（設定されていない場合はnull）
+
+                @property {boolean} is_shop_link - ショップリンクが有効かどうか
+
+                @property {string | null} introduction - 自己紹介文（設定されていない場合はnull）
+
+                @property {string} created_at - アカウント作成日時（ISO形式の文字列）
+
+                @property {string} updated_at - アカウント更新日時（ISO形式の文字列）
+    tests:
+      name: tests
+      files:
+        - name: manual-video-upload.ts
+          path: tests/manual-video-upload.ts
+        - name: video-upload.test.ts
+          path: tests/video-upload.test.ts
+          externalImports:
+            - '@playwright/test'

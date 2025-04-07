@@ -1,12 +1,33 @@
+/**
+ * フッターナビゲーションモジュール
+ * 
+ * アプリケーションの下部に固定されたナビゲーションバーを提供します。
+ * ホーム、検索、投稿作成、ディスカバー、イベント、プロフィールへのリンクを含みます。
+ */
 import { Home, Search, PlusSquare, Compass, User, Calendar } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { CreatePostDialog } from "./CreatePostDialog";
 
+/**
+ * フッターナビゲーションコンポーネント
+ * 
+ * アプリケーションの下部に固定されたナビゲーションバーを表示します。
+ * 現在のパスに応じてアクティブなリンクをハイライト表示します。
+ * 投稿作成ボタンをクリックすると投稿作成ダイアログを表示します。
+ * 
+ * @returns {JSX.Element} フッターナビゲーションコンポーネント
+ */
 export function FooterNav() {
   const location = useLocation();
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
 
+  /**
+   * 指定されたパスが現在のパスと一致するかどうかを判定します
+   * 
+   * @param {string} path - 判定するパス
+   * @returns {boolean} 指定されたパスが現在のパスと一致する場合はtrue
+   */
   const isActive = (path: string) => location.pathname === path;
 
   return (

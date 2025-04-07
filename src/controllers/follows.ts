@@ -1,5 +1,21 @@
+/**
+ * フォロー関連のコントローラーモジュール
+ * 
+ * ユーザー間のフォロー関係を管理する機能を提供します。
+ * フォローの作成と解除の操作をサポートしています。
+ */
 import { Request, Response } from 'express';
 
+/**
+ * フォロー関係を作成するコントローラー関数
+ * 
+ * 指定されたユーザーをフォローする関係を作成します。
+ * フォロータイプ（family、watch）とそれに応じた理由を指定できます。
+ * 
+ * @param {Request} req - リクエストオブジェクト
+ * @param {Response} res - レスポンスオブジェクト
+ * @returns {Promise<Response>} 作成されたフォロー情報またはエラーメッセージを含むレスポンス
+ */
 export const createFollow = async (req: Request, res: Response) => {
   const { followee_id, follow_type, reason } = req.body;
 
@@ -35,6 +51,16 @@ export const createFollow = async (req: Request, res: Response) => {
   });
 };
 
+/**
+ * フォロー関係を解除するコントローラー関数
+ * 
+ * 指定されたフォローIDのフォロー関係を削除します。
+ * 成功時には204 No Contentを返します。
+ * 
+ * @param {Request} req - リクエストオブジェクト
+ * @param {Response} res - レスポンスオブジェクト
+ * @returns {Promise<Response>} 空のレスポンスまたはエラーメッセージを含むレスポンス
+ */
 export const unfollow = async (req: Request, res: Response) => {
   const { follow_id } = req.params;
 

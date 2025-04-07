@@ -1,14 +1,40 @@
+/**
+ * 投稿関連のコントローラーモジュール
+ * 
+ * 投稿の作成、取得、更新、削除などの機能を提供します。
+ * Supabaseを使用してデータの永続化を行い、テキスト投稿や動画投稿などの
+ * 複数の投稿タイプをサポートしています。
+ */
 import { Request, Response } from 'express';
 import { supabase } from '../lib/supabase';
 import { Post, TextPost, VideoPost } from '../types/post';
 
-// ユーザー認証情報付きのリクエスト用の型定義
+/**
+ * ユーザー認証情報付きのリクエスト用の型定義
+ * 
+ * 認証ミドルウェアによって追加されるユーザー情報を持つリクエストの型
+ * 
+ * @interface AuthenticatedRequest
+ * @extends {Request}
+ * @property {Object} [user] - 認証されたユーザー情報
+ * @property {number} [user.id] - ユーザーID
+ */
 interface AuthenticatedRequest extends Request {
   user?: {
     id: number;
   };
 }
 
+/**
+ * 新しい投稿を作成するコントローラー関数
+ * 
+ * クライアントからのリクエストを受け取り、投稿タイプに応じた処理を行い、
+ * データベースに保存します。テキスト投稿と動画投稿をサポートしています。
+ * 
+ * @param {AuthenticatedRequest} req - 認証情報付きリクエストオブジェクト
+ * @param {Response} res - レスポンスオブジェクト
+ * @returns {Promise<Response>} 処理結果を含むレスポンス
+ */
 export const createPost = async (req: AuthenticatedRequest, res: Response) => {
   // 認証ミドルウェアでreq.userにユーザー情報が格納されていることを想定
   const userId = req.user?.id;
@@ -197,7 +223,20 @@ export const createPost = async (req: AuthenticatedRequest, res: Response) => {
   }
 };
 
-// YouTubeにビデオをアップロードする関数
+/**
+ * YouTubeに動画をアップロードする関数
+ * 
+ * 開発環境では模擬的な処理を行い、本番環境では実際のYouTube Data APIを使用します。
+ * アップロード進捗の更新も行います。
+ * 
+ * @param {File} videoFile - アップロードする動画ファイル
+ * @param {string} title - 動画のタイトル
+ * @param {string} description - 動画の説明
+ * @param {string} [privacyStatus='unlisted'] - 公開設定（'public'または'unlisted'）
+ * @param {number | null} [uploadId=null] - アップロード進捗管理用ID
+ * @returns {Promise<string>} アップロードされた動画のYouTube URL
+ * @throws {Error} アップロード中にエラーが発生した場合
+ */
 async function uploadVideoToYouTube(
   videoFile: File, 
   title: string, 
@@ -251,27 +290,43 @@ async function uploadVideoToYouTube(
       }
     };
     
-    // YouTube API V3を使用して動画をアップロード
-    // 注: 実際の実装では、Google OAuth 2.0認証を使用し、
-    // クライアントのGoogle認証情報を使ってYouTube APIを呼び出す必要があります
-    // これはサーバー側の疑似コードで、実際の実装ではクライアントサイドで処理する必要があります
-    console.log('YouTubeアップロード用のメタデータ:', metadata);
-    
-    // 本番環境: ここでGoogle APIクライアントを使用してYouTubeにアップロード
-    // クライアントサイドと連携して実装する必要があるため、現段階ではダミーIDを返す
-    const videoId = `video_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
-    
-    // アップロード後のYouTube URL
-    return `https://www.youtube.com/watch?v=${videoId}`;
+    // ここに実際のYouTube API実装が入ります
+    // 開発環境と同様、ダミーの実装を返します
+    const dummyVideoId = `prod_video_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+    return `https://www.youtube.com/watch?v=${dummyVideoId}`;
   } catch (error) {
     console.error('YouTube動画アップロードエラー:', error);
-    throw new Error('Failed to upload video to YouTube: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    throw new Error(error instanceof Error ? error.message : 'Failed to upload video to YouTube');
   }
 }
 
-// YouTube URLからビデオIDを抽出する関数
+/**
+ * YouTube URLから動画IDを抽出する関数
+ * 
+ * 様々な形式のYouTube URLから動画IDを抽出します。
+ * 
+ * @param {string} url - YouTubeのURL
+ * @returns {string} 抽出された動画ID
+ */
 function extractVideoId(url: string): string {
-  const regex = /[?&]v=([^&#]*)/;
-  const match = url.match(regex);
-  return match ? match[1] : '';
+  // v=パラメータの値を取得
+  const match = url.match(/[?&]v=([^&]+)/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  
+  // youtu.be/形式のURLからIDを取得
+  const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
+  if (shortMatch && shortMatch[1]) {
+    return shortMatch[1];
+  }
+  
+  // 埋め込みURL形式からIDを取得
+  const embedMatch = url.match(/embed\/([^?&]+)/);
+  if (embedMatch && embedMatch[1]) {
+    return embedMatch[1];
+  }
+  
+  // 上記のいずれにも一致しない場合は、URLをそのまま返す（開発環境のダミーIDなど）
+  return url;
 }

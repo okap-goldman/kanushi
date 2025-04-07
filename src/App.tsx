@@ -18,6 +18,14 @@ import NotificationsPage from "@/pages/notifications";
 import TextPostPage from "@/pages/post/text";
 import ImagePostPage from "@/pages/post/image";
 
+/**
+ * アプリケーションのメインコンテンツコンポーネント
+ * 
+ * ルーティングとグローバルプロバイダーを管理し、アプリケーションの主要なコンテンツを表示します。
+ * ログインページ以外では共通のフッターナビゲーションを表示します。
+ * 
+ * @returns {JSX.Element} アプリケーションのメインコンテンツ
+ */
 function AppContent() {
   const location = useLocation();
   const isLoginPage = location.pathname === '/auth/login';
@@ -49,6 +57,14 @@ function AppContent() {
   );
 }
 
+/**
+ * アプリケーションのルートコンポーネント
+ * 
+ * ブラウザルーターを設定し、React Router v7の機能を有効にして
+ * アプリケーションコンテンツをラップします。
+ * 
+ * @returns {JSX.Element} アプリケーションのルートコンポーネント
+ */
 function App() {
   return (
     <BrowserRouter future={{

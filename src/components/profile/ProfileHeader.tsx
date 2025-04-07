@@ -1,3 +1,9 @@
+/**
+ * プロフィールヘッダーモジュール
+ * 
+ * ユーザープロフィールの上部セクションを表示するコンポーネントを提供します。
+ * プロフィール画像、名前、自己紹介、統計情報、音声再生機能などが含まれています。
+ */
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Store, Settings } from "lucide-react";
@@ -9,6 +15,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+/**
+ * プロフィールヘッダーコンポーネントのプロパティ型定義
+ * 
+ * @typedef {Object} ProfileHeaderProps
+ * @property {boolean} isPlaying - 音声が再生中かどうかを示すフラグ
+ * @property {Function} handlePlayVoice - 音声再生を制御するハンドラー関数
+ * @property {string} selectedTab - 現在選択されているタブ名
+ * @property {Function} setSelectedTab - タブ選択を更新する関数
+ */
 interface ProfileHeaderProps {
   isPlaying: boolean;
   handlePlayVoice: () => void;
@@ -16,6 +31,16 @@ interface ProfileHeaderProps {
   setSelectedTab: (tab: string) => void;
 }
 
+/**
+ * プロフィールヘッダーコンポーネント
+ * 
+ * ユーザープロフィールの上部セクションを表示します。プロフィール画像、名前、
+ * 自己紹介文、音声プロフィール再生機能、ショップリンク、統計情報などを含みます。
+ * プロフィール編集機能も統合されています。
+ * 
+ * @param {ProfileHeaderProps} props - コンポーネントのプロパティ
+ * @returns {JSX.Element} プロフィールヘッダーコンポーネント
+ */
 export function ProfileHeader({ isPlaying, handlePlayVoice, selectedTab, setSelectedTab }: ProfileHeaderProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -32,6 +57,9 @@ export function ProfileHeader({ isPlaying, handlePlayVoice, selectedTab, setSele
     pronouns: ''
   });
 
+  /**
+   * ユーザー情報が変更されたときにプロフィールデータを更新します
+   */
   useEffect(() => {
     if (user) {
       // 開発環境でのモックユーザー対応
@@ -69,6 +97,9 @@ export function ProfileHeader({ isPlaying, handlePlayVoice, selectedTab, setSele
     }
   }, [user]);
 
+  /**
+   * プロフィール音声の再生/停止を切り替える関数
+   */
   const toggleAudio = () => {
     if (!audioRef.current && profileData.bioAudioUrl) {
       audioRef.current = new Audio(profileData.bioAudioUrl);
@@ -84,6 +115,12 @@ export function ProfileHeader({ isPlaying, handlePlayVoice, selectedTab, setSele
     }
   };
 
+  /**
+   * プロフィール更新後の処理を行う関数
+   * 
+   * プロフィールが更新された後、最新のデータを取得して表示を更新します。
+   * 開発環境とプロダクション環境で異なる処理を行います。
+   */
   const handleProfileUpdate = () => {
     // プロフィールが更新されたら、最新のデータを取得して表示を更新
     if (user) {

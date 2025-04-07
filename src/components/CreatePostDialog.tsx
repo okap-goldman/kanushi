@@ -1,3 +1,9 @@
+/**
+ * 投稿作成ダイアログモジュール
+ * 
+ * ユーザーが新しい投稿を作成するためのダイアログコンポーネントを提供します。
+ * テキスト、動画、音声、ストーリーなど、複数の投稿タイプをサポートしています。
+ */
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Video, Mic, BookText, History } from "lucide-react";
@@ -7,22 +13,51 @@ import { VideoPostForm } from "@/components/post/VideoPostForm";
 import { createPost } from "@/controllers/posts";
 import { useToast } from "@/hooks/use-toast";
 
+/**
+ * 投稿作成ダイアログのプロパティ型定義
+ * 
+ * @interface CreatePostDialogProps
+ * @property {boolean} isOpen - ダイアログが開いているかどうかを示すフラグ
+ * @property {Function} onClose - ダイアログを閉じる際に呼び出されるコールバック関数
+ */
 interface CreatePostDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-// API レスポンスの型定義
+/**
+ * APIレスポンスの型定義
+ * 
+ * @interface PostResponse
+ * @property {number} post_id - 作成された投稿のID
+ * @property {unknown} [key: string] - その他のプロパティ
+ */
 interface PostResponse {
   post_id: number;
   [key: string]: unknown;
 }
 
+/**
+ * 投稿作成ダイアログコンポーネント
+ * 
+ * ユーザーが選択した投稿タイプに基づいて適切なフォームを表示し、
+ * 投稿の作成処理を行います。作成中はローディング表示、成功・失敗時には
+ * トースト通知を表示します。
+ * 
+ * @param {CreatePostDialogProps} props - コンポーネントのプロパティ
+ * @param {boolean} props.isOpen - ダイアログの表示状態
+ * @param {Function} props.onClose - ダイアログを閉じるコールバック
+ * @returns {JSX.Element} 投稿作成ダイアログコンポーネント
+ */
 export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
   const [selectedPostType, setSelectedPostType] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  /**
+   * 投稿タイプの定義
+   * アイコン、ラベル、値を含むオブジェクトの配列
+   */
   const postTypes = [
     { icon: Video, label: "動画・画像", value: "media" },
     { icon: Mic, label: "音声", value: "audio" },
@@ -30,10 +65,24 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
     { icon: History, label: "ストーリーズ", value: "story" },
   ];
 
+  /**
+   * 投稿タイプを選択した際のハンドラー
+   * 
+   * @param {string} type - 選択された投稿タイプ
+   */
   const handlePostTypeSelect = (type: string) => {
     setSelectedPostType(type);
   };
 
+  /**
+   * テキスト投稿フォームの送信ハンドラー
+   * 
+   * タイトルとテキスト内容を受け取り、APIを通じて投稿を作成します。
+   * 成功時にはトースト通知を表示し、ダイアログを閉じます。
+   * 
+   * @param {string} title - 投稿のタイトル
+   * @param {string} text_content - 投稿のテキスト内容
+   */
   const handleTextSubmit = async (title: string, text_content: string) => {
     try {
       // @ts-expect-error createPost の仮実装のため、型エラーを一時的に無視
@@ -65,6 +114,16 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
     }
   };
 
+  /**
+   * 動画投稿フォームの送信ハンドラー
+   * 
+   * 動画ファイル、説明文、公開設定を受け取り、APIを通じて投稿を作成します。
+   * 処理中はローディング表示を行い、成功時にはトースト通知を表示し、ダイアログを閉じます。
+   * 
+   * @param {File} videoFile - アップロードする動画ファイル
+   * @param {string} description - 動画の説明文
+   * @param {boolean} isPublic - 公開設定（true: 公開、false: 非公開）
+   */
   const handleVideoSubmit = async (videoFile: File, description: string, isPublic: boolean) => {
     if (!videoFile) {
       toast({

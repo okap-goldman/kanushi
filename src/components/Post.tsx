@@ -1,3 +1,9 @@
+/**
+ * 投稿コンポーネントモジュール
+ * 
+ * ソーシャルメディア風の投稿表示コンポーネントを提供します。
+ * テキスト、画像、動画、音声などの各種メディアタイプをサポートしています。
+ */
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { PostHeader } from "./post/PostHeader";
@@ -6,6 +12,18 @@ import { PostActions } from "./post/PostActions";
 import { PostComments } from "./post/PostComments";
 import { Dialog, DialogContent, DialogDescription } from "@/components/ui/dialog";
 
+/**
+ * 投稿コンポーネントのプロパティ型定義
+ * 
+ * @typedef {Object} PostProps
+ * @property {Object} author - 投稿者情報
+ * @property {string} author.name - 投稿者名
+ * @property {string} author.image - 投稿者のプロフィール画像URL
+ * @property {string} author.id - 投稿者のID
+ * @property {string} content - 投稿内容（テキストまたはメディアのURL）
+ * @property {string} [caption] - 画像や動画に添付するキャプション
+ * @property {"text" | "image" | "video" | "audio"} mediaType - 投稿のメディアタイプ
+ */
 interface PostProps {
   author: {
     name: string;
@@ -17,6 +35,19 @@ interface PostProps {
   mediaType: "text" | "image" | "video" | "audio";
 }
 
+/**
+ * 投稿コンポーネント
+ * 
+ * テキスト、画像、動画、音声などの各種メディアタイプに対応した投稿を表示します。
+ * 投稿をクリックすると詳細表示ダイアログが開き、コメントの表示・追加も可能です。
+ * 
+ * @param {PostProps} props - 投稿コンポーネントのプロパティ
+ * @param {Object} props.author - 投稿者情報
+ * @param {string} props.content - 投稿内容
+ * @param {string} [props.caption] - オプションのキャプション
+ * @param {"text" | "image" | "video" | "audio"} props.mediaType - 投稿のメディアタイプ
+ * @returns {JSX.Element} 投稿コンポーネント
+ */
 export function Post({ author, content, caption, mediaType }: PostProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
