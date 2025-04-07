@@ -1,3 +1,9 @@
+/**
+ * ナビゲーションバーモジュール
+ * 
+ * アプリケーションの上部に固定されたナビゲーションバーを提供します。
+ * 新規投稿作成、検索、通知、メッセージ、ユーザーメニューなどの機能へのアクセスを提供します。
+ */
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Bell, MessageCircle, User, LogOut } from "lucide-react";
@@ -14,6 +20,15 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { PlusIcon, SearchIcon, MessageSquareIcon, UserIcon } from "lucide-react";
 
+/**
+ * ナビゲーションバーコンポーネント
+ * 
+ * アプリケーションの上部に表示される固定ナビゲーションバーです。
+ * アプリケーション名、各種機能ボタン（投稿作成、検索、通知など）、
+ * ユーザー関連の操作（プロフィール表示、ログアウトなど）を提供します。
+ * 
+ * @returns {JSX.Element} ナビゲーションバーコンポーネント
+ */
 export function Navbar() {
   const { toast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -25,6 +40,12 @@ export function Navbar() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  /**
+   * ログアウト処理を行うハンドラー関数
+   * 
+   * 認証コンテキストのlogout関数を呼び出し、成功時にはトースト通知を表示してログインページへリダイレクトします。
+   * 失敗時にはエラーメッセージをトースト通知で表示します。
+   */
   const handleLogout = async () => {
     try {
       await logout();

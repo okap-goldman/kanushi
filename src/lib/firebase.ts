@@ -1,9 +1,20 @@
+/**
+ * Firebaseの初期化と関連機能モジュール
+ * 
+ * Firebaseの初期化、認証、Firestore、ストレージへの接続を管理します。
+ * また、テキスト投稿の作成やユーザープロフィールの更新などの機能も提供します。
+ */
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, collection, addDoc, doc, setDoc, getDoc, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import type { User } from '@/types/user';
 
+/**
+ * Firebaseの設定
+ * 
+ * 環境変数から読み取ったFirebaseの設定情報
+ */
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -14,12 +25,28 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
+/**
+ * Firebaseアプリのインスタンス
+ */
 export const app = initializeApp(firebaseConfig);
+/**
+ * Firebase認証のインスタンス
+ */
 export const auth = getAuth(app);
+/**
+ * Firestoreデータベースのインスタンス
+ */
 export const db = getFirestore(app);
+/**
+ * Firebaseストレージのインスタンス
+ */
 export const storage = getStorage(app);
 
-// エミュレーターの設定
+/**
+ * 開発環境でFirebaseエミュレーターを使用する設定
+ * 
+ * 開発環境の場合、認証、Firestore、ストレージのエミュレーターに接続します。
+ */
 const useEmulator = import.meta.env.MODE === 'development';
 if (useEmulator) {
   console.log('Firebase Emulators を使用します');
@@ -28,6 +55,17 @@ if (useEmulator) {
   connectStorageEmulator(storage, 'localhost', 9199);
 }
 
+/**
+ * テキスト投稿データの型定義
+ * 
+ * @interface CreateTextPostData
+ * @property {string} userId - 投稿ユーザーのID
+ * @property {Object} content - 投稿内容
+ * @property {string} content.text - プレーンテキスト形式のコンテンツ
+ * @property {string} content.html - HTML形式のコンテンツ
+ * @property {string[]} [images] - 投稿に添付する画像のURL配列（省略可能）
+ * @property {boolean} isPublic - 公開設定（true: 公開、false: 非公開）
+ */
 interface CreateTextPostData {
   userId: string;
   content: {
@@ -38,6 +76,14 @@ interface CreateTextPostData {
   isPublic: boolean;
 }
 
+/**
+ * テキスト投稿を作成する関数
+ * 
+ * Firestoreに新しいテキスト投稿を追加します。
+ * 
+ * @param {CreateTextPostData} data - 投稿データ
+ * @returns {Promise<DocumentReference>} 作成された投稿のドキュメント参照
+ */
 export const createTextPost = async (data: CreateTextPostData) => {
   const post = {
     userId: data.userId,
@@ -53,6 +99,17 @@ export const createTextPost = async (data: CreateTextPostData) => {
   return await addDoc(collection(db, 'posts'), post);
 };
 
+/**
+ * ユーザープロフィールを更新する関数
+ * 
+ * 指定されたユーザーIDのプロフィール情報をFirestoreで更新します。
+ * 開発環境ではモックユーザーの対応も行います。
+ * 
+ * @param {string} userId - 更新するユーザーのID
+ * @param {Partial<User>} userData - 更新するユーザーデータ（部分的に指定可能）
+ * @returns {Promise<User>} 更新後のユーザーデータ
+ * @throws {Error} プロフィール更新に失敗した場合
+ */
 export const updateUserProfile = async (userId: string, userData: Partial<User>): Promise<User> => {
   try {
     // 開発環境でのモックユーザー対応

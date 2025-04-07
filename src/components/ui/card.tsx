@@ -1,7 +1,24 @@
+/**
+ * カードコンポーネントモジュール
+ * 
+ * アプリケーション全体で使用される汎用的なカードコンポーネントセットを提供します。
+ * コンテンツをグループ化し、視覚的に区切るための一貫したデザインパターンを実装しています。
+ */
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * カードコンポーネント
+ * 
+ * 関連するコンテンツをグループ化するためのコンテナです。
+ * 境界線、背景、シャドウなどの基本的なスタイルを提供します。
+ * 
+ * @param {React.HTMLAttributes<HTMLDivElement>} props - divの標準属性
+ * @param {string} [props.className] - 追加のCSSクラス名
+ * @param {React.Ref<HTMLDivElement>} ref - フォワードされたref
+ * @returns {JSX.Element} カードコンポーネント
+ */
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -17,6 +34,17 @@ const Card = React.forwardRef<
 ))
 Card.displayName = "Card"
 
+/**
+ * カードヘッダーコンポーネント
+ * 
+ * カードの上部セクションを表示するためのコンポーネントです。
+ * 通常、タイトルと説明を含みます。
+ * 
+ * @param {React.HTMLAttributes<HTMLDivElement>} props - divの標準属性
+ * @param {string} [props.className] - 追加のCSSクラス名
+ * @param {React.Ref<HTMLDivElement>} ref - フォワードされたref
+ * @returns {JSX.Element} カードヘッダーコンポーネント
+ */
 const CardHeader = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -29,6 +57,17 @@ const CardHeader = React.forwardRef<
 ))
 CardHeader.displayName = "CardHeader"
 
+/**
+ * カードタイトルコンポーネント
+ * 
+ * カード内のメインタイトルを表示するためのコンポーネントです。
+ * 視覚的な強調とタイポグラフィのスタイルを適用します。
+ * 
+ * @param {React.HTMLAttributes<HTMLHeadingElement>} props - h3の標準属性
+ * @param {string} [props.className] - 追加のCSSクラス名
+ * @param {React.Ref<HTMLParagraphElement>} ref - フォワードされたref
+ * @returns {JSX.Element} カードタイトルコンポーネント
+ */
 const CardTitle = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLHeadingElement>
@@ -44,6 +83,17 @@ const CardTitle = React.forwardRef<
 ))
 CardTitle.displayName = "CardTitle"
 
+/**
+ * カード説明コンポーネント
+ * 
+ * カードのタイトルを補足する説明テキストを表示するためのコンポーネントです。
+ * 小さめのフォントサイズと控えめな色で表示されます。
+ * 
+ * @param {React.HTMLAttributes<HTMLParagraphElement>} props - pの標準属性
+ * @param {string} [props.className] - 追加のCSSクラス名
+ * @param {React.Ref<HTMLParagraphElement>} ref - フォワードされたref
+ * @returns {JSX.Element} カード説明コンポーネント
+ */
 const CardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
@@ -56,6 +106,17 @@ const CardDescription = React.forwardRef<
 ))
 CardDescription.displayName = "CardDescription"
 
+/**
+ * カードコンテンツコンポーネント
+ * 
+ * カードのメインコンテンツを表示するためのコンポーネントです。
+ * ヘッダーの下に配置され、適切なパディングを適用します。
+ * 
+ * @param {React.HTMLAttributes<HTMLDivElement>} props - divの標準属性
+ * @param {string} [props.className] - 追加のCSSクラス名
+ * @param {React.Ref<HTMLDivElement>} ref - フォワードされたref
+ * @returns {JSX.Element} カードコンテンツコンポーネント
+ */
 const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -64,6 +125,17 @@ const CardContent = React.forwardRef<
 ))
 CardContent.displayName = "CardContent"
 
+/**
+ * カードフッターコンポーネント
+ * 
+ * カードの下部セクションを表示するためのコンポーネントです。
+ * 通常、アクションボタンや追加情報を含みます。
+ * 
+ * @param {React.HTMLAttributes<HTMLDivElement>} props - divの標準属性
+ * @param {string} [props.className] - 追加のCSSクラス名
+ * @param {React.Ref<HTMLDivElement>} ref - フォワードされたref
+ * @returns {JSX.Element} カードフッターコンポーネント
+ */
 const CardFooter = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>

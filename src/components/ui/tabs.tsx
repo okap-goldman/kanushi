@@ -1,10 +1,33 @@
+/**
+ * タブコンポーネントモジュール
+ * 
+ * アプリケーション全体で使用される汎用的なタブインターフェースコンポーネントを提供します。
+ * Radix UIのタブプリミティブをベースにしたアクセシブルなタブ実装です。
+ */
 import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * タブのルートコンポーネント
+ * 
+ * タブインターフェースのコンテナとして機能します。
+ * 子コンポーネントとしてTabsList、TabsTrigger、TabsContentを含みます。
+ */
 const Tabs = TabsPrimitive.Root
 
+/**
+ * タブリストコンポーネント
+ * 
+ * タブトリガー（タブボタン）を含むコンテナです。
+ * 水平方向のナビゲーションリストとして表示されます。
+ * 
+ * @param {React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>} props - TabsPrimitiveのList属性
+ * @param {string} [props.className] - 追加のCSSクラス名
+ * @param {React.Ref<React.ElementRef<typeof TabsPrimitive.List>>} ref - フォワードされたref
+ * @returns {JSX.Element} タブリストコンポーネント
+ */
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
@@ -20,6 +43,17 @@ const TabsList = React.forwardRef<
 ))
 TabsList.displayName = TabsPrimitive.List.displayName
 
+/**
+ * タブトリガーコンポーネント
+ * 
+ * 個々のタブボタンを表示します。クリックすると対応するタブコンテンツが表示されます。
+ * アクティブな状態と非アクティブな状態のスタイリングを含みます。
+ * 
+ * @param {React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>} props - TabsPrimitiveのTrigger属性
+ * @param {string} [props.className] - 追加のCSSクラス名
+ * @param {React.Ref<React.ElementRef<typeof TabsPrimitive.Trigger>>} ref - フォワードされたref
+ * @returns {JSX.Element} タブトリガーコンポーネント
+ */
 const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
@@ -35,6 +69,17 @@ const TabsTrigger = React.forwardRef<
 ))
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
 
+/**
+ * タブコンテンツコンポーネント
+ * 
+ * 特定のタブが選択されたときに表示されるコンテンツを含みます。
+ * 対応するTabsTriggerがアクティブになったときのみ表示されます。
+ * 
+ * @param {React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>} props - TabsPrimitiveのContent属性
+ * @param {string} [props.className] - 追加のCSSクラス名
+ * @param {React.Ref<React.ElementRef<typeof TabsPrimitive.Content>>} ref - フォワードされたref
+ * @returns {JSX.Element} タブコンテンツコンポーネント
+ */
 const TabsContent = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>

@@ -1,37 +1,100 @@
+/**
+ * ストレージモジュール
+ * 
+ * 画像や音声ファイルのアップロード機能を提供します。
+ * Firebase StorageとAWS S3への接続とファイルの格納を管理します。
+ */
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from './firebase';
 
+/**
+ * 画像アップロードのオプション型定義
+ * 
+ * @interface UploadImageOptions
+ * @property {string[]} [allowedTypes] - アップロード可能なMIMEタイプの配列
+ */
 interface UploadImageOptions {
   allowedTypes?: string[];
 }
 
+/**
+ * 画像アップロードのデフォルトオプション
+ * 
+ * @constant {UploadImageOptions}
+ * @default
+ */
 const DEFAULT_OPTIONS: UploadImageOptions = {
   allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 };
 
+/**
+ * 音声アップロードのオプション型定義
+ * 
+ * @interface UploadAudioOptions
+ * @property {string[]} [allowedTypes] - アップロード可能なMIMEタイプの配列
+ */
 interface UploadAudioOptions {
   allowedTypes?: string[];
 }
 
+/**
+ * 音声アップロードのデフォルトオプション
+ * 
+ * @constant {UploadAudioOptions}
+ * @default
+ */
 const DEFAULT_AUDIO_OPTIONS: UploadAudioOptions = {
   allowedTypes: ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a']
 };
 
+/**
+ * 画像アップロード用のカスタムエラークラス
+ * 
+ * @class ImageUploadError
+ * @extends {Error}
+ */
 export class ImageUploadError extends Error {
+  /**
+   * ImageUploadErrorのコンストラクタ
+   * 
+   * @param {string} message - エラーメッセージ
+   */
   constructor(message: string) {
     super(message);
     this.name = 'ImageUploadError';
   }
 }
 
+/**
+ * 音声アップロード用のカスタムエラークラス
+ * 
+ * @class AudioUploadError
+ * @extends {Error}
+ */
 export class AudioUploadError extends Error {
+  /**
+   * AudioUploadErrorのコンストラクタ
+   * 
+   * @param {string} message - エラーメッセージ
+   */
   constructor(message: string) {
     super(message);
     this.name = 'AudioUploadError';
   }
 }
 
+/**
+ * 画像ファイルをFirebase Storageにアップロードします
+ * 
+ * 開発環境では失敗した場合にローカルURLを生成して返します。
+ * ファイルタイプのバリデーションを行い、対応していない形式の場合はエラーを投げます。
+ * 
+ * @param {File} file - アップロードする画像ファイル
+ * @param {UploadImageOptions} [options=DEFAULT_OPTIONS] - アップロードオプション
+ * @returns {Promise<string>} アップロードされた画像のURL
+ * @throws {ImageUploadError} アップロードに失敗した場合やファイル形式が非対応の場合
+ */
 export const uploadImage = async (
   file: File,
   options: UploadImageOptions = DEFAULT_OPTIONS
@@ -91,7 +154,7 @@ export const uploadImage = async (
     if (error instanceof Error) {
       console.error('エラーの詳細:', error.message);
       if ('code' in error) {
-        console.error('エラーコード:', (error as any).code);
+        console.error('エラーコード:', (error as {code: string}).code);
       }
     }
     throw new ImageUploadError(
@@ -100,7 +163,17 @@ export const uploadImage = async (
   }
 };
 
-
+/**
+ * 音声ファイルをFirebase Storageにアップロードします
+ * 
+ * 開発環境では失敗した場合にローカルURLを生成して返します。
+ * ファイルタイプのバリデーションを行い、対応していない形式の場合はエラーを投げます。
+ * 
+ * @param {File} file - アップロードする音声ファイル
+ * @param {UploadAudioOptions} [options=DEFAULT_AUDIO_OPTIONS] - アップロードオプション
+ * @returns {Promise<string>} アップロードされた音声ファイルのURL
+ * @throws {AudioUploadError} アップロードに失敗した場合やファイル形式が非対応の場合
+ */
 export const uploadAudio = async (
   file: File,
   options: UploadAudioOptions = DEFAULT_AUDIO_OPTIONS
@@ -160,7 +233,7 @@ export const uploadAudio = async (
     if (error instanceof Error) {
       console.error('エラーの詳細:', error.message);
       if ('code' in error) {
-        console.error('エラーコード:', (error as any).code);
+        console.error('エラーコード:', (error as {code: string}).code);
       }
     }
     throw new AudioUploadError(

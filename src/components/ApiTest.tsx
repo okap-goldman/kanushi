@@ -1,12 +1,34 @@
+/**
+ * API接続テストモジュール
+ * 
+ * バックエンドAPIとの接続状態をテストするためのコンポーネントを提供します。
+ * APIエンドポイントからのレスポンスを表示し、接続状態を確認できます。
+ */
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
+/**
+ * APIテストコンポーネント
+ * 
+ * バックエンドAPIとの接続状態をテストし、結果を表示するコンポーネントです。
+ * 自動的にAPIエンドポイントにリクエストを送信し、レスポンスを表示します。
+ * また、手動で再テストを行うボタンも提供します。
+ * 
+ * @returns {JSX.Element} APIテストコンポーネント
+ */
 export function ApiTest() {
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * APIデータをフェッチする関数
+   * 
+   * '/api/hello'エンドポイントにリクエストを送信し、
+   * レスポンスを状態として保存します。
+   * エラーが発生した場合はエラーメッセージを表示します。
+   */
   const fetchApiData = async () => {
     setLoading(true);
     setError(null);
@@ -26,8 +48,10 @@ export function ApiTest() {
     }
   };
 
+  /**
+   * コンポーネントマウント時にAPIをテスト
+   */
   useEffect(() => {
-    // コンポーネントマウント時に自動的にAPIをテスト
     fetchApiData();
   }, []);
 

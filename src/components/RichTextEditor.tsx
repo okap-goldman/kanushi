@@ -1,9 +1,24 @@
+/**
+ * リッチテキストエディタモジュール
+ * 
+ * シンプルなリッチテキストエディタコンポーネントを提供します。
+ * Tiptapライブラリを使用して、テキストの書式設定機能（太字、斜体など）を備えています。
+ */
 import React from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Bold from '@tiptap/extension-bold';
 import Italic from '@tiptap/extension-italic';
 
+/**
+ * リッチテキストエディタのプロパティ型定義
+ * 
+ * @typedef {Object} RichTextEditorProps
+ * @property {Object} content - エディタのコンテンツ
+ * @property {string} content.text - プレーンテキスト形式のコンテンツ
+ * @property {string} content.html - HTML形式のコンテンツ
+ * @property {Function} onChange - コンテンツが変更されたときのコールバック関数
+ */
 interface RichTextEditorProps {
   content: {
     text: string;
@@ -12,7 +27,22 @@ interface RichTextEditorProps {
   onChange: (content: { text: string; html: string }) => void;
 }
 
+/**
+ * リッチテキストエディタコンポーネント
+ * 
+ * テキストの書式設定（太字、斜体）が可能なエディタを提供します。
+ * エディタの内容が変更されると、onChange関数を通じてテキストとHTML形式の内容が親コンポーネントに通知されます。
+ * 
+ * @param {RichTextEditorProps} props - リッチテキストエディタのプロパティ
+ * @param {Object} props.content - 初期コンテンツ（テキストとHTML）
+ * @param {Function} props.onChange - コンテンツ変更時のコールバック
+ * @returns {JSX.Element} リッチテキストエディタコンポーネント
+ */
 export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
+  /**
+   * Tiptapエディタのインスタンスを作成
+   * 必要な拡張機能を設定し、コンテンツの初期値とアップデートハンドラを設定します
+   */
   const editor = useEditor({
     extensions: [
       StarterKit.configure({

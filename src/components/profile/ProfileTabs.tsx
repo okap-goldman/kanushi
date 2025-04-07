@@ -1,15 +1,41 @@
+/**
+ * プロフィールタブモジュール
+ * 
+ * ユーザープロフィールのタブ付きセクションを提供します。
+ * メディア、音声、テキスト、ハイライト、イベントなどの異なるコンテンツタイプを
+ * 整理して表示します。
+ */
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Post } from "@/components/Post";
 import { SAMPLE_POSTS } from "@/lib/data";
 
+/**
+ * プロフィールタブコンポーネントのプロパティ型定義
+ * 
+ * @typedef {Object} ProfileTabsProps
+ * @property {string} selectedTab - 現在選択されているタブの識別子
+ * @property {Function} setSelectedPost - 投稿が選択されたときに呼び出されるコールバック関数
+ * @property {Function} [setSelectedShopItem] - ショップアイテムが選択されたときに呼び出されるオプションのコールバック関数
+ */
 interface ProfileTabsProps {
   selectedTab: string;
   setSelectedPost: (post: PostType) => void;
   setSelectedShopItem?: (item: PostType) => void;
 }
 
-// Define the post type to match the data structure
+/**
+ * 投稿データの型定義
+ * 
+ * @typedef {Object} PostType
+ * @property {Object} author - 投稿者情報
+ * @property {string} author.name - 投稿者名
+ * @property {string} author.image - 投稿者のプロフィール画像URL
+ * @property {string} author.id - 投稿者のID
+ * @property {string} content - 投稿内容（テキストまたはメディアのURL）
+ * @property {string} [caption] - オプションの画像や動画のキャプション
+ * @property {"text" | "image" | "video" | "audio"} mediaType - 投稿のメディアタイプ
+ */
 type PostType = {
   author: {
     name: string;
@@ -21,6 +47,18 @@ type PostType = {
   mediaType: "text" | "image" | "video" | "audio";
 };
 
+/**
+ * プロフィールタブコンポーネント
+ * 
+ * ユーザープロフィールの異なるコンテンツタイプを表示するためのタブインターフェースを提供します。
+ * メディア、音声、テキスト、ハイライト、イベントなどのタブが含まれています。
+ * 各タブは関連するコンテンツタイプのデータを表示します。
+ * 
+ * @param {ProfileTabsProps} props - コンポーネントのプロパティ
+ * @param {string} props.selectedTab - 現在選択されているタブ
+ * @param {Function} props.setSelectedPost - 投稿が選択されたときのハンドラー関数
+ * @returns {JSX.Element} プロフィールタブコンポーネント
+ */
 export function ProfileTabs({ selectedTab, setSelectedPost }: ProfileTabsProps) {
   return (
     <Tabs defaultValue={selectedTab} className="mt-8">
