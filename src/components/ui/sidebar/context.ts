@@ -1,4 +1,10 @@
+/**
+ * サイドバーコンポーネントのReactコンテキスト定義
+ */
 import * as React from "react"
-import { SidebarContext } from "./types"
+import { SidebarContext as SidebarContextType } from "./types"
 
-export const SidebarContext = React.createContext<SidebarContext | null>(null) 
+/**
+ * サイドバーの状態管理用Reactコンテキスト
+ */
+export const SidebarContext = React.createContext<SidebarContextType | null>(null) 
