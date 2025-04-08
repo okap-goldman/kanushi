@@ -1,5 +1,5 @@
 /**
- * モバイルデバイス検出フックモジュール
+ * モバイルデバイス判定のためのフック提供モジュール
  * 
  * 現在の画面幅がモバイル向けかどうかを判定するためのカスタムフックを提供します。
  * レスポンシブなUIの実装に役立ちます。
@@ -13,38 +13,21 @@ import * as React from "react"
 const MOBILE_BREAKPOINT = 768
 
 /**
- * 現在の画面がモバイルサイズかどうかを判定するカスタムフック
- * 
- * このフックは画面のサイズを監視し、モバイルブレークポイント以下の場合はtrueを返します。
- * コンポーネント内で使用することで、画面サイズに応じた条件付きレンダリングが可能になります。
- * 
- * @returns {boolean} 現在の画面がモバイルサイズの場合はtrue、そうでない場合はfalse
- * 
- * @example
- * function MyComponent() {
- *   const isMobile = useIsMobile();
- *   
- *   return (
- *     <div>
- *       {isMobile ? (
- *         <MobileView />
- *       ) : (
- *         <DesktopView />
- *       )}
- *     </div>
- *   );
- * }
+ * 現在の画面がモバイルサイズかを判定するカスタムフック
+ * @returns {boolean} 画面幅がモバイルサイズの場合true
  */
-export function useIsMobile() {
+export const useIsMobile = (): boolean => {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
 
   React.useEffect(() => {
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    const onChange = () => {
+    const onChange = (): void => {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
     }
+    
     mql.addEventListener("change", onChange)
     setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    
     return () => mql.removeEventListener("change", onChange)
   }, [])
 
