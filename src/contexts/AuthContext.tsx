@@ -4,7 +4,7 @@
  * ユーザー認証の状態とメソッドを提供するコンテキストです。
  * Firebase Authenticationを使用してユーザーのログイン・ログアウト機能を提供します。
  */
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import type { User } from '@/types/user';
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * 
    * @returns {Promise<void>} ログイン処理の結果を返すPromise
    */
-  const login = async () => {
+  const login = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isDevelopment, testingEmail, setIsLoading, setUser]);
 
   /**
    * ユーザーのログアウト処理を行います
@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * 
    * @returns {Promise<void>} ログアウト処理の結果を返すPromise
    */
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       setIsLoading(true);
       await signOut(auth);
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setIsLoading, setUser]);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, isInitialized, login, logout }}>
@@ -135,19 +135,3 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     </AuthContext.Provider>
   );
 }
-
-/**
- * 認証コンテキストを使用するためのカスタムフック
- * 
- * AuthProviderの外部で使用した場合はエラーをスローします。
- * 
- * @returns {AuthContextType} 認証コンテキストの値
- * @throws {Error} AuthProviderの外部で使用された場合
- */
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
