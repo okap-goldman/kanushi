@@ -4,63 +4,13 @@
  * ユーザー認証の状態とメソッドを提供するコンテキストです。
  * Firebase Authenticationを使用してユーザーのログイン・ログアウト機能を提供します。
  */
-import { createContext, useContext, useState, useEffect } from 'react';
-import type { User } from '@/types/user';
+import { useState, useEffect, useContext } from 'react';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-
-/**
- * 認証コンテキストの型定義
- * 
- * @typedef {Object} AuthContextType
- * @property {User | null} user - 現在ログインしているユーザー情報（未ログイン時はnull）
- * @property {boolean} isLoading - 認証処理中かどうかを示すフラグ
- * @property {boolean} isInitialized - 認証コンテキストが初期化されたかどうかを示すフラグ
- * @property {Function} login - ログイン処理を行う関数
- * @property {Function} logout - ログアウト処理を行う関数
- */
-type AuthContextType = {
-  user: User | null;
-  isLoading: boolean;
-  isInitialized: boolean;
-  login: () => Promise<void>;
-  logout: () => Promise<void>;
-};
-
-/**
- * 認証コンテキストの作成
- * 初期値はundefinedで、後からProviderによって値が提供されます
- */
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-/**
- * Firebase認証ユーザーからアプリケーション用のユーザーオブジェクトを作成します
- * 
- * @param {Object} firebaseUser - Firebase認証から取得したユーザー情報
- * @param {string} firebaseUser.uid - ユーザーの一意識別子
- * @param {string} [firebaseUser.displayName] - ユーザーの表示名
- * @param {string} [firebaseUser.email] - ユーザーのメールアドレス
- * @param {string} [firebaseUser.photoURL] - ユーザーのプロフィール画像URL
- * @returns {User} アプリケーション用のユーザーオブジェクト
- */
-const createUserFromFirebase = (firebaseUser: { 
-  uid: string; 
-  displayName?: string; 
-  email?: string; 
-  photoURL?: string;
-}): User => ({
-  user_id: parseInt(firebaseUser.uid.slice(0, 8), 16), // UIDの最初の8文字を数値に変換
-  uid: firebaseUser.uid, // Firebase UIDを保持
-  user_name: firebaseUser.displayName || '名称未設定',
-  email: firebaseUser.email || '',
-  profile_icon_url: firebaseUser.photoURL,
-  profile_audio_url: null,
-  shop_link_url: null,
-  is_shop_link: false,
-  introduction: null,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString()
-});
+import type { User } from '@/types/user';
+import { AuthContextType } from './AuthContext/types';
+import { createUserFromFirebase } from './AuthContext/utils';
+import { AuthContext } from './AuthContext/context'; // Import AuthContext
 
 /**
  * 認証プロバイダーコンポーネント

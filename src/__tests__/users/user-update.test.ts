@@ -1,5 +1,6 @@
 import { createMockRequest, createMockResponse } from '../utils/test-utils';
 import { updateUserInfo } from '../../controllers/users';
+import { Request, Response } from 'express';
 
 describe('User Update', () => {
   it('should update user info successfully', async () => {
@@ -18,7 +19,7 @@ describe('User Update', () => {
     });
     const res = createMockResponse();
 
-    await updateUserInfo(req as any, res as any);
+    await updateUserInfo(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
@@ -47,7 +48,7 @@ describe('User Update', () => {
     });
     const res = createMockResponse();
 
-    await updateUserInfo(req as any, res as any);
+    await updateUserInfo(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
@@ -67,7 +68,7 @@ describe('User Update', () => {
     });
     const res = createMockResponse();
 
-    await updateUserInfo(req as any, res as any);
+    await updateUserInfo(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
@@ -91,7 +92,7 @@ describe('User Update', () => {
     });
     const res = createMockResponse();
 
-    await updateUserInfo(req as any, res as any);
+    await updateUserInfo(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(

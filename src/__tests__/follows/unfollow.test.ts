@@ -1,5 +1,6 @@
 import { createMockRequest, createMockResponse } from '../utils/test-utils';
 import { unfollow } from '../../controllers/follows';
+import { Request, Response } from 'express';
 
 /**
  * アンフォロー機能のテストケース
@@ -17,7 +18,7 @@ describe('Unfollow', () => {
     });
     const res = createMockResponse();
 
-    await unfollow(req as any, res as any);
+    await unfollow(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(204);
   });
@@ -31,7 +32,7 @@ describe('Unfollow', () => {
     });
     const res = createMockResponse();
 
-    await unfollow(req as any, res as any);
+    await unfollow(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith(
@@ -51,7 +52,7 @@ describe('Unfollow', () => {
     });
     const res = createMockResponse();
 
-    await unfollow(req as any, res as any);
+    await unfollow(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(

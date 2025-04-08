@@ -1,5 +1,6 @@
 import { createMockRequest, createMockResponse } from '../utils/test-utils';
 import { getUserInfo } from '../../controllers/users';
+import { Request, Response } from 'express';
 
 describe('User Info', () => {
   it('should return user info for valid user ID', async () => {
@@ -10,7 +11,7 @@ describe('User Info', () => {
     });
     const res = createMockResponse();
 
-    await getUserInfo(req as any, res as any);
+    await getUserInfo(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
@@ -37,7 +38,7 @@ describe('User Info', () => {
     });
     const res = createMockResponse();
 
-    await getUserInfo(req as any, res as any);
+    await getUserInfo(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith(
@@ -56,7 +57,7 @@ describe('User Info', () => {
     });
     const res = createMockResponse();
 
-    await getUserInfo(req as any, res as any);
+    await getUserInfo(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(

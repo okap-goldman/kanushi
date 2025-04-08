@@ -1,5 +1,6 @@
 import { createMockRequest, createMockResponse } from '../utils/test-utils';
 import { createFollow } from '../../controllers/follows';
+import { Request, Response } from 'express';
 
 /**
  * フォロー作成のテストケース
@@ -19,7 +20,7 @@ describe('Create Follow', () => {
     });
     const res = createMockResponse();
 
-    await createFollow(req as any, res as any);
+    await createFollow(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith(
@@ -44,7 +45,7 @@ describe('Create Follow', () => {
     });
     const res = createMockResponse();
 
-    await createFollow(req as any, res as any);
+    await createFollow(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith(
@@ -68,7 +69,7 @@ describe('Create Follow', () => {
     });
     const res = createMockResponse();
 
-    await createFollow(req as any, res as any);
+    await createFollow(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
@@ -89,7 +90,7 @@ describe('Create Follow', () => {
     });
     const res = createMockResponse();
 
-    await createFollow(req as any, res as any);
+    await createFollow(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
@@ -109,7 +110,7 @@ describe('Create Follow', () => {
     });
     const res = createMockResponse();
 
-    await createFollow(req as any, res as any);
+    await createFollow(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
@@ -130,7 +131,7 @@ describe('Create Follow', () => {
     });
     const res = createMockResponse();
 
-    await createFollow(req as any, res as any);
+    await createFollow(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
@@ -152,7 +153,7 @@ describe('Create Follow', () => {
     });
     const res = createMockResponse();
 
-    await createFollow(req as any, res as any);
+    await createFollow(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
@@ -174,7 +175,7 @@ describe('Create Follow', () => {
     });
     const res = createMockResponse();
 
-    await createFollow(req as any, res as any);
+    await createFollow(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({

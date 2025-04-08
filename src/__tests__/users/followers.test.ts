@@ -1,5 +1,6 @@
 import { createMockRequest, createMockResponse } from '../utils/test-utils';
 import { getUserFollowers } from '../../controllers/users';
+import { Request, Response } from 'express';
 
 describe('User Followers', () => {
   it('should return followers list for valid user ID', async () => {
@@ -10,7 +11,7 @@ describe('User Followers', () => {
     });
     const res = createMockResponse();
 
-    await getUserFollowers(req as any, res as any);
+    await getUserFollowers(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
@@ -37,7 +38,7 @@ describe('User Followers', () => {
     });
     const res = createMockResponse();
 
-    await getUserFollowers(req as any, res as any);
+    await getUserFollowers(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
@@ -55,7 +56,7 @@ describe('User Followers', () => {
     });
     const res = createMockResponse();
 
-    await getUserFollowers(req as any, res as any);
+    await getUserFollowers(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith(
@@ -74,7 +75,7 @@ describe('User Followers', () => {
     });
     const res = createMockResponse();
 
-    await getUserFollowers(req as any, res as any);
+    await getUserFollowers(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
@@ -97,7 +98,7 @@ describe('User Followers', () => {
     });
     const res = createMockResponse();
 
-    await getUserFollowers(req as any, res as any);
+    await getUserFollowers(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
