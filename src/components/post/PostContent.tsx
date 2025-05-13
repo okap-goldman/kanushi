@@ -12,6 +12,8 @@ interface PostContentProps {
 
 export function PostContent({ content, caption, mediaType, isExpanded, setIsExpanded }: PostContentProps) {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLIFrameElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -79,6 +81,10 @@ export function PostContent({ content, caption, mediaType, isExpanded, setIsExpa
   const toggleAudio = () => {
     if (!audioRef.current) {
       audioRef.current = new Audio(content);
+      audioRef.current.addEventListener('timeupdate', updateProgress);
+      audioRef.current.addEventListener('loadedmetadata', () => {
+        setDuration(audioRef.current?.duration || 0);
+      });
     }
 
     if (isAudioPlaying) {
@@ -87,6 +93,26 @@ export function PostContent({ content, caption, mediaType, isExpanded, setIsExpa
       audioRef.current.play();
     }
     setIsAudioPlaying(!isAudioPlaying);
+  };
+
+  const updateProgress = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+  
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTime = parseFloat(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
   };
 
   const renderTruncatedText = (text: string) => {
@@ -130,22 +156,17 @@ export function PostContent({ content, caption, mediaType, isExpanded, setIsExpa
         );
       case "audio":
         return (
-          <div ref={audioContainerRef} className="w-full bg-[#00ffff] text-[#000080] p-6 rounded-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-semibold">使命</h3>
-                <p className="text-sm opacity-80">1時間5分・165人がリスニング/リプレイ</p>
-              </div>
+          <div ref={audioContainerRef} className="w-full bg-black rounded-md overflow-hidden">
+            <div className="aspect-video flex items-center justify-center">
+              <audio 
+                className="w-full" 
+                controls 
+                src={content}
+                onPlay={() => setIsAudioPlaying(true)}
+                onPause={() => setIsAudioPlaying(false)}
+                controlsList="nodownload"
+              />
             </div>
-            <Button
-              onClick={toggleAudio}
-              variant="outline"
-              size="icon"
-              className="w-full bg-white text-purple-600 hover:bg-white/90 hover:text-purple-600"
-            >
-              {isAudioPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-              <span className="sr-only">音声を再生</span>
-            </Button>
           </div>
         );
       case "text":

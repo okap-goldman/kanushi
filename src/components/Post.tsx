@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { PostHeader } from "./post/PostHeader";
 import { PostContent } from "./post/PostContent";
 import { PostActions } from "./post/PostActions";
 import { PostComments } from "./post/PostComments";
 import { Dialog, DialogContent, DialogDescription } from "@/components/ui/dialog";
+import { MediaType } from "@/lib/data";
+import { getComments } from "@/lib/postService";
 
 interface PostProps {
   author: {
@@ -14,13 +16,41 @@ interface PostProps {
   };
   content: string;
   caption?: string;
-  mediaType: "text" | "image" | "video" | "audio";
+  mediaType: MediaType;
+  postId: string;
 }
 
-export function Post({ author, content, caption, mediaType }: PostProps) {
+export function Post({ author, content, caption, mediaType, postId }: PostProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showFullPost, setShowFullPost] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+
+  // 投稿のコメントを取得する関数
+  const fetchComments = async () => {
+    if (!showComments) return;
+    
+    setIsLoadingComments(true);
+    try {
+      const { data, error } = await getComments(postId);
+      if (error) throw error;
+      if (data) {
+        setComments(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch comments:', err);
+    } finally {
+      setIsLoadingComments(false);
+    }
+  };
+
+  // コメントダイアログが開かれた時にコメントを取得
+  useEffect(() => {
+    if (showComments) {
+      fetchComments();
+    }
+  }, [showComments]);
 
   return (
     <Card className="p-4 space-y-4">
@@ -40,7 +70,7 @@ export function Post({ author, content, caption, mediaType }: PostProps) {
       </div>
 
       <PostActions
-        postId="1"
+        postId={postId}
         onComment={() => setShowComments(true)}
       />
 
@@ -50,18 +80,10 @@ export function Post({ author, content, caption, mediaType }: PostProps) {
             コメントセクション
           </DialogDescription>
           <PostComments
-            postId="1"
-            comments={[
-              {
-                id: "1",
-                author: {
-                  name: "テストユーザー",
-                  image: "https://api.dicebear.com/7.x/avataaars/svg?seed=test",
-                },
-                content: "素晴らしい投稿ですね！",
-                createdAt: new Date().toISOString(),
-              },
-            ]}
+            postId={postId}
+            comments={comments}
+            isLoading={isLoadingComments}
+            onCommentAdded={fetchComments}
           />
         </DialogContent>
       </Dialog>
@@ -84,7 +106,7 @@ export function Post({ author, content, caption, mediaType }: PostProps) {
                 <p className="text-sm whitespace-pre-wrap">{caption}</p>
               )}
               <PostActions
-                postId="1"
+                postId={postId}
                 onComment={() => setShowComments(true)}
               />
             </div>

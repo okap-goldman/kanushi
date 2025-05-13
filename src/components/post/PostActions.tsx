@@ -1,9 +1,11 @@
-import { Heart, MessageSquare, Flame } from "lucide-react";
-import { useState } from "react";
+import { Heart, MessageSquare, Flame, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import { toggleLike, checkLiked } from "@/lib/postService";
+import { useToast } from "@/hooks/use-toast";
 
 interface PostActionsProps {
   postId: string;
@@ -15,6 +17,84 @@ export function PostActions({ postId, onComment }: PostActionsProps) {
   const [kuratta, setKuratta] = useState(false);
   const [kurattaText, setKurattaText] = useState("");
   const [showKurattaDialog, setShowKurattaDialog] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
+  const [isCheckingLike, setIsCheckingLike] = useState(true);
+  const [isSubmittingKuratta, setIsSubmittingKuratta] = useState(false);
+  const { toast } = useToast();
+  
+  // 仮のユーザーID
+  const tempCurrentUserId = "00000000-0000-0000-0000-000000000004"; // "内なる光"ユーザー
+
+  useEffect(() => {
+    // 投稿にいいねしているかチェック
+    const checkIfLiked = async () => {
+      try {
+        setIsCheckingLike(true);
+        const { data, error } = await checkLiked(postId, tempCurrentUserId);
+        if (error) throw error;
+        setLiked(!!data);
+      } catch (err) {
+        console.error('Failed to check like status:', err);
+      } finally {
+        setIsCheckingLike(false);
+      }
+    };
+    
+    checkIfLiked();
+  }, [postId]);
+
+  const handleLike = async () => {
+    if (isLiking) return;
+    
+    try {
+      setIsLiking(true);
+      const { data, error } = await toggleLike(postId, tempCurrentUserId);
+      
+      if (error) throw error;
+      
+      if (data) {
+        setLiked(data.liked);
+        toast({
+          title: data.liked ? "投稿にいいねしました" : "いいねを取り消しました",
+        });
+      }
+    } catch (err) {
+      console.error('Failed to toggle like:', err);
+      toast({
+        title: "いいねの処理に失敗しました",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const handleKuratta = async () => {
+    if (!kurattaText.trim() || isSubmittingKuratta) return;
+    
+    setIsSubmittingKuratta(true);
+    
+    try {
+      // ここで「くらった」データを保存する処理を実装
+      // 現在は単純にコンソールに出力して状態を変更
+      console.log("「くらった」テキスト:", kurattaText, "投稿ID:", postId);
+      
+      // 成功したと仮定
+      setKuratta(true);
+      setShowKurattaDialog(false);
+      toast({
+        title: "魂に響いた部分を共有しました",
+      });
+    } catch (err) {
+      console.error('Failed to submit kuratta:', err);
+      toast({
+        title: "共有に失敗しました",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmittingKuratta(false);
+    }
+  };
 
   return (
     <div className="flex items-center gap-4">
@@ -22,14 +102,19 @@ export function PostActions({ postId, onComment }: PostActionsProps) {
         variant="ghost"
         size="sm"
         className="flex items-center gap-2 group"
-        onClick={() => setLiked(!liked)}
+        onClick={handleLike}
+        disabled={isCheckingLike || isLiking}
       >
-        <Heart 
-          className={cn(
-            "h-5 w-5 transition-all duration-300 ease-in-out",
-            liked && "fill-red-500 text-red-500 scale-125 animate-heartBeat"
-          )} 
-        />
+        {isCheckingLike || isLiking ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <Heart 
+            className={cn(
+              "h-5 w-5 transition-all duration-300 ease-in-out",
+              liked && "fill-red-500 text-red-500 scale-125 animate-heartBeat"
+            )} 
+          />
+        )}
       </Button>
 
       <Button
@@ -62,20 +147,18 @@ export function PostActions({ postId, onComment }: PostActionsProps) {
               value={kurattaText}
               onChange={(e) => setKurattaText(e.target.value)}
               className="min-h-[100px]"
+              disabled={isSubmittingKuratta}
             />
           </div>
           <DialogFooter className="mt-4">
             <Button
-              onClick={() => {
-                if (kurattaText.trim()) {
-                  setKuratta(true);
-                  setShowKurattaDialog(false);
-                  // ここでkurattaTextを使って必要な処理を行う
-                  console.log("ハイライトテキスト:", kurattaText);
-                }
-              }}
+              onClick={handleKuratta}
               className="w-full"
+              disabled={!kurattaText.trim() || isSubmittingKuratta}
             >
+              {isSubmittingKuratta ? (
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+              ) : null}
               送信
             </Button>
           </DialogFooter>

@@ -167,6 +167,9 @@ const REGIONS_DATA = {
 };
 
 export function RegionDetailView({ open, onClose, region }: RegionDetailViewProps) {
+  // Don't proceed if there's no region selected
+  if (!region) return null;
+  
   const regionData = REGIONS_DATA[region as keyof typeof REGIONS_DATA];
 
   if (!regionData) return null;

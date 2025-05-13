@@ -61,6 +61,14 @@ export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps
           <span className="sr-only">ショップ</span>
         </Button>
       </div>
+      
+      <Button 
+        variant="outline" 
+        className="mt-2"
+        onClick={() => navigate("/profile/edit")}
+      >
+        プロフィールを編集
+      </Button>
 
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold">心の探求者</h1>
