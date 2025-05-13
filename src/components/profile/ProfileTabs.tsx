@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Post } from "@/components/Post";
 import { SAMPLE_POSTS } from "@/lib/data";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Flame, Quote } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ProfileTabsProps {
   selectedTab: string;
@@ -29,6 +30,15 @@ type PostType = {
   content: string;
   caption?: string;
   mediaType: "text" | "image" | "video" | "audio";
+  postId?: string;
+  tags?: { id: string; name: string }[];
+};
+
+// Define the highlight comment type
+type HighlightComment = {
+  postId: string;
+  text: string;
+  date: string;
 };
 
 // Format time for audio display
@@ -48,6 +58,25 @@ export function ProfileTabs({ selectedTab, setSelectedPost }: ProfileTabsProps) 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Sample highlight comments (これは後でSupabaseから取得するようにします)
+  const [highlightComments, setHighlightComments] = useState<HighlightComment[]>([
+    {
+      postId: "1",
+      text: "この投稿の言葉が心に深く響きました。特に「青梅に来て生まれ変わった」という部分に共感します。環境が変わることで人は本当に変われるのですね。",
+      date: "2024年5月10日"
+    },
+    {
+      postId: "2",
+      text: "瞑想の音声がとても落ち着きます。毎日の習慣にしたいと思います。",
+      date: "2024年5月8日"
+    },
+    {
+      postId: "3",
+      text: "美しい風景ですね。私も瞑想する特別な場所を見つけたいと思います。",
+      date: "2024年5月5日"
+    }
+  ]);
   
   // Get all audio posts
   const audioPosts = SAMPLE_POSTS.filter((post: PostType) => post.mediaType === "audio");
@@ -303,10 +332,52 @@ export function ProfileTabs({ selectedTab, setSelectedPost }: ProfileTabsProps) 
       </TabsContent>
 
       <TabsContent value="highlights" className="mt-4">
-        <div className="space-y-4">
-          {SAMPLE_POSTS.map((post, index) => (
-            <Post key={index} {...post} />
-          ))}
+        <div className="space-y-6">
+          {SAMPLE_POSTS.map((post, index) => {
+            // 投稿に対応するハイライトコメントを探す
+            const highlightComment = highlightComments.find(comment => comment.postId === String(index + 1));
+            
+            // ハイライトコメントがある場合のみ表示
+            return highlightComment ? (
+              <Card key={index} className="overflow-hidden">
+                <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b">
+                  <div className="flex items-start gap-3">
+                    <div className="min-w-8 mt-1">
+                      <Avatar className="h-8 w-8 border-2 border-orange-200">
+                        <AvatarImage src={post.author.image} />
+                        <AvatarFallback>{post.author.name[0]}</AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Quote className="h-4 w-4 text-orange-500" />
+                        <p className="text-sm font-medium text-orange-700">
+                          私のハイライト
+                        </p>
+                      </div>
+                      <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                        {highlightComment.text}
+                      </p>
+                      <div className="mt-2 flex items-center justify-between">
+                        <div className="text-xs text-muted-foreground">{highlightComment.date}</div>
+                        <div className="flex items-center gap-1.5">
+                          <Flame className="h-4 w-4 text-orange-500 fill-orange-500" />
+                          <span className="text-xs font-medium text-orange-700">ハイライト</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-2">
+                  <Post 
+                    postId={String(index + 1)}
+                    key={index} 
+                    {...post} 
+                  />
+                </div>
+              </Card>
+            ) : null;
+          }).filter(Boolean)}
         </div>
       </TabsContent>
 

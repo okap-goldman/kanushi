@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { toggleLike, checkLiked } from "@/lib/postService";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 interface PostActionsProps {
   postId: string;
@@ -21,16 +22,17 @@ export function PostActions({ postId, onComment }: PostActionsProps) {
   const [isCheckingLike, setIsCheckingLike] = useState(true);
   const [isSubmittingKuratta, setIsSubmittingKuratta] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   
-  // 仮のユーザーID
-  const tempCurrentUserId = "00000000-0000-0000-0000-000000000004"; // "内なる光"ユーザー
+  // ユーザーIDが利用可能な場合はそちらを使用し、そうでない場合はフォールバック
+  const currentUserId = user?.id || "00000000-0000-0000-0000-000000000004"; // フォールバックは "内なる光"ユーザー
 
   useEffect(() => {
     // 投稿にいいねしているかチェック
     const checkIfLiked = async () => {
       try {
         setIsCheckingLike(true);
-        const { data, error } = await checkLiked(postId, tempCurrentUserId);
+        const { data, error } = await checkLiked(postId, currentUserId);
         if (error) throw error;
         setLiked(!!data);
       } catch (err) {
@@ -41,14 +43,14 @@ export function PostActions({ postId, onComment }: PostActionsProps) {
     };
     
     checkIfLiked();
-  }, [postId]);
+  }, [postId, currentUserId]);
 
   const handleLike = async () => {
     if (isLiking) return;
     
     try {
       setIsLiking(true);
-      const { data, error } = await toggleLike(postId, tempCurrentUserId);
+      const { data, error } = await toggleLike(postId, currentUserId);
       
       if (error) throw error;
       
