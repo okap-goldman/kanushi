@@ -22,6 +22,12 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [autoPlayEnabled, setAutoPlayEnabled] = useState<boolean>(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState<string>("");
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([
+    "瞑想", "スピリチュアル", "マインドフルネス", "ヒーリング",
+    "心の成長", "ヨガ", "エネルギーワーク", "タロット", "自己啓発", "自然"
+  ]);
   
   // ファイルをアップロードするための状態
   const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
@@ -42,6 +48,7 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
     { icon: MapPin, label: "チェックイン", value: "location" },
     { icon: Smile, label: "気分", value: "mood" },
     { icon: Palette, label: "背景色", value: "backgroundColor" },
+    { icon: BookText, label: "タグ付け", value: "addTags" },
   ];
 
   const handlePostTypeSelect = (type: string) => {
@@ -53,9 +60,28 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
       } else {
         startRecording();
       }
+    } else if (type === "addTags") {
+      setSelectedTab("tags");
     } else {
       console.log("Selected post type:", type);
     }
+  };
+  
+  const handleAddTag = () => {
+    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+      setTags([...tags, tagInput.trim()]);
+      setTagInput("");
+    }
+  };
+  
+  const handleTagSelect = (tag: string) => {
+    if (!tags.includes(tag)) {
+      setTags([...tags, tag]);
+    }
+  };
+  
+  const handleRemoveTag = (tag: string) => {
+    setTags(tags.filter(t => t !== tag));
   };
 
   const [recordingTimer, setRecordingTimer] = useState<number>(0);
@@ -276,7 +302,8 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
         text_content: postContent,
         media_url: uploadedUrls.length > 0 ? uploadedUrls : null,
         audio_url: audioFileUrl,
-        thumbnail_url: uploadedUrls.length > 0 ? uploadedUrls[0] : null
+        thumbnail_url: uploadedUrls.length > 0 ? uploadedUrls[0] : null,
+        tags: tags.length > 0 ? tags : undefined
       });
       
       if (!success || error) {
@@ -296,6 +323,8 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
       setAudioBlob(null);
       setUploadedImageUrls([]);
       setUploadedAudioUrl(null);
+      setTags([]);
+      setTagInput("");
       setSelectedTab("compose");
       
       onClose();
@@ -392,6 +421,25 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
                 />
               </div>
             )}
+            
+            {tags.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <span 
+                    key={tag} 
+                    className="px-2 py-1 bg-slate-100 text-primary text-xs rounded-full flex items-center"
+                  >
+                    #{tag}
+                    <button 
+                      className="ml-1 hover:text-red-500"
+                      onClick={() => handleRemoveTag(tag)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="preview" className="pt-2">
@@ -428,6 +476,80 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
                   </div>
                 ))
               )}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="tags" className="pt-2">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium mb-2">タグを追加</h3>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    placeholder="新しいタグを入力"
+                    className="flex-1 px-3 py-1 border rounded-md text-sm"
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                  />
+                  <Button size="sm" onClick={handleAddTag}>追加</Button>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium mb-2">おすすめタグ</h3>
+                <div className="flex flex-wrap gap-2">
+                  {suggestedTags.map((tag) => (
+                    <button
+                      key={tag}
+                      className={`px-3 py-1 text-xs rounded-full ${
+                        tags.includes(tag) 
+                          ? 'bg-primary text-white' 
+                          : 'bg-slate-100 hover:bg-slate-200'
+                      }`}
+                      onClick={() => handleTagSelect(tag)}
+                      disabled={tags.includes(tag)}
+                    >
+                      #{tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium mb-2">選択したタグ</h3>
+                <div className="flex flex-wrap gap-2">
+                  {tags.length > 0 ? (
+                    tags.map((tag) => (
+                      <span 
+                        key={tag} 
+                        className="px-3 py-1 bg-primary text-white text-xs rounded-full flex items-center"
+                      >
+                        #{tag}
+                        <button 
+                          className="ml-2 text-white hover:text-red-200"
+                          onClick={() => handleRemoveTag(tag)}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">タグが選択されていません</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="pt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => setSelectedTab("compose")}
+                >
+                  完了
+                </Button>
+              </div>
             </div>
           </TabsContent>
         </Tabs>

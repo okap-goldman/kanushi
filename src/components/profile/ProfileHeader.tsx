@@ -1,8 +1,9 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Store } from "lucide-react";
+import { Play, Pause, Store, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 interface ProfileHeaderProps {
   isPlaying: boolean;
@@ -13,6 +14,7 @@ interface ProfileHeaderProps {
 
 export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps) {
   const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -27,6 +29,11 @@ export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps
       audioRef.current.play();
     }
     setIsAudioPlaying(!isAudioPlaying);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
   };
 
   return (
@@ -47,8 +54,8 @@ export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps
         </Button>
 
         <Avatar className="h-24 w-24">
-          <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=1" />
-          <AvatarFallback>UN</AvatarFallback>
+          <AvatarImage src={profile?.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || '1'}`} />
+          <AvatarFallback>{profile?.name?.[0] || user?.email?.[0] || 'U'}</AvatarFallback>
         </Avatar>
 
         <Button
@@ -62,20 +69,31 @@ export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps
         </Button>
       </div>
       
-      <Button 
-        variant="outline" 
-        className="mt-2"
-        onClick={() => navigate("/profile/edit")}
-      >
-        プロフィールを編集
-      </Button>
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          className="mt-2"
+          onClick={() => navigate("/profile/edit")}
+        >
+          プロフィールを編集
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          className="mt-2"
+          onClick={handleSignOut}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          ログアウト
+        </Button>
+      </div>
 
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold">心の探求者</h1>
-        <p className="text-sm text-muted-foreground">@seeker_of_heart</p>
-        <p className="text-sm text-muted-foreground">ID: 123456789</p>
+        <h1 className="text-2xl font-bold">{profile?.name || user?.email?.split('@')[0]}</h1>
+        <p className="text-sm text-muted-foreground">@{profile?.username || 'username'}</p>
+        <p className="text-sm text-muted-foreground">ID: {user?.id?.substring(0, 8) || '123456789'}</p>
         <p className="text-muted-foreground max-w-md">
-          地球での使命：人々の心に光を灯し、内なる平安への道を示すこと
+          {profile?.bio || '地球での使命：人々の心に光を灯し、内なる平安への道を示すこと'}
         </p>
       </div>
 

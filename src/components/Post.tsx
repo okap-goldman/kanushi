@@ -18,9 +18,10 @@ interface PostProps {
   caption?: string;
   mediaType: MediaType;
   postId: string;
+  tags?: { id: string; name: string }[];
 }
 
-export function Post({ author, content, caption, mediaType, postId }: PostProps) {
+export function Post({ author, content, caption, mediaType, postId, tags = [] }: PostProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showFullPost, setShowFullPost] = useState(false);
@@ -68,6 +69,19 @@ export function Post({ author, content, caption, mediaType, postId }: PostProps)
           setIsExpanded={setIsExpanded}
         />
       </div>
+      
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {tags.map(tag => (
+            <span 
+              key={tag.id}
+              className="text-xs px-2 py-0.5 bg-slate-100 text-primary rounded-full"
+            >
+              #{tag.name}
+            </span>
+          ))}
+        </div>
+      )}
 
       <PostActions
         postId={postId}
@@ -105,6 +119,20 @@ export function Post({ author, content, caption, mediaType, postId }: PostProps)
               {caption && (
                 <p className="text-sm whitespace-pre-wrap">{caption}</p>
               )}
+              
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {tags.map(tag => (
+                    <span 
+                      key={tag.id}
+                      className="text-xs px-2 py-0.5 bg-slate-100 text-primary rounded-full"
+                    >
+                      #{tag.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+              
               <PostActions
                 postId={postId}
                 onComment={() => setShowComments(true)}

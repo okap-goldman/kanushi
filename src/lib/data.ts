@@ -9,6 +9,11 @@ export interface Author {
   image: string;
 }
 
+export interface Tag {
+  id: string;
+  name: string;
+}
+
 export interface Post {
   id: string;
   user_id: string;                // DB field
@@ -26,7 +31,8 @@ export interface Post {
   updated_at?: string;
   likes_count: number;
   comments_count: number;
-  timeline_type: "family" | "watch" | "all";
+  timeline_type?: "family" | "watch" | "all"; // Virtual field for UI
+  tags?: Tag[];                  // Tags associated with the post
 }
 
 export interface Comment {

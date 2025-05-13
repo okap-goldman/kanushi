@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,14 +7,20 @@ import { Card } from "@/components/ui/card";
 import { Mic, Square, Play, Pause, Save, ArrowLeft, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/context/AuthContext";
+import { supabase, uploadFile } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 
 export function ProfileEdit() {
   const navigate = useNavigate();
-  const [avatar, setAvatar] = useState<string>("https://api.dicebear.com/7.x/avataaars/svg?seed=1");
-  const [name, setName] = useState<string>("心の探求者");
-  const [username, setUsername] = useState<string>("seeker_of_heart");
-  const [userId, setUserId] = useState<string>("123456789");
-  const [bio, setBio] = useState<string>("地球での使命：人々の心に光を灯し、内なる平安への道を示すこと");
+  const { user, profile, refreshProfile } = useAuth();
+  const { toast } = useToast();
+  const [avatar, setAvatar] = useState<string>("");
+  const [name, setName] = useState<string>("");
+  const [username, setUsername] = useState<string>("");
+  const [bio, setBio] = useState<string>("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   
   // Audio recording states
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -23,13 +29,24 @@ export function ProfileEdit() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
 
   // Handle avatar file upload
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  useEffect(() => {
+    if (profile) {
+      setAvatar(profile.image || "");
+      setName(profile.name || "");
+      setUsername(profile.username || "");
+      setBio(profile.bio || "");
+    }
+  }, [profile]);
+
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setAvatarFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
@@ -54,8 +71,9 @@ export function ProfileEdit() {
       };
 
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mpeg' });
-        const audioUrl = URL.createObjectURL(audioBlob);
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        setAudioBlob(blob);
+        const audioUrl = URL.createObjectURL(blob);
         setRecordedAudio(audioUrl);
         
         // Release microphone access
@@ -66,7 +84,11 @@ export function ProfileEdit() {
       setIsRecording(true);
     } catch (error) {
       console.error("Error accessing microphone:", error);
-      alert("マイクへのアクセスが許可されていません。ブラウザの設定を確認してください。");
+      toast({
+        title: "エラー",
+        description: "マイクへのアクセスが許可されていません。ブラウザの設定を確認してください。",
+        variant: "destructive",
+      });
     }
   };
 
@@ -102,11 +124,82 @@ export function ProfileEdit() {
   };
 
   // Save profile changes
-  const saveProfile = () => {
-    // Here you would typically send data to the backend
-    // For now, we'll just navigate back to the profile
-    alert("プロフィールが保存されました");
-    navigate("/profile");
+  const saveProfile = async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      
+      let imageUrl = profile?.image || "";
+      
+      // Upload the avatar file if it exists
+      if (avatarFile) {
+        const result = await uploadFile(avatarFile, 'avatars');
+        if (result.error) {
+          throw result.error;
+        }
+        if (result.url) {
+          imageUrl = result.url;
+        }
+      }
+
+      // Audio upload
+      let audioUrl = profile?.audio_url || "";
+      if (audioBlob) {
+        const result = await supabase.storage
+          .from('media')
+          .upload(`audio/${Date.now()}_profile.wav`, audioBlob, {
+            contentType: 'audio/wav',
+            cacheControl: '3600',
+            upsert: false
+          });
+          
+        if (result.error) {
+          throw result.error;
+        }
+        
+        const { data } = supabase.storage
+          .from('media')
+          .getPublicUrl(result.data.path);
+        
+        audioUrl = data.publicUrl;
+      }
+
+      // Update the profile in Supabase
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: name,
+          username: username,
+          bio: bio,
+          image: imageUrl,
+          audio_url: audioUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      await refreshProfile();
+      
+      toast({
+        title: "保存完了",
+        description: "プロフィールが更新されました",
+      });
+      
+      navigate("/profile");
+    } catch (error: any) {
+      console.error("Error saving profile:", error);
+      toast({
+        title: "エラー",
+        description: error.message || "プロフィールの保存中にエラーが発生しました",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -117,9 +210,9 @@ export function ProfileEdit() {
           戻る
         </Button>
         <h1 className="text-xl font-bold">プロフィール編集</h1>
-        <Button onClick={saveProfile}>
+        <Button onClick={saveProfile} disabled={isLoading}>
           <Save className="h-5 w-5 mr-2" />
-          保存
+          {isLoading ? "保存中..." : "保存"}
         </Button>
       </div>
 
@@ -127,12 +220,13 @@ export function ProfileEdit() {
         <div className="relative">
           <Avatar className="h-24 w-24">
             <AvatarImage src={avatar} />
-            <AvatarFallback>UN</AvatarFallback>
+            <AvatarFallback>{name?.[0] || user?.email?.[0] || 'U'}</AvatarFallback>
           </Avatar>
           <Button 
             size="icon" 
             className="absolute bottom-0 right-0 rounded-full h-8 w-8"
             onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
           >
             <Upload className="h-4 w-4" />
           </Button>
@@ -153,6 +247,7 @@ export function ProfileEdit() {
               value={name} 
               onChange={(e) => setName(e.target.value)} 
               placeholder="名前を入力" 
+              disabled={isLoading}
             />
           </div>
 
@@ -162,7 +257,8 @@ export function ProfileEdit() {
               id="username" 
               value={username} 
               onChange={(e) => setUsername(e.target.value)} 
-              placeholder="ユーザーネームを入力" 
+              placeholder="ユーザーネームを入力"
+              disabled={isLoading}
             />
           </div>
 
@@ -170,8 +266,7 @@ export function ProfileEdit() {
             <Label htmlFor="userId">ユーザーID</Label>
             <Input 
               id="userId" 
-              value={userId} 
-              onChange={(e) => setUserId(e.target.value)} 
+              value={user?.id || ""} 
               placeholder="ユーザーIDを入力"
               disabled 
             />
@@ -185,7 +280,8 @@ export function ProfileEdit() {
               value={bio} 
               onChange={(e) => setBio(e.target.value)} 
               placeholder="自己紹介を入力"
-              rows={4} 
+              rows={4}
+              disabled={isLoading}
             />
           </div>
 
@@ -200,7 +296,7 @@ export function ProfileEdit() {
                 <Button
                   variant="outline"
                   onClick={startRecording}
-                  disabled={isRecording}
+                  disabled={isRecording || isLoading}
                 >
                   <Mic className="h-4 w-4 mr-2" />
                   録音開始
@@ -209,6 +305,7 @@ export function ProfileEdit() {
                 <Button
                   variant="destructive"
                   onClick={stopRecording}
+                  disabled={isLoading}
                 >
                   <Square className="h-4 w-4 mr-2" />
                   録音停止
@@ -219,7 +316,7 @@ export function ProfileEdit() {
                 <Button
                   variant="outline"
                   onClick={playRecordedAudio}
-                  disabled={isRecording}
+                  disabled={isRecording || isLoading}
                 >
                   {isPlaying ? (
                     <Pause className="h-4 w-4 mr-2" />
@@ -231,7 +328,7 @@ export function ProfileEdit() {
               )}
             </div>
             
-            {recordedAudio && (
+            {(recordedAudio || profile?.audio_url) && (
               <div className="mt-2">
                 <p className="text-xs text-muted-foreground">
                   ✅ 録音済み

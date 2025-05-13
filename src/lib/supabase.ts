@@ -1,11 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 
-// 環境変数からSupabaseの設定を取得（後で.envファイルに追加します）
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// 環境変数からSupabaseの設定を取得
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+console.log('Using Supabase URL:', supabaseUrl);
 
 // Supabaseクライアントの作成
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce'
+  }
+});
 
 // 投稿データの型定義
 export interface PostData {
@@ -15,6 +24,7 @@ export interface PostData {
   media_url?: string | null;
   audio_url?: string | null;
   thumbnail_url?: string | null;
+  tags?: string[]; // タグの配列
 }
 
 // ファイルアップロード関数
@@ -108,12 +118,65 @@ export const savePost = async (
         content_type: postData.content_type,
         text_content: postData.text_content,
         media_url: Array.isArray(postData.media_url) ? JSON.stringify(postData.media_url) : postData.media_url,
+        audio_url: postData.audio_url,
         thumbnail_url: postData.thumbnail_url || primaryMediaUrl, // サムネイルがなければ最初のメディアを使用
         created_at: new Date().toISOString()
       })
       .select();
 
     if (error) throw error;
+
+    // タグの処理
+    if (postData.tags && postData.tags.length > 0 && data && data.length > 0) {
+      const postId = data[0].id;
+      
+      // 各タグを処理
+      for (const tagName of postData.tags) {
+        // まず、既存のタグを探す
+        const { data: existingTag, error: findError } = await supabase
+          .from('tags')
+          .select('id')
+          .eq('name', tagName)
+          .maybeSingle();
+        
+        if (findError) {
+          console.error(`Error finding tag ${tagName}:`, findError);
+          continue;
+        }
+        
+        let tagId;
+        
+        // タグが存在しなければ作成
+        if (!existingTag) {
+          const { data: newTag, error: createError } = await supabase
+            .from('tags')
+            .insert({ name: tagName })
+            .select()
+            .single();
+          
+          if (createError) {
+            console.error(`Error creating tag ${tagName}:`, createError);
+            continue;
+          }
+          
+          tagId = newTag.id;
+        } else {
+          tagId = existingTag.id;
+        }
+        
+        // タグを投稿に関連付け
+        const { error: linkError } = await supabase
+          .from('post_tags')
+          .insert({
+            post_id: postId,
+            tag_id: tagId
+          });
+        
+        if (linkError) {
+          console.error(`Error linking tag ${tagName} to post:`, linkError);
+        }
+      }
+    }
 
     return { success: true, error: null, data };
   } catch (error) {

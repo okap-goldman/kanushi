@@ -1,9 +1,9 @@
 import { supabase } from './supabase';
-import { Post, ApiResponse, ContentType, Comment } from './data';
+import { Post, ApiResponse, ContentType, Comment, Tag } from './data';
 
 /**
  * Fetches all posts from Supabase
- * @param timeline_type Optional filter for timeline type (family, watch, or all)
+ * @param timeline_type Optional filter for UI segregation (will be handled in memory)
  */
 export const getPosts = async (timeline_type?: 'family' | 'watch' | 'all'): Promise<ApiResponse<Post[]>> => {
   try {
@@ -11,14 +11,14 @@ export const getPosts = async (timeline_type?: 'family' | 'watch' | 'all'): Prom
       .from('posts')
       .select(`
         *,
-        author:profiles(id, name, image)
+        author:profiles(id, name, image),
+        tags:post_tags(
+          tag:tags(id, name)
+        )
       `)
       .order('created_at', { ascending: false });
 
-    // Apply timeline filter if provided
-    if (timeline_type && timeline_type !== 'all') {
-      query = query.eq('timeline_type', timeline_type);
-    }
+    // Timeline filtering will be handled client-side since the database doesn't have this field
 
     const { data, error } = await query;
 
@@ -40,6 +40,18 @@ export const getPosts = async (timeline_type?: 'family' | 'watch' | 'all'): Prom
       if (post.content_type !== 'text' && post.text_content) {
         caption = post.text_content;
       }
+      
+      // Add virtual timeline_type field based on user and content
+      // For demonstration, even user_ids are "family" and odd are "watch"
+      const virtual_timeline_type = 
+        post.user_id.endsWith('1') || post.user_id.endsWith('3') ? 'watch' : 'family';
+
+      // Format tags array from the nested structure returned by Supabase
+      const tags = post.tags
+        ? post.tags
+            .filter(tag => tag.tag !== null)
+            .map(tag => tag.tag as Tag)
+        : [];
 
       return {
         ...post,
@@ -51,10 +63,18 @@ export const getPosts = async (timeline_type?: 'family' | 'watch' | 'all'): Prom
         },
         media_type: post.content_type as ContentType,
         content: content,
-        caption: caption
+        caption: caption,
+        timeline_type: virtual_timeline_type,
+        tags: tags
       };
     }) as Post[];
 
+    // If timeline_type filter is provided, apply it in memory
+    if (timeline_type && timeline_type !== 'all') {
+      const filteredPosts = formattedPosts.filter(post => post.timeline_type === timeline_type);
+      return { data: filteredPosts, error: null };
+    }
+    
     return { data: formattedPosts, error: null };
   } catch (error) {
     console.error('Error fetching posts:', error);
@@ -72,7 +92,10 @@ export const getPostById = async (id: string): Promise<ApiResponse<Post>> => {
       .from('posts')
       .select(`
         *,
-        author:profiles(id, name, image)
+        author:profiles(id, name, image),
+        tags:post_tags(
+          tag:tags(id, name)
+        )
       `)
       .eq('id', id)
       .single();
@@ -95,6 +118,13 @@ export const getPostById = async (id: string): Promise<ApiResponse<Post>> => {
       caption = data.text_content;
     }
 
+    // Format tags array from the nested structure returned by Supabase
+    const tags = data.tags
+      ? data.tags
+          .filter(tag => tag.tag !== null)
+          .map(tag => tag.tag as Tag)
+      : [];
+
     const formattedPost = {
       ...data,
       author_id: data.user_id, // Mapping for API compatibility
@@ -105,7 +135,8 @@ export const getPostById = async (id: string): Promise<ApiResponse<Post>> => {
       },
       media_type: data.content_type as ContentType,
       content: content,
-      caption: caption
+      caption: caption,
+      tags: tags
     } as Post;
 
     return { data: formattedPost, error: null };
@@ -135,6 +166,7 @@ export const createPost = async (post: Omit<Post, 'id' | 'created_at' | 'updated
       audioUrl = post.content || post.audio_url || post.media_url;
     }
 
+    // Insert the post data
     const { data, error } = await supabase
       .from('posts')
       .insert({
@@ -145,8 +177,7 @@ export const createPost = async (post: Omit<Post, 'id' | 'created_at' | 'updated
         audio_url: audioUrl,
         thumbnail_url: post.thumbnail_url,
         likes_count: 0,
-        comments_count: 0,
-        timeline_type: post.timeline_type
+        comments_count: 0
       })
       .select()
       .single();
@@ -155,17 +186,87 @@ export const createPost = async (post: Omit<Post, 'id' | 'created_at' | 'updated
       throw error;
     }
 
-    // Format the response to match the expected Post interface
-    const formattedPost = {
-      ...data,
-      author_id: data.user_id,
-      media_type: data.content_type as ContentType,
-      content: data.content_type === 'text' ? data.text_content : 
-              (data.content_type === 'audio' ? (data.audio_url || data.media_url) : data.media_url),
-      caption: data.content_type !== 'text' ? data.text_content : undefined
-    } as unknown as Post;
+    // Handle tags if they exist
+    if (post.tags && post.tags.length > 0) {
+      // First, find or create tags
+      const tagPromises = post.tags.map(async (tag) => {
+        // If tag has an ID, we assume it already exists
+        if (tag.id) {
+          return tag;
+        }
+        
+        // Otherwise, try to find the tag by name or create a new one
+        const { data: existingTag, error: findError } = await supabase
+          .from('tags')
+          .select('id, name')
+          .eq('name', tag.name)
+          .maybeSingle();
+          
+        if (findError) {
+          console.error('Error finding tag:', findError);
+          return null;
+        }
+        
+        if (existingTag) {
+          return existingTag;
+        }
+        
+        // Create new tag
+        const { data: newTag, error: insertError } = await supabase
+          .from('tags')
+          .insert({ name: tag.name })
+          .select()
+          .single();
+          
+        if (insertError) {
+          console.error('Error creating tag:', insertError);
+          return null;
+        }
+        
+        return newTag;
+      });
+      
+      const resolvedTags = await Promise.all(tagPromises);
+      const validTags = resolvedTags.filter(tag => tag !== null);
+      
+      // Associate tags with the post
+      if (validTags.length > 0) {
+        const postTagsData = validTags.map(tag => ({
+          post_id: data.id,
+          tag_id: tag.id
+        }));
+        
+        const { error: linkError } = await supabase
+          .from('post_tags')
+          .insert(postTagsData);
+          
+        if (linkError) {
+          console.error('Error linking tags to post:', linkError);
+        }
+      }
+    }
 
-    return { data: formattedPost, error: null };
+    // Fetch the post with its tags to return the complete data
+    const { data: completedPost, error: fetchError } = await getPostById(data.id);
+    
+    if (fetchError) {
+      console.error('Error fetching completed post:', fetchError);
+      
+      // If we can't fetch the complete post, at least return what we have
+      const formattedPost = {
+        ...data,
+        author_id: data.user_id,
+        media_type: data.content_type as ContentType,
+        content: data.content_type === 'text' ? data.text_content : 
+                (data.content_type === 'audio' ? (data.audio_url || data.media_url) : data.media_url),
+        caption: data.content_type !== 'text' ? data.text_content : undefined,
+        tags: post.tags || []
+      } as unknown as Post;
+      
+      return { data: formattedPost, error: null };
+    }
+
+    return { data: completedPost, error: null };
   } catch (error) {
     console.error('Error creating post:', error);
     return { data: null, error: error as Error };

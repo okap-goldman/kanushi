@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, MessageCircle, User } from "lucide-react";
+import { Bell, MessageCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,18 +10,12 @@ import {
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAuthStatus } from "./UserAuthStatus";
 
 export function Navbar() {
   const { toast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
-
-  const handleLogin = () => {
-    toast({
-      title: "お知らせ",
-      description: "次回のアップデートでGoogleログインを実装予定です。",
-    });
-  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b">
@@ -47,10 +41,7 @@ export function Navbar() {
             <MessageCircle className="h-5 w-5" />
           </Button>
           
-          <Button onClick={handleLogin} className="gap-2">
-            <User className="h-4 w-4" />
-            ログイン
-          </Button>
+          <UserAuthStatus />
         </div>
       </div>
 

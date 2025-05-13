@@ -1,98 +1,112 @@
-# Supabase Integration Guide for Kanushi
+# Kanushi アプリケーション用 Supabase インテグレーションガイド
 
-このドキュメントでは、KanushiプロジェクトにおけるSupabaseの設定と使用方法について説明します。
+このドキュメントは、Kanushiアプリケーションで使用されるSupabaseの設定とデータモデルについて説明します。
 
 ## セットアップ手順
 
-1. Supabaseアカウントを作成し、新しいプロジェクトを開始します。
-2. `.env`ファイルに必要な環境変数を追加します（`.env.example`を参照）。
-```
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
+1. Supabaseアカウントを作成し、新しいプロジェクトをセットアップします。
+2. `.env`ファイルを作成し、以下の環境変数を設定します：
+   ```
+   VITE_SUPABASE_URL=https://your-project-id.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+   ```
+3. `supabase-schema-clean.sql`ファイルの内容をSupabaseのSQLエディターで実行します。これによりデータベースの構造が作成され、サンプルデータが挿入されます。
 
-3. `supabase-schema.sql`ファイル内のSQLをSupabaseのSQLエディタで実行し、データベースのスキーマとサンプルデータを設定します。
+## データモデル
 
-## データベース構造
+### プロファイル (profiles)
+ユーザープロファイル情報を格納します。
+- `id` (UUID): ユーザーID
+- `name` (TEXT): 表示名
+- `image` (TEXT): プロフィール画像のURL
+- `username` (TEXT): ユニークなユーザー名
+- `bio` (TEXT): 自己紹介
+- `created_at` (TIMESTAMP): 作成日時
+- `updated_at` (TIMESTAMP): 更新日時
 
-Supabaseには以下のテーブルが設定されています：
+### 投稿 (posts)
+ユーザーの投稿を格納します。
+- `id` (UUID): 投稿ID
+- `user_id` (UUID): 作成者ID（profilesテーブルの外部キー）
+- `content_type` (TEXT): コンテンツタイプ（'text', 'image', 'video', 'audio'のいずれか）
+- `text_content` (TEXT): テキストコンテンツ
+- `media_url` (TEXT): メディアのURL（画像、動画）
+- `audio_url` (TEXT): 音声ファイルのURL
+- `thumbnail_url` (TEXT): サムネイル画像のURL
+- `likes_count` (INTEGER): いいねの数
+- `comments_count` (INTEGER): コメントの数
+- `timeline_type` (TEXT): タイムラインタイプ（'family', 'watch', 'all'のいずれか）
+- `created_at` (TIMESTAMP): 作成日時
 
-### profiles
-ユーザープロファイル情報を保存します。
-- `id`: ユーザーID (UUID)
-- `name`: 表示名
-- `image`: プロフィール画像URL
-- `username`: ユニークなユーザー名
-- `bio`: 自己紹介
-- `created_at`: 作成日時
-- `updated_at`: 更新日時
+### タグ (tags)
+投稿に関連付けられるタグを格納します。
+- `id` (UUID): タグID
+- `name` (TEXT): タグ名（ユニーク）
+- `created_at` (TIMESTAMP): 作成日時
 
-### posts
-投稿データを保存します。
-- `id`: 投稿ID (UUID)
-- `author_id`: 投稿者ID (profiles.idへの参照)
-- `content`: 投稿内容（テキストまたはメディアURL）
-- `caption`: 投稿の説明 (オプション)
-- `media_type`: メディアタイプ ('text', 'image', 'video', 'audio')
-- `likes_count`: いいね数
-- `comments_count`: コメント数
-- `timeline_type`: タイムラインタイプ ('family', 'watch', 'all')
-- `created_at`: 作成日時
-- `updated_at`: 更新日時
+### 投稿タグ関連付け (post_tags)
+投稿とタグの多対多の関連付けを格納します。
+- `id` (UUID): 関連付けID
+- `post_id` (UUID): 投稿ID（postsテーブルの外部キー）
+- `tag_id` (UUID): タグID（tagsテーブルの外部キー）
+- `created_at` (TIMESTAMP): 作成日時
 
-### comments
-投稿へのコメントを保存します。
-- `id`: コメントID (UUID)
-- `post_id`: 投稿ID (posts.idへの参照)
-- `author_id`: コメント投稿者ID (profiles.idへの参照)
-- `content`: コメント内容
-- `created_at`: 作成日時
+### コメント (comments)
+投稿に対するコメントを格納します。
+- `id` (UUID): コメントID
+- `post_id` (UUID): 投稿ID（postsテーブルの外部キー）
+- `user_id` (UUID): コメント作成者ID（profilesテーブルの外部キー）
+- `content` (TEXT): コメント内容
+- `created_at` (TIMESTAMP): 作成日時
 
-### likes
-投稿へのいいねを追跡します。
-- `id`: いいねID (UUID)
-- `post_id`: 投稿ID (posts.idへの参照)
-- `user_id`: ユーザーID (profiles.idへの参照)
-- `created_at`: 作成日時
+### いいね (likes)
+投稿に対するいいねを格納します。
+- `id` (UUID): いいねID
+- `post_id` (UUID): 投稿ID（postsテーブルの外部キー）
+- `user_id` (UUID): いいねをした人のID（profilesテーブルの外部キー）
+- `created_at` (TIMESTAMP): 作成日時
+
+## APIエンドポイント
+
+アプリケーションとSupabaseの連携には、以下のAPIエンドポイントが実装されています：
+
+### 投稿関連
+- `getPosts(timeline_type?)`: 投稿一覧を取得する（オプションでタイムラインタイプでフィルタリング）
+- `getPostById(id)`: 投稿をIDで取得する
+- `createPost(post)`: 新しい投稿を作成する（タグの関連付けも含む）
+
+### コメント関連
+- `getComments(post_id)`: 投稿に対するコメントを取得する
+- `createComment(comment)`: 新しいコメントを作成する
+
+### いいね関連
+- `toggleLike(post_id, user_id)`: いいねの切り替え
+- `checkLiked(post_id, user_id)`: ユーザーがすでにいいねしているか確認する
+
+## セキュリティ
+
+Row Level Security (RLS) を使用して、データへのアクセス制御を実装しています：
+
+- 全てのデータは誰でも**閲覧可能**
+- ユーザーは自分自身のプロファイルのみ**更新・削除可能**
+- ユーザーは自分の投稿、コメント、いいねのみ**削除可能**
+- ユーザーは自分の投稿に関連するタグのみ**関連付け・削除可能**
+- タグ自体の更新と削除は管理者のみ可能
 
 ## サンプルデータ
 
-Supabaseには以下のサンプルデータが含まれています：
+スキーマにはサンプルデータが含まれています：
 
-1. 4人のユーザープロファイル
-2. 7つの投稿（テキスト、画像、音声、動画）
-3. サンプルコメント
-4. サンプルのいいね
+- 4人のユーザープロファイル
+- テキスト、画像、音声、動画の各メディアタイプの投稿
+- 「ファミリー」と「ウォッチ」のタイムラインに分類された投稿
+- 投稿に付けられたサンプルコメント
+- タグ（「スピリチュアル」「瞑想」「自己啓発」など）
+- 投稿とタグの関連付け
 
-## セキュリティ設定
+## アップロード機能
 
-Row Level Security (RLS)が全テーブルに対して有効になっており、以下のポリシーが設定されています：
+メディアファイルのアップロードには、以下の関数が実装されています：
 
-- 全テーブルは誰でも閲覧可能
-- 認証済みユーザーのみが自分のプロファイル・投稿・コメント・いいねを作成可能
-- ユーザーは自分のデータのみを更新・削除可能
-
-## Supabase API利用法
-
-プロジェクトでは、以下のモジュールを使用してSupabaseと連携しています：
-
-- `src/lib/supabase.ts`: Supabaseクライアントとファイルアップロード機能
-- `src/lib/postService.ts`: 投稿データの取得・作成・操作用関数
-
-### 主要な関数
-
-- `getPosts(timeline_type?)`: 投稿一覧の取得
-- `getPostById(id)`: 特定の投稿の取得
-- `createPost(post)`: 新規投稿の作成
-- `getComments(post_id)`: 投稿のコメント取得
-- `createComment(comment)`: コメントの投稿
-- `toggleLike(post_id, user_id)`: いいねの切り替え
-
-## ストレージの使用方法
-
-Supabaseには`media`バケットが設定されており、以下のフォルダで管理されています：
-
-- `uploads/`: アップロードされたメディアファイル
-- `audio/`: 音声ファイル
-
-ファイルのアップロードには、`supabase.ts`の`uploadFile`および`uploadAudioBlob`関数を使用します。
+- `uploadFile(file, bucket, folder)`: 一般的なファイルのアップロード
+- `uploadAudioBlob(audioBlob, bucket, folder)`: 音声ファイルのアップロード
