@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 interface PostContentProps {
   content: string;
@@ -81,10 +82,7 @@ export function PostContent({ content, caption, mediaType, isExpanded, setIsExpa
   const toggleAudio = () => {
     if (!audioRef.current) {
       audioRef.current = new Audio(content);
-      audioRef.current.addEventListener('timeupdate', updateProgress);
-      audioRef.current.addEventListener('loadedmetadata', () => {
-        setDuration(audioRef.current?.duration || 0);
-      });
+      setupAudioEvents();
     }
 
     if (isAudioPlaying) {
@@ -93,6 +91,23 @@ export function PostContent({ content, caption, mediaType, isExpanded, setIsExpa
       audioRef.current.play();
     }
     setIsAudioPlaying(!isAudioPlaying);
+  };
+
+  const setupAudioEvents = () => {
+    if (!audioRef.current) return;
+    
+    audioRef.current.addEventListener('timeupdate', updateProgress);
+    audioRef.current.addEventListener('loadedmetadata', () => {
+      setDuration(audioRef.current?.duration || 0);
+    });
+    audioRef.current.addEventListener('ended', () => {
+      setIsAudioPlaying(false);
+    });
+    
+    // Initial duration setup
+    if (audioRef.current.duration) {
+      setDuration(audioRef.current.duration);
+    }
   };
 
   const updateProgress = () => {
@@ -114,6 +129,17 @@ export function PostContent({ content, caption, mediaType, isExpanded, setIsExpa
       setCurrentTime(newTime);
     }
   };
+  
+  // Clean up audio when component unmounts
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeEventListener('timeupdate', updateProgress);
+        audioRef.current.removeEventListener('ended', () => {});
+      }
+    };
+  }, []);
 
   const renderTruncatedText = (text: string) => {
     if (text.length <= 140 || isExpanded) {
@@ -156,17 +182,42 @@ export function PostContent({ content, caption, mediaType, isExpanded, setIsExpa
         );
       case "audio":
         return (
-          <div ref={audioContainerRef} className="w-full bg-black rounded-md overflow-hidden">
-            <div className="aspect-video flex items-center justify-center">
-              <audio 
-                className="w-full" 
-                controls 
-                src={content}
-                onPlay={() => setIsAudioPlaying(true)}
-                onPause={() => setIsAudioPlaying(false)}
-                controlsList="nodownload"
-              />
-            </div>
+          <div ref={audioContainerRef} className="w-full rounded-md overflow-hidden">
+            <Card className="p-4 bg-muted/30">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={toggleAudio}
+                >
+                  {isAudioPlaying ? (
+                    <Pause className="h-5 w-5" />
+                  ) : (
+                    <Play className="h-5 w-5 ml-0.5" />
+                  )}
+                  <span className="sr-only">音声を{isAudioPlaying ? '一時停止' : '再生'}</span>
+                </Button>
+                <div className="flex-1">
+                  <div className="font-medium text-sm">{caption || "Audio"}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full mt-3">
+                <input 
+                  type="range" 
+                  min={0} 
+                  max={duration || 100} 
+                  value={currentTime} 
+                  onChange={handleSliderChange}
+                  className="w-full h-1.5 accent-primary cursor-pointer" 
+                />
+              </div>
+            </Card>
           </div>
         );
       case "text":
