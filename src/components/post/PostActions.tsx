@@ -1,8 +1,9 @@
 import { Heart, MessageSquare, Flame } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 
 interface PostActionsProps {
   postId: string;
@@ -12,6 +13,7 @@ interface PostActionsProps {
 export function PostActions({ postId, onComment }: PostActionsProps) {
   const [liked, setLiked] = useState(false);
   const [kuratta, setKuratta] = useState(false);
+  const [kurattaText, setKurattaText] = useState("");
   const [showKurattaDialog, setShowKurattaDialog] = useState(false);
 
   return (
@@ -55,34 +57,28 @@ export function PostActions({ postId, onComment }: PostActionsProps) {
             <DialogTitle>どんなことが魂に響きましたか？</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <Button
-              onClick={() => {
-                setKuratta(true);
-                setShowKurattaDialog(false);
-              }}
-              className="w-full"
-            >
-              心に響いた
-            </Button>
-            <Button
-              onClick={() => {
-                setKuratta(true);
-                setShowKurattaDialog(false);
-              }}
-              className="w-full"
-            >
-              共感した
-            </Button>
-            <Button
-              onClick={() => {
-                setKuratta(true);
-                setShowKurattaDialog(false);
-              }}
-              className="w-full"
-            >
-              感動した
-            </Button>
+            <Textarea
+              placeholder="どんなことが魂に響きましたか？自由に入力してください"
+              value={kurattaText}
+              onChange={(e) => setKurattaText(e.target.value)}
+              className="min-h-[100px]"
+            />
           </div>
+          <DialogFooter className="mt-4">
+            <Button
+              onClick={() => {
+                if (kurattaText.trim()) {
+                  setKuratta(true);
+                  setShowKurattaDialog(false);
+                  // ここでkurattaTextを使って必要な処理を行う
+                  console.log("ハイライトテキスト:", kurattaText);
+                }
+              }}
+              className="w-full"
+            >
+              送信
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
