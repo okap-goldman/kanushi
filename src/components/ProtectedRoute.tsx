@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { IS_DEV } from '@/lib/env';
 
 interface ProtectedRouteProps {
   children?: React.ReactNode;
@@ -7,6 +8,11 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, isLoading } = useAuth();
+
+  // In development mode, skip authentication check if VITE_SKIP_LOGIN is enabled
+  if (IS_DEV && (import.meta.env.VITE_SKIP_LOGIN === 'true' || import.meta.env.VITE_SKIP_LOGIN === true)) {
+    return children ? <>{children}</> : <Outlet />;
+  }
 
   if (isLoading) {
     return (

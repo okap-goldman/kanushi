@@ -5,6 +5,9 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    'import.meta.env.VITE_SKIP_LOGIN': JSON.stringify(process.env.VITE_SKIP_LOGIN || 'true'),
+  },
   server: {
     host: "::",
     port: 8080,

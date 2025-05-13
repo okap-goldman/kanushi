@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { IS_DEV } from '@/lib/env';
 
 interface AuthContextProps {
   session: Session | null;
@@ -20,7 +21,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
+    // Skip login in development mode if needed
+    console.log('DEV mode:', IS_DEV, 'Skip login:', import.meta.env.VITE_SKIP_LOGIN);
+    if (IS_DEV && (import.meta.env.VITE_SKIP_LOGIN === 'true' || import.meta.env.VITE_SKIP_LOGIN === true)) {
+      const mockUser = {
+        id: 'dev-user-id',
+        email: 'dev@example.com',
+        // Add other required user properties
+      } as User;
+      
+      const mockSession = {
+        user: mockUser,
+        access_token: 'mock-token',
+        refresh_token: 'mock-refresh-token',
+        expires_at: Date.now() + 3600
+      } as Session;
+      
+      setSession(mockSession);
+      setUser(mockUser);
+      setProfile({
+        id: mockUser.id,
+        username: 'developer',
+        full_name: 'Development User',
+        avatar_url: '/placeholder.svg',
+        // Add other profile fields as needed
+      });
+      setIsLoading(false);
+      return;
+    }
+    
+    // Normal authentication flow
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -32,6 +62,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Listen for auth changes
+    // Skip subscription in dev mode with skip login
+    if (IS_DEV && (import.meta.env.VITE_SKIP_LOGIN === 'true' || import.meta.env.VITE_SKIP_LOGIN === true)) {
+      return () => {};
+    }
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);

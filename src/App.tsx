@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { IS_DEV } from "./lib/env";
 import { useState } from "react";
 import Index from "./pages/Index";
 import Profile from "./pages/Profile";
@@ -27,7 +28,9 @@ function AppContent() {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
 
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  // In development mode with SKIP_LOGIN, we never treat auth pages as special
+  const skipAuth = IS_DEV && (import.meta.env.VITE_SKIP_LOGIN === 'true' || import.meta.env.VITE_SKIP_LOGIN === true);
+  const isAuthPage = skipAuth ? false : (location.pathname === '/login' || location.pathname === '/register');
 
   return (
     <>
