@@ -30,7 +30,7 @@ export function ChatMessage({ isAi = false, message }: ChatMessageProps) {
       <div className="flex-1 space-y-2">
         <p className="text-sm font-medium">{isAi ? "アシスタント" : "あなた"}</p>
         <div 
-          className="text-sm text-muted-foreground prose prose-sm max-w-none" 
+          className="text-sm text-muted-foreground prose prose-sm max-w-none break-words" 
           dangerouslySetInnerHTML={{ __html: formattedMessage }}
         />
       </div>

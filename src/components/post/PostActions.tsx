@@ -25,7 +25,8 @@ export function PostActions({ postId, onComment }: PostActionsProps) {
   const { user } = useAuth();
   
   // ユーザーIDが利用可能な場合はそちらを使用し、そうでない場合はフォールバック
-  const currentUserId = user?.id || "00000000-0000-0000-0000-000000000004"; // フォールバックは "内なる光"ユーザー
+  // フォールバックは管理者ユーザー (f1e2d3c4-b5a6-7987-8765-4321abcdef98) または "内なる光"ユーザー
+  const currentUserId = user?.id || "f1e2d3c4-b5a6-7987-8765-4321abcdef98";
 
   useEffect(() => {
     // 投稿にいいねしているかチェック

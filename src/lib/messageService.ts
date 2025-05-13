@@ -192,11 +192,15 @@ export const getConversations = async (
  * Get a single conversation with all its messages
  * @param conversation_id The ID of the conversation
  * @param current_user_id The ID of the current user (needed to mark messages as read)
+ * @param limit Optional limit for the number of messages to fetch (default 50)
+ * @param before_timestamp Optional timestamp to fetch messages before a certain time
  */
 export const getConversation = async (
   conversation_id: string,
-  current_user_id: string
-): Promise<ApiResponse<{ conversation: Conversation; messages: Message[] }>> => {
+  current_user_id: string,
+  limit: number = 50,
+  before_timestamp?: string
+): Promise<ApiResponse<{ conversation: Conversation; messages: Message[]; has_more: boolean }>> => {
   try {
     // Get the conversation
     const { data: conversationData, error: conversationError } = await supabase
@@ -225,8 +229,8 @@ export const getConversation = async (
       }
     }));
 
-    // Get all messages for this conversation
-    const { data: messagesData, error: messagesError } = await supabase
+    // Build the query for messages
+    let messagesQuery = supabase
       .from('messages')
       .select(`
         *,
@@ -237,29 +241,51 @@ export const getConversation = async (
         )
       `)
       .eq('conversation_id', conversation_id)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: false }) // Important: Start with most recent
+      .limit(limit);
+
+    // Add timestamp filter if provided (for pagination)
+    if (before_timestamp) {
+      messagesQuery = messagesQuery.lt('created_at', before_timestamp);
+    }
+
+    // Execute the query
+    const { data: messagesData, error: messagesError } = await messagesQuery;
 
     if (messagesError) {
       throw messagesError;
     }
 
-    // Format messages
-    const formattedMessages = messagesData.map((message: any) => ({
-      ...message,
-      sender: message.sender[0] || {
-        id: 'unknown',
-        name: 'Unknown User',
-        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown'
-      },
-      reactions: message.reactions.map((reaction: any) => ({
-        ...reaction,
-        user: reaction.user[0] || {
+    // Get one more message to check if there are more
+    const { count, error: countError } = await supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('conversation_id', conversation_id)
+      .lt('created_at', before_timestamp || messagesData[messagesData.length - 1]?.created_at || new Date().toISOString())
+      .limit(1);
+
+    // Determine if there are more messages to load
+    const hasMore = (count || 0) > 0;
+
+    // Format messages and reverse to get chronological order
+    const formattedMessages = messagesData
+      .map((message: any) => ({
+        ...message,
+        sender: message.sender[0] || {
           id: 'unknown',
           name: 'Unknown User',
           image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown'
-        }
+        },
+        reactions: message.reactions.map((reaction: any) => ({
+          ...reaction,
+          user: reaction.user[0] || {
+            id: 'unknown',
+            name: 'Unknown User',
+            image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown'
+          }
+        }))
       }))
-    }));
+      .reverse(); // Reverse to get chronological order
 
     // Mark all messages as read for the current user
     const { error: readError } = await supabase
@@ -294,7 +320,8 @@ export const getConversation = async (
     return { 
       data: { 
         conversation: conversation as Conversation, 
-        messages: formattedMessages as Message[] 
+        messages: formattedMessages as Message[],
+        has_more: hasMore
       }, 
       error: null 
     };

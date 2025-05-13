@@ -21,7 +21,6 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState<boolean>(false);
-  const [autoPlayEnabled, setAutoPlayEnabled] = useState<boolean>(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState<string>("");
   const [suggestedTags, setSuggestedTags] = useState<string[]>([
@@ -44,10 +43,7 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
   const postTypes = [
     { icon: Image, label: "写真・動画", value: "media" },
     { icon: Mic, label: "音声", value: "audio" },
-    { icon: Users, label: "人物をタグ付け", value: "tagPeople" },
     { icon: MapPin, label: "チェックイン", value: "location" },
-    { icon: Smile, label: "気分", value: "mood" },
-    { icon: Palette, label: "背景色", value: "backgroundColor" },
     { icon: BookText, label: "タグ付け", value: "addTags" },
   ];
 
@@ -358,20 +354,6 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="autoPlay" 
-                checked={autoPlayEnabled}
-                onChange={(e) => setAutoPlayEnabled(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <label htmlFor="autoPlay" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                連続再生
-              </label>
-            </div>
-          </div>
         </div>
 
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
@@ -417,7 +399,6 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
                   className="w-full mt-2" 
                   controls 
                   src={audioUrl} 
-                  autoPlay={autoPlayEnabled}
                 />
               </div>
             )}

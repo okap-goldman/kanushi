@@ -48,9 +48,9 @@ export default function StoriesRow({
 
   return (
     <div className="w-full overflow-x-auto pb-2">
-      <div className="flex items-center px-2 py-3">
+      <div className="flex items-center px-2 py-3 gap-2">
         {/* Create Story Button */}
-        <div className="flex flex-col items-center justify-center mx-2">
+        <div className="flex flex-col items-center justify-center mx-2 min-w-[60px]">
           <div className="rounded-full bg-gray-100 p-[2px] mb-1">
             <div className="rounded-full bg-primary p-[2px]">
               <Button
@@ -66,16 +66,22 @@ export default function StoriesRow({
         </div>
 
         {/* User Stories */}
-        {userStories.map((userStory, index) => (
-          <StoryCircle
-            key={userStory.userId}
-            userId={userStory.userId}
-            username={userStory.username}
-            profileImage={userStory.profileImage}
-            hasUnviewedStory={userStory.hasUnviewedStory}
-            onClick={() => handleStoryCircleClick(index)}
-          />
-        ))}
+        {userStories.length > 0 ? (
+          userStories.map((userStory, index) => (
+            <StoryCircle
+              key={userStory.userId}
+              userId={userStory.userId}
+              username={userStory.username}
+              profileImage={userStory.profileImage}
+              hasUnviewedStory={userStory.hasUnviewedStory}
+              onClick={() => handleStoryCircleClick(index)}
+            />
+          ))
+        ) : (
+          <div className="flex-1 text-center text-sm text-muted-foreground py-2">
+            ストーリーがありません
+          </div>
+        )}
       </div>
 
       {/* Story Viewer Modal */}

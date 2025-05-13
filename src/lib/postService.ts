@@ -58,8 +58,8 @@ export const getPosts = async (timeline_type?: 'family' | 'watch' | 'all'): Prom
         author_id: post.user_id, // Mapping for API compatibility
         author: post.author[0] || {
           id: 'unknown',
-          name: 'Unknown User',
-          image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown'
+          name: '山田健太',
+          image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=yamada'
         },
         media_type: post.content_type as ContentType,
         content: content,
@@ -130,8 +130,8 @@ export const getPostById = async (id: string): Promise<ApiResponse<Post>> => {
       author_id: data.user_id, // Mapping for API compatibility
       author: data.author[0] || {
         id: 'unknown',
-        name: 'Unknown User',
-        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown'
+        name: '山田健太',
+        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=yamada'
       },
       media_type: data.content_type as ContentType,
       content: content,
@@ -297,8 +297,8 @@ export const getComments = async (post_id: string): Promise<ApiResponse<Comment[
       author_id: comment.user_id, // Mapping for API compatibility
       author: comment.author[0] || {
         id: 'unknown',
-        name: 'Unknown User',
-        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown'
+        name: '山田健太',
+        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=yamada'
       }
     })) as Comment[];
 

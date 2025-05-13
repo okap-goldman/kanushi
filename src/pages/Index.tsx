@@ -168,7 +168,24 @@ const Index = () => {
         </div>
         
         {/* ストーリーズ行 */}
-        {!loadingStories && currentUser && (
+        {loadingStories ? (
+          <div className="max-w-xl mx-auto mb-4 bg-card rounded-xl shadow-sm p-4">
+            <div className="flex items-center space-x-4 overflow-x-auto">
+              <div className="flex flex-col items-center">
+                <div className="w-14 h-14 rounded-full bg-muted animate-pulse"></div>
+                <div className="w-12 h-3 mt-1 bg-muted animate-pulse rounded"></div>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="w-14 h-14 rounded-full bg-muted animate-pulse"></div>
+                <div className="w-12 h-3 mt-1 bg-muted animate-pulse rounded"></div>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="w-14 h-14 rounded-full bg-muted animate-pulse"></div>
+                <div className="w-12 h-3 mt-1 bg-muted animate-pulse rounded"></div>
+              </div>
+            </div>
+          </div>
+        ) : currentUser && (
           <div className="max-w-xl mx-auto mb-4 bg-card rounded-xl shadow-sm">
             <StoriesRow
               userStories={userStories}

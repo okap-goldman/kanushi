@@ -24,8 +24,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Skip login in development mode if needed
     console.log('DEV mode:', IS_DEV, 'Skip login:', import.meta.env.VITE_SKIP_LOGIN);
     if (IS_DEV && (import.meta.env.VITE_SKIP_LOGIN === 'true' || import.meta.env.VITE_SKIP_LOGIN === true)) {
+      // Use a valid UUID format for development
       const mockUser = {
-        id: 'dev-user-id',
+        id: 'f1e2d3c4-b5a6-7987-8765-4321abcdef98', // Valid UUID format (admin user from sample data)
         email: 'dev@example.com',
         // Add other required user properties
       } as User;

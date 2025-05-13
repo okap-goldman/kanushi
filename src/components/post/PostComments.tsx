@@ -28,8 +28,8 @@ export function PostComments({ postId, comments, isLoading = false, onCommentAdd
     setIsSubmitting(true);
 
     try {
-      // 現在のところ、仮のユーザーIDを使用
-      const tempCurrentUserId = "00000000-0000-0000-0000-000000000004"; // "内なる光"ユーザー
+      // 現在のところ、仮のユーザーIDを使用 (管理者ユーザー)
+      const tempCurrentUserId = "f1e2d3c4-b5a6-7987-8765-4321abcdef98";
 
       const { data, error } = await createComment({
         post_id: postId,
