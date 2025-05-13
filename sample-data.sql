@@ -1,5 +1,23 @@
 -- サンプルデータ挿入スクリプト for Kanushi
 
+-- 既存データの削除
+DELETE FROM story_views;
+DELETE FROM stories;
+DELETE FROM message_reactions;
+DELETE FROM messages;
+DELETE FROM conversation_participants;
+DELETE FROM conversations;
+DELETE FROM post_tags;
+DELETE FROM likes;
+DELETE FROM comments;
+DELETE FROM posts;
+DELETE FROM profiles WHERE id IN (
+  'd0e8c69f-73e4-4f9a-80e3-363a0070159a',
+  'c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f',
+  'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
+  'f1e2d3c4-b5a6-7987-8765-4321abcdef98'
+);
+
 -- テストユーザーの確認（既に存在する場合はスキップ）
 DO $$
 DECLARE
@@ -41,25 +59,37 @@ END $$;
 
 -- 投稿データ
 -- 田中さくら (ユーザー1) の投稿
-INSERT INTO posts (user_id, content_type, text_content, media_url, timeline_type)
+INSERT INTO posts (user_id, content_type, text_content, media_url, audio_url, thumbnail_url, timeline_type)
 VALUES
-('d0e8c69f-73e4-4f9a-80e3-363a0070159a', 'text', '今日は鎌倉で瞑想してきました。心が落ち着く素晴らしい時間でした。', NULL, 'family'),
-('d0e8c69f-73e4-4f9a-80e3-363a0070159a', 'image', '鎌倉の美しい竹林で撮影した写真です。', 'https://images.unsplash.com/photo-1503564996084-61b533a0e9a8', 'family'),
-('d0e8c69f-73e4-4f9a-80e3-363a0070159a', 'text', 'おすすめの瞑想アプリを見つけました。毎日の習慣にしています。', NULL, 'watch');
+('d0e8c69f-73e4-4f9a-80e3-363a0070159a', 'text', '今日は鎌倉で瞑想してきました。心が落ち着く素晴らしい時間でした。', NULL, NULL, NULL, 'family'),
+('d0e8c69f-73e4-4f9a-80e3-363a0070159a', 'image', '鎌倉の美しい竹林で撮影した写真です。', 'https://images.unsplash.com/photo-1503564996084-61b533a0e9a8', NULL, NULL, 'family'),
+('d0e8c69f-73e4-4f9a-80e3-363a0070159a', 'text', 'おすすめの瞑想アプリを見つけました。毎日の習慣にしています。', NULL, NULL, NULL, 'watch'),
+('d0e8c69f-73e4-4f9a-80e3-363a0070159a', 'audio', '瞑想中に聞いている自然音です。とても癒されます。', NULL, 'https://freesound.org/data/previews/531/531967_4921277-lq.mp3', NULL, 'family'),
+('d0e8c69f-73e4-4f9a-80e3-363a0070159a', 'video', '鎌倉での瞑想体験を記録した動画です。初心者向けの瞑想方法も紹介しています。', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', NULL, 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg', 'family'),
+-- 複数画像のサンプル投稿 (JSONとして複数の画像URLを保存)
+('d0e8c69f-73e4-4f9a-80e3-363a0070159a', 'gallery', '瞑想ワークショップで撮影した写真です。素晴らしい体験でした。', '["https://images.unsplash.com/photo-1506126613408-eca07ce68773", "https://images.unsplash.com/photo-1593811167562-9cef47bfc4d7", "https://images.unsplash.com/photo-1516537219851-920e2670c6e2"]', NULL, NULL, 'family'),
+-- 動画と画像が混在したサンプル投稿
+('d0e8c69f-73e4-4f9a-80e3-363a0070159a', 'mixed', '今日の自然散策で見つけた美しい景色と動画です。', '["https://images.unsplash.com/photo-1501854140801-50d01698950b", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"]', NULL, 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg', 'family');
 
 -- 鈴木太郎 (ユーザー2) の投稿
-INSERT INTO posts (user_id, content_type, text_content, media_url, timeline_type)
+INSERT INTO posts (user_id, content_type, text_content, media_url, audio_url, thumbnail_url, timeline_type)
 VALUES
-('c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', 'text', '今日のヨガクラスはとても活気がありました。参加者の皆さんに感謝します。', NULL, 'family'),
-('c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', 'image', '京都の朝のヨガセッション', 'https://images.unsplash.com/photo-1545389336-cf090694435e', 'watch'),
-('c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', 'video', 'シンプルな朝のヨガルーティーン', 'https://example.com/sample-video.mp4', 'family');
+('c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', 'text', '今日のヨガクラスはとても活気がありました。参加者の皆さんに感謝します。', NULL, NULL, NULL, 'family'),
+('c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', 'image', '京都の朝のヨガセッション', 'https://images.unsplash.com/photo-1545389336-cf090694435e', NULL, NULL, 'watch'),
+('c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', 'video', 'シンプルな朝のヨガルーティーン', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', NULL, 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/TearsOfSteel.jpg', 'family'),
+('c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', 'audio', 'ヨガクラスで使用している音楽です。リラックスできると好評です。', NULL, 'https://freesound.org/data/previews/612/612095_5674468-lq.mp3', NULL, 'watch'),
+-- 複数画像のサンプル投稿
+('c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', 'gallery', 'ヨガリトリートの様子です。自然の中で心身を整える貴重な時間。', '["https://images.unsplash.com/photo-1588286840104-8957b019727f", "https://images.unsplash.com/photo-1599901860904-17e6ed7083a0", "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b"]', NULL, NULL, 'family');
 
 -- 佐藤はるか (ユーザー3) の投稿
-INSERT INTO posts (user_id, content_type, text_content, media_url, timeline_type)
+INSERT INTO posts (user_id, content_type, text_content, media_url, audio_url, thumbnail_url, timeline_type)
 VALUES
-('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', 'text', '自家製ハーブティーのレシピ: カモミール、ミント、ラベンダーを混ぜるだけで心が落ち着きます。', NULL, 'family'),
-('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', 'image', '今日集めたハーブたち', 'https://images.unsplash.com/photo-1515586000433-45406d8e6662', 'family'),
-('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', 'audio', 'ハーブの効能についての音声メモ', 'https://example.com/sample-audio.mp3', 'watch');
+('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', 'text', '自家製ハーブティーのレシピ: カモミール、ミント、ラベンダーを混ぜるだけで心が落ち着きます。', NULL, NULL, NULL, 'family'),
+('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', 'image', '今日集めたハーブたち', 'https://images.unsplash.com/photo-1515586000433-45406d8e6662', NULL, NULL, 'family'),
+('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', 'audio', '自然療法についての講演の一部です。興味のある方はぜひ聞いてみてください。', NULL, 'https://freesound.org/data/previews/368/368020_1676145-lq.mp3', NULL, 'watch'),
+('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', 'video', '自然療法とハーブティーについてのショートレクチャーです。', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', NULL, 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg', 'family'),
+-- 動画と画像が混在したサンプル投稿
+('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', 'mixed', 'ハーブガーデンでの1日と薬草の効能についての説明動画です。', '["https://images.unsplash.com/photo-1591466020083-2ab14756b734", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4"]', NULL, 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/Sintel.jpg', 'family');
 
 -- コメントデータ
 INSERT INTO comments (post_id, user_id, content)
@@ -169,21 +199,46 @@ BEGIN
 END $$;
 
 -- ストーリーデータ
-INSERT INTO stories (user_id, content_type, media_url, thumbnail_url, caption)
+INSERT INTO stories (id, user_id, content_type, media_url, thumbnail_url, caption, views_count, created_at, expires_at)
 VALUES
-('d0e8c69f-73e4-4f9a-80e3-363a0070159a', 'image', 'https://images.unsplash.com/photo-1519834785169-98be25ec3f84', NULL, '朝の瞑想タイム'),
-('c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', 'image', 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b', NULL, '京都の寺院でのヨガ'),
-('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', 'image', 'https://images.unsplash.com/photo-1564518486639-5dbcebb8677e', NULL, '今日のハーブガーデン');
+-- 既存のストーリー
+('30000000-0000-0000-0000-000000000001', 'd0e8c69f-73e4-4f9a-80e3-363a0070159a', 'image', 'https://images.unsplash.com/photo-1519834785169-98be25ec3f84', 'https://images.unsplash.com/photo-1519834785169-98be25ec3f84', '朝の瞑想タイム', 3, NOW() - INTERVAL '2 hours', NOW() + INTERVAL '22 hours'),
+('30000000-0000-0000-0000-000000000002', 'c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', 'image', 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b', 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b', '京都の寺院でのヨガ', 4, NOW() - INTERVAL '4 hours', NOW() + INTERVAL '20 hours'),
+('30000000-0000-0000-0000-000000000003', 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', 'image', 'https://images.unsplash.com/photo-1564518486639-5dbcebb8677e', 'https://images.unsplash.com/photo-1564518486639-5dbcebb8677e', '今日のハーブガーデン', 2, NOW() - INTERVAL '3 hours', NOW() + INTERVAL '21 hours'),
+
+-- 追加のストーリー (新機能のサンプル)
+('30000000-0000-0000-0000-000000000004', 'd0e8c69f-73e4-4f9a-80e3-363a0070159a', 'image', 'https://images.unsplash.com/photo-1600618528240-fb9fc964b853', 'https://images.unsplash.com/photo-1600618528240-fb9fc964b853', '瞑想スポットで心が落ち着きます✨', 5, NOW() - INTERVAL '1 hours', NOW() + INTERVAL '23 hours'),
+('30000000-0000-0000-0000-000000000005', 'c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', 'video', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg', '朝のエネルギーワーク。皆さんも一緒にやってみませんか？', 8, NOW() - INTERVAL '5 hours', NOW() + INTERVAL '19 hours'),
+('30000000-0000-0000-0000-000000000006', 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', 'image', 'https://images.unsplash.com/photo-1515940176183-c728f7e115ce', 'https://images.unsplash.com/photo-1515940176183-c728f7e115ce', '今日引いたカード：「変容」✨ 新しい変化を受け入れる時期かもしれません', 6, NOW() - INTERVAL '6 hours', NOW() + INTERVAL '18 hours'),
+('30000000-0000-0000-0000-000000000007', 'f1e2d3c4-b5a6-7987-8765-4321abcdef98', 'image', 'https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7', 'https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7', '夕日の美しさに感謝。一日の終わりを静かに見つめる時間', 4, NOW() - INTERVAL '7 hours', NOW() + INTERVAL '17 hours'),
+('30000000-0000-0000-0000-000000000008', 'd0e8c69f-73e4-4f9a-80e3-363a0070159a', 'video', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerEscapes.jpg', '瞑想中にイメージする風景', 2, NOW() - INTERVAL '8 hours', NOW() + INTERVAL '16 hours');
 
 -- ストーリー閲覧データ
-INSERT INTO story_views (story_id, user_id)
+INSERT INTO story_views (story_id, user_id, viewed_at)
 VALUES
-((SELECT id FROM stories WHERE user_id = 'd0e8c69f-73e4-4f9a-80e3-363a0070159a' LIMIT 1), 'c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f'),
-((SELECT id FROM stories WHERE user_id = 'd0e8c69f-73e4-4f9a-80e3-363a0070159a' LIMIT 1), 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d'),
-((SELECT id FROM stories WHERE user_id = 'c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f' LIMIT 1), 'd0e8c69f-73e4-4f9a-80e3-363a0070159a'),
-((SELECT id FROM stories WHERE user_id = 'c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f' LIMIT 1), 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d'),
-((SELECT id FROM stories WHERE user_id = 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d' LIMIT 1), 'd0e8c69f-73e4-4f9a-80e3-363a0070159a'),
-((SELECT id FROM stories WHERE user_id = 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d' LIMIT 1), 'c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f');
+-- 既存のストーリー閲覧
+('30000000-0000-0000-0000-000000000001', 'c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', NOW() - INTERVAL '1 hour'),
+('30000000-0000-0000-0000-000000000001', 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', NOW() - INTERVAL '30 minutes'),
+('30000000-0000-0000-0000-000000000001', 'f1e2d3c4-b5a6-7987-8765-4321abcdef98', NOW() - INTERVAL '45 minutes'),
+('30000000-0000-0000-0000-000000000002', 'd0e8c69f-73e4-4f9a-80e3-363a0070159a', NOW() - INTERVAL '2 hours'),
+('30000000-0000-0000-0000-000000000002', 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', NOW() - INTERVAL '3 hours'),
+('30000000-0000-0000-0000-000000000002', 'f1e2d3c4-b5a6-7987-8765-4321abcdef98', NOW() - INTERVAL '1 hours'),
+('30000000-0000-0000-0000-000000000003', 'd0e8c69f-73e4-4f9a-80e3-363a0070159a', NOW() - INTERVAL '1 hour'),
+('30000000-0000-0000-0000-000000000003', 'c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', NOW() - INTERVAL '2 hours'),
+
+-- 新しいストーリー閲覧
+('30000000-0000-0000-0000-000000000004', 'c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', NOW() - INTERVAL '30 minutes'),
+('30000000-0000-0000-0000-000000000004', 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', NOW() - INTERVAL '45 minutes'),
+('30000000-0000-0000-0000-000000000004', 'f1e2d3c4-b5a6-7987-8765-4321abcdef98', NOW() - INTERVAL '20 minutes'),
+('30000000-0000-0000-0000-000000000005', 'd0e8c69f-73e4-4f9a-80e3-363a0070159a', NOW() - INTERVAL '2 hours'),
+('30000000-0000-0000-0000-000000000005', 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', NOW() - INTERVAL '3 hours'),
+('30000000-0000-0000-0000-000000000005', 'f1e2d3c4-b5a6-7987-8765-4321abcdef98', NOW() - INTERVAL '4 hours'),
+('30000000-0000-0000-0000-000000000006', 'd0e8c69f-73e4-4f9a-80e3-363a0070159a', NOW() - INTERVAL '1 hour'),
+('30000000-0000-0000-0000-000000000006', 'c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', NOW() - INTERVAL '2 hours'),
+('30000000-0000-0000-0000-000000000006', 'f1e2d3c4-b5a6-7987-8765-4321abcdef98', NOW() - INTERVAL '3 hours'),
+('30000000-0000-0000-0000-000000000007', 'd0e8c69f-73e4-4f9a-80e3-363a0070159a', NOW() - INTERVAL '1 hour'),
+('30000000-0000-0000-0000-000000000007', 'c2e8d7b6-5a4b-3c2d-1e0f-9a8b7c6d5e4f', NOW() - INTERVAL '2 hours'),
+('30000000-0000-0000-0000-000000000007', 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', NOW() - INTERVAL '3 hours');
 
 -- メッセージ反応
 DO $$

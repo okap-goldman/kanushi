@@ -150,17 +150,17 @@ export function ProfileTabs({ selectedTab, setSelectedPost }: ProfileTabsProps) 
   // Handle audio ended
   const handleAudioEnded = () => {
     if (audioState.continuousPlay && audioState.currentAudioIndex < audioPosts.length - 1) {
-      // Play next track
+      // Load next track but don't autoplay
       const nextIndex = audioState.currentAudioIndex + 1;
       if (audioRef.current) {
         audioRef.current.pause();
       }
       audioRef.current = new Audio(audioPosts[nextIndex].content);
       setupAudioEvents();
-      audioRef.current.play();
+      // Don't autoplay the next track, just prepare it
       setAudioState(prev => ({ 
         ...prev, 
-        isPlaying: true,
+        isPlaying: false,
         currentAudioIndex: nextIndex 
       }));
     } else {

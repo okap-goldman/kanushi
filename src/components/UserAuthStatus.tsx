@@ -29,13 +29,7 @@ export function UserAuthStatus() {
   }
 
   return (
-    <div className="flex items-center space-x-4">
-      <div className="flex flex-col items-end">
-        <span className="text-sm font-medium">{profile?.name || user.email}</span>
-        <Button variant="link" size="sm" className="h-auto p-0" onClick={signOut}>
-          ログアウト
-        </Button>
-      </div>
+    <div className="flex items-center">
       <Link to="/profile">
         <Avatar>
           <AvatarImage src={profile?.image} alt={profile?.name || "ユーザー"} />

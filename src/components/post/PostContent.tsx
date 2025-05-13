@@ -54,12 +54,9 @@ export function PostContent({ content, caption, mediaType, isExpanded, setIsExpa
         entries.forEach((entry) => {
           if (!videoRef.current?.contentWindow) return;
 
-          if (entry.isIntersecting) {
-            videoRef.current.contentWindow.postMessage(
-              '{"event":"command","func":"playVideo","args":""}',
-              "*"
-            );
-          } else {
+          // Only pause videos when they leave the viewport
+          // Do not automatically play videos when they enter viewport
+          if (!entry.isIntersecting) {
             videoRef.current.contentWindow.postMessage(
               '{"event":"command","func":"pauseVideo","args":""}',
               "*"
@@ -173,9 +170,9 @@ export function PostContent({ content, caption, mediaType, isExpanded, setIsExpa
           <div ref={videoContainerRef} className="aspect-video w-full">
             <iframe
               ref={videoRef}
-              src={`${content}?enablejsapi=1`}
+              src={`${content}?enablejsapi=1&autoplay=0`}
               className="w-full h-full rounded-md"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
           </div>

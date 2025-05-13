@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,55 @@ export default function Register() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<string>('チェック中...');
+  const [networkStatus, setNetworkStatus] = useState<string>('未確認');
   const navigate = useNavigate();
+  
+  // Check Supabase connection on component mount
+  useEffect(() => {
+    async function checkSupabaseConnection() {
+      try {
+        console.log('Register - Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+        console.log('Register - Supabase Key Defined:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+        
+        // First, check if we can reach the Supabase URL
+        try {
+          console.log('Testing network connectivity to Supabase URL...');
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
+          const response = await fetch(import.meta.env.VITE_SUPABASE_URL, {
+            method: 'HEAD',
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          console.log('Network connectivity test:', response.status);
+          setNetworkStatus(`接続OK (${response.status})`);
+        } catch (netErr) {
+          console.error('Network connectivity test failed:', netErr);
+          setNetworkStatus(`接続失敗: ${netErr instanceof Error ? netErr.message : String(netErr)}`);
+        }
+        
+        // Then try a Supabase query
+        console.log('Testing Supabase API connection...');
+        const { data, error } = await supabase.from('_dummy_query').select('*').limit(1);
+        
+        if (error) {
+          console.error('Supabase API test failed:', error);
+          setConnectionStatus(`API接続エラー: ${error.message}`);
+        } else {
+          console.log('Supabase API test success:', data);
+          setConnectionStatus('API接続成功');
+        }
+      } catch (err) {
+        console.error('Supabase connection check exception:', err);
+        setConnectionStatus(`接続例外: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    
+    checkSupabaseConnection();
+  }, []);
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,32 +70,41 @@ export default function Register() {
       setLoading(true);
       setError(null);
       
+      console.log('Starting email registration process...');
+      
       // Check for network connectivity first
       try {
+        console.log('Checking network connectivity before registration...');
         // Attempt to connect with timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        await fetch(import.meta.env.VITE_SUPABASE_URL, {
+        const response = await fetch(import.meta.env.VITE_SUPABASE_URL, {
           method: 'HEAD',
           signal: controller.signal
         });
         
         clearTimeout(timeoutId);
+        console.log('Network connectivity check successful:', response.status);
       } catch (networkErr) {
+        console.error('Network connectivity check failed:', networkErr);
         throw new Error('ネットワーク接続エラー: Supabaseサーバーに接続できません。ネットワーク接続を確認してください。');
       }
       
       // Sign up the user
+      console.log('Calling supabase.auth.signUp...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
       });
 
+      console.log('Sign up response:', authError ? 'Error' : 'Success', authError || (authData?.user ? 'User created' : 'No user returned'));
+      
       if (authError) throw authError;
       
       if (authData?.user) {
         // Create the user profile
+        console.log('Creating user profile for:', authData.user.id);
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([
@@ -59,7 +116,10 @@ export default function Register() {
             }
           ]);
 
+        console.log('Profile creation response:', profileError ? 'Error' : 'Success', profileError || 'Profile created');
+        
         if (profileError) throw profileError;
+        console.log('Registration complete, navigating to home');
         navigate('/');
       }
     } catch (error: any) {
@@ -75,29 +135,39 @@ export default function Register() {
       setLoading(true);
       setError(null);
       
+      console.log(`Starting OAuth signup with ${provider}...`);
+      
       // Check for network connectivity first
       try {
+        console.log('Checking network connectivity before OAuth...');
         // Attempt to connect with timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        await fetch(import.meta.env.VITE_SUPABASE_URL, {
+        const response = await fetch(import.meta.env.VITE_SUPABASE_URL, {
           method: 'HEAD',
           signal: controller.signal
         });
         
         clearTimeout(timeoutId);
+        console.log('Network connectivity check for OAuth successful:', response.status);
       } catch (networkErr) {
+        console.error('Network connectivity check for OAuth failed:', networkErr);
         throw new Error('ネットワーク接続エラー: Supabaseサーバーに接続できません。ネットワーク接続を確認してください。');
       }
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log(`Calling supabase.auth.signInWithOAuth for ${provider}...`);
+      console.log('RedirectTo URL:', `${window.location.origin}/profile/edit`);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: `${window.location.origin}/profile/edit`,
         },
       });
 
+      console.log(`OAuth ${provider} response:`, error ? 'Error' : 'Success', error || 'Redirect initiated');
+      
       if (error) throw error;
     } catch (error: any) {
       console.error('OAuth sign-up error:', error);
@@ -115,6 +185,26 @@ export default function Register() {
           <CardDescription>
             アカウントを登録して始めましょう
           </CardDescription>
+          <div className="mt-2 text-xs">
+            <div className={`p-1 text-center rounded ${
+              networkStatus.includes('失敗') 
+                ? 'bg-red-50 text-red-500' 
+                : networkStatus.includes('OK') 
+                  ? 'bg-green-50 text-green-500'
+                  : 'bg-blue-50 text-blue-500'
+            }`}>
+              ネットワーク: {networkStatus}
+            </div>
+            <div className={`mt-1 p-1 text-center rounded ${
+              connectionStatus.includes('エラー') || connectionStatus.includes('例外') 
+                ? 'bg-red-50 text-red-500' 
+                : connectionStatus.includes('成功') 
+                  ? 'bg-green-50 text-green-500'
+                  : 'bg-blue-50 text-blue-500'
+            }`}>
+              Supabase API: {connectionStatus}
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">

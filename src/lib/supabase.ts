@@ -4,10 +4,24 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-console.log('Using Supabase URL:', supabaseUrl);
+console.log('Using Supabase URL:', supabaseUrl || '未定義');
+console.log('Supabase Key Available:', !!supabaseAnonKey);
 
-// Supabaseクライアントの作成
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// フォールバック値を設定（開発用、本番環境では環境変数を必ず設定すること）
+const fallbackUrl = 'https://warvcshagxuijfqlgxxc.supabase.co';
+const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhcnZjc2hhZ3h1aWpmcWxneHhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MjE0OTksImV4cCI6MjA2MTE5NzQ5OX0.BTwBRQXmFRYzvs3GyLqzv_h8PSqtOkft1YdddStgYzQ';
+
+// 環境変数が未定義の場合は警告を表示
+if (!supabaseUrl) {
+  console.warn('警告: Supabase URLが環境変数から読み込めませんでした。フォールバック値を使用します。');
+}
+
+if (!supabaseAnonKey) {
+  console.warn('警告: Supabase Anon Keyが環境変数から読み込めませんでした。フォールバック値を使用します。');
+}
+
+// 環境変数またはフォールバック値を使用してSupabaseクライアントを作成
+export const supabase = createClient(supabaseUrl || fallbackUrl, supabaseAnonKey || fallbackKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,

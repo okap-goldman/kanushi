@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,34 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<string>('チェック中...');
   const navigate = useNavigate();
+  
+  // Check Supabase connection on component mount
+  useEffect(() => {
+    async function checkSupabaseConnection() {
+      try {
+        console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+        console.log('Supabase Key Defined:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+        
+        // Test if we can connect to Supabase
+        const { data, error } = await supabase.from('_dummy_query').select('*').limit(1);
+        
+        if (error) {
+          console.error('Supabase connection test failed:', error);
+          setConnectionStatus(`接続エラー: ${error.message}`);
+        } else {
+          console.log('Supabase connection test success:', data);
+          setConnectionStatus('接続成功');
+        }
+      } catch (err) {
+        console.error('Supabase connection test exception:', err);
+        setConnectionStatus(`接続例外: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    
+    checkSupabaseConnection();
+  }, []);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,14 +47,19 @@ export default function Login() {
       setLoading(true);
       setError(null);
       
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Attempting email login with Supabase...');
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log('Sign in response:', error ? 'Error' : 'Success', error ? error : 'User authenticated');
+      
       if (error) throw error;
+      console.log('Login successful, navigating to home');
       navigate('/');
     } catch (error: any) {
+      console.error('Login error:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -39,15 +71,21 @@ export default function Login() {
       setLoading(true);
       setError(null);
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log(`Attempting OAuth login with ${provider}...`);
+      console.log('RedirectTo URL:', `${window.location.origin}/`);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: `${window.location.origin}/`,
         },
       });
 
+      console.log('OAuth response:', error ? 'Error' : 'Success', error ? error : 'Redirect initiated');
+      
       if (error) throw error;
     } catch (error: any) {
+      console.error(`${provider} OAuth error:`, error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -65,6 +103,15 @@ export default function Login() {
           <CardDescription>
             アカウントにログインするか、新しく登録して始めましょう
           </CardDescription>
+          <div className={`text-xs mt-1 p-1 text-center rounded ${
+            connectionStatus.includes('エラー') || connectionStatus.includes('例外') 
+              ? 'bg-red-50 text-red-500' 
+              : connectionStatus === '接続成功' 
+                ? 'bg-green-50 text-green-500'
+                : 'bg-blue-50 text-blue-500'
+          }`}>
+            Supabase: {connectionStatus}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
