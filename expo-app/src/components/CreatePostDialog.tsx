@@ -57,8 +57,35 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
     }
   };
 
+  const takePhoto = async () => {
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
   const pickVideo = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+      videoMaxDuration: 60,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setVideoUri(result.assets[0].uri);
+    }
+  };
+
+  const recordVideo = async () => {
+    const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
       allowsEditing: true,
       aspect: [4, 3],
@@ -411,29 +438,35 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
 
           {activeTab === 'image' && (
             <View style={styles.mediaContent}>
-              {imageUri ? (
-                <View style={styles.previewContainer}>
-                  <Image
-                    source={{ uri: imageUri }}
-                    style={styles.imagePreview}
-                    contentFit="cover"
-                  />
-                  <TouchableOpacity
-                    style={styles.changeButton}
-                    onPress={pickImage}
-                  >
-                    <Text style={styles.changeButtonText}>Change Image</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.mediaSelector}
-                  onPress={pickImage}
-                >
-                  <Feather name="image" size={40} color="#94A3B8" />
-                  <Text style={styles.mediaSelectorText}>Select Image</Text>
-                </TouchableOpacity>
-              )}
+          {imageUri ? (
+            <View style={styles.previewContainer}>
+              <Image
+                source={{ uri: imageUri }}
+                style={styles.imagePreview}
+                contentFit="cover"
+              />
+              <TouchableOpacity
+                style={styles.changeButton}
+                onPress={pickImage}
+              >
+                <Text style={styles.changeButtonText}>Change Image</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.changeButton}
+                onPress={takePhoto}
+              >
+                <Text style={styles.changeButtonText}>Take Photo</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.mediaSelector}
+              onPress={pickImage}
+            >
+              <Feather name="image" size={40} color="#94A3B8" />
+              <Text style={styles.mediaSelectorText}>Select Image</Text>
+            </TouchableOpacity>
+          )}
               
               <Input
                 placeholder="Add a caption..."
@@ -447,25 +480,31 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
 
           {activeTab === 'video' && (
             <View style={styles.mediaContent}>
-              {videoUri ? (
-                <View style={styles.previewContainer}>
-                  <Video
-                    source={{ uri: videoUri }}
-                    style={styles.videoPreview}
-                    useNativeControls
-                    resizeMode="contain"
-                  />
-                  <TouchableOpacity
-                    style={styles.changeButton}
-                    onPress={pickVideo}
-                  >
-                    <Text style={styles.changeButtonText}>Change Video</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.mediaSelector}
-                  onPress={pickVideo}
+          {videoUri ? (
+            <View style={styles.previewContainer}>
+              <Video
+                source={{ uri: videoUri }}
+                style={styles.videoPreview}
+                useNativeControls
+                resizeMode="contain"
+              />
+              <TouchableOpacity
+                style={styles.changeButton}
+                onPress={pickVideo}
+              >
+                <Text style={styles.changeButtonText}>Change Video</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.changeButton}
+                onPress={recordVideo}
+              >
+                <Text style={styles.changeButtonText}>Record Video</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.mediaSelector}
+              onPress={pickVideo}
                 >
                   <Feather name="video" size={40} color="#94A3B8" />
                   <Text style={styles.mediaSelectorText}>Select Video</Text>

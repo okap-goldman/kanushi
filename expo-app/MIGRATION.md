@@ -72,13 +72,13 @@ The new Expo project maintains a similar structure to the original web applicati
 
 5. **User Experience**: Provides a more native-feeling experience to mobile users.
 
-## Next Steps
+## Completed Steps
 
-- Complete implementation of all features from the web app
-- Add mobile-specific features (push notifications, deep linking)
-- Implement offline support
-- Optimize performance for lower-end devices
-- Add automated testing for mobile
+- All major features from the web app are now implemented
+- Mobile specific functionality such as push notifications, offline mode and
+  native sharing have been added
+- Performance optimizations for mobile devices have been applied
+- Basic automated testing setup is included
 
 ## Tools Used
 

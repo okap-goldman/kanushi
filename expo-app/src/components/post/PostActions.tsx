@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { shareContent } from '../../hooks/useShare';
 
 interface PostActionsProps {
   postId: string;
@@ -104,6 +105,10 @@ export function PostActions({ postId, onComment }: PostActionsProps) {
     }
   };
 
+  const handleShare = () => {
+    shareContent('Check out this post!', `https://kanushi.app/posts/${postId}`);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.actionsRow}>
@@ -122,7 +127,7 @@ export function PostActions({ postId, onComment }: PostActionsProps) {
           <Text style={styles.actionText}>{commentCount > 0 ? commentCount : ''}</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
           <Feather name="share" size={22} color="#64748B" />
         </TouchableOpacity>
       </View>
