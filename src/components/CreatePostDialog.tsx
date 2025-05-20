@@ -252,7 +252,7 @@ export function CreatePostDialog({ isOpen, onClose }: CreatePostDialogProps) {
     
     try {
       // 画像・動画ファイルのアップロード
-      let uploadedUrls: string[] = [];
+      const uploadedUrls: string[] = [];
       if (selectedImageFiles.length > 0) {
         const totalFiles = selectedImageFiles.length;
         

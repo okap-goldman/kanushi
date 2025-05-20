@@ -5,13 +5,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Post } from "@/components/Post";
 import { SAMPLE_POSTS } from "@/lib/data";
 import { Play, Pause, Flame, Quote } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ProfileTabsProps {
   selectedTab: string;
-  setSelectedPost: (post: any) => void;
-  setSelectedShopItem?: (item: any) => void;
+  setSelectedPost: (post: Record<string, unknown>) => void;
+  setSelectedShopItem?: (item: Record<string, unknown>) => void;
 }
 
 interface AudioPlayerState {
@@ -131,8 +131,51 @@ export function ProfileTabs({ selectedTab, setSelectedPost }: ProfileTabsProps) 
     }
   };
 
+  // Update progress
+  const updateProgress = useCallback(() => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  }, []);
+
+  // Initial setup for handleAudioEnded
+  const handleAudioEnded = useCallback(() => {
+    if (audioState.continuousPlay && audioState.currentAudioIndex < audioPosts.length - 1) {
+      // Load next track but don't autoplay
+      const nextIndex = audioState.currentAudioIndex + 1;
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      audioRef.current = new Audio(audioPosts[nextIndex].content);
+      
+      if (audioRef.current) {
+        audioRef.current.addEventListener('timeupdate', updateProgress);
+        audioRef.current.addEventListener('loadedmetadata', () => {
+          setDuration(audioRef.current?.duration || 0);
+        });
+        audioRef.current.addEventListener('ended', () => {
+          handleAudioEnded();
+        });
+        
+        if (audioRef.current.duration) {
+          setDuration(audioRef.current.duration);
+        }
+      }
+      
+      // Don't autoplay the next track, just prepare it
+      setAudioState(prev => ({ 
+        ...prev, 
+        isPlaying: false,
+        currentAudioIndex: nextIndex 
+      }));
+    } else {
+      // Stop playing
+      setAudioState(prev => ({ ...prev, isPlaying: false }));
+    }
+  }, [audioState.continuousPlay, audioState.currentAudioIndex, audioPosts, updateProgress]);
+  
   // Setup audio events
-  const setupAudioEvents = () => {
+  const setupAudioEvents = useCallback(() => {
     if (!audioRef.current) return;
     
     audioRef.current.addEventListener('timeupdate', updateProgress);
@@ -145,36 +188,9 @@ export function ProfileTabs({ selectedTab, setSelectedPost }: ProfileTabsProps) 
     if (audioRef.current.duration) {
       setDuration(audioRef.current.duration);
     }
-  };
+  }, [handleAudioEnded, updateProgress]);
 
-  // Handle audio ended
-  const handleAudioEnded = () => {
-    if (audioState.continuousPlay && audioState.currentAudioIndex < audioPosts.length - 1) {
-      // Load next track but don't autoplay
-      const nextIndex = audioState.currentAudioIndex + 1;
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      audioRef.current = new Audio(audioPosts[nextIndex].content);
-      setupAudioEvents();
-      // Don't autoplay the next track, just prepare it
-      setAudioState(prev => ({ 
-        ...prev, 
-        isPlaying: false,
-        currentAudioIndex: nextIndex 
-      }));
-    } else {
-      // Stop playing
-      setAudioState(prev => ({ ...prev, isPlaying: false }));
-    }
-  };
-
-  // Update progress
-  const updateProgress = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
-    }
-  };
+  // This duplicate function should be removed, as we've already defined it above
   
   // Handle progress bar change
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>, trackIndex?: number) => {
@@ -204,7 +220,7 @@ export function ProfileTabs({ selectedTab, setSelectedPost }: ProfileTabsProps) 
         audioRef.current.removeEventListener('ended', handleAudioEnded);
       }
     };
-  }, []);
+  }, [handleAudioEnded, updateProgress]);
   return (
     <Tabs defaultValue={selectedTab} className="mt-8">
       <TabsList className="grid w-full grid-cols-5">

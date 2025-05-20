@@ -7,7 +7,7 @@ import { Post, ApiResponse, ContentType, Comment, Tag } from './data';
  */
 export const getPosts = async (timeline_type?: 'family' | 'watch' | 'all'): Promise<ApiResponse<Post[]>> => {
   try {
-    let query = supabase
+    const query = supabase
       .from('posts')
       .select(`
         *,

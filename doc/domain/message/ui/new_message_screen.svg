@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="800" viewBox="0 0 360 800">
+  <!-- 背景 -->
+  <rect width="360" height="800" fill="#FFFFFF"/>
+  
+  <!-- ステータスバー -->
+  <rect width="360" height="24" fill="#F5F5F5"/>
+  <text x="16" y="17" font-family="Roboto" font-size="12" fill="#212121">9:41</text>
+  <text x="320" y="17" font-family="Roboto" font-size="12" fill="#212121">100%</text>
+  
+  <!-- アプリバー -->
+  <rect y="24" width="360" height="56" fill="#7E57C2"/>
+  <text x="72" y="59" font-family="Roboto" font-size="20" font-weight="500" fill="white">新規メッセージ</text>
+  <circle cx="36" cy="52" r="20" fill="white" opacity="0.9"/>
+  <text x="36" y="58" font-family="Roboto" font-size="18" fill="#7E57C2" text-anchor="middle">←</text>
+  
+  <!-- 検索ボックス -->
+  <rect x="16" y="96" width="328" height="48" rx="24" fill="#F5F5F5"/>
+  <circle cx="40" cy="120" r="12" fill="none" stroke="#9E9E9E" stroke-width="2"/>
+  <line x1="49" y1="129" x2="56" y2="136" stroke="#9E9E9E" stroke-width="2"/>
+  <text x="64" y="124" font-family="Roboto" font-size="16" fill="#9E9E9E">ユーザーを検索...</text>
+  
+  <!-- 選択中のユーザー -->
+  <rect x="16" y="160" width="328" height="48" fill="white"/>
+  <text x="16" y="188" font-family="Roboto" font-size="16" font-weight="500" fill="#212121">選択中: </text>
+  
+  <!-- ユーザーチップ -->
+  <rect x="92" y="168" width="100" height="32" rx="16" fill="#E1BEE7"/>
+  <circle cx="108" cy="184" r="12" fill="#7E57C2"/>
+  <text x="108" y="189" font-family="Roboto" font-size="14" fill="white" text-anchor="middle">山</text>
+  <text x="128" y="189" font-family="Roboto" font-size="14" fill="#212121">山田太郎</text>
+  <circle cx="176" cy="184" r="8" fill="#9E9E9E" opacity="0.5"/>
+  <text x="176" y="189" font-family="Roboto" font-size="12" fill="white" text-anchor="middle">×</text>
+  
+  <!-- セパレーター -->
+  <line x1="16" y1="224" x2="344" y2="224" stroke="#E0E0E0" stroke-width="1"/>
+  
+  <!-- ユーザーリスト - アイテム1 -->
+  <rect y="224" width="360" height="64" fill="white"/>
+  <circle cx="40" cy="256" r="24" fill="#BBDEFB"/>
+  <text x="40" y="262" font-family="Roboto" font-size="18" fill="#212121" text-anchor="middle">佐藤</text>
+  <text x="80" y="256" font-family="Roboto" font-size="16" fill="#212121">佐藤花子</text>
+  <circle cx="324" cy="256" r="16" fill="#F5F5F5"/>
+  <text x="324" y="262" font-family="Roboto" font-size="18" fill="#9E9E9E" text-anchor="middle">+</text>
+  <line x1="0" y1="288" x2="360" y2="288" stroke="#E0E0E0" stroke-width="1"/>
+  
+  <!-- ユーザーリスト - アイテム2 -->
+  <rect y="288" width="360" height="64" fill="white"/>
+  <circle cx="40" cy="320" r="24" fill="#C8E6C9"/>
+  <text x="40" y="326" font-family="Roboto" font-size="18" fill="#212121" text-anchor="middle">鈴木</text>
+  <text x="80" y="320" font-family="Roboto" font-size="16" fill="#212121">鈴木一郎</text>
+  <circle cx="324" cy="320" r="16" fill="#F5F5F5"/>
+  <text x="324" y="326" font-family="Roboto" font-size="18" fill="#9E9E9E" text-anchor="middle">+</text>
+  <line x1="0" y1="352" x2="360" y2="352" stroke="#E0E0E0" stroke-width="1"/>
+  
+  <!-- ユーザーリスト - アイテム3 -->
+  <rect y="352" width="360" height="64" fill="white"/>
+  <circle cx="40" cy="384" r="24" fill="#FFECB3"/>
+  <text x="40" y="390" font-family="Roboto" font-size="18" fill="#212121" text-anchor="middle">田中</text>
+  <text x="80" y="384" font-family="Roboto" font-size="16" fill="#212121">田中健太</text>
+  <circle cx="324" cy="384" r="16" fill="#F5F5F5"/>
+  <text x="324" y="390" font-family="Roboto" font-size="18" fill="#9E9E9E" text-anchor="middle">+</text>
+  <line x1="0" y1="416" x2="360" y2="416" stroke="#E0E0E0" stroke-width="1"/>
+  
+  <!-- ユーザーリスト - アイテム4 -->
+  <rect y="416" width="360" height="64" fill="white"/>
+  <circle cx="40" cy="448" r="24" fill="#FFCDD2"/>
+  <text x="40" y="454" font-family="Roboto" font-size="18" fill="#212121" text-anchor="middle">高橋</text>
+  <text x="80" y="448" font-family="Roboto" font-size="16" fill="#212121">高橋誠</text>
+  <circle cx="324" cy="448" r="16" fill="#F5F5F5"/>
+  <text x="324" y="454" font-family="Roboto" font-size="18" fill="#9E9E9E" text-anchor="middle">+</text>
+  <line x1="0" y1="480" x2="360" y2="480" stroke="#E0E0E0" stroke-width="1"/>
+  
+  <!-- ユーザーリスト - アイテム5 -->
+  <rect y="480" width="360" height="64" fill="white"/>
+  <circle cx="40" cy="512" r="24" fill="#D1C4E9"/>
+  <text x="40" y="518" font-family="Roboto" font-size="18" fill="#212121" text-anchor="middle">小林</text>
+  <text x="80" y="512" font-family="Roboto" font-size="16" fill="#212121">小林直子</text>
+  <circle cx="324" cy="512" r="16" fill="#F5F5F5"/>
+  <text x="324" y="518" font-family="Roboto" font-size="18" fill="#9E9E9E" text-anchor="middle">+</text>
+  <line x1="0" y1="544" x2="360" y2="544" stroke="#E0E0E0" stroke-width="1"/>
+  
+  <!-- グループ作成オプション -->
+  <rect y="600" width="360" height="64" fill="#F5F5F5"/>
+  <circle cx="40" cy="632" r="24" fill="#7E57C2"/>
+  <text x="40" y="638" font-family="Roboto" font-size="18" fill="white" text-anchor="middle">G</text>
+  <text x="80" y="632" font-family="Roboto" font-size="16" font-weight="500" fill="#212121">グループメッセージを作成</text>
+  <text x="80" y="652" font-family="Roboto" font-size="14" fill="#757575">複数のユーザーとメッセージをやり取り</text>
+  
+  <!-- 次へボタン -->
+  <rect x="16" y="720" width="328" height="48" rx="24" fill="#7E57C2"/>
+  <text x="180" y="750" font-family="Roboto" font-size="16" font-weight="500" fill="white" text-anchor="middle">次へ</text>
+</svg>

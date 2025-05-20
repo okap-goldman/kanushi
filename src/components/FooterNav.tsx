@@ -1,4 +1,4 @@
-import { Home, Search, PlusSquare, Compass, User, MessageCircle } from "lucide-react";
+import { Home, Search, PlusSquare, Compass, User, MessageCircle, Calendar, ShoppingBag } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { CreatePostDialog } from "./CreatePostDialog";
@@ -24,6 +24,12 @@ export function FooterNav() {
         >
           <PlusSquare className="w-6 h-6" />
         </button>
+        <Link to="/shop" className={`${isActive('/shop') ? 'text-primary' : 'text-muted-foreground'}`}>
+          <ShoppingBag className="w-6 h-6" />
+        </Link>
+        <Link to="/orders" className={`${isActive('/orders') ? 'text-primary' : 'text-muted-foreground'}`}>
+          <Calendar className="w-6 h-6" />
+        </Link>
         <Link to="/messages" className={`${isActive('/messages') ? 'text-primary' : 'text-muted-foreground'}`}>
           <MessageCircle className="w-6 h-6" />
         </Link>
@@ -42,3 +48,5 @@ export function FooterNav() {
     </>
   );
 }
+
+export default FooterNav;

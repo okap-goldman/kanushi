@@ -15,7 +15,7 @@ export function MessageItem({ message, isCurrentUser }: MessageItemProps) {
   // Process message to handle markdown formatting
   useEffect(() => {
     // Basic Markdown-like formatting
-    let formatted = message.content
+    const formatted = message.content
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
       .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
       .replace(/`(.*?)`/g, '<code>$1</code>') // Inline code

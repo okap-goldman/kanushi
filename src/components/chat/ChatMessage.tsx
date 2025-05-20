@@ -12,7 +12,7 @@ export function ChatMessage({ isAi = false, message }: ChatMessageProps) {
   // Process message to handle markdown formatting
   useEffect(() => {
     // Basic Markdown-like formatting
-    let formatted = message
+    const formatted = message
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
       .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
       .replace(/`(.*?)`/g, '<code>$1</code>') // Inline code

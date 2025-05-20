@@ -13,8 +13,14 @@ import Discover from "./pages/Discover";
 import Messages from "./pages/Messages";
 import MessageDetail from "./pages/MessageDetail";
 import NewMessage from "./pages/NewMessage";
+import Events from "./pages/Events";
+import EventDetail from "./pages/EventDetail";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Shop from "./pages/Shop";
+import ProductDetail from "./pages/ProductDetail";
+import Orders from "./pages/Orders";
+import OrderDetail from "./pages/OrderDetail";
 import { FooterNav } from "./components/FooterNav";
 import { SplashScreen } from "./components/SplashScreen";
 import { AuthProvider } from "./context/AuthContext";
@@ -50,10 +56,20 @@ function AppContent() {
             <Route path="/search" element={<Search />} />
             <Route path="/discover" element={<Discover />} />
             
+            {/* Event Routes */}
+            <Route path="/events" element={<Events />} />
+            <Route path="/events/:id" element={<EventDetail />} />
+            
             {/* Message Routes */}
             <Route path="/messages" element={<Messages />} />
             <Route path="/messages/new" element={<NewMessage />} />
             <Route path="/messages/:conversationId" element={<MessageDetail />} />
+            
+            {/* Shop Routes */}
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/shop/product/:id" element={<ProductDetail />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/orders/:id" element={<OrderDetail />} />
           </Route>
           
           <Route path="*" element={<Navigate to="/" replace />} />

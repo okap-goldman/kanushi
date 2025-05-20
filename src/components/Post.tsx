@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { PostHeader } from "./post/PostHeader";
 import { PostContent } from "./post/PostContent";
@@ -25,11 +25,11 @@ export function Post({ author, content, caption, mediaType, postId, tags = [] }:
   const [isExpanded, setIsExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showFullPost, setShowFullPost] = useState(false);
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
 
   // 投稿のコメントを取得する関数
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     if (!showComments) return;
     
     setIsLoadingComments(true);
@@ -44,14 +44,14 @@ export function Post({ author, content, caption, mediaType, postId, tags = [] }:
     } finally {
       setIsLoadingComments(false);
     }
-  };
+  }, [postId, showComments]);
 
   // コメントダイアログが開かれた時にコメントを取得
   useEffect(() => {
     if (showComments) {
       fetchComments();
     }
-  }, [showComments]);
+  }, [showComments, fetchComments]);
 
   return (
     <Card className="p-4 space-y-4">

@@ -185,17 +185,17 @@ const Index = () => {
               </div>
             </div>
           </div>
-        ) : currentUser && (
+        ) : currentUser ? (
           <div className="max-w-xl mx-auto mb-4 bg-card rounded-xl shadow-sm">
             <StoriesRow
               userStories={userStories}
               currentUserId={currentUser.id}
-              currentUserImage={currentUser.image}
+              currentUserImage={currentUser.image || ""}
               onCreateStory={handleCreateStory}
               onStoryView={handleStoryView}
             />
           </div>
-        )}
+        ) : null}
 
         <div className="space-y-4 max-w-xl mx-auto">
           {loading ? (

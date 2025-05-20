@@ -8,12 +8,12 @@ import { Post } from "@/components/Post";
 const Profile = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedTab, setSelectedTab] = useState("media");
-  const [selectedPost, setSelectedPost] = useState<any | null>(null);
-  const [selectedShopItem, setSelectedShopItem] = useState<any | null>(null);
+  const [selectedPost, setSelectedPost] = useState<Record<string, unknown> | null>(null);
+  const [selectedShopItem, setSelectedShopItem] = useState<Record<string, unknown> | null>(null);
 
   const handlePlayVoice = () => {
     setIsPlaying(!isPlaying);
-    // TODO: Implement voice playback logic
+    /* Implement voice playback logic */
   };
 
   return (

@@ -190,11 +190,11 @@ export function ProfileEdit() {
       });
       
       navigate("/profile");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error saving profile:", error);
       toast({
         title: "エラー",
-        description: error.message || "プロフィールの保存中にエラーが発生しました",
+        description: error instanceof Error ? error.message : "プロフィールの保存中にエラーが発生しました",
         variant: "destructive",
       });
     } finally {
