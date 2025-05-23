@@ -36,6 +36,26 @@ npm i
 npm run dev
 ```
 
+### Running the React Native + Expo version
+
+The project now includes a React Native + Expo version in the `/mobile` directory. To run it:
+
+```sh
+# Step 1: Navigate to the mobile directory
+cd mobile
+
+# Step 2: Install dependencies
+npm install
+
+# Step 3: Start the Expo development server
+npm start
+
+# Step 4: Follow the instructions in the terminal to open the app on:
+# - iOS simulator (requires macOS)
+# - Android simulator
+# - Physical device using Expo Go app
+```
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
@@ -52,17 +72,27 @@ npm run dev
 
 ## What technologies are used for this project?
 
-This project is built with .
+This project is built with two versions:
 
+### Web Version
 - Vite
 - TypeScript
 - React
 - shadcn-ui
 - Tailwind CSS
 
+### Mobile Version
+- React Native
+- Expo
+- TypeScript
+- NativeWind (Tailwind for React Native)
+- React Navigation
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/cb76fb72-28c3-412c-b9ee-1fa5f7de603f) and click on Share -> Publish.
+
+For the React Native version, you can build and deploy using Expo's EAS Build services.
 
 ## I want to use a custom domain - is that possible?
 
