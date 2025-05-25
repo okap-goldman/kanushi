@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthCore } from '../../src/lib/auth/authCore';
 
 // モックプロバイダーの作成
@@ -29,7 +29,7 @@ describe('AuthCore - 認証バイパス機能', () => {
     delete process.env.NODE_ENV;
     delete process.env.TEST_FILE;
     delete process.env.DISABLE_AUTO_LOGIN;
-    
+
     mockAuthProvider = createMockAuthProvider();
     mockDbProvider = createMockDbProvider();
     authCore = new AuthCore(mockAuthProvider, mockDbProvider);
@@ -38,14 +38,14 @@ describe('AuthCore - 認証バイパス機能', () => {
   it('開発環境で認証バイパスが有効になること', () => {
     process.env.NODE_ENV = 'development';
     process.env.TEST_FILE = 'post.test.ts';
-    
+
     const result = authCore.checkAutoLogin();
     expect(result.shouldAutoLogin).toBe(true);
   });
 
   it('本番環境では認証バイパスが無効になること', () => {
     process.env.NODE_ENV = 'production';
-    
+
     const result = authCore.checkAutoLogin();
     expect(result.shouldAutoLogin).toBe(false);
   });
@@ -53,7 +53,7 @@ describe('AuthCore - 認証バイパス機能', () => {
   it('認証テスト実行時はバイパスが無効になること', () => {
     process.env.NODE_ENV = 'development';
     process.env.TEST_FILE = 'authService.test.ts';
-    
+
     const result = authCore.checkAutoLogin();
     expect(result.shouldAutoLogin).toBe(false);
   });
@@ -61,9 +61,9 @@ describe('AuthCore - 認証バイパス機能', () => {
   it('自動ログインで正しいテストユーザーが設定されること', async () => {
     process.env.NODE_ENV = 'development';
     process.env.TEST_FILE = 'post.test.ts';
-    
+
     const result = await authCore.performAutoLogin();
-    
+
     expect(result.error).toBeNull();
     expect(result.user).toBeDefined();
     expect(result.user?.email).toBe('testuser@kanushi.love');
@@ -99,38 +99,51 @@ describe('AuthCore - Google OAuth認証', () => {
 
     // プロフィールが存在しない（新規ユーザー）
     const profileQuery = mockDbProvider.from('profiles');
-    profileQuery.select().eq().single.mockResolvedValueOnce({
-      data: null,
-      error: { code: 'PGRST116' }, // Not found
-    });
+    profileQuery
+      .select()
+      .eq()
+      .single.mockResolvedValueOnce({
+        data: null,
+        error: { code: 'PGRST116' }, // Not found
+      });
 
     // 新規プロフィール作成
-    profileQuery.insert().select().single.mockResolvedValueOnce({
-      data: {
-        id: 'test-user-id',
-        email: 'test@example.com',
-        displayName: 'Test User',
-      },
-      error: null,
-    });
+    profileQuery
+      .insert()
+      .select()
+      .single.mockResolvedValueOnce({
+        data: {
+          id: 'test-user-id',
+          email: 'test@example.com',
+          displayName: 'Test User',
+        },
+        error: null,
+      });
 
     // アカウントが存在しない
     const accountQuery = mockDbProvider.from('accounts');
-    accountQuery.select().eq().eq().single.mockResolvedValueOnce({
-      data: null,
-      error: { code: 'PGRST116' },
-    });
+    accountQuery
+      .select()
+      .eq()
+      .eq()
+      .single.mockResolvedValueOnce({
+        data: null,
+        error: { code: 'PGRST116' },
+      });
 
     // 新規アカウント作成
-    accountQuery.insert().select().single.mockResolvedValueOnce({
-      data: {
-        id: 'test-account-id',
-        profileId: 'test-user-id',
-        accountType: 'google',
-        isActive: true,
-      },
-      error: null,
-    });
+    accountQuery
+      .insert()
+      .select()
+      .single.mockResolvedValueOnce({
+        data: {
+          id: 'test-account-id',
+          profileId: 'test-user-id',
+          accountType: 'google',
+          isActive: true,
+        },
+        error: null,
+      });
 
     // テスト実行
     const result = await authCore.signInWithGoogle('mock-google-token');
@@ -200,26 +213,33 @@ describe('AuthCore - リフレッシュトークン', () => {
 
     // プロフィール取得
     const profileQuery = mockDbProvider.from('profiles');
-    profileQuery.select().eq().single.mockResolvedValueOnce({
-      data: { 
-        id: 'test-user-id', 
-        email: 'test@example.com',
-        displayName: 'Test User' 
-      },
-      error: null,
-    });
+    profileQuery
+      .select()
+      .eq()
+      .single.mockResolvedValueOnce({
+        data: {
+          id: 'test-user-id',
+          email: 'test@example.com',
+          displayName: 'Test User',
+        },
+        error: null,
+      });
 
     // アカウント取得
     const accountQuery = mockDbProvider.from('accounts');
-    accountQuery.select().eq().eq().single.mockResolvedValueOnce({
-      data: { 
-        id: 'test-account-id', 
-        profileId: 'test-user-id',
-        accountType: 'google',
-        isActive: true
-      },
-      error: null,
-    });
+    accountQuery
+      .select()
+      .eq()
+      .eq()
+      .single.mockResolvedValueOnce({
+        data: {
+          id: 'test-account-id',
+          profileId: 'test-user-id',
+          accountType: 'google',
+          isActive: true,
+        },
+        error: null,
+      });
 
     const result = await authCore.refreshToken('valid-refresh-token');
 
@@ -268,7 +288,7 @@ describe('AuthCore - Apple Sign-In認証', () => {
     let fromCallCount = 0;
     mockDbProvider.from.mockImplementation((table: string) => {
       fromCallCount++;
-      
+
       // 1回目: profiles select
       if (fromCallCount === 1 && table === 'profiles') {
         return {
@@ -280,7 +300,7 @@ describe('AuthCore - Apple Sign-In認証', () => {
           }),
         };
       }
-      
+
       // 2回目: profiles insert
       if (fromCallCount === 2 && table === 'profiles') {
         return {
@@ -296,7 +316,7 @@ describe('AuthCore - Apple Sign-In認証', () => {
           }),
         };
       }
-      
+
       // 3回目: accounts select
       if (fromCallCount === 3 && table === 'accounts') {
         return {
@@ -308,7 +328,7 @@ describe('AuthCore - Apple Sign-In認証', () => {
           }),
         };
       }
-      
+
       // 4回目: accounts insert
       if (fromCallCount === 4 && table === 'accounts') {
         return {
@@ -361,39 +381,52 @@ describe('AuthCore - Apple Sign-In認証', () => {
 
     // プロフィール作成
     const profileQuery = mockDbProvider.from('profiles');
-    profileQuery.select().eq().single.mockResolvedValueOnce({
-      data: null,
-      error: { code: 'PGRST116' },
-    });
+    profileQuery
+      .select()
+      .eq()
+      .single.mockResolvedValueOnce({
+        data: null,
+        error: { code: 'PGRST116' },
+      });
 
-    profileQuery.insert().select().single.mockResolvedValueOnce({
-      data: {
-        id: 'apple-user-id',
-        email: 'onlyemail@example.com',
-        displayName: 'onlyemail', // メールアドレスから生成
-      },
-      error: null,
-    });
+    profileQuery
+      .insert()
+      .select()
+      .single.mockResolvedValueOnce({
+        data: {
+          id: 'apple-user-id',
+          email: 'onlyemail@example.com',
+          displayName: 'onlyemail', // メールアドレスから生成
+        },
+        error: null,
+      });
 
     // アカウント作成
     const accountQuery = mockDbProvider.from('accounts');
-    accountQuery.select().eq().eq().single.mockResolvedValueOnce({
-      data: null,
-      error: { code: 'PGRST116' },
-    });
+    accountQuery
+      .select()
+      .eq()
+      .eq()
+      .single.mockResolvedValueOnce({
+        data: null,
+        error: { code: 'PGRST116' },
+      });
 
-    accountQuery.insert().select().single.mockResolvedValueOnce({
-      data: {
-        id: 'apple-account-id',
-        profileId: 'apple-user-id',
-        accountType: 'apple',
-        isActive: true,
-        switchOrder: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      error: null,
-    });
+    accountQuery
+      .insert()
+      .select()
+      .single.mockResolvedValueOnce({
+        data: {
+          id: 'apple-account-id',
+          profileId: 'apple-user-id',
+          accountType: 'apple',
+          isActive: true,
+          switchOrder: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        error: null,
+      });
 
     const result = await authCore.signInWithApple('mock-apple-token');
 
@@ -424,7 +457,7 @@ describe('AuthCore - Email + Passkey認証', () => {
     let fromCallCount = 0;
     mockDbProvider.from.mockImplementation((table: string) => {
       fromCallCount++;
-      
+
       // 1回目: profiles select (メールアドレスの重複チェック)
       if (fromCallCount === 1 && table === 'profiles') {
         return {
@@ -436,7 +469,7 @@ describe('AuthCore - Email + Passkey認証', () => {
           }),
         };
       }
-      
+
       // 2回目: profiles insert
       if (fromCallCount === 2 && table === 'profiles') {
         return {
@@ -452,7 +485,7 @@ describe('AuthCore - Email + Passkey認証', () => {
           }),
         };
       }
-      
+
       // 3回目: passkeys insert
       if (fromCallCount === 3 && table === 'passkeys') {
         return {
@@ -461,7 +494,7 @@ describe('AuthCore - Email + Passkey認証', () => {
           }),
         };
       }
-      
+
       // 4回目: accounts select
       if (fromCallCount === 4 && table === 'accounts') {
         return {
@@ -473,7 +506,7 @@ describe('AuthCore - Email + Passkey認証', () => {
           }),
         };
       }
-      
+
       // 5回目: accounts insert
       if (fromCallCount === 5 && table === 'accounts') {
         return {
@@ -492,7 +525,11 @@ describe('AuthCore - Email + Passkey認証', () => {
       }
     });
 
-    const result = await authCore.registerWithPasskey('passkey@example.com', 'mock-credential-id', 'mock-public-key');
+    const result = await authCore.registerWithPasskey(
+      'passkey@example.com',
+      'mock-credential-id',
+      'mock-public-key'
+    );
 
     expect(result.error).toBeNull();
     expect(result.user).toBeDefined();
@@ -519,7 +556,11 @@ describe('AuthCore - Email + Passkey認証', () => {
       }
     });
 
-    const result = await authCore.registerWithPasskey('existing@example.com', 'mock-credential-id', 'mock-public-key');
+    const result = await authCore.registerWithPasskey(
+      'existing@example.com',
+      'mock-credential-id',
+      'mock-public-key'
+    );
 
     expect(result.user).toBeNull();
     expect(result.error?.message).toBe('EMAIL_ALREADY_REGISTERED');
@@ -535,7 +576,7 @@ describe('AuthCore - Email + Passkey認証', () => {
     let fromCallCount = 0;
     mockDbProvider.from.mockImplementation((table: string) => {
       fromCallCount++;
-      
+
       // 1回目: passkeys select
       if (fromCallCount === 1 && table === 'passkeys') {
         return {
@@ -552,7 +593,7 @@ describe('AuthCore - Email + Passkey認証', () => {
           }),
         };
       }
-      
+
       // 2回目: profiles select
       if (fromCallCount === 2 && table === 'profiles') {
         return {
@@ -568,7 +609,7 @@ describe('AuthCore - Email + Passkey認証', () => {
           }),
         };
       }
-      
+
       // 3回目: accounts select
       if (fromCallCount === 3 && table === 'accounts') {
         return {
@@ -585,7 +626,7 @@ describe('AuthCore - Email + Passkey認証', () => {
           }),
         };
       }
-      
+
       // 4回目: passkeys update (lastUsedAt)
       if (fromCallCount === 4 && table === 'passkeys') {
         return {

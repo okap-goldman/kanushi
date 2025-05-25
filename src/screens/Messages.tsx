@@ -1,15 +1,8 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  SafeAreaView,
-} from 'react-native';
-import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { Image } from 'expo-image';
+import React from 'react';
+import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Sample data for messages
 const SAMPLE_MESSAGES = [
@@ -92,31 +85,24 @@ export default function Messages() {
       onPress={() => navigateToMessageDetail(item.id, item.user)}
     >
       <View style={styles.avatarContainer}>
-        <Image
-          source={{ uri: item.user.avatar }}
-          style={styles.avatar}
-          contentFit="cover"
-        />
+        <Image source={{ uri: item.user.avatar }} style={styles.avatar} contentFit="cover" />
         {item.user.isOnline && <View style={styles.onlineIndicator} />}
       </View>
-      
+
       <View style={styles.messageContent}>
         <View style={styles.messageHeader}>
           <Text style={styles.userName}>{item.user.name}</Text>
           <Text style={styles.timestamp}>{item.timestamp}</Text>
         </View>
-        
+
         <View style={styles.messagePreview}>
           <Text
-            style={[
-              styles.messageText,
-              item.unread > 0 && styles.unreadMessageText,
-            ]}
+            style={[styles.messageText, item.unread > 0 && styles.unreadMessageText]}
             numberOfLines={1}
           >
             {item.lastMessage}
           </Text>
-          
+
           {item.unread > 0 && (
             <View style={styles.unreadBadge}>
               <Text style={styles.unreadCount}>{item.unread}</Text>
@@ -131,13 +117,8 @@ export default function Messages() {
     <View style={styles.emptyState}>
       <Feather name="message-circle" size={48} color="#A0AEC0" />
       <Text style={styles.emptyStateTitle}>No messages yet</Text>
-      <Text style={styles.emptyStateText}>
-        When you start conversations, they'll appear here
-      </Text>
-      <TouchableOpacity
-        style={styles.newMessageButton}
-        onPress={navigateToNewMessage}
-      >
+      <Text style={styles.emptyStateText}>When you start conversations, they'll appear here</Text>
+      <TouchableOpacity style={styles.newMessageButton} onPress={navigateToNewMessage}>
         <Text style={styles.newMessageButtonText}>Start a Conversation</Text>
       </TouchableOpacity>
     </View>
@@ -155,7 +136,7 @@ export default function Messages() {
       <FlatList
         data={SAMPLE_MESSAGES}
         renderItem={renderMessageItem}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messagesList}
         ListEmptyComponent={renderEmptyState}
       />

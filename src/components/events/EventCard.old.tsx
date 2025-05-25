@@ -1,59 +1,60 @@
-import React, { useState } from "react";
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Image,
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { format } from 'date-fns';
+import React, { useState } from 'react';
+import {
   ActivityIndicator,
-  Alert
-} from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { format } from "date-fns";
-import { Ionicons } from "@expo/vector-icons";
-import { Event, eventService } from "../../lib/eventService";
-import { useAuth } from "../../context/AuthContext";
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useAuth } from '../../context/AuthContext';
+import { type Event, eventService } from '../../lib/eventService';
 
 interface EventCardProps {
   event: Event;
-  variant?: "default" | "compact";
+  variant?: 'default' | 'compact';
   onParticipationChange?: () => void;
 }
 
-export default function EventCard({ 
-  event, 
-  variant = "default",
-  onParticipationChange 
+export default function EventCard({
+  event,
+  variant = 'default',
+  onParticipationChange,
 }: EventCardProps) {
   const navigation = useNavigation();
   const { user } = useAuth();
   const [isJoining, setIsJoining] = useState(false);
   const [participationStatus, setParticipationStatus] = useState<'attending' | 'interested' | null>(
-    event.user_participation_status === 'attending' || event.user_participation_status === 'interested' 
-      ? event.user_participation_status 
+    event.user_participation_status === 'attending' ||
+      event.user_participation_status === 'interested'
+      ? event.user_participation_status
       : null
   );
 
-  const isCompact = variant === "compact";
+  const isCompact = variant === 'compact';
   const startDate = new Date(event.start_datetime);
   const endDate = new Date(event.end_datetime);
   const isSameDay = startDate.toDateString() === endDate.toDateString();
-  
+
   // Format price display
-  const priceDisplay = event.price > 0 
-    ? `${event.price.toLocaleString()} ${event.currency}` 
-    : "Free";
+  const priceDisplay =
+    event.price > 0 ? `${event.price.toLocaleString()} ${event.currency}` : 'Free';
 
   // Format location or online details
-  const locationDisplay = event.is_online 
-    ? "Online Event" 
-    : (event.location || "Location not specified");
+  const locationDisplay = event.is_online
+    ? 'Online Event'
+    : event.location || 'Location not specified';
 
   // Get avatar initials from creator name
-  const creatorName = event.creator_profile?.display_name || event.creator_profile?.username || "Unknown";
+  const creatorName =
+    event.creator_profile?.display_name || event.creator_profile?.username || 'Unknown';
   const creatorInitials = creatorName
     .split(' ')
-    .map(name => name[0])
+    .map((name) => name[0])
     .join('')
     .toUpperCase()
     .substring(0, 2);
@@ -66,11 +67,7 @@ export default function EventCard({
   // Handle joining event
   const handleJoinEvent = async (status: 'attending' | 'interested') => {
     if (!user) {
-      Alert.alert(
-        "Authentication required",
-        "Please sign in to join events",
-        [{ text: "OK" }]
-      );
+      Alert.alert('Authentication required', 'Please sign in to join events', [{ text: 'OK' }]);
       return;
     }
 
@@ -80,41 +77,37 @@ export default function EventCard({
       if (participationStatus === status) {
         const { success, error } = await eventService.leaveEvent(event.id);
         if (error) throw new Error(error.message);
-        
+
         if (success) {
           setParticipationStatus(null);
-          Alert.alert(
-            "Left event",
-            "You have been removed from this event",
-            [{ text: "OK" }]
-          );
+          Alert.alert('Left event', 'You have been removed from this event', [{ text: 'OK' }]);
         }
       } else {
         // Otherwise, join/update status
         const { participation, error } = await eventService.joinEvent(event.id, status);
         if (error) throw new Error(error.message);
-        
+
         if (participation) {
           setParticipationStatus(status);
           Alert.alert(
-            status === 'attending' ? "Joined event" : "Marked as interested",
-            status === 'attending' 
-              ? "You are now attending this event" 
+            status === 'attending' ? 'Joined event' : 'Marked as interested',
+            status === 'attending'
+              ? 'You are now attending this event'
               : "You've marked this event as interesting",
-            [{ text: "OK" }]
+            [{ text: 'OK' }]
           );
         }
       }
-      
+
       // Notify parent component if callback provided
       if (onParticipationChange) {
         onParticipationChange();
       }
     } catch (error) {
       Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to update event participation",
-        [{ text: "OK" }]
+        'Error',
+        error instanceof Error ? error.message : 'Failed to update event participation',
+        [{ text: 'OK' }]
       );
     } finally {
       setIsJoining(false);
@@ -125,13 +118,13 @@ export default function EventCard({
     <View style={[styles.card, isCompact && styles.cardCompact]}>
       {event.cover_image_url && (
         <TouchableOpacity onPress={handleNavigateToEvent}>
-          <Image 
+          <Image
             source={{ uri: event.cover_image_url }}
             style={[styles.coverImage, isCompact && styles.coverImageCompact]}
           />
         </TouchableOpacity>
       )}
-      
+
       <View style={[styles.cardHeader, isCompact && styles.cardHeaderCompact]}>
         <View style={styles.badgeContainer}>
           <View style={[styles.badge, event.price > 0 ? styles.badgePrimary : styles.badgeOutline]}>
@@ -146,56 +139,67 @@ export default function EventCard({
               </Text>
             </View>
           )}
-          
+
           {participationStatus && (
-            <View style={[styles.badge, participationStatus === 'attending' ? styles.badgePrimary : styles.badgeOutline]}>
-              <Text style={[styles.badgeText, participationStatus === 'attending' && styles.badgeTextPrimary]}>
-                {participationStatus === 'attending' ? "Attending" : "Interested"}
+            <View
+              style={[
+                styles.badge,
+                participationStatus === 'attending' ? styles.badgePrimary : styles.badgeOutline,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.badgeText,
+                  participationStatus === 'attending' && styles.badgeTextPrimary,
+                ]}
+              >
+                {participationStatus === 'attending' ? 'Attending' : 'Interested'}
               </Text>
             </View>
           )}
         </View>
-        
+
         <TouchableOpacity onPress={handleNavigateToEvent}>
-          <Text style={[styles.title, isCompact && styles.titleCompact]}>
-            {event.title}
-          </Text>
+          <Text style={[styles.title, isCompact && styles.titleCompact]}>{event.title}</Text>
         </TouchableOpacity>
-        
+
         <View style={styles.infoRow}>
           <Ionicons name="calendar-outline" size={16} color="#666" />
           <Text style={styles.infoText}>
-            {format(startDate, "PPP")}
-            {!isSameDay && ` - ${format(endDate, "PPP")}`}
+            {format(startDate, 'PPP')}
+            {!isSameDay && ` - ${format(endDate, 'PPP')}`}
           </Text>
         </View>
-        
+
         <View style={styles.infoRow}>
           <Ionicons name="time-outline" size={16} color="#666" />
           <Text style={styles.infoText}>
-            {format(startDate, "p")} - {format(endDate, "p")}
+            {format(startDate, 'p')} - {format(endDate, 'p')}
           </Text>
         </View>
-        
+
         <View style={styles.infoRow}>
-          <Ionicons 
-            name={event.is_online ? "globe-outline" : "location-outline"} 
-            size={16} 
-            color="#666" 
+          <Ionicons
+            name={event.is_online ? 'globe-outline' : 'location-outline'}
+            size={16}
+            color="#666"
           />
           <Text style={styles.infoText}>{locationDisplay}</Text>
         </View>
-        
+
         {event.max_participants && (
           <View style={styles.infoRow}>
             <Ionicons name="people-outline" size={16} color="#666" />
             <Text style={styles.infoText}>
-              {event.participant_count ? `${event.participant_count} / ${event.max_participants}` : `0 / ${event.max_participants}`} participants
+              {event.participant_count
+                ? `${event.participant_count} / ${event.max_participants}`
+                : `0 / ${event.max_participants}`}{' '}
+              participants
             </Text>
           </View>
         )}
       </View>
-      
+
       {!isCompact && event.description && (
         <View style={styles.cardContent}>
           <Text style={styles.description} numberOfLines={2}>
@@ -203,50 +207,55 @@ export default function EventCard({
           </Text>
         </View>
       )}
-      
+
       <View style={[styles.cardFooter, isCompact && styles.cardFooterCompact]}>
         <View style={styles.creatorInfo}>
           <View style={styles.avatar}>
             {event.creator_profile?.avatar_url ? (
-              <Image source={{ uri: event.creator_profile.avatar_url }} style={styles.avatarImage} />
+              <Image
+                source={{ uri: event.creator_profile.avatar_url }}
+                style={styles.avatarImage}
+              />
             ) : (
               <Text style={styles.avatarText}>{creatorInitials}</Text>
             )}
           </View>
           <Text style={styles.creatorName}>{creatorName}</Text>
         </View>
-        
+
         <View style={styles.actionButtons}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
-              styles.button, 
+              styles.button,
               styles.buttonOutline,
-              participationStatus === 'interested' && styles.buttonOutlineActive
+              participationStatus === 'interested' && styles.buttonOutlineActive,
             ]}
             onPress={() => handleJoinEvent('interested')}
             disabled={isJoining}
           >
             {isJoining && <ActivityIndicator size="small" color="#007AFF" />}
-            <Text style={[
-              styles.buttonText,
-              participationStatus === 'interested' && styles.buttonTextActive
-            ]}>
+            <Text
+              style={[
+                styles.buttonText,
+                participationStatus === 'interested' && styles.buttonTextActive,
+              ]}
+            >
               Interested
             </Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[
-              styles.button, 
+              styles.button,
               styles.buttonPrimary,
-              participationStatus === 'attending' && styles.buttonAttending
+              participationStatus === 'attending' && styles.buttonAttending,
             ]}
             onPress={() => handleJoinEvent('attending')}
             disabled={isJoining}
           >
             {isJoining && <ActivityIndicator size="small" color="#FFF" />}
             <Text style={styles.buttonTextPrimary}>
-              {participationStatus === 'attending' ? "Attending" : "Attend"}
+              {participationStatus === 'attending' ? 'Attending' : 'Attend'}
             </Text>
           </TouchableOpacity>
         </View>

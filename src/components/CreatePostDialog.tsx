@@ -1,25 +1,25 @@
+import { Feather } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
+import { VideoPlayer, VideoView } from 'expo-video';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Image } from 'expo-image';
-import { Feather } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import { Audio } from 'expo-av';
-import { VideoView, VideoPlayer } from 'expo-video';
-import { Input } from './ui/Input';
-import { Button } from './ui/Button';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { uploadFile } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
 
 interface CreatePostDialogProps {
   visible: boolean;
@@ -41,7 +41,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
   const { user } = useAuth();
 
   const pickImage = async () => {
@@ -78,11 +78,11 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
-      
+
       const { recording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
-      
+
       setRecording(recording);
       setIsRecording(true);
     } catch (err) {
@@ -92,14 +92,14 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
 
   const stopRecording = async () => {
     if (!recording) return;
-    
+
     setIsRecording(false);
     await recording.stopAndUnloadAsync();
-    
+
     const uri = recording.getURI();
     setAudioUri(uri);
     setRecording(null);
-    
+
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
     });
@@ -107,7 +107,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
 
   const addTag = () => {
     if (!tagInput.trim()) return;
-    
+
     const newTag = tagInput.trim().toLowerCase();
     if (!tags.includes(newTag)) {
       setTags([...tags, newTag]);
@@ -116,7 +116,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
   };
 
   const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+    setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
   const resetForm = () => {
@@ -137,7 +137,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
 
   const handleSubmit = async () => {
     if (!user) return;
-    
+
     if (activeTab === 'text' && !textContent.trim()) {
       // No content to post
       return;
@@ -148,7 +148,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
     try {
       let mediaUrl = null;
       let audioUrl = null;
-      let contentType = activeTab;
+      const contentType = activeTab;
 
       // Upload media based on type
       if (activeTab === 'image' && imageUri) {
@@ -160,7 +160,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
           type: 'image/jpeg',
           uri: imageUri,
         };
-        
+
         const { url, error } = await uploadFile(file, 'media', 'images');
         if (error) throw error;
         mediaUrl = url;
@@ -172,7 +172,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
           type: 'video/mp4',
           uri: videoUri,
         };
-        
+
         const { url, error } = await uploadFile(file, 'media', 'videos');
         if (error) throw error;
         mediaUrl = url;
@@ -184,7 +184,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
           type: 'audio/m4a',
           uri: audioUri,
         };
-        
+
         const { url, error } = await uploadFile(file, 'media', 'audio');
         if (error) throw error;
         audioUrl = url;
@@ -202,9 +202,9 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
 
       // Save post to Supabase
       const { success, error } = await savePost(postData);
-      
+
       if (error) throw error;
-      
+
       if (success) {
         resetForm();
         onSuccess();
@@ -237,7 +237,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
       // Handle tags if provided
       if (postData.tags && postData.tags.length > 0 && data && data.length > 0) {
         const postId = data[0].id;
-        
+
         for (const tagName of postData.tags) {
           // Check if tag exists
           const { data: existingTag, error: findError } = await supabase
@@ -245,14 +245,14 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
             .select('id')
             .eq('name', tagName)
             .maybeSingle();
-          
+
           if (findError) {
             console.error(`Error finding tag ${tagName}:`, findError);
             continue;
           }
-          
+
           let tagId;
-          
+
           // Create tag if it doesn't exist
           if (!existingTag) {
             const { data: newTag, error: createError } = await supabase
@@ -260,25 +260,23 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
               .insert({ name: tagName })
               .select()
               .single();
-            
+
             if (createError) {
               console.error(`Error creating tag ${tagName}:`, createError);
               continue;
             }
-            
+
             tagId = newTag.id;
           } else {
             tagId = existingTag.id;
           }
-          
+
           // Link tag to post
-          const { error: linkError } = await supabase
-            .from('post_tags')
-            .insert({
-              post_id: postId,
-              tag_id: tagId
-            });
-          
+          const { error: linkError } = await supabase.from('post_tags').insert({
+            post_id: postId,
+            tag_id: tagId,
+          });
+
           if (linkError) {
             console.error(`Error linking tag ${tagName} to post:`, linkError);
           }
@@ -293,12 +291,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={false}
-      onRequestClose={handleClose}
-    >
+    <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={handleClose}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
@@ -308,12 +301,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
             <Feather name="x" size={24} color="#1E293B" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Create Post</Text>
-          <Button
-            onPress={handleSubmit}
-            size="sm"
-            disabled={loading}
-            loading={loading}
-          >
+          <Button onPress={handleSubmit} size="sm" disabled={loading} loading={loading}>
             Post
           </Button>
         </View>
@@ -323,74 +311,36 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
             style={[styles.tab, activeTab === 'text' && styles.activeTab]}
             onPress={() => setActiveTab('text')}
           >
-            <Feather
-              name="type"
-              size={20}
-              color={activeTab === 'text' ? '#0070F3' : '#64748B'}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'text' && styles.activeTabText,
-              ]}
-            >
-              Text
-            </Text>
+            <Feather name="type" size={20} color={activeTab === 'text' ? '#0070F3' : '#64748B'} />
+            <Text style={[styles.tabText, activeTab === 'text' && styles.activeTabText]}>Text</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[styles.tab, activeTab === 'image' && styles.activeTab]}
             onPress={() => setActiveTab('image')}
           >
-            <Feather
-              name="image"
-              size={20}
-              color={activeTab === 'image' ? '#0070F3' : '#64748B'}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'image' && styles.activeTabText,
-              ]}
-            >
+            <Feather name="image" size={20} color={activeTab === 'image' ? '#0070F3' : '#64748B'} />
+            <Text style={[styles.tabText, activeTab === 'image' && styles.activeTabText]}>
               Image
             </Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[styles.tab, activeTab === 'video' && styles.activeTab]}
             onPress={() => setActiveTab('video')}
           >
-            <Feather
-              name="video"
-              size={20}
-              color={activeTab === 'video' ? '#0070F3' : '#64748B'}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'video' && styles.activeTabText,
-              ]}
-            >
+            <Feather name="video" size={20} color={activeTab === 'video' ? '#0070F3' : '#64748B'} />
+            <Text style={[styles.tabText, activeTab === 'video' && styles.activeTabText]}>
               Video
             </Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[styles.tab, activeTab === 'audio' && styles.activeTab]}
             onPress={() => setActiveTab('audio')}
           >
-            <Feather
-              name="mic"
-              size={20}
-              color={activeTab === 'audio' ? '#0070F3' : '#64748B'}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'audio' && styles.activeTabText,
-              ]}
-            >
+            <Feather name="mic" size={20} color={activeTab === 'audio' ? '#0070F3' : '#64748B'} />
+            <Text style={[styles.tabText, activeTab === 'audio' && styles.activeTabText]}>
               Audio
             </Text>
           </TouchableOpacity>
@@ -418,23 +368,17 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
                     style={styles.imagePreview}
                     contentFit="cover"
                   />
-                  <TouchableOpacity
-                    style={styles.changeButton}
-                    onPress={pickImage}
-                  >
+                  <TouchableOpacity style={styles.changeButton} onPress={pickImage}>
                     <Text style={styles.changeButtonText}>Change Image</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity
-                  style={styles.mediaSelector}
-                  onPress={pickImage}
-                >
+                <TouchableOpacity style={styles.mediaSelector} onPress={pickImage}>
                   <Feather name="image" size={40} color="#94A3B8" />
                   <Text style={styles.mediaSelectorText}>Select Image</Text>
                 </TouchableOpacity>
               )}
-              
+
               <Input
                 placeholder="Add a caption..."
                 value={caption}
@@ -458,23 +402,17 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
                     nativeControls={true}
                     contentFit="contain"
                   />
-                  <TouchableOpacity
-                    style={styles.changeButton}
-                    onPress={pickVideo}
-                  >
+                  <TouchableOpacity style={styles.changeButton} onPress={pickVideo}>
                     <Text style={styles.changeButtonText}>Change Video</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity
-                  style={styles.mediaSelector}
-                  onPress={pickVideo}
-                >
+                <TouchableOpacity style={styles.mediaSelector} onPress={pickVideo}>
                   <Feather name="video" size={40} color="#94A3B8" />
                   <Text style={styles.mediaSelectorText}>Select Video</Text>
                 </TouchableOpacity>
               )}
-              
+
               <Input
                 placeholder="Add a caption..."
                 value={caption}
@@ -496,32 +434,22 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
                   <View style={styles.audioWaveform}>
                     <View style={styles.audioWave} />
                   </View>
-                  <TouchableOpacity
-                    style={styles.recordButton}
-                    onPress={startRecording}
-                  >
+                  <TouchableOpacity style={styles.recordButton} onPress={startRecording}>
                     <Text style={styles.recordButtonText}>Record Again</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
                 <View style={styles.recordContainer}>
                   <TouchableOpacity
-                    style={[
-                      styles.recordButton,
-                      isRecording && styles.recordingButton,
-                    ]}
+                    style={[styles.recordButton, isRecording && styles.recordingButton]}
                     onPress={isRecording ? stopRecording : startRecording}
                   >
-                    <Feather
-                      name={isRecording ? 'square' : 'mic'}
-                      size={24}
-                      color="#FFFFFF"
-                    />
+                    <Feather name={isRecording ? 'square' : 'mic'} size={24} color="#FFFFFF" />
                     <Text style={styles.recordButtonText}>
                       {isRecording ? 'Stop Recording' : 'Start Recording'}
                     </Text>
                   </TouchableOpacity>
-                  
+
                   {isRecording && (
                     <View style={styles.recordingIndicator}>
                       <View style={styles.recordingDot} />
@@ -530,7 +458,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
                   )}
                 </View>
               )}
-              
+
               <Input
                 placeholder="Add a caption..."
                 value={caption}
@@ -559,15 +487,12 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
                 <Feather name="plus" size={20} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.tagsContainer}>
-              {tags.map(tag => (
+              {tags.map((tag) => (
                 <View key={tag} style={styles.tag}>
                   <Text style={styles.tagText}>#{tag}</Text>
-                  <TouchableOpacity
-                    onPress={() => removeTag(tag)}
-                    style={styles.removeTagButton}
-                  >
+                  <TouchableOpacity onPress={() => removeTag(tag)} style={styles.removeTagButton}>
                     <Feather name="x" size={14} color="#64748B" />
                   </TouchableOpacity>
                 </View>

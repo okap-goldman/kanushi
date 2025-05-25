@@ -1,15 +1,15 @@
-import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import AppNavigator from '@/navigation/AppNavigator';
 import { AuthProvider } from '@/context/AuthContext';
+import AppNavigator from '@/navigation/AppNavigator';
+import { NavigationContainer } from '@react-navigation/native';
+import { render, waitFor } from '@testing-library/react-native';
 import * as Notifications from 'expo-notifications';
+import React from 'react';
 
 describe('プッシュ通知連携テスト', () => {
   beforeEach(() => {
     // プッシュ通知の権限をモック
     jest.spyOn(Notifications, 'getPermissionsAsync').mockResolvedValue({
-      status: 'granted'
+      status: 'granted',
     });
   });
 
@@ -22,10 +22,10 @@ describe('プッシュ通知連携テスト', () => {
           body: 'テストユーザーがあなたの投稿にいいねしました',
           data: {
             type: 'like',
-            postId: 'test-post-id'
-          }
-        }
-      }
+            postId: 'test-post-id',
+          },
+        },
+      },
     };
 
     const { getByTestId } = render(
@@ -50,7 +50,7 @@ describe('プッシュ通知連携テスト', () => {
     const responseListener = Notifications.addNotificationResponseReceivedListener.mock.calls[0][0];
     responseListener({
       notification: mockNotification,
-      actionIdentifier: Notifications.DEFAULT_ACTION_IDENTIFIER
+      actionIdentifier: Notifications.DEFAULT_ACTION_IDENTIFIER,
     });
 
     // Assert - 該当の投稿画面に遷移

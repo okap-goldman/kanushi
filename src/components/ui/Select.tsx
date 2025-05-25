@@ -1,16 +1,16 @@
+import { Check, ChevronDown } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
   FlatList,
-  StyleSheet,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
-  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { ChevronDown, Check } from 'lucide-react-native';
 
 interface SelectOption {
   label: string;
@@ -118,25 +118,11 @@ export function SelectContent({ children }: SelectContentProps) {
   if (!open) return null;
 
   return (
-    <Modal
-      visible={open}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setOpen(false)}
-    >
-      <Pressable
-        style={styles.overlay}
-        onPress={() => setOpen(false)}
-      >
-        <Pressable
-          style={styles.contentContainer}
-          onPress={(e) => e.stopPropagation()}
-        >
+    <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
+        <Pressable style={styles.contentContainer} onPress={(e) => e.stopPropagation()}>
           <View style={styles.content}>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              style={styles.scrollView}
-            >
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
               {children}
             </ScrollView>
           </View>
@@ -159,22 +145,20 @@ export function SelectItem({ value, children, disabled }: SelectItemProps) {
 
   return (
     <TouchableOpacity
-      style={[
-        styles.item,
-        isSelected && styles.itemSelected,
-        disabled && styles.itemDisabled,
-      ]}
+      style={[styles.item, isSelected && styles.itemSelected, disabled && styles.itemDisabled]}
       onPress={handlePress}
       disabled={disabled}
     >
       <View style={styles.itemCheckContainer}>
         {isSelected && <Check size={16} color="#2563eb" />}
       </View>
-      <Text style={[
-        styles.itemText,
-        isSelected && styles.itemTextSelected,
-        disabled && styles.itemTextDisabled,
-      ]}>
+      <Text
+        style={[
+          styles.itemText,
+          isSelected && styles.itemTextSelected,
+          disabled && styles.itemTextDisabled,
+        ]}
+      >
         {children}
       </Text>
     </TouchableOpacity>

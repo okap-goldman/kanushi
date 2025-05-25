@@ -1,8 +1,8 @@
+import * as Linking from 'expo-linking';
 import OpenAI from 'openai';
 import { OPENROUTER_API_KEY } from './env';
-import * as Linking from 'expo-linking';
 
-// OpenRouter configuration 
+// OpenRouter configuration
 const DEFAULT_MODEL = 'openai/gpt-4.1';
 
 // Initialize OpenAI with OpenRouter base URL
@@ -11,7 +11,7 @@ const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   defaultHeaders: {
     'HTTP-Referer': Linking.createURL('/'),
-    'X-Title': 'Kanushi Chat'
+    'X-Title': 'Kanushi Chat',
   },
   // React Native環境では dangerouslyAllowBrowser は不要
 });
@@ -74,16 +74,16 @@ export async function getAvailableModels(): Promise<string[]> {
   try {
     const response = await fetch('https://openrouter.ai/api/v1/models', {
       headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         'HTTP-Referer': Linking.createURL('/'),
-        'X-Title': 'Kanushi Chat'
-      }
+        'X-Title': 'Kanushi Chat',
+      },
     });
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch models');
     }
-    
+
     const data = await response.json();
     return data.data.map((model: any) => model.id);
   } catch (error) {
@@ -100,41 +100,44 @@ const chatStore = new Map<string, ChatMessage[]>();
 /**
  * Send a chat message and get AI response
  */
-export async function sendAIChatMessage(chatId: string, content: string): Promise<{ content: string }> {
+export async function sendAIChatMessage(
+  chatId: string,
+  content: string
+): Promise<{ content: string }> {
   try {
     // Get existing messages for context
     const existingMessages = chatStore.get(chatId) || [];
-    
+
     // Convert to Message format for the API
-    const messages: Message[] = existingMessages.map(msg => ({
+    const messages: Message[] = existingMessages.map((msg) => ({
       role: msg.role as 'user' | 'assistant' | 'system',
-      content: msg.content
+      content: msg.content,
     }));
-    
+
     // Add the new user message
     messages.push({ role: 'user', content });
-    
+
     // Get AI response
     const response = await sendChatRequest(messages);
-    
+
     // Store messages
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       content,
       role: 'user',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
-    
+
     const aiMessage: ChatMessage = {
       id: (Date.now() + 1).toString(),
       content: response,
       role: 'assistant',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
-    
+
     const updatedMessages = [...existingMessages, userMessage, aiMessage];
     chatStore.set(chatId, updatedMessages);
-    
+
     return { content: response };
   } catch (error) {
     console.error('Error sending AI chat message:', error);

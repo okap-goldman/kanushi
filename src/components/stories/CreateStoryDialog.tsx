@@ -1,20 +1,20 @@
-import React, { useState, useRef } from "react";
+import { ResizeMode, Video } from 'expo-av';
+import * as ImagePicker from 'expo-image-picker';
+import { Camera, FileVideo, Image as ImageIcon, Send, X } from 'lucide-react-native';
+import React, { useState, useRef } from 'react';
 import {
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  TextInput,
-  Image,
-  ScrollView,
-  Alert,
-  Platform,
   ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
   StyleSheet,
-} from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import { Camera, FileVideo, Image as ImageIcon, X, Send } from "lucide-react-native";
-import { Video, ResizeMode } from "expo-av";
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 interface CreateStoryDialogProps {
   isOpen: boolean;
@@ -22,7 +22,7 @@ interface CreateStoryDialogProps {
   onSubmit: (data: {
     file: { uri: string; type: string; name: string };
     caption: string;
-    contentType: "image" | "video";
+    contentType: 'image' | 'video';
   }) => Promise<void>;
 }
 
@@ -31,14 +31,14 @@ export default function CreateStoryDialog({
   onOpenChange,
   onSubmit,
 }: CreateStoryDialogProps) {
-  const [activeTab, setActiveTab] = useState<"upload" | "camera">("upload");
+  const [activeTab, setActiveTab] = useState<'upload' | 'camera'>('upload');
   const [selectedFile, setSelectedFile] = useState<{
     uri: string;
     type: string;
     name: string;
   } | null>(null);
-  const [caption, setCaption] = useState("");
-  const [contentType, setContentType] = useState<"image" | "video">("image");
+  const [caption, setCaption] = useState('');
+  const [contentType, setContentType] = useState<'image' | 'video'>('image');
   const [preview, setPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,11 +54,11 @@ export default function CreateStoryDialog({
       const asset = result.assets[0];
       setSelectedFile({
         uri: asset.uri,
-        type: "image/jpeg",
+        type: 'image/jpeg',
         name: `story-${Date.now()}.jpg`,
       });
       setPreview(asset.uri);
-      setContentType("image");
+      setContentType('image');
     }
   };
 
@@ -73,18 +73,18 @@ export default function CreateStoryDialog({
       const asset = result.assets[0];
       setSelectedFile({
         uri: asset.uri,
-        type: "video/mp4",
+        type: 'video/mp4',
         name: `story-${Date.now()}.mp4`,
       });
       setPreview(asset.uri);
-      setContentType("video");
+      setContentType('video');
     }
   };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("許可が必要です", "カメラへのアクセスを許可してください。");
+    if (status !== 'granted') {
+      Alert.alert('許可が必要です', 'カメラへのアクセスを許可してください。');
       return;
     }
 
@@ -98,18 +98,18 @@ export default function CreateStoryDialog({
       const asset = result.assets[0];
       setSelectedFile({
         uri: asset.uri,
-        type: "image/jpeg",
+        type: 'image/jpeg',
         name: `story-${Date.now()}.jpg`,
       });
       setPreview(asset.uri);
-      setContentType("image");
-      setActiveTab("upload");
+      setContentType('image');
+      setActiveTab('upload');
     }
   };
 
   const resetForm = () => {
     setSelectedFile(null);
-    setCaption("");
+    setCaption('');
     setPreview(null);
   };
 
@@ -133,8 +133,8 @@ export default function CreateStoryDialog({
       resetForm();
       onOpenChange(false);
     } catch (error) {
-      console.error("Error creating story:", error);
-      Alert.alert("エラー", "ストーリーの作成に失敗しました。");
+      console.error('Error creating story:', error);
+      Alert.alert('エラー', 'ストーリーの作成に失敗しました。');
     } finally {
       setIsSubmitting(false);
     }
@@ -157,52 +157,34 @@ export default function CreateStoryDialog({
 
         <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={[styles.tab, activeTab === "upload" && styles.activeTab]}
-            onPress={() => setActiveTab("upload")}
+            style={[styles.tab, activeTab === 'upload' && styles.activeTab]}
+            onPress={() => setActiveTab('upload')}
           >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "upload" && styles.activeTabText,
-              ]}
-            >
+            <Text style={[styles.tabText, activeTab === 'upload' && styles.activeTabText]}>
               アップロード
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tab, activeTab === "camera" && styles.activeTab]}
-            onPress={() => setActiveTab("camera")}
+            style={[styles.tab, activeTab === 'camera' && styles.activeTab]}
+            onPress={() => setActiveTab('camera')}
           >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "camera" && styles.activeTabText,
-              ]}
-            >
+            <Text style={[styles.tabText, activeTab === 'camera' && styles.activeTabText]}>
               カメラ
             </Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.content}>
-          {activeTab === "upload" ? (
+          {activeTab === 'upload' ? (
             !preview ? (
               <View style={styles.uploadContainer}>
-                <Text style={styles.uploadText}>
-                  画像またはビデオを選択してください
-                </Text>
+                <Text style={styles.uploadText}>画像またはビデオを選択してください</Text>
                 <View style={styles.buttonRow}>
-                  <TouchableOpacity
-                    style={styles.uploadButton}
-                    onPress={pickImage}
-                  >
+                  <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
                     <ImageIcon size={20} color="#000" />
                     <Text style={styles.uploadButtonText}>画像</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.uploadButton}
-                    onPress={pickVideo}
-                  >
+                  <TouchableOpacity style={styles.uploadButton} onPress={pickVideo}>
                     <FileVideo size={20} color="#000" />
                     <Text style={styles.uploadButtonText}>ビデオ</Text>
                   </TouchableOpacity>
@@ -210,7 +192,7 @@ export default function CreateStoryDialog({
               </View>
             ) : (
               <View style={styles.previewContainer}>
-                {contentType === "image" ? (
+                {contentType === 'image' ? (
                   <Image source={{ uri: preview }} style={styles.preview} />
                 ) : (
                   <Video
@@ -273,9 +255,7 @@ export default function CreateStoryDialog({
                   ) : (
                     <>
                       <Send size={16} color="#fff" />
-                      <Text style={styles.submitButtonText}>
-                        ストーリーを投稿
-                      </Text>
+                      <Text style={styles.submitButtonText}>ストーリーを投稿</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -291,71 +271,71 @@ export default function CreateStoryDialog({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: '#e0e0e0',
   },
   title: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   closeButton: {
     padding: 8,
   },
   tabContainer: {
-    flexDirection: "row",
+    flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: '#e0e0e0',
   },
   tab: {
     flex: 1,
     paddingVertical: 12,
-    alignItems: "center",
+    alignItems: 'center',
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: "#000",
+    borderBottomColor: '#000',
   },
   tabText: {
     fontSize: 16,
-    color: "#666",
+    color: '#666',
   },
   activeTabText: {
-    color: "#000",
-    fontWeight: "600",
+    color: '#000',
+    fontWeight: '600',
   },
   content: {
     flex: 1,
   },
   uploadContainer: {
     padding: 32,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     minHeight: 240,
   },
   uploadText: {
     fontSize: 14,
-    color: "#666",
+    color: '#666',
     marginBottom: 24,
-    textAlign: "center",
+    textAlign: 'center',
   },
   buttonRow: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 16,
   },
   uploadButton: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
     borderRadius: 8,
     gap: 8,
   },
@@ -363,36 +343,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   previewContainer: {
-    position: "relative",
+    position: 'relative',
     height: 400,
     margin: 16,
     borderRadius: 8,
-    overflow: "hidden",
-    backgroundColor: "#000",
+    overflow: 'hidden',
+    backgroundColor: '#000',
   },
   preview: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
   },
   removeButton: {
-    position: "absolute",
+    position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 20,
     padding: 8,
   },
   cameraContainer: {
     padding: 32,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     minHeight: 240,
   },
   cameraButton: {
-    alignItems: "center",
+    alignItems: 'center',
     padding: 24,
     borderWidth: 2,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
     borderRadius: 100,
   },
   cameraText: {
@@ -404,22 +384,22 @@ const styles = StyleSheet.create({
   },
   captionInput: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     minHeight: 60,
-    textAlignVertical: "top",
+    textAlignVertical: 'top',
   },
   actionButtons: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     marginTop: 16,
     gap: 12,
   },
   button: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -427,19 +407,19 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
   },
   cancelButtonText: {
     fontSize: 16,
-    color: "#666",
+    color: '#666',
   },
   submitButton: {
-    backgroundColor: "#000",
+    backgroundColor: '#000',
   },
   submitButtonText: {
     fontSize: 16,
-    color: "#fff",
-    fontWeight: "600",
+    color: '#fff',
+    fontWeight: '600',
   },
   disabledButton: {
     opacity: 0.5,

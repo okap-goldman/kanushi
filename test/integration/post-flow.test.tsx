@@ -1,16 +1,16 @@
-import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import AppNavigator from '@/navigation/AppNavigator';
 import { AuthProvider } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import AppNavigator from '@/navigation/AppNavigator';
+import { NavigationContainer } from '@react-navigation/native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { Audio } from 'expo-av';
+import React from 'react';
 
 describe('投稿作成フロー結合テスト', () => {
   beforeEach(() => {
     // Supabaseクライアントの初期化
     jest.spyOn(supabase.auth, 'getUser').mockResolvedValue({
-      data: { user: { id: 'test-user-id' } }
+      data: { user: { id: 'test-user-id' } },
     });
   });
 
@@ -44,9 +44,12 @@ describe('投稿作成フロー結合テスト', () => {
     fireEvent.press(getByTestId('submit-button'));
 
     // Assert - タイムラインに戻り、投稿が表示される
-    await waitFor(() => {
-      expect(getByText('テスト投稿です #テスト')).toBeTruthy();
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        expect(getByText('テスト投稿です #テスト')).toBeTruthy();
+      },
+      { timeout: 5000 }
+    );
   });
 
   it('音声投稿の作成から再生まで', async () => {
@@ -55,11 +58,11 @@ describe('投稿作成フロー結合テスト', () => {
     const mockRecording = {
       startAsync: jest.fn(),
       stopAndUnloadAsync: jest.fn().mockResolvedValue({ uri: mockAudioUri }),
-      getStatusAsync: jest.fn().mockResolvedValue({ durationMillis: 5000 })
+      getStatusAsync: jest.fn().mockResolvedValue({ durationMillis: 5000 }),
     };
-    
+
     Audio.Recording.createAsync = jest.fn().mockResolvedValue({
-      recording: mockRecording
+      recording: mockRecording,
     });
 
     const { getByTestId, getByText } = render(
@@ -94,9 +97,12 @@ describe('投稿作成フロー結合テスト', () => {
     fireEvent.press(getByTestId('submit-button'));
 
     // Assert - タイムラインで音声プレーヤーが表示される
-    await waitFor(() => {
-      expect(getByTestId('audio-player-post')).toBeTruthy();
-      expect(getByText('音声テスト投稿')).toBeTruthy();
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        expect(getByTestId('audio-player-post')).toBeTruthy();
+        expect(getByText('音声テスト投稿')).toBeTruthy();
+      },
+      { timeout: 5000 }
+    );
   });
 });

@@ -1,6 +1,6 @@
-import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
 import { useNavigation } from '@react-navigation/native';
+import { fireEvent, render } from '@testing-library/react-native';
+import React from 'react';
 import { vi } from 'vitest';
 
 // Mock modules before importing the component
@@ -77,9 +77,9 @@ describe('EventCard', () => {
   });
 
   it('オンラインイベントの場合、オンラインと表示される', () => {
-    const event = createMockEvent({ 
+    const event = createMockEvent({
       eventType: 'online',
-      location: null 
+      location: null,
     });
     const { getByText } = render(<EventCard event={event} />);
 
@@ -88,7 +88,7 @@ describe('EventCard', () => {
   });
 
   it('音声ワークショップの場合、追加情報が表示される', () => {
-    const event = createMockEvent({ 
+    const event = createMockEvent({
       eventType: 'voice_workshop',
       workshop: {
         id: 'workshop-123',
@@ -96,8 +96,8 @@ describe('EventCard', () => {
         maxParticipants: 20,
         isRecorded: true,
         recordingUrl: null,
-        archiveExpiresAt: null
-      }
+        archiveExpiresAt: null,
+      },
     });
     const { getByText } = render(<EventCard event={event} />);
 
@@ -125,18 +125,14 @@ describe('EventCard', () => {
 
   it('参加中フラグが表示される', () => {
     const event = createMockEvent();
-    const { getByText } = render(
-      <EventCard event={event} isParticipating={true} />
-    );
+    const { getByText } = render(<EventCard event={event} isParticipating={true} />);
 
     expect(getByText('参加中')).toBeTruthy();
   });
 
   it('参加者数が表示される', () => {
     const event = createMockEvent();
-    const { getByText } = render(
-      <EventCard event={event} participantCount={15} />
-    );
+    const { getByText } = render(<EventCard event={event} participantCount={15} />);
 
     expect(getByText('15人参加')).toBeTruthy();
   });
@@ -157,7 +153,7 @@ describe('EventCard', () => {
       startsAt: new Date('2024-01-01T15:00:00'),
       endsAt: new Date('2024-01-03T17:00:00'),
     });
-    
+
     // format関数をモック
     vi.mocked(format).mockImplementation((date: Date, formatStr: string) => {
       if (formatStr === 'PPP') {

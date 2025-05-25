@@ -1,40 +1,40 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import { sendAIChatMessage, getAIChatMessages } from '../lib/chatService'
-import type { Message, ChatMessage } from '../lib/chatService'
+import { useMutation } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { getAIChatMessages, sendAIChatMessage } from '../lib/chatService';
+import type { ChatMessage, Message } from '../lib/chatService';
 
 export function useChat(chatId: string) {
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const messagesEndRef = useRef<any>(null)
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<any>(null);
 
   // Load messages on mount
   useEffect(() => {
-    loadMessages()
-  }, [chatId])
+    loadMessages();
+  }, [chatId]);
 
   const loadMessages = async () => {
     try {
-      setIsLoading(true)
-      const data = await getAIChatMessages(chatId)
+      setIsLoading(true);
+      const data = await getAIChatMessages(chatId);
       const formattedMessages: Message[] = data.map((msg: ChatMessage) => ({
         id: msg.id,
         content: msg.content,
         role: msg.role as 'user' | 'assistant',
         createdAt: new Date(msg.created_at),
-      }))
-      setMessages(formattedMessages)
+      }));
+      setMessages(formattedMessages);
     } catch (error) {
-      console.error('Failed to load messages:', error)
+      console.error('Failed to load messages:', error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      return sendAIChatMessage(chatId, content)
+      return sendAIChatMessage(chatId, content);
     },
     onSuccess: (response) => {
       // Add user message
@@ -43,38 +43,41 @@ export function useChat(chatId: string) {
         content: input,
         role: 'user',
         createdAt: new Date(),
-      }
-      
+      };
+
       // Add AI response
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: response.content,
         role: 'assistant',
         createdAt: new Date(),
-      }
-      
-      setMessages(prev => [...prev, userMessage, aiMessage])
-      setInput('')
-    },
-  })
+      };
 
-  const handleSubmit = useCallback((e?: any) => {
-    if (e) {
-      e.preventDefault()
-    }
-    
-    if (!input.trim() || sendMessageMutation.isPending) return
-    
-    sendMessageMutation.mutate(input)
-  }, [input, sendMessageMutation])
+      setMessages((prev) => [...prev, userMessage, aiMessage]);
+      setInput('');
+    },
+  });
+
+  const handleSubmit = useCallback(
+    (e?: any) => {
+      if (e) {
+        e.preventDefault();
+      }
+
+      if (!input.trim() || sendMessageMutation.isPending) return;
+
+      sendMessageMutation.mutate(input);
+    },
+    [input, sendMessageMutation]
+  );
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    scrollToBottom();
+  }, [messages]);
 
   return {
     messages,
@@ -83,5 +86,5 @@ export function useChat(chatId: string) {
     handleSubmit,
     isLoading: isLoading || sendMessageMutation.isPending,
     messagesEndRef,
-  }
+  };
 }

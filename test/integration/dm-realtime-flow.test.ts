@@ -1,8 +1,8 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { dmService } from '@/lib/dmService';
 import { realtimeService } from '@/lib/realtimeService';
 import { supabase } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock modules
 vi.mock('@/lib/supabase');
@@ -16,14 +16,14 @@ describe('DM Realtime Flow Integration', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Setup mock users
     mockUser1 = {
       id: 'user-123',
       app_metadata: {},
       user_metadata: {},
       aud: 'authenticated',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
 
     mockUser2 = {
@@ -31,7 +31,7 @@ describe('DM Realtime Flow Integration', () => {
       app_metadata: {},
       user_metadata: {},
       aud: 'authenticated',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
 
     // Mock channel
@@ -41,7 +41,7 @@ describe('DM Realtime Flow Integration', () => {
       unsubscribe: vi.fn(),
       send: vi.fn(),
       track: vi.fn(),
-      presenceState: vi.fn().mockReturnValue({})
+      presenceState: vi.fn().mockReturnValue({}),
     };
   });
 
@@ -57,13 +57,13 @@ describe('DM Realtime Flow Integration', () => {
         onNewMessage: vi.fn(),
         onMessageRead: vi.fn(),
         onTyping: vi.fn(),
-        onPresenceChange: vi.fn()
+        onPresenceChange: vi.fn(),
       };
 
       // Mock auth
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: { user: mockUser1 },
-        error: null
+        error: null,
       });
 
       // Mock realtime subscription
@@ -80,7 +80,7 @@ describe('DM Realtime Flow Integration', () => {
           onNewMessage: expect.any(Function),
           onMessageRead: expect.any(Function),
           onTyping: expect.any(Function),
-          onPresenceChange: expect.any(Function)
+          onPresenceChange: expect.any(Function),
         })
       );
     });
@@ -88,16 +88,16 @@ describe('DM Realtime Flow Integration', () => {
     it('タイピングインジケーターが正しく動作する', async () => {
       // Arrange
       const threadId = 'thread-123';
-      
+
       // Mock auth
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: { user: mockUser1 },
-        error: null
+        error: null,
       });
 
       // Act
       await dmService.sendTypingIndicator(threadId, true);
-      
+
       // Assert
       expect(realtimeService.sendTypingIndicator).toHaveBeenCalledWith(
         threadId,
@@ -107,7 +107,7 @@ describe('DM Realtime Flow Integration', () => {
 
       // Stop typing
       await dmService.sendTypingIndicator(threadId, false);
-      
+
       expect(realtimeService.sendTypingIndicator).toHaveBeenCalledWith(
         threadId,
         mockUser1.id,
@@ -118,49 +118,37 @@ describe('DM Realtime Flow Integration', () => {
     it('プレゼンス更新が正しく動作する', async () => {
       // Arrange
       const threadId = 'thread-123';
-      
+
       // Mock auth
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: { user: mockUser1 },
-        error: null
+        error: null,
       });
 
       // Act - Update presence to online
       await dmService.updatePresence(threadId, 'online');
-      
+
       // Assert
-      expect(realtimeService.updatePresence).toHaveBeenCalledWith(
-        threadId,
-        mockUser1.id,
-        'online'
-      );
+      expect(realtimeService.updatePresence).toHaveBeenCalledWith(threadId, mockUser1.id, 'online');
 
       // Act - Update presence to typing
       await dmService.updatePresence(threadId, 'typing');
-      
-      expect(realtimeService.updatePresence).toHaveBeenCalledWith(
-        threadId,
-        mockUser1.id,
-        'typing'
-      );
+
+      expect(realtimeService.updatePresence).toHaveBeenCalledWith(threadId, mockUser1.id, 'typing');
 
       // Act - Update presence to away
       await dmService.updatePresence(threadId, 'away');
-      
-      expect(realtimeService.updatePresence).toHaveBeenCalledWith(
-        threadId,
-        mockUser1.id,
-        'away'
-      );
+
+      expect(realtimeService.updatePresence).toHaveBeenCalledWith(threadId, mockUser1.id, 'away');
     });
 
     it('購読解除が正しく動作する', async () => {
       // Arrange
       const threadId = 'thread-123';
-      
+
       // Act
       await dmService.unsubscribeFromThread(threadId);
-      
+
       // Assert
       expect(realtimeService.unsubscribeFromThread).toHaveBeenCalledWith(threadId);
     });
@@ -170,14 +158,14 @@ describe('DM Realtime Flow Integration', () => {
     it('暗号化メッセージの送受信フロー', async () => {
       // This test would require more complex mocking of the encryption service
       // For now, we'll test that the encrypted flag is properly handled
-      
+
       const threadId = 'thread-123';
       const messageContent = 'Secret message';
-      
+
       // Mock auth
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: { user: mockUser1 },
-        error: null
+        error: null,
       });
 
       // Mock thread validation
@@ -185,11 +173,13 @@ describe('DM Realtime Flow Integration', () => {
       mockDb.select = vi.fn().mockReturnValue({
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
-        execute: vi.fn().mockResolvedValue([{
-          id: threadId,
-          user1Id: mockUser1.id,
-          user2Id: mockUser2.id
-        }])
+        execute: vi.fn().mockResolvedValue([
+          {
+            id: threadId,
+            user1Id: mockUser1.id,
+            user2Id: mockUser2.id,
+          },
+        ]),
       });
 
       // Mock encryption service
@@ -197,31 +187,33 @@ describe('DM Realtime Flow Integration', () => {
       vi.mocked(cryptoService.encryptMessage).mockResolvedValue({
         encryptedContent: 'encrypted-content',
         encryptedKey: 'encrypted-key',
-        iv: 'encryption-iv'
+        iv: 'encryption-iv',
       });
 
       // Mock message insertion
       mockDb.insert = vi.fn().mockReturnValue({
         values: vi.fn().mockReturnThis(),
-        returning: vi.fn().mockResolvedValue([{
-          id: 'msg-123',
-          threadId,
-          senderId: mockUser1.id,
-          messageType: 'text',
-          textContent: 'encrypted-content',
-          isEncrypted: true,
-          encryptedKey: 'encrypted-key',
-          encryptionIv: 'encryption-iv',
-          isRead: false,
-          createdAt: new Date()
-        }])
+        returning: vi.fn().mockResolvedValue([
+          {
+            id: 'msg-123',
+            threadId,
+            senderId: mockUser1.id,
+            messageType: 'text',
+            textContent: 'encrypted-content',
+            isEncrypted: true,
+            encryptedKey: 'encrypted-key',
+            encryptionIv: 'encryption-iv',
+            isRead: false,
+            createdAt: new Date(),
+          },
+        ]),
       });
 
       // Act
       const result = await dmService.sendMessage({
         threadId,
         content: messageContent,
-        encrypted: true
+        encrypted: true,
       });
 
       // Assert
@@ -242,7 +234,7 @@ describe('DM Realtime Flow Integration', () => {
           messageType: 'text',
           textContent: 'Hello',
           isRead: false,
-          createdAt: new Date()
+          createdAt: new Date(),
         },
         {
           id: 'msg-2',
@@ -251,14 +243,14 @@ describe('DM Realtime Flow Integration', () => {
           messageType: 'text',
           textContent: 'Hi there',
           isRead: true,
-          createdAt: new Date()
-        }
+          createdAt: new Date(),
+        },
       ];
 
       // Mock auth
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: { user: mockUser1 },
-        error: null
+        error: null,
       });
 
       // Mock message fetch
@@ -269,7 +261,7 @@ describe('DM Realtime Flow Integration', () => {
         orderBy: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
         offset: vi.fn().mockReturnThis(),
-        execute: vi.fn().mockResolvedValue(messages)
+        execute: vi.fn().mockResolvedValue(messages),
       });
 
       // Act
@@ -284,7 +276,7 @@ describe('DM Realtime Flow Integration', () => {
       mockDb.update = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
-        execute: vi.fn().mockResolvedValue({ rowCount: 1 })
+        execute: vi.fn().mockResolvedValue({ rowCount: 1 }),
       });
 
       // Mark thread as read
@@ -301,20 +293,20 @@ describe('DM Realtime Flow Integration', () => {
           id: 'thread-1',
           user1Id: mockUser1.id,
           user2Id: 'user-789',
-          createdAt: new Date()
+          createdAt: new Date(),
         },
         {
           id: 'thread-2',
           user1Id: 'user-999',
           user2Id: mockUser1.id,
-          createdAt: new Date()
-        }
+          createdAt: new Date(),
+        },
       ];
 
       // Mock auth
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: { user: mockUser1 },
-        error: null
+        error: null,
       });
 
       // Mock thread fetch
@@ -326,21 +318,21 @@ describe('DM Realtime Flow Integration', () => {
           where: vi.fn().mockReturnThis(),
           orderBy: vi.fn().mockReturnThis(),
           limit: vi.fn().mockReturnThis(),
-          execute: vi.fn()
+          execute: vi.fn(),
         };
 
         // First call returns threads
         if (callCount === 0) {
           mock.execute.mockResolvedValue(threads);
-        } 
+        }
         // Subsequent calls return participant profiles and messages
         else {
           mock.execute.mockResolvedValue([
             { id: mockUser1.id, displayName: 'Current User', profileImage: null },
-            { id: 'user-789', displayName: 'Other User', profileImage: null }
+            { id: 'user-789', displayName: 'Other User', profileImage: null },
           ]);
         }
-        
+
         callCount++;
         return mock;
       });

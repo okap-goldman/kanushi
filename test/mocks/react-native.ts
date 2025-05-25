@@ -30,10 +30,14 @@ export const View = (props: any) => {
 
 export const TouchableOpacity = (props: any) => {
   const React = require('react');
-  return React.createElement('button', {
-    ...props,
-    onClick: props.onPress,
-  }, props.children);
+  return React.createElement(
+    'button',
+    {
+      ...props,
+      onClick: props.onPress,
+    },
+    props.children
+  );
 };
 
 export const ScrollView = (props: any) => {
@@ -62,25 +66,37 @@ export const Switch = (props: any) => {
 export const Modal = (props: any) => {
   const React = require('react');
   if (!props.visible) return null;
-  return React.createElement('div', {
-    testID: 'modal',
-    style: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }
-  }, props.children);
+  return React.createElement(
+    'div',
+    {
+      testID: 'modal',
+      style: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 },
+    },
+    props.children
+  );
 };
 
 export const Picker = (props: any) => {
   const React = require('react');
-  return React.createElement('select', {
-    ...props,
-    value: props.selectedValue,
-    onChange: (e: any) => props.onValueChange?.(e.target.value),
-    testID: props.testID,
-  }, props.children);
+  return React.createElement(
+    'select',
+    {
+      ...props,
+      value: props.selectedValue,
+      onChange: (e: any) => props.onValueChange?.(e.target.value),
+      testID: props.testID,
+    },
+    props.children
+  );
 };
 
 Picker.Item = (props: any) => {
   const React = require('react');
-  return React.createElement('option', {
-    value: props.value,
-  }, props.label);
+  return React.createElement(
+    'option',
+    {
+      value: props.value,
+    },
+    props.label
+  );
 };

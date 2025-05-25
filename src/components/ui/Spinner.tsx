@@ -1,11 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Animated,
-  StyleSheet,
-  ViewStyle,
-  Easing,
-} from 'react-native';
+import { Animated, Easing, StyleSheet, View, type ViewStyle } from 'react-native';
 
 type SpinnerSize = 'sm' | 'default' | 'lg' | 'xl';
 type SpinnerVariant = 'default' | 'secondary' | 'muted' | 'white';
@@ -16,11 +10,7 @@ interface SpinnerProps {
   style?: ViewStyle;
 }
 
-export function Spinner({ 
-  size = 'default',
-  variant = 'default',
-  style,
-}: SpinnerProps) {
+export function Spinner({ size = 'default', variant = 'default', style }: SpinnerProps) {
   const spinValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {

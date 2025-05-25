@@ -1,5 +1,5 @@
+import path from 'node:path';
 import { defineConfig } from 'vitest/config';
-import path from 'path';
 
 export default defineConfig({
   test: {
@@ -7,19 +7,13 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./test/setup/api.ts', './test/setup/ui.ts'],
     alias: {
-      jest: 'vitest'
+      jest: 'vitest',
     },
     include: ['test/**/*.test.ts', 'test/**/*.test.tsx'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      exclude: [
-        'node_modules/',
-        'test/',
-        'mobile/',
-        '.expo/',
-        'dist/'
-      ]
+      exclude: ['node_modules/', 'test/', 'mobile/', '.expo/', 'dist/'],
     },
     // React Native関連のモジュールを外部依存として扱う
     server: {
@@ -29,10 +23,10 @@ export default defineConfig({
           'react-native-url-polyfill',
           'expo*',
           '@expo*',
-          'react-native-gesture-handler'
+          'react-native-gesture-handler',
         ],
-      }
-    }
+      },
+    },
   },
   resolve: {
     alias: {
@@ -41,9 +35,15 @@ export default defineConfig({
       'react-native-url-polyfill/auto': path.resolve(__dirname, './test/mocks/empty.ts'),
       'react-native-gesture-handler/jestSetup': path.resolve(__dirname, './test/mocks/empty.ts'),
       'react-native-gesture-handler': path.resolve(__dirname, './test/mocks/empty.ts'),
-      '@testing-library/react-native': path.resolve(__dirname, './test/mocks/testing-library-react-native.ts'),
-      '@react-native-community/datetimepicker': path.resolve(__dirname, './test/mocks/datetimepicker.ts'),
-      '@react-native-picker/picker': path.resolve(__dirname, './test/mocks/empty.ts')
-    }
-  }
+      '@testing-library/react-native': path.resolve(
+        __dirname,
+        './test/mocks/testing-library-react-native.ts'
+      ),
+      '@react-native-community/datetimepicker': path.resolve(
+        __dirname,
+        './test/mocks/datetimepicker.ts'
+      ),
+      '@react-native-picker/picker': path.resolve(__dirname, './test/mocks/empty.ts'),
+    },
+  },
 });

@@ -1,12 +1,12 @@
 /**
  * Real-time Service for Direct Messages
- * 
+ *
  * This service handles real-time messaging using Supabase Realtime channels
  * for instant message delivery and presence tracking.
  */
 
-import { supabase } from './supabase';
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { supabase } from './supabase';
 
 // Types
 export interface RealtimeMessage {
@@ -36,7 +36,7 @@ export interface MessageHandler {
 export class RealtimeService {
   private channels = new Map<string, RealtimeChannel>();
   private presenceStates = new Map<string, PresenceState>();
-  
+
   /**
    * Subscribe to a DM thread for real-time updates
    */
@@ -136,11 +136,7 @@ export class RealtimeService {
   /**
    * Send typing indicator
    */
-  async sendTypingIndicator(
-    threadId: string,
-    userId: string,
-    isTyping: boolean
-  ): Promise<void> {
+  async sendTypingIndicator(threadId: string, userId: string, isTyping: boolean): Promise<void> {
     const channel = this.channels.get(threadId);
     if (channel) {
       await channel.send({
@@ -186,8 +182,8 @@ export class RealtimeService {
    * Clean up all subscriptions
    */
   async cleanup(): Promise<void> {
-    const unsubscribePromises = Array.from(this.channels.keys()).map(
-      threadId => this.unsubscribeFromThread(threadId)
+    const unsubscribePromises = Array.from(this.channels.keys()).map((threadId) =>
+      this.unsubscribeFromThread(threadId)
     );
     await Promise.all(unsubscribePromises);
     this.presenceStates.clear();

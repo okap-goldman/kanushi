@@ -1,6 +1,6 @@
-import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { useNavigation } from '@react-navigation/native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import React from 'react';
 import { vi } from 'vitest';
 
 // Mock Alert directly
@@ -19,7 +19,6 @@ vi.mock('@/lib/eventServiceDrizzle', () => ({
     createVoiceWorkshop: vi.fn(),
   },
 }));
-
 
 // Mock date-fns with a simpler implementation
 vi.mock('date-fns', () => ({
@@ -90,10 +89,7 @@ describe('CreateEventDialog', () => {
     fireEvent.press(createButton);
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'エラー',
-        'イベント名を入力してください'
-      );
+      expect(Alert.alert).toHaveBeenCalledWith('エラー', 'イベント名を入力してください');
     });
   });
 
@@ -105,10 +101,7 @@ describe('CreateEventDialog', () => {
     });
 
     // フォームに入力
-    fireEvent.changeText(
-      getByPlaceholderText('イベント名を入力してください'),
-      'テストイベント'
-    );
+    fireEvent.changeText(getByPlaceholderText('イベント名を入力してください'), 'テストイベント');
     fireEvent.changeText(
       getByPlaceholderText('イベントの詳細を記入してください...'),
       'これはテストイベントです'
@@ -136,11 +129,7 @@ describe('CreateEventDialog', () => {
     });
 
     // 成功アラートが表示されることを確認
-    expect(Alert.alert).toHaveBeenCalledWith(
-      '成功',
-      'イベントが作成されました',
-      expect.any(Array)
-    );
+    expect(Alert.alert).toHaveBeenCalledWith('成功', 'イベントが作成されました', expect.any(Array));
   });
 
   it('音声ワークショップの作成が成功する', async () => {
@@ -159,10 +148,7 @@ describe('CreateEventDialog', () => {
       getByPlaceholderText('イベント名を入力してください'),
       '音声ワークショップテスト'
     );
-    fireEvent.changeText(
-      getByPlaceholderText('10（デフォルト）'),
-      '20'
-    );
+    fireEvent.changeText(getByPlaceholderText('10（デフォルト）'), '20');
 
     // 録音オプションをオンにする
     const recordSwitch = getByTestId('record-switch');
@@ -200,10 +186,7 @@ describe('CreateEventDialog', () => {
     expect(queryByText('返金ポリシー')).toBeNull();
 
     // 参加費を入力
-    fireEvent.changeText(
-      getByPlaceholderText('無料の場合は空欄'),
-      '5000'
-    );
+    fireEvent.changeText(getByPlaceholderText('無料の場合は空欄'), '5000');
 
     // 返金ポリシーフィールドが表示される
     expect(getByText('返金ポリシー')).toBeTruthy();
@@ -231,10 +214,7 @@ describe('CreateEventDialog', () => {
     });
 
     // フォームに入力
-    fireEvent.changeText(
-      getByPlaceholderText('イベント名を入力してください'),
-      'エラーテスト'
-    );
+    fireEvent.changeText(getByPlaceholderText('イベント名を入力してください'), 'エラーテスト');
 
     // エラーを返すモック
     vi.mocked(eventServiceDrizzle.createEvent).mockResolvedValue({
@@ -247,10 +227,7 @@ describe('CreateEventDialog', () => {
     fireEvent.press(createButton);
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'エラー',
-        'ネットワークエラー'
-      );
+      expect(Alert.alert).toHaveBeenCalledWith('エラー', 'ネットワークエラー');
     });
   });
 
@@ -267,10 +244,7 @@ describe('CreateEventDialog', () => {
     fireEvent.press(createButton);
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'エラー',
-        'ログインが必要です'
-      );
+      expect(Alert.alert).toHaveBeenCalledWith('エラー', 'ログインが必要です');
     });
   });
 
@@ -282,14 +256,11 @@ describe('CreateEventDialog', () => {
     });
 
     // イベント名を入力
-    fireEvent.changeText(
-      getByPlaceholderText('イベント名を入力してください'),
-      'テストイベント'
-    );
+    fireEvent.changeText(getByPlaceholderText('イベント名を入力してください'), 'テストイベント');
 
     // 終了時間を開始時間より前に設定する処理をシミュレート
     // （実際のDateTimePickerの動作をモックする必要がある）
-    
+
     const createButton = getByText('作成');
     fireEvent.press(createButton);
 

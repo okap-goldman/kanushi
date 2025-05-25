@@ -17,10 +17,10 @@ export * from './group';
 export * from './ai';
 export * from './notification';
 
-// Import necessary tables for foreign key setup
-import { posts } from './post';
 import { events } from './event';
 import { groups } from './group';
+// Import necessary tables for foreign key setup
+import { posts } from './post';
 
 // Add foreign key constraints that couldn't be added directly due to circular dependencies
 // These would be applied during migration setup
@@ -29,14 +29,14 @@ import { groups } from './group';
 export const postEventFk = foreignKey({
   columns: [posts.eventId],
   foreignColumns: [events.id],
-  name: 'fk_post_event_id'
+  name: 'fk_post_event_id',
 });
 
-// Posts -> Groups foreign key  
+// Posts -> Groups foreign key
 export const postGroupFk = foreignKey({
   columns: [posts.groupId],
   foreignColumns: [groups.id],
-  name: 'fk_post_group_id'
+  name: 'fk_post_group_id',
 });
 
 // Export all relations

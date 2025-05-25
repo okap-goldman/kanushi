@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMediaService } from '../../src/lib/mediaService';
 
 // モックSupabaseクライアント
@@ -10,12 +10,12 @@ const mockSupabase = {
 
 describe('MediaService', () => {
   let mediaService: ReturnType<typeof createMediaService>;
-  
+
   beforeEach(() => {
     vi.clearAllMocks();
     mediaService = createMediaService(mockSupabase as any);
   });
-  
+
   describe('uploadFile', () => {
     it('ファイルアップロードが正常に完了すること', async () => {
       const mockFile = new File(['test content'], 'test.jpg', { type: 'image/jpeg' });
@@ -26,11 +26,11 @@ describe('MediaService', () => {
           fileId: 'file123',
         },
       };
-      
+
       mockSupabase.functions.invoke.mockResolvedValueOnce(mockResponse);
-      
+
       const result = await mediaService.uploadFile({ file: mockFile });
-      
+
       expect(result.error).toBeUndefined();
       expect(result.data).toEqual({
         url: 'https://cdn.example.com/test.jpg',
@@ -40,20 +40,20 @@ describe('MediaService', () => {
         body: expect.any(FormData),
       });
     });
-    
+
     it('アップロードエラー時にエラーメッセージを返すこと', async () => {
       const mockFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
       mockSupabase.functions.invoke.mockResolvedValueOnce({
         error: { message: 'Upload failed' },
       });
-      
+
       const result = await mediaService.uploadFile({ file: mockFile });
-      
+
       expect(result.error).toBe('Upload failed');
       expect(result.data).toBeUndefined();
     });
   });
-  
+
   describe('processAudio', () => {
     it('音声処理が正常に完了すること', async () => {
       const audioUrl = 'https://example.com/audio.mp3';
@@ -67,11 +67,11 @@ describe('MediaService', () => {
           durationSeconds: 300,
         },
       };
-      
+
       mockSupabase.functions.invoke.mockResolvedValueOnce(mockResponse);
-      
+
       const result = await mediaService.processAudio(audioUrl);
-      
+
       expect(result.error).toBeUndefined();
       expect(result.data).toEqual({
         originalUrl: audioUrl,
@@ -87,19 +87,19 @@ describe('MediaService', () => {
         },
       });
     });
-    
+
     it('音声処理エラー時にエラーメッセージを返すこと', async () => {
       mockSupabase.functions.invoke.mockResolvedValueOnce({
         error: { message: 'Processing failed' },
       });
-      
+
       const result = await mediaService.processAudio('https://example.com/audio.mp3');
-      
+
       expect(result.error).toBe('Processing failed');
       expect(result.data).toBeUndefined();
     });
   });
-  
+
   describe('processImage', () => {
     it('画像処理が正常に完了すること', async () => {
       const imageUrl = 'https://example.com/image.jpg';
@@ -114,11 +114,11 @@ describe('MediaService', () => {
           size: 512000,
         },
       };
-      
+
       mockSupabase.functions.invoke.mockResolvedValueOnce(mockResponse);
-      
+
       const result = await mediaService.processImage(imageUrl);
-      
+
       expect(result.error).toBeUndefined();
       expect(result.data).toEqual({
         originalUrl: imageUrl,
@@ -129,7 +129,7 @@ describe('MediaService', () => {
         size: 512000,
       });
     });
-    
+
     it('カスタムオプションで画像処理が実行されること', async () => {
       const imageUrl = 'https://example.com/image.jpg';
       const options = { maxWidth: 800, maxHeight: 600, quality: 90 };
@@ -144,11 +144,11 @@ describe('MediaService', () => {
           size: 256000,
         },
       };
-      
+
       mockSupabase.functions.invoke.mockResolvedValueOnce(mockResponse);
-      
+
       const result = await mediaService.processImage(imageUrl, options);
-      
+
       expect(result.error).toBeUndefined();
       expect(mockSupabase.functions.invoke).toHaveBeenCalledWith('process-image', {
         body: {
@@ -158,14 +158,14 @@ describe('MediaService', () => {
         },
       });
     });
-    
+
     it('画像処理エラー時にエラーメッセージを返すこと', async () => {
       mockSupabase.functions.invoke.mockResolvedValueOnce({
         data: { success: false, error: 'Invalid image format' },
       });
-      
+
       const result = await mediaService.processImage('https://example.com/image.jpg');
-      
+
       expect(result.error).toBe('Invalid image format');
       expect(result.data).toBeUndefined();
     });

@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  FlatList,
-  StyleSheet,
-  RefreshControl,
-  ActivityIndicator,
-  Text,
-} from 'react-native';
-import { Tabs } from '../components/ui/Tabs';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import PostCard from '../components/PostCard';
+import { Tabs } from '../components/ui/Tabs';
 import { useAuth } from '../context/AuthContext';
 
 interface Post {
@@ -34,9 +27,7 @@ interface Post {
   isBookmarked: boolean;
 }
 
-interface TimelineProps {
-  // Add any props if needed
-}
+type TimelineProps = {};
 
 export default function Timeline(_props: TimelineProps) {
   const [activeTab, setActiveTab] = useState<'family' | 'watch'>('family');
@@ -45,7 +36,7 @@ export default function Timeline(_props: TimelineProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  
+
   const { user } = useAuth();
 
   // Mock data for testing
@@ -125,7 +116,7 @@ export default function Timeline(_props: TimelineProps) {
 
   const loadMore = async () => {
     if (loadingMore || !hasNextPage) return;
-    
+
     setLoadingMore(true);
     try {
       // Simulate loading more posts
@@ -134,7 +125,7 @@ export default function Timeline(_props: TimelineProps) {
           ...post,
           id: `${post.id}-more-${index}`,
         }));
-        setPosts(prev => [...prev, ...morePosts]);
+        setPosts((prev) => [...prev, ...morePosts]);
         setLoadingMore(false);
         setHasNextPage(false); // Simulate no more pages
       }, 1000);
@@ -145,8 +136,8 @@ export default function Timeline(_props: TimelineProps) {
   };
 
   const handleLike = (postId: string) => {
-    setPosts(prev =>
-      prev.map(post =>
+    setPosts((prev) =>
+      prev.map((post) =>
         post.id === postId
           ? {
               ...post,
@@ -159,11 +150,9 @@ export default function Timeline(_props: TimelineProps) {
   };
 
   const handleHighlight = (postId: string, reason: string) => {
-    setPosts(prev =>
-      prev.map(post =>
-        post.id === postId
-          ? { ...post, isHighlighted: !post.isHighlighted }
-          : post
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId ? { ...post, isHighlighted: !post.isHighlighted } : post
       )
     );
   };
@@ -174,7 +163,7 @@ export default function Timeline(_props: TimelineProps) {
   };
 
   const handleDelete = (postId: string) => {
-    setPosts(prev => prev.filter(post => post.id !== postId));
+    setPosts((prev) => prev.filter((post) => post.id !== postId));
   };
 
   const renderPost = ({ item }: { item: Post }) => (
@@ -190,7 +179,7 @@ export default function Timeline(_props: TimelineProps) {
 
   const renderFooter = () => {
     if (!loadingMore) return null;
-    
+
     return (
       <View style={styles.loadingMore}>
         <ActivityIndicator size="small" color="#0070F3" />
@@ -216,18 +205,12 @@ export default function Timeline(_props: TimelineProps) {
         >
           <Tabs.List style={styles.tabsList}>
             <Tabs.Trigger value="family" style={styles.tabTrigger}>
-              <Text style={[
-                styles.tabText,
-                activeTab === 'family' && styles.activeTabText
-              ]}>
+              <Text style={[styles.tabText, activeTab === 'family' && styles.activeTabText]}>
                 ファミリー
               </Text>
             </Tabs.Trigger>
             <Tabs.Trigger value="watch" style={styles.tabTrigger}>
-              <Text style={[
-                styles.tabText,
-                activeTab === 'watch' && styles.activeTabText
-              ]}>
+              <Text style={[styles.tabText, activeTab === 'watch' && styles.activeTabText]}>
                 ウォッチ
               </Text>
             </Tabs.Trigger>
@@ -236,8 +219,8 @@ export default function Timeline(_props: TimelineProps) {
       </View>
 
       {/* Timeline Content */}
-      <View 
-        style={styles.content} 
+      <View
+        style={styles.content}
         testID={activeTab === 'watch' ? 'watch-timeline' : 'timeline-content'}
       >
         <FlatList

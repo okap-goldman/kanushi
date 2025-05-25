@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, StyleSheet } from 'react-native';
 import { ArrowLeft, Bell, Bookmark, MessageCircle, Settings } from 'lucide-react-native';
+import React from 'react';
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface AnalysisDetailViewProps {
   open: boolean;
@@ -9,12 +9,7 @@ interface AnalysisDetailViewProps {
 
 export function AnalysisDetailView({ open, onClose }: AnalysisDetailViewProps) {
   return (
-    <Modal
-      visible={open}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
+    <Modal visible={open} animationType="slide" transparent={true} onRequestClose={onClose}>
       <View style={styles.modalContainer}>
         <View style={styles.contentContainer}>
           <ScrollView style={styles.scrollView}>

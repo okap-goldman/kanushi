@@ -1,18 +1,18 @@
-import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 // Mock modules first
 vi.mock('@/lib/supabase', () => {
   const mockSupabase = {
     auth: {
       getUser: vi.fn(),
-      getSession: vi.fn()
+      getSession: vi.fn(),
     },
     from: vi.fn(),
     functions: {
-      invoke: vi.fn()
-    }
+      invoke: vi.fn(),
+    },
   };
-  
+
   return { supabase: mockSupabase };
 });
 
@@ -26,21 +26,21 @@ describe('LiveRoom Service', () => {
   const mockUser = {
     id: 'user-123',
     user_metadata: {
-      display_name: 'テストユーザー'
-    }
+      display_name: 'テストユーザー',
+    },
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Setup default auth mocks
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
-      error: null
+      error: null,
     });
     mockSupabase.auth.getSession.mockResolvedValue({
       data: { session: { access_token: 'mock-token' } },
-      error: null
+      error: null,
     });
   });
 
@@ -53,7 +53,7 @@ describe('LiveRoom Service', () => {
       const roomData = {
         title: '目醒めトーク',
         maxSpeakers: 10,
-        isRecording: false
+        isRecording: false,
       };
 
       // Mock LiveKit edge function
@@ -62,10 +62,10 @@ describe('LiveRoom Service', () => {
           room: {
             name: 'livekit-room-123',
             emptyTimeout: 300,
-            maxParticipants: 10
-          }
+            maxParticipants: 10,
+          },
         },
-        error: null
+        error: null,
       });
 
       // Mock database insert with chaining
@@ -82,12 +82,12 @@ describe('LiveRoom Service', () => {
             is_recording: false,
             participant_count: 0,
             livekit_room_name: expect.any(String),
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
           },
-          error: null
-        })
+          error: null,
+        }),
       };
-      
+
       mockSupabase.from.mockReturnValue(mockDbChain);
 
       const result = await liveRoomService.createRoom(roomData);
@@ -96,7 +96,7 @@ describe('LiveRoom Service', () => {
         id: 'room-123',
         hostUser: expect.objectContaining({
           id: mockUser.id,
-          displayName: 'テストユーザー'
+          displayName: 'テストユーザー',
         }),
         title: roomData.title,
         status: 'preparing',
@@ -104,7 +104,7 @@ describe('LiveRoom Service', () => {
         isRecording: false,
         participantCount: 0,
         livekitRoomName: expect.any(String),
-        createdAt: expect.any(String)
+        createdAt: expect.any(String),
       });
 
       expect(mockSupabase.functions.invoke).toHaveBeenCalledWith('manage-livekit-room', {
@@ -112,8 +112,8 @@ describe('LiveRoom Service', () => {
           action: 'create',
           roomName: expect.any(String),
           emptyTimeout: 300,
-          maxParticipants: 10
-        }
+          maxParticipants: 10,
+        },
       });
     });
 
@@ -121,35 +121,38 @@ describe('LiveRoom Service', () => {
       const invalidData = {
         title: '',
         maxSpeakers: 10,
-        isRecording: false
+        isRecording: false,
       };
 
-      await expect(liveRoomService.createRoom(invalidData))
-        .rejects.toThrow('タイトルは1-50文字で入力してください');
+      await expect(liveRoomService.createRoom(invalidData)).rejects.toThrow(
+        'タイトルは1-50文字で入力してください'
+      );
     });
 
     test('最大登壇者数が範囲外でバリデーションエラー', async () => {
       const invalidData = {
         title: '目醒めトーク',
         maxSpeakers: 20,
-        isRecording: false
+        isRecording: false,
       };
 
-      await expect(liveRoomService.createRoom(invalidData))
-        .rejects.toThrow('最大登壇者数は1-15人の範囲で指定してください');
+      await expect(liveRoomService.createRoom(invalidData)).rejects.toThrow(
+        '最大登壇者数は1-15人の範囲で指定してください'
+      );
     });
 
     test('LiveKitエラーハンドリング', async () => {
       const roomData = {
         title: '目醒めトーク',
         maxSpeakers: 10,
-        isRecording: false
+        isRecording: false,
       };
 
       mockSupabase.functions.invoke.mockRejectedValueOnce(new Error('LiveKit error'));
 
-      await expect(liveRoomService.createRoom(roomData))
-        .rejects.toThrow('ルーム作成に失敗しました: LiveKit error');
+      await expect(liveRoomService.createRoom(roomData)).rejects.toThrow(
+        'ルーム作成に失敗しました: LiveKit error'
+      );
     });
   });
 
@@ -172,15 +175,15 @@ describe('LiveRoom Service', () => {
             is_recording: false,
             participant_count: 5,
             livekit_room_name: 'livekit-room-123',
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
           },
-          error: null
-        })
+          error: null,
+        }),
       };
 
       // Mock participant upsert
       const mockParticipantChain = {
-        upsert: vi.fn().mockResolvedValue({ data: null, error: null })
+        upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
       };
 
       mockSupabase.from
@@ -190,7 +193,7 @@ describe('LiveRoom Service', () => {
       // Mock token generation
       mockSupabase.functions.invoke.mockResolvedValueOnce({
         data: { token: 'mock-token' },
-        error: null
+        error: null,
       });
 
       const result = await liveRoomService.joinRoom(roomId, identity, 'listener');
@@ -199,8 +202,8 @@ describe('LiveRoom Service', () => {
         token: 'mock-token',
         room: expect.objectContaining({
           id: roomId,
-          status: 'active'
-        })
+          status: 'active',
+        }),
       });
 
       expect(mockSupabase.functions.invoke).toHaveBeenCalledWith('livekit-token', {
@@ -210,9 +213,9 @@ describe('LiveRoom Service', () => {
           identity: identity,
           permissions: {
             canPublish: false,
-            canSubscribe: true
-          }
-        }
+            canSubscribe: true,
+          },
+        },
       });
     });
 
@@ -233,14 +236,14 @@ describe('LiveRoom Service', () => {
             is_recording: false,
             participant_count: 5,
             livekit_room_name: 'livekit-room-123',
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
           },
-          error: null
-        })
+          error: null,
+        }),
       };
 
       const mockParticipantChain = {
-        upsert: vi.fn().mockResolvedValue({ data: null, error: null })
+        upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
       };
 
       mockSupabase.from
@@ -249,7 +252,7 @@ describe('LiveRoom Service', () => {
 
       mockSupabase.functions.invoke.mockResolvedValueOnce({
         data: { token: 'mock-token' },
-        error: null
+        error: null,
       });
 
       const result = await liveRoomService.joinRoom(roomId, identity, 'speaker');
@@ -258,8 +261,8 @@ describe('LiveRoom Service', () => {
         token: 'mock-token',
         room: expect.objectContaining({
           id: roomId,
-          status: 'active'
-        })
+          status: 'active',
+        }),
       });
 
       expect(mockSupabase.functions.invoke).toHaveBeenCalledWith('livekit-token', {
@@ -269,9 +272,9 @@ describe('LiveRoom Service', () => {
           identity: identity,
           permissions: {
             canPublish: true,
-            canSubscribe: true
-          }
-        }
+            canSubscribe: true,
+          },
+        },
       });
     });
 
@@ -284,14 +287,15 @@ describe('LiveRoom Service', () => {
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
           data: null,
-          error: null
-        })
+          error: null,
+        }),
       };
 
       mockSupabase.from.mockReturnValue(mockRoomChain);
 
-      await expect(liveRoomService.joinRoom(roomId, identity, 'listener'))
-        .rejects.toThrow('ルームが見つかりません');
+      await expect(liveRoomService.joinRoom(roomId, identity, 'listener')).rejects.toThrow(
+        'ルームが見つかりません'
+      );
     });
 
     test('終了済みルームエラー', async () => {
@@ -311,16 +315,17 @@ describe('LiveRoom Service', () => {
             is_recording: false,
             participant_count: 0,
             livekit_room_name: 'livekit-room-123',
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
           },
-          error: null
-        })
+          error: null,
+        }),
       };
 
       mockSupabase.from.mockReturnValue(mockRoomChain);
 
-      await expect(liveRoomService.joinRoom(roomId, identity, 'listener'))
-        .rejects.toThrow('このルームは終了しています');
+      await expect(liveRoomService.joinRoom(roomId, identity, 'listener')).rejects.toThrow(
+        'このルームは終了しています'
+      );
     });
   });
 
@@ -341,10 +346,10 @@ describe('LiveRoom Service', () => {
             is_recording: false,
             participant_count: 0,
             livekit_room_name: 'livekit-room-123',
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
           },
-          error: null
-        })
+          error: null,
+        }),
       };
 
       const mockUpdateChain = {
@@ -355,21 +360,19 @@ describe('LiveRoom Service', () => {
           data: {
             id: roomId,
             status: 'active',
-            started_at: new Date().toISOString()
+            started_at: new Date().toISOString(),
           },
-          error: null
-        })
+          error: null,
+        }),
       };
 
-      mockSupabase.from
-        .mockReturnValueOnce(mockSelectChain)
-        .mockReturnValueOnce(mockUpdateChain);
+      mockSupabase.from.mockReturnValueOnce(mockSelectChain).mockReturnValueOnce(mockUpdateChain);
 
       const result = await liveRoomService.startRoom(roomId);
 
       expect(result).toMatchObject({
         status: 'active',
-        startedAt: expect.any(String)
+        startedAt: expect.any(String),
       });
     });
 
@@ -378,7 +381,7 @@ describe('LiveRoom Service', () => {
 
       mockSupabase.auth.getUser.mockResolvedValueOnce({
         data: { user: { id: 'other-user' } },
-        error: null
+        error: null,
       });
 
       const mockSelectChain = {
@@ -389,16 +392,17 @@ describe('LiveRoom Service', () => {
             id: roomId,
             host_user_id: mockUser.id,
             title: '目醒めトーク',
-            status: 'preparing'
+            status: 'preparing',
           },
-          error: null
-        })
+          error: null,
+        }),
       };
 
       mockSupabase.from.mockReturnValue(mockSelectChain);
 
-      await expect(liveRoomService.startRoom(roomId))
-        .rejects.toThrow('ホストのみがライブを開始できます');
+      await expect(liveRoomService.startRoom(roomId)).rejects.toThrow(
+        'ホストのみがライブを開始できます'
+      );
     });
 
     test('存在しないルームでエラー', async () => {
@@ -409,14 +413,13 @@ describe('LiveRoom Service', () => {
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
           data: null,
-          error: null
-        })
+          error: null,
+        }),
       };
 
       mockSupabase.from.mockReturnValue(mockSelectChain);
 
-      await expect(liveRoomService.startRoom(roomId))
-        .rejects.toThrow('ルームが見つかりません');
+      await expect(liveRoomService.startRoom(roomId)).rejects.toThrow('ルームが見つかりません');
     });
   });
 
@@ -437,10 +440,10 @@ describe('LiveRoom Service', () => {
         single: vi.fn().mockResolvedValue({
           data: {
             id: roomId,
-            status: 'active'
+            status: 'active',
           },
-          error: null
-        })
+          error: null,
+        }),
       };
 
       // Mock message insert
@@ -453,30 +456,29 @@ describe('LiveRoom Service', () => {
             room_id: roomId,
             user_id: mockUser.id,
             content: messageContent,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
           },
-          error: null
-        })
+          error: null,
+        }),
       };
 
-      mockSupabase.from
-        .mockReturnValueOnce(mockRoomChain)
-        .mockReturnValueOnce(mockMessageChain);
+      mockSupabase.from.mockReturnValueOnce(mockRoomChain).mockReturnValueOnce(mockMessageChain);
 
       const result = await liveRoomService.sendChatMessage(roomId, messageContent);
 
       expect(result).toMatchObject({
         id: messageId,
         content: messageContent,
-        userId: mockUser.id
+        userId: mockUser.id,
       });
     });
 
     test('空のメッセージでエラー', async () => {
       const roomId = 'room-123';
 
-      await expect(liveRoomService.sendChatMessage(roomId, ''))
-        .rejects.toThrow('メッセージ内容は必須です');
+      await expect(liveRoomService.sendChatMessage(roomId, '')).rejects.toThrow(
+        'メッセージ内容は必須です'
+      );
     });
 
     test('レート制限エラー', async () => {
@@ -487,8 +489,9 @@ describe('LiveRoom Service', () => {
       // @ts-ignore
       liveRoomService._rateLimitCheck = vi.fn().mockReturnValue(false);
 
-      await expect(liveRoomService.sendChatMessage(roomId, messageContent))
-        .rejects.toThrow('メッセージ送信レートが制限を超えています');
+      await expect(liveRoomService.sendChatMessage(roomId, messageContent)).rejects.toThrow(
+        'メッセージ送信レートが制限を超えています'
+      );
     });
   });
 
@@ -500,14 +503,14 @@ describe('LiveRoom Service', () => {
           id: 'msg-1',
           content: 'Hello',
           user_id: 'user-1',
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         },
         {
           id: 'msg-2',
           content: 'Hi there',
           user_id: 'user-2',
-          created_at: new Date().toISOString()
-        }
+          created_at: new Date().toISOString(),
+        },
       ];
 
       const mockChain = {
@@ -516,8 +519,8 @@ describe('LiveRoom Service', () => {
         order: vi.fn().mockReturnThis(),
         limit: vi.fn().mockResolvedValue({
           data: messages,
-          error: null
-        })
+          error: null,
+        }),
       };
 
       mockSupabase.from.mockReturnValue(mockChain);
@@ -533,8 +536,9 @@ describe('LiveRoom Service', () => {
     test('自分自身へのギフト送信エラー', async () => {
       const roomId = 'room-123';
 
-      await expect(liveRoomService.sendGift(roomId, mockUser.id, 'light', 1))
-        .rejects.toThrow('自分自身にギフトを送ることはできません');
+      await expect(liveRoomService.sendGift(roomId, mockUser.id, 'light', 1)).rejects.toThrow(
+        '自分自身にギフトを送ることはできません'
+      );
     });
   });
 });

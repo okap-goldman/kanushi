@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
-import { View, StyleSheet, Animated } from "react-native";
+import React, { useEffect, useState, useRef } from 'react';
+import { Animated, StyleSheet, View } from 'react-native';
 
 interface StoryProgressProps {
   count: number;
@@ -69,7 +69,7 @@ export default function StoryProgress({
               {
                 width: anim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: ["0%", "100%"],
+                  outputRange: ['0%', '100%'],
                 }),
               },
             ]}
@@ -82,8 +82,8 @@ export default function StoryProgress({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    width: "100%",
+    flexDirection: 'row',
+    width: '100%',
     gap: 4,
     marginBottom: 8,
     paddingHorizontal: 8,
@@ -92,19 +92,19 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 4,
     borderRadius: 2,
-    overflow: "hidden",
-    position: "relative",
+    overflow: 'hidden',
+    position: 'relative',
   },
   progressBarBackground: {
-    position: "absolute",
+    position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(156, 163, 175, 0.3)",
+    backgroundColor: 'rgba(156, 163, 175, 0.3)',
   },
   progressBar: {
-    height: "100%",
-    backgroundColor: "#fff",
+    height: '100%',
+    backgroundColor: '#fff',
   },
 });

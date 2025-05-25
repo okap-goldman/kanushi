@@ -1,24 +1,24 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FollowersList } from '@/components/follow/FollowersList';
 import { FollowingList } from '@/components/follow/FollowingList';
 import { followService } from '@/lib/followService';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock followService
 vi.mock('@/lib/followService', () => ({
   followService: {
     getFollowers: vi.fn(),
-    getFollowing: vi.fn()
-  }
+    getFollowing: vi.fn(),
+  },
 }));
 
 // Mock navigation
 const mockNavigate = vi.fn();
 vi.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
-    navigate: mockNavigate
-  })
+    navigate: mockNavigate,
+  }),
 }));
 
 describe('FollowersList Component', () => {
@@ -39,8 +39,8 @@ describe('FollowersList Component', () => {
           follower: {
             id: 'user2',
             displayName: 'User 2',
-            profileImageUrl: 'https://example.com/user2.jpg'
-          }
+            profileImageUrl: 'https://example.com/user2.jpg',
+          },
         },
         {
           id: 'follow2',
@@ -52,14 +52,14 @@ describe('FollowersList Component', () => {
           follower: {
             id: 'user3',
             displayName: 'User 3',
-            profileImageUrl: 'https://example.com/user3.jpg'
-          }
-        }
+            profileImageUrl: 'https://example.com/user3.jpg',
+          },
+        },
       ];
 
       vi.mocked(followService.getFollowers).mockResolvedValue({
         followers: mockFollowers,
-        nextCursor: null
+        nextCursor: null,
       });
 
       render(<FollowersList userId="user1" />);
@@ -84,15 +84,15 @@ describe('FollowersList Component', () => {
           follower: {
             id: 'user2',
             displayName: 'Mutual User',
-            profileImageUrl: 'https://example.com/user2.jpg'
+            profileImageUrl: 'https://example.com/user2.jpg',
           },
-          isFollowingBack: true
-        }
+          isFollowingBack: true,
+        },
       ];
 
       vi.mocked(followService.getFollowers).mockResolvedValue({
         followers: mockFollowers,
-        nextCursor: null
+        nextCursor: null,
       });
 
       render(<FollowersList userId="user1" currentUserId="user1" />);
@@ -105,7 +105,7 @@ describe('FollowersList Component', () => {
     it('フォロワーがいない場合、空の状態が表示される', async () => {
       vi.mocked(followService.getFollowers).mockResolvedValue({
         followers: [],
-        nextCursor: null
+        nextCursor: null,
       });
 
       render(<FollowersList userId="user1" />);
@@ -127,14 +127,14 @@ describe('FollowersList Component', () => {
           follower: {
             id: 'user2',
             displayName: 'User 2',
-            profileImageUrl: 'https://example.com/user2.jpg'
-          }
-        }
+            profileImageUrl: 'https://example.com/user2.jpg',
+          },
+        },
       ];
 
       vi.mocked(followService.getFollowers).mockResolvedValue({
         followers: mockFollowers,
-        nextCursor: null
+        nextCursor: null,
       });
 
       render(<FollowersList userId="user1" />);
@@ -160,14 +160,14 @@ describe('FollowersList Component', () => {
         follower: {
           id: `user${i + 2}`,
           displayName: `User ${i + 2}`,
-          profileImageUrl: `https://example.com/user${i + 2}.jpg`
-        }
+          profileImageUrl: `https://example.com/user${i + 2}.jpg`,
+        },
       }));
 
       vi.mocked(followService.getFollowers)
         .mockResolvedValueOnce({
           followers: firstPageFollowers,
-          nextCursor: 'cursor1'
+          nextCursor: 'cursor1',
         })
         .mockResolvedValueOnce({
           followers: [
@@ -181,11 +181,11 @@ describe('FollowersList Component', () => {
               follower: {
                 id: 'user22',
                 displayName: 'User 22',
-                profileImageUrl: 'https://example.com/user22.jpg'
-              }
-            }
+                profileImageUrl: 'https://example.com/user22.jpg',
+              },
+            },
           ],
-          nextCursor: null
+          nextCursor: null,
         });
 
       const { getByTestId } = render(<FollowersList userId="user1" />);
@@ -200,8 +200,8 @@ describe('FollowersList Component', () => {
         nativeEvent: {
           contentOffset: { y: 1000 },
           contentSize: { height: 2000 },
-          layoutMeasurement: { height: 800 }
-        }
+          layoutMeasurement: { height: 800 },
+        },
       });
 
       await waitFor(() => {
@@ -228,14 +228,14 @@ describe('FollowingList Component', () => {
           followee: {
             id: 'user2',
             displayName: 'User 2',
-            profileImageUrl: 'https://example.com/user2.jpg'
+            profileImageUrl: 'https://example.com/user2.jpg',
           },
           latestPost: {
             id: 'post1',
             content: '最新の投稿です',
             contentType: 'text',
-            createdAt: new Date()
-          }
+            createdAt: new Date(),
+          },
         },
         {
           id: 'follow2',
@@ -246,21 +246,21 @@ describe('FollowingList Component', () => {
           followee: {
             id: 'user3',
             displayName: 'User 3',
-            profileImageUrl: 'https://example.com/user3.jpg'
+            profileImageUrl: 'https://example.com/user3.jpg',
           },
           latestPost: {
             id: 'post2',
             content: null,
             contentType: 'audio',
             audioUrl: 'https://example.com/audio.mp3',
-            createdAt: new Date()
-          }
-        }
+            createdAt: new Date(),
+          },
+        },
       ];
 
       vi.mocked(followService.getFollowing).mockResolvedValue({
         following: mockFollowing,
-        nextCursor: null
+        nextCursor: null,
       });
 
       render(<FollowingList userId="user1" />);
@@ -284,9 +284,9 @@ describe('FollowingList Component', () => {
           followee: {
             id: 'user2',
             displayName: 'Family User',
-            profileImageUrl: 'https://example.com/user2.jpg'
+            profileImageUrl: 'https://example.com/user2.jpg',
           },
-          latestPost: null
+          latestPost: null,
         },
         {
           id: 'follow2',
@@ -297,20 +297,20 @@ describe('FollowingList Component', () => {
           followee: {
             id: 'user3',
             displayName: 'Watch User',
-            profileImageUrl: 'https://example.com/user3.jpg'
+            profileImageUrl: 'https://example.com/user3.jpg',
           },
-          latestPost: null
-        }
+          latestPost: null,
+        },
       ];
 
       vi.mocked(followService.getFollowing)
         .mockResolvedValueOnce({
           following: mockFollowing,
-          nextCursor: null
+          nextCursor: null,
         })
         .mockResolvedValueOnce({
           following: [mockFollowing[0]],
-          nextCursor: null
+          nextCursor: null,
         });
 
       render(<FollowingList userId="user1" />);
@@ -340,15 +340,15 @@ describe('FollowingList Component', () => {
           followee: {
             id: 'user2',
             displayName: 'No Post User',
-            profileImageUrl: 'https://example.com/user2.jpg'
+            profileImageUrl: 'https://example.com/user2.jpg',
           },
-          latestPost: null
-        }
+          latestPost: null,
+        },
       ];
 
       vi.mocked(followService.getFollowing).mockResolvedValue({
         following: mockFollowing,
-        nextCursor: null
+        nextCursor: null,
       });
 
       render(<FollowingList userId="user1" />);
@@ -362,7 +362,7 @@ describe('FollowingList Component', () => {
     it('フォロー中がいない場合、空の状態が表示される', async () => {
       vi.mocked(followService.getFollowing).mockResolvedValue({
         following: [],
-        nextCursor: null
+        nextCursor: null,
       });
 
       render(<FollowingList userId="user1" />);
@@ -385,23 +385,23 @@ describe('FollowingList Component', () => {
           followee: {
             id: 'user2',
             displayName: 'Family User',
-            profileImageUrl: 'https://example.com/user2.jpg'
+            profileImageUrl: 'https://example.com/user2.jpg',
           },
-          latestPost: null
-        }
+          latestPost: null,
+        },
       ];
 
       vi.mocked(followService.getFollowing).mockResolvedValue({
         following: mockFollowing,
-        nextCursor: null
+        nextCursor: null,
       });
 
       render(<FollowingList userId="user1" />);
 
       await waitFor(() => {
         // デフォルトで「すべて」タブがアクティブ
-        expect(screen.getByTestId('filter-all')).toHaveStyle({ 
-          backgroundColor: expect.stringContaining('blue') 
+        expect(screen.getByTestId('filter-all')).toHaveStyle({
+          backgroundColor: expect.stringContaining('blue'),
         });
       });
 
@@ -409,11 +409,11 @@ describe('FollowingList Component', () => {
       fireEvent.press(screen.getByTestId('filter-family'));
 
       await waitFor(() => {
-        expect(screen.getByTestId('filter-family')).toHaveStyle({ 
-          backgroundColor: expect.stringContaining('blue') 
+        expect(screen.getByTestId('filter-family')).toHaveStyle({
+          backgroundColor: expect.stringContaining('blue'),
         });
-        expect(screen.getByTestId('filter-all')).not.toHaveStyle({ 
-          backgroundColor: expect.stringContaining('blue') 
+        expect(screen.getByTestId('filter-all')).not.toHaveStyle({
+          backgroundColor: expect.stringContaining('blue'),
         });
       });
     });

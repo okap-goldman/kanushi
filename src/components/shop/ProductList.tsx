@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  ScrollView, 
-  TouchableOpacity, 
-  ActivityIndicator,
-  StyleSheet,
-  FlatList,
-  RefreshControl
-} from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { getProducts, Product } from '../../lib/ecService';
-import ProductCard from './ProductCard';
+import type React from 'react';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { type Product, getProducts } from '../../lib/ecService';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
+import ProductCard from './ProductCard';
 
 interface ProductListProps {
   sellerId?: string;
@@ -27,7 +28,7 @@ const ProductList: React.FC<ProductListProps> = ({ sellerId, initialSearch = '' 
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [nextPage, setNextPage] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Price filter state
   const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
   const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
@@ -36,13 +37,14 @@ const ProductList: React.FC<ProductListProps> = ({ sellerId, initialSearch = '' 
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['products', page, search, minPrice, maxPrice, sellerId],
-    queryFn: () => getProducts({
-      page,
-      seller_id: sellerId,
-      search: search || undefined,
-      min_price: minPrice,
-      max_price: maxPrice,
-    }),
+    queryFn: () =>
+      getProducts({
+        page,
+        seller_id: sellerId,
+        search: search || undefined,
+        min_price: minPrice,
+        max_price: maxPrice,
+      }),
     keepPreviousData: true,
   });
 
@@ -51,7 +53,7 @@ const ProductList: React.FC<ProductListProps> = ({ sellerId, initialSearch = '' 
       if (page === 1) {
         setAllProducts(data.products);
       } else {
-        setAllProducts(prev => [...prev, ...data.products]);
+        setAllProducts((prev) => [...prev, ...data.products]);
       }
       setNextPage(data.next_page);
     }
@@ -100,11 +102,8 @@ const ProductList: React.FC<ProductListProps> = ({ sellerId, initialSearch = '' 
           <Text style={styles.searchButtonText}>検索</Text>
         </TouchableOpacity>
       </View>
-      
-      <TouchableOpacity 
-        style={styles.filterToggle} 
-        onPress={() => setShowFilters(!showFilters)}
-      >
+
+      <TouchableOpacity style={styles.filterToggle} onPress={() => setShowFilters(!showFilters)}>
         <Text style={styles.filterToggleText}>詳細検索</Text>
       </TouchableOpacity>
 
@@ -133,14 +132,14 @@ const ProductList: React.FC<ProductListProps> = ({ sellerId, initialSearch = '' 
             </View>
           </View>
           <View style={styles.filterButtons}>
-            <TouchableOpacity 
-              style={[styles.filterButton, styles.applyButton]} 
+            <TouchableOpacity
+              style={[styles.filterButton, styles.applyButton]}
               onPress={handlePriceFilter}
             >
               <Text style={styles.applyButtonText}>価格で絞り込む</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.filterButton, styles.resetButton]} 
+            <TouchableOpacity
+              style={[styles.filterButton, styles.resetButton]}
               onPress={resetFilters}
             >
               <Text style={styles.resetButtonText}>リセット</Text>
@@ -153,8 +152,12 @@ const ProductList: React.FC<ProductListProps> = ({ sellerId, initialSearch = '' 
         <View style={styles.activeFilters}>
           <Text style={styles.activeFiltersLabel}>検索条件: </Text>
           {search && <Text style={styles.activeFilter}>「{search}」</Text>}
-          {minPrice !== undefined && <Text style={styles.activeFilter}>最低価格: {minPrice}円</Text>}
-          {maxPrice !== undefined && <Text style={styles.activeFilter}>最高価格: {maxPrice}円</Text>}
+          {minPrice !== undefined && (
+            <Text style={styles.activeFilter}>最低価格: {minPrice}円</Text>
+          )}
+          {maxPrice !== undefined && (
+            <Text style={styles.activeFilter}>最高価格: {maxPrice}円</Text>
+          )}
         </View>
       )}
     </View>
@@ -205,9 +208,7 @@ const ProductList: React.FC<ProductListProps> = ({ sellerId, initialSearch = '' 
   if (isError) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>
-          エラーが発生しました: {(error as Error).message}
-        </Text>
+        <Text style={styles.errorText}>エラーが発生しました: {(error as Error).message}</Text>
       </View>
     );
   }

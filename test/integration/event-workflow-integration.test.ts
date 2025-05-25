@@ -2,7 +2,7 @@
  * Integration Tests for Event Workflow
  * Tests the complete workflow from event creation to participation and payment
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock environment variables before importing any services
 vi.mock('@/lib/env', () => ({
@@ -72,7 +72,7 @@ describe('Event Workflow Integration Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock test user
     testUser = {
       id: 'test-user-123',
@@ -127,7 +127,7 @@ describe('Event Workflow Integration Tests', () => {
       const createResult = await eventServiceDrizzle.createEvent(eventData, testUser.id);
       expect(createResult.data).toBeTruthy();
       expect(createResult.error).toBeNull();
-      
+
       const eventId = createResult.data!.id;
 
       // Step 2: Mock event details for join
@@ -172,7 +172,7 @@ describe('Event Workflow Integration Tests', () => {
       });
 
       const joinResult = await eventServiceDrizzle.joinEvent(joinData, testUser.id);
-      
+
       expect(joinResult.data?.paymentRequired).toBe(true);
       expect(joinResult.data?.paymentIntentClientSecret).toBe('pi_test123_secret_abc');
       // In integration test, we verify the result rather than internal calls
@@ -274,7 +274,7 @@ describe('Event Workflow Integration Tests', () => {
 
       const createResult = await eventServiceDrizzle.createVoiceWorkshop(workshopData, testUser.id);
       expect(createResult.data).toBeTruthy();
-      
+
       const workshopId = createResult.data!.id;
 
       // Step 2: Join workshop with payment
@@ -370,7 +370,10 @@ describe('Event Workflow Integration Tests', () => {
         error: null,
       });
 
-      const initialAccess = await eventServiceDrizzle.getArchiveAccess(workshopId, nonParticipantUserId);
+      const initialAccess = await eventServiceDrizzle.getArchiveAccess(
+        workshopId,
+        nonParticipantUserId
+      );
       expect(initialAccess.data?.hasAccess).toBe(false);
       expect(initialAccess.data?.canPurchase).toBe(true);
 
@@ -393,7 +396,10 @@ describe('Event Workflow Integration Tests', () => {
         error: null,
       });
 
-      const purchaseResult = await eventServiceDrizzle.purchaseArchiveAccess(workshopId, nonParticipantUserId);
+      const purchaseResult = await eventServiceDrizzle.purchaseArchiveAccess(
+        workshopId,
+        nonParticipantUserId
+      );
       expect(purchaseResult.data?.paymentIntentClientSecret).toBeTruthy();
 
       // Confirm archive purchase
@@ -414,7 +420,10 @@ describe('Event Workflow Integration Tests', () => {
         error: null,
       });
 
-      const finalAccess = await eventServiceDrizzle.getArchiveAccess(workshopId, nonParticipantUserId);
+      const finalAccess = await eventServiceDrizzle.getArchiveAccess(
+        workshopId,
+        nonParticipantUserId
+      );
       expect(finalAccess.data?.hasAccess).toBe(true);
     });
   });

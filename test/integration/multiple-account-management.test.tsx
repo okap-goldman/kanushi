@@ -1,8 +1,8 @@
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import App from '../../App';
-import { setupAuthenticatedUser, createTestAccount, mockGoogleSignIn } from '../setup/integration';
 import * as userService from '../../src/lib/authService';
+import { createTestAccount, mockGoogleSignIn, setupAuthenticatedUser } from '../setup/integration';
 
 describe('Multiple Account Management Integration', () => {
   it('アカウント追加から切替まで', async () => {
@@ -42,7 +42,7 @@ describe('Multiple Account Management Integration', () => {
     const displayNameInput = getByTestId('display-name-input');
     fireEvent.changeText(displayNameInput, 'セカンドアカウント');
     fireEvent.press(getByText('次へ'));
-    
+
     // ... オンボーディング工程をスキップ
     fireEvent.press(getByText('完了'));
 
@@ -72,9 +72,11 @@ describe('Multiple Account Management Integration', () => {
 
   it('5アカウント制限のテスト', async () => {
     // Given - 既に5アカウント作成済み
-    await Promise.all(Array(5).fill(null).map((_, i) => 
-      createTestAccount(`user${i}@example.com`)
-    ));
+    await Promise.all(
+      Array(5)
+        .fill(null)
+        .map((_, i) => createTestAccount(`user${i}@example.com`))
+    );
 
     const { getByTestId, getByText } = render(<App />);
 

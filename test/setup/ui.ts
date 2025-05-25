@@ -11,7 +11,7 @@ import * as testingLibrary from '../mocks/testing-library-react-native';
 (global as any).waitFor = testingLibrary.waitFor;
 (global as any).act = testingLibrary.act;
 
-// Make jest available globally for Vitest compatibility  
+// Make jest available globally for Vitest compatibility
 (global as any).jest = vi;
 
 // Make test functions globally available
@@ -34,7 +34,7 @@ vi.mock('@react-navigation/native', () => {
   return {
     useNavigation: () => ({
       navigate: vi.fn(),
-      goBack: vi.fn()
+      goBack: vi.fn(),
     }),
     useFocusEffect: vi.fn(),
     NavigationContainer: ({ children }: any) => React.createElement('View', null, children),
@@ -56,11 +56,11 @@ vi.mock('expo-av', () => ({
             isLoaded: true,
             isPlaying: false,
             positionMillis: 0,
-            durationMillis: 180000
-          })
+            durationMillis: 180000,
+          }),
         },
-        status: { isLoaded: true }
-      })
+        status: { isLoaded: true },
+      }),
     },
     Recording: {
       createAsync: vi.fn().mockResolvedValue({
@@ -68,17 +68,17 @@ vi.mock('expo-av', () => ({
           startAsync: vi.fn(),
           stopAndUnloadAsync: vi.fn(),
           getStatusAsync: vi.fn(),
-          getURI: vi.fn().mockReturnValue('file://recording.m4a')
-        }
-      })
+          getURI: vi.fn().mockReturnValue('file://recording.m4a'),
+        },
+      }),
     },
     requestPermissionsAsync: vi.fn().mockResolvedValue({ granted: true }),
     setAudioModeAsync: vi.fn(),
     RecordingOptionsPresets: {
-      HIGH_QUALITY: {}
-    }
+      HIGH_QUALITY: {},
+    },
   },
-  AVPlaybackStatus: {}
+  AVPlaybackStatus: {},
 }));
 
 vi.mock('expo-image-picker', () => ({
@@ -88,8 +88,8 @@ vi.mock('expo-image-picker', () => ({
   MediaTypeOptions: {
     Images: 'Images',
     Videos: 'Videos',
-    All: 'All'
-  }
+    All: 'All',
+  },
 }));
 
 // Mock Context
@@ -98,9 +98,9 @@ vi.mock('@/context/AuthContext', () => ({
     user: { id: 'test-user-id', email: 'test@example.com' },
     isLoading: false,
     login: vi.fn(),
-    logout: vi.fn()
+    logout: vi.fn(),
   }),
-  AuthProvider: ({ children }: any) => children
+  AuthProvider: ({ children }: any) => children,
 }));
 
 // Mock @expo/vector-icons
@@ -120,5 +120,5 @@ vi.mock('@expo/vector-icons', () => ({
   MaterialIcons: (props: any) => {
     const { createElement } = require('react');
     return createElement('text', { ...props, testID: props.testID || 'icon' }, props.name);
-  }
+  },
 }));

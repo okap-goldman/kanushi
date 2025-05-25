@@ -1,24 +1,24 @@
+import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
-  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import { Image } from 'expo-image';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export default function ProfileEdit() {
   const [profile, setProfile] = useState<any>(null);
@@ -28,7 +28,7 @@ export default function ProfileEdit() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [newAvatar, setNewAvatar] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  
+
   const navigation = useNavigation<any>();
   const { user } = useAuth();
 
@@ -45,9 +45,9 @@ export default function ProfileEdit() {
         .select('*')
         .eq('id', user?.id)
         .single();
-        
+
       if (error) throw error;
-      
+
       if (data) {
         setProfile(data);
         setUsername(data.username || '');
@@ -77,26 +77,22 @@ export default function ProfileEdit() {
 
   const uploadAvatar = async () => {
     if (!newAvatar) return null;
-    
+
     try {
       const response = await fetch(newAvatar.uri);
       const blob = await response.blob();
-      
+
       const fileExt = 'jpg';
       const filePath = `${user!.id}/avatar_${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, blob, {
-          contentType: 'image/jpeg',
-        });
-        
+
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, blob, {
+        contentType: 'image/jpeg',
+      });
+
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-        
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
       return data.publicUrl;
     } catch (error) {
       console.error('Error uploading avatar:', error);
@@ -107,21 +103,21 @@ export default function ProfileEdit() {
 
   const handleSave = async () => {
     if (!user) return;
-    
+
     if (!username.trim()) {
       Alert.alert('Error', 'Username is required');
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
       // Upload avatar if changed
       let newAvatarUrl = avatarUrl;
       if (newAvatar) {
         newAvatarUrl = await uploadAvatar();
       }
-      
+
       // Update profile
       const { error } = await supabase
         .from('profiles')
@@ -133,9 +129,9 @@ export default function ProfileEdit() {
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
-        
+
       if (error) throw error;
-      
+
       Alert.alert('Success', 'Profile updated successfully');
       navigation.goBack();
     } catch (err) {
@@ -153,10 +149,7 @@ export default function ProfileEdit() {
         style={styles.keyboardAvoidingView}
       >
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Feather name="arrow-left" size={24} color="#1E293B" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Edit Profile</Text>
@@ -184,14 +177,14 @@ export default function ProfileEdit() {
               onChangeText={setUsername}
               placeholder="Enter username"
             />
-            
+
             <Input
               label="Full Name"
               value={fullName}
               onChangeText={setFullName}
               placeholder="Enter your full name"
             />
-            
+
             <Input
               label="Bio"
               value={bio}
@@ -200,7 +193,7 @@ export default function ProfileEdit() {
               multiline
               inputStyle={styles.bioInput}
             />
-            
+
             <Button
               onPress={handleSave}
               disabled={loading}

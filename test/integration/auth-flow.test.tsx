@@ -1,9 +1,15 @@
-import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import React from 'react';
 import App from '../../App';
-import { createTestUser, resetTestDatabase, createMockNavigation, mockGoogleSignIn, mockGoogleSignInError } from '../setup/integration';
 import * as userService from '../../src/lib/authService';
+import {
+  createMockNavigation,
+  createTestUser,
+  mockGoogleSignIn,
+  mockGoogleSignInError,
+  resetTestDatabase,
+} from '../setup/integration';
 
 describe('Authentication Flow Integration', () => {
   beforeEach(async () => {
@@ -79,7 +85,7 @@ describe('Authentication Flow Integration', () => {
     // Given - 既存ユーザーをDB作成
     const existingUser = await createTestUser({
       displayName: '既存ユーザー',
-      email: 'existing@example.com'
+      email: 'existing@example.com',
     });
 
     const { getByTestId, getByText } = render(
@@ -94,9 +100,12 @@ describe('Authentication Flow Integration', () => {
     fireEvent.press(googleButton);
 
     // Then - 直接ホーム画面に遷移（オンボーディングスキップ）
-    await waitFor(() => {
-      expect(getByText('ファミリータイムライン')).toBeOnTheScreen();
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        expect(getByText('ファミリータイムライン')).toBeOnTheScreen();
+      },
+      { timeout: 5000 }
+    );
 
     // Then - 正しいユーザー情報が取得される
     const currentUser = await userService.getCurrentUser();

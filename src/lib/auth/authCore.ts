@@ -50,17 +50,18 @@ export class AuthCore {
   // 開発環境の自動ログイン判定
   checkAutoLogin(): { shouldAutoLogin: boolean } {
     const isAuthTest = process.env.TEST_FILE?.includes('auth') || false;
-    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local';
+    const isDevelopment =
+      process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local';
     const isDisabled = process.env.DISABLE_AUTO_LOGIN === 'true';
     const shouldAutoLogin = isDevelopment && !isAuthTest && !isDisabled;
-    
+
     return { shouldAutoLogin };
   }
 
   // 開発環境用の自動ログイン実行
   async performAutoLogin(): Promise<AuthResult> {
     const { shouldAutoLogin } = this.checkAutoLogin();
-    
+
     if (!shouldAutoLogin) {
       return {
         user: null,
@@ -159,7 +160,9 @@ export class AuthCore {
   }
 
   // プロフィールの取得または作成
-  private async getOrCreateProfile(user: AuthUser): Promise<{ profile: AuthProfile | null; error: Error | null }> {
+  private async getOrCreateProfile(
+    user: AuthUser
+  ): Promise<{ profile: AuthProfile | null; error: Error | null }> {
     try {
       const { data: profile, error } = await this.dbProvider
         .from('profiles')
@@ -196,7 +199,7 @@ export class AuthCore {
 
   // アカウントの取得または作成
   private async getOrCreateAccount(
-    profile: AuthProfile, 
+    profile: AuthProfile,
     accountType: 'google' | 'apple' | 'passkey' = 'google'
   ): Promise<{ account: AuthAccount | null; error: Error | null }> {
     try {
@@ -338,7 +341,11 @@ export class AuthCore {
   }
 
   // Email + Passkey 新規登録
-  async registerWithPasskey(email: string, credentialId: string, publicKey: string): Promise<AuthResult> {
+  async registerWithPasskey(
+    email: string,
+    credentialId: string,
+    publicKey: string
+  ): Promise<AuthResult> {
     try {
       // メールアドレスが既に存在するかチェック
       const { data: existingProfile } = await this.dbProvider
@@ -382,16 +389,14 @@ export class AuthCore {
       if (profileError) throw profileError;
 
       // パスキー情報保存
-      const { error: passkeyError } = await this.dbProvider
-        .from('passkeys')
-        .insert({
-          profileId: userId,
-          credentialId,
-          publicKey,
-          counter: 0,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+      const { error: passkeyError } = await this.dbProvider.from('passkeys').insert({
+        profileId: userId,
+        credentialId,
+        publicKey,
+        counter: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       if (passkeyError) throw passkeyError;
 
@@ -504,7 +509,10 @@ export class AuthCore {
   }
 
   // 複数アカウント管理: アカウント切り替え
-  async switchAccount(currentProfileId: string, targetAccountId: string): Promise<{
+  async switchAccount(
+    currentProfileId: string,
+    targetAccountId: string
+  ): Promise<{
     success: boolean;
     error: Error | null;
   }> {
@@ -552,7 +560,10 @@ export class AuthCore {
   }
 
   // 複数アカウント管理: アカウント追加
-  async addAccount(profileId: string, accountType: 'google' | 'apple' | 'passkey'): Promise<{
+  async addAccount(
+    profileId: string,
+    accountType: 'google' | 'apple' | 'passkey'
+  ): Promise<{
     account: AuthAccount | null;
     error: Error | null;
   }> {

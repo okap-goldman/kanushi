@@ -1,13 +1,13 @@
-import { supabase } from './supabase';
-import { db } from './db/client';
-import { dmThreads, directMessages } from './db/schema/messaging';
-import { profiles } from './db/schema/profile';
-import { eq, and, or, desc, gt, inArray } from 'drizzle-orm';
-import { uploadToB2 } from './b2Service';
-import { cryptoService } from './cryptoService';
-import { realtimeService } from './realtimeService';
 import type { User } from '@supabase/supabase-js';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { and, desc, eq, gt, inArray, or } from 'drizzle-orm';
+import { uploadToB2 } from './b2Service';
+import { cryptoService } from './cryptoService';
+import { db } from './db/client';
+import { directMessages, dmThreads } from './db/schema/messaging';
+import { profiles } from './db/schema/profile';
+import { realtimeService } from './realtimeService';
+import { supabase } from './supabase';
 
 // Types
 export interface DmThread {
@@ -57,7 +57,7 @@ const ERROR_MESSAGES = {
   THREAD_NOT_FOUND: 'スレッドが見つかりません',
   EMPTY_MESSAGE: 'メッセージ内容は必須です',
   UNAUTHORIZED: '認証が必要です',
-  INVALID_THREAD: '無効なスレッドです'
+  INVALID_THREAD: '無効なスレッドです',
 };
 
 export class DmService {
@@ -74,14 +74,15 @@ export class DmService {
    */
   async createThread(recipientUserId: string): Promise<DmThread> {
     const currentUser = await this.getCurrentUser();
-    
+
     // Validate not sending to self
     if (currentUser.id === recipientUserId) {
       throw new Error(ERROR_MESSAGES.SELF_MESSAGE);
     }
 
     // Check if recipient exists
-    const recipientProfile = await db.select()
+    const recipientProfile = await db
+      .select()
       .from(profiles)
       .where(eq(profiles.id, recipientUserId))
       .execute();
@@ -95,10 +96,7 @@ export class DmService {
 
     // Check for existing thread
     const existingThread = await db.query.dmThreads.findFirst({
-      where: and(
-        eq(dmThreads.user1Id, user1Id),
-        eq(dmThreads.user2Id, user2Id)
-      )
+      where: and(eq(dmThreads.user1Id, user1Id), eq(dmThreads.user2Id, user2Id)),
     });
 
     let thread;
@@ -106,36 +104,33 @@ export class DmService {
       thread = existingThread;
     } else {
       // Create new thread
-      const [newThread] = await db.insert(dmThreads)
+      const [newThread] = await db
+        .insert(dmThreads)
         .values({
           user1Id,
-          user2Id
+          user2Id,
         })
         .returning();
       thread = newThread;
     }
 
     // Get participant profiles
-    const participantProfiles = await db.select()
+    const participantProfiles = await db
+      .select()
       .from(profiles)
-      .where(
-        or(
-          eq(profiles.id, currentUser.id),
-          eq(profiles.id, recipientUserId)
-        )
-      )
+      .where(or(eq(profiles.id, currentUser.id), eq(profiles.id, recipientUserId)))
       .execute();
 
-    const participants: DmParticipant[] = participantProfiles.map(p => ({
+    const participants: DmParticipant[] = participantProfiles.map((p) => ({
       id: p.id,
       displayName: p.displayName || 'Unknown User',
-      profileImage: p.profileImage
+      profileImage: p.profileImage,
     }));
 
     return {
       id: thread.id,
       participants,
-      createdAt: thread.createdAt
+      createdAt: thread.createdAt,
     };
   }
 
@@ -144,14 +139,15 @@ export class DmService {
    */
   async sendMessage(data: SendMessageData): Promise<DmMessage> {
     const currentUser = await this.getCurrentUser();
-    
+
     // Validate message content
     if (!data.content.trim() && !data.imageFile && !data.audioFile) {
       throw new Error(ERROR_MESSAGES.EMPTY_MESSAGE);
     }
 
     // Validate thread exists and user is participant
-    const thread = await db.select()
+    const thread = await db
+      .select()
       .from(dmThreads)
       .where(eq(dmThreads.id, data.threadId))
       .execute();
@@ -194,12 +190,11 @@ export class DmService {
     // Handle encryption if requested
     let encryptedKey: string | null = null;
     let encryptionIv: string | null = null;
-    
+
     if (data.encrypted) {
-      const recipientId = threadData.user1Id === currentUser.id 
-        ? threadData.user2Id 
-        : threadData.user1Id;
-      
+      const recipientId =
+        threadData.user1Id === currentUser.id ? threadData.user2Id : threadData.user1Id;
+
       const encryptionResult = await this.encryptMessage(textContent, recipientId);
       textContent = encryptionResult.encryptedContent;
       encryptedKey = encryptionResult.encryptedKey;
@@ -207,7 +202,8 @@ export class DmService {
     }
 
     // Insert message
-    const [newMessage] = await db.insert(directMessages)
+    const [newMessage] = await db
+      .insert(directMessages)
       .values({
         threadId: data.threadId,
         senderId: currentUser.id,
@@ -217,7 +213,7 @@ export class DmService {
         isRead: false,
         isEncrypted: data.encrypted || false,
         encryptedKey,
-        encryptionIv
+        encryptionIv,
       })
       .returning();
 
@@ -230,17 +226,14 @@ export class DmService {
       mediaUrl: newMessage.mediaUrl,
       isRead: newMessage.isRead,
       createdAt: newMessage.createdAt,
-      encrypted: newMessage.isEncrypted
+      encrypted: newMessage.isEncrypted,
     };
   }
 
   /**
    * Get messages from a thread
    */
-  async getMessages(
-    threadId: string, 
-    options: GetMessagesOptions = {}
-  ): Promise<DmMessage[]> {
+  async getMessages(threadId: string, options: GetMessagesOptions = {}): Promise<DmMessage[]> {
     const { limit = 50, page = 1, since } = options;
     const offset = (page - 1) * limit;
 
@@ -251,7 +244,8 @@ export class DmService {
     }
 
     // Execute query with pagination
-    const messages = await db.select()
+    const messages = await db
+      .select()
       .from(directMessages)
       .where(and(...conditions))
       .orderBy(desc(directMessages.createdAt))
@@ -261,11 +255,8 @@ export class DmService {
 
     if (!messages.length && page === 1) {
       // Verify thread exists
-      const thread = await db.select()
-        .from(dmThreads)
-        .where(eq(dmThreads.id, threadId))
-        .execute();
-      
+      const thread = await db.select().from(dmThreads).where(eq(dmThreads.id, threadId)).execute();
+
       if (!thread.length) {
         throw new Error(ERROR_MESSAGES.THREAD_NOT_FOUND);
       }
@@ -275,7 +266,7 @@ export class DmService {
     const transformedMessages = await Promise.all(
       messages.map(async (msg) => {
         let content = msg.textContent || '';
-        
+
         // Decrypt if message is encrypted
         if (msg.isEncrypted && msg.encryptedKey && msg.encryptionIv) {
           try {
@@ -289,7 +280,7 @@ export class DmService {
             content = '[Encrypted message - decryption failed]';
           }
         }
-        
+
         return {
           id: msg.id,
           threadId: msg.threadId,
@@ -299,11 +290,11 @@ export class DmService {
           mediaUrl: msg.mediaUrl,
           isRead: msg.isRead,
           createdAt: msg.createdAt,
-          encrypted: msg.isEncrypted
+          encrypted: msg.isEncrypted,
         };
       })
     );
-    
+
     return transformedMessages;
   }
 
@@ -314,17 +305,15 @@ export class DmService {
     const currentUser = await this.getCurrentUser();
 
     // Verify thread exists
-    const thread = await db.select()
-      .from(dmThreads)
-      .where(eq(dmThreads.id, threadId))
-      .execute();
-    
+    const thread = await db.select().from(dmThreads).where(eq(dmThreads.id, threadId)).execute();
+
     if (!thread.length) {
       throw new Error(ERROR_MESSAGES.THREAD_NOT_FOUND);
     }
 
     // Update unread messages
-    const result = await db.update(directMessages)
+    const result = await db
+      .update(directMessages)
       .set({ isRead: true })
       .where(
         and(
@@ -345,7 +334,8 @@ export class DmService {
     const currentUser = await this.getCurrentUser();
 
     // Get all unread messages
-    const unreadMessages = await db.select()
+    const unreadMessages = await db
+      .select()
       .from(directMessages)
       .where(
         and(
@@ -361,12 +351,16 @@ export class DmService {
     }
 
     // Update all at once
-    const result = await db.update(directMessages)
+    const result = await db
+      .update(directMessages)
       .set({ isRead: true })
       .where(
         and(
           eq(directMessages.threadId, threadId),
-          inArray(directMessages.id, unreadMessages.map(m => m.id))
+          inArray(
+            directMessages.id,
+            unreadMessages.map((m) => m.id)
+          )
         )
       )
       .execute();
@@ -378,18 +372,19 @@ export class DmService {
    * Update last read position
    */
   async updateLastReadPosition(
-    threadId: string, 
+    threadId: string,
     lastReadMessageId: string
   ): Promise<{ success: boolean }> {
     const currentUser = await this.getCurrentUser();
 
     await db.transaction(async (tx) => {
       // Get the timestamp of the last read message
-      const lastReadMessages = await tx.select()
+      const lastReadMessages = await tx
+        .select()
         .from(directMessages)
         .where(eq(directMessages.id, lastReadMessageId))
         .execute();
-        
+
       const lastReadMessage = lastReadMessages[0];
 
       if (!lastReadMessage) {
@@ -397,7 +392,8 @@ export class DmService {
       }
 
       // Update all messages before this timestamp as read
-      await tx.update(directMessages)
+      await tx
+        .update(directMessages)
         .set({ isRead: true })
         .where(
           and(
@@ -414,13 +410,17 @@ export class DmService {
   /**
    * Encrypt message for recipient
    */
-  private async encryptMessage(content: string, recipientId: string): Promise<{
+  private async encryptMessage(
+    content: string,
+    recipientId: string
+  ): Promise<{
     encryptedContent: string;
     encryptedKey: string;
     iv: string;
   }> {
     // Get recipient's public key
-    const recipientProfile = await db.select()
+    const recipientProfile = await db
+      .select()
       .from(profiles)
       .where(eq(profiles.id, recipientId))
       .execute();
@@ -448,10 +448,7 @@ export class DmService {
       throw new Error('Private key not found');
     }
 
-    return cryptoService.decryptMessage(
-      { encryptedContent, encryptedKey, iv },
-      privateKey
-    );
+    return cryptoService.decryptMessage({ encryptedContent, encryptedKey, iv }, privateKey);
   }
   /**
    * Subscribe to real-time updates for a thread
@@ -466,17 +463,15 @@ export class DmService {
     }
   ): Promise<RealtimeChannel> {
     const currentUser = await this.getCurrentUser();
-    
+
     // Verify user is part of the thread
-    const thread = await db.select()
+    const thread = await db
+      .select()
       .from(dmThreads)
       .where(
         and(
           eq(dmThreads.id, threadId),
-          or(
-            eq(dmThreads.user1Id, currentUser.id),
-            eq(dmThreads.user2Id, currentUser.id)
-          )
+          or(eq(dmThreads.user1Id, currentUser.id), eq(dmThreads.user2Id, currentUser.id))
         )
       )
       .execute();
@@ -486,52 +481,49 @@ export class DmService {
     }
 
     // Subscribe to realtime updates
-    return realtimeService.subscribeToThread(
-      threadId,
-      currentUser.id,
-      {
-        onNewMessage: async (realtimeMessage) => {
-          // Transform and potentially decrypt the message
-          let content = realtimeMessage.content;
-          
-          // Check if message needs decryption
-          const fullMessage = await db.select()
-            .from(directMessages)
-            .where(eq(directMessages.id, realtimeMessage.id))
-            .execute();
-            
-          if (fullMessage.length && fullMessage[0].isEncrypted) {
-            try {
-              content = await this.decryptMessage(
-                fullMessage[0].textContent || '',
-                fullMessage[0].encryptedKey || '',
-                fullMessage[0].encryptionIv || ''
-              );
-            } catch (error) {
-              console.error('Failed to decrypt message:', error);
-              content = '[Encrypted message - decryption failed]';
-            }
+    return realtimeService.subscribeToThread(threadId, currentUser.id, {
+      onNewMessage: async (realtimeMessage) => {
+        // Transform and potentially decrypt the message
+        let content = realtimeMessage.content;
+
+        // Check if message needs decryption
+        const fullMessage = await db
+          .select()
+          .from(directMessages)
+          .where(eq(directMessages.id, realtimeMessage.id))
+          .execute();
+
+        if (fullMessage.length && fullMessage[0].isEncrypted) {
+          try {
+            content = await this.decryptMessage(
+              fullMessage[0].textContent || '',
+              fullMessage[0].encryptedKey || '',
+              fullMessage[0].encryptionIv || ''
+            );
+          } catch (error) {
+            console.error('Failed to decrypt message:', error);
+            content = '[Encrypted message - decryption failed]';
           }
-          
-          const dmMessage: DmMessage = {
-            id: realtimeMessage.id,
-            threadId: realtimeMessage.threadId,
-            senderId: realtimeMessage.senderId,
-            messageType: realtimeMessage.messageType,
-            content,
-            mediaUrl: realtimeMessage.mediaUrl,
-            isRead: realtimeMessage.isRead,
-            createdAt: realtimeMessage.createdAt,
-            encrypted: fullMessage[0]?.isEncrypted || false
-          };
-          
-          handlers.onNewMessage(dmMessage);
-        },
-        onMessageRead: handlers.onMessageRead,
-        onTyping: handlers.onTyping,
-        onPresenceChange: handlers.onPresenceChange
-      }
-    );
+        }
+
+        const dmMessage: DmMessage = {
+          id: realtimeMessage.id,
+          threadId: realtimeMessage.threadId,
+          senderId: realtimeMessage.senderId,
+          messageType: realtimeMessage.messageType,
+          content,
+          mediaUrl: realtimeMessage.mediaUrl,
+          isRead: realtimeMessage.isRead,
+          createdAt: realtimeMessage.createdAt,
+          encrypted: fullMessage[0]?.isEncrypted || false,
+        };
+
+        handlers.onNewMessage(dmMessage);
+      },
+      onMessageRead: handlers.onMessageRead,
+      onTyping: handlers.onTyping,
+      onPresenceChange: handlers.onPresenceChange,
+    });
   }
 
   /**
@@ -544,10 +536,7 @@ export class DmService {
   /**
    * Send typing indicator
    */
-  async sendTypingIndicator(
-    threadId: string,
-    isTyping: boolean
-  ): Promise<void> {
+  async sendTypingIndicator(threadId: string, isTyping: boolean): Promise<void> {
     const currentUser = await this.getCurrentUser();
     await realtimeService.sendTypingIndicator(threadId, currentUser.id, isTyping);
   }
@@ -555,10 +544,7 @@ export class DmService {
   /**
    * Update user presence
    */
-  async updatePresence(
-    threadId: string,
-    status: 'online' | 'typing' | 'away'
-  ): Promise<void> {
+  async updatePresence(threadId: string, status: 'online' | 'typing' | 'away'): Promise<void> {
     const currentUser = await this.getCurrentUser();
     await realtimeService.updatePresence(threadId, currentUser.id, status);
   }
@@ -568,16 +554,12 @@ export class DmService {
    */
   async getUserThreads(): Promise<DmThread[]> {
     const currentUser = await this.getCurrentUser();
-    
+
     // Get all threads for the user
-    const threads = await db.select()
+    const threads = await db
+      .select()
       .from(dmThreads)
-      .where(
-        or(
-          eq(dmThreads.user1Id, currentUser.id),
-          eq(dmThreads.user2Id, currentUser.id)
-        )
-      )
+      .where(or(eq(dmThreads.user1Id, currentUser.id), eq(dmThreads.user2Id, currentUser.id)))
       .orderBy(desc(dmThreads.createdAt))
       .execute();
 
@@ -585,28 +567,23 @@ export class DmService {
     const threadsWithDetails = await Promise.all(
       threads.map(async (thread) => {
         // Get participant info
-        const otherUserId = thread.user1Id === currentUser.id 
-          ? thread.user2Id 
-          : thread.user1Id;
-          
-        const participantProfiles = await db.select()
+        const otherUserId = thread.user1Id === currentUser.id ? thread.user2Id : thread.user1Id;
+
+        const participantProfiles = await db
+          .select()
           .from(profiles)
-          .where(
-            or(
-              eq(profiles.id, currentUser.id),
-              eq(profiles.id, otherUserId)
-            )
-          )
+          .where(or(eq(profiles.id, currentUser.id), eq(profiles.id, otherUserId)))
           .execute();
 
-        const participants: DmParticipant[] = participantProfiles.map(p => ({
+        const participants: DmParticipant[] = participantProfiles.map((p) => ({
           id: p.id,
           displayName: p.displayName || 'Unknown User',
-          profileImage: p.profileImage
+          profileImage: p.profileImage,
         }));
 
         // Get last message
-        const lastMessages = await db.select()
+        const lastMessages = await db
+          .select()
           .from(directMessages)
           .where(eq(directMessages.threadId, thread.id))
           .orderBy(desc(directMessages.createdAt))
@@ -614,7 +591,8 @@ export class DmService {
           .execute();
 
         // Get unread count
-        const unreadMessages = await db.select()
+        const unreadMessages = await db
+          .select()
           .from(directMessages)
           .where(
             and(
@@ -629,13 +607,13 @@ export class DmService {
           id: thread.id,
           participants,
           createdAt: thread.createdAt,
-          unreadCount: unreadMessages.length
+          unreadCount: unreadMessages.length,
         };
 
         if (lastMessages.length > 0) {
           const lastMsg = lastMessages[0];
           let content = lastMsg.textContent || '';
-          
+
           // Decrypt if needed
           if (lastMsg.isEncrypted && lastMsg.encryptedKey && lastMsg.encryptionIv) {
             try {
@@ -658,7 +636,7 @@ export class DmService {
             mediaUrl: lastMsg.mediaUrl,
             isRead: lastMsg.isRead,
             createdAt: lastMsg.createdAt,
-            encrypted: lastMsg.isEncrypted
+            encrypted: lastMsg.isEncrypted,
           };
         }
 

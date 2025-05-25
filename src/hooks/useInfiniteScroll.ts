@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 interface UseInfiniteScrollProps<T> {
   fetchData: (page: number, pageSize: number) => Promise<T[]>;
@@ -20,7 +20,7 @@ interface UseInfiniteScrollReturn<T> {
 export function useInfiniteScroll<T>({
   fetchData,
   pageSize = 10,
-  initialData = []
+  initialData = [],
 }: UseInfiniteScrollProps<T>): UseInfiniteScrollReturn<T> {
   const [data, setData] = useState<T[]>(initialData);
   const [loading, setLoading] = useState(false);
@@ -28,55 +28,57 @@ export function useInfiniteScroll<T>({
   const [refreshing, setRefreshing] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  
+
   const currentPage = useRef(0);
   const isInitialized = useRef(false);
 
-  const loadData = useCallback(async (page: number, isRefresh = false) => {
-    try {
-      setError(null);
-      
-      if (page === 0) {
-        if (isRefresh) {
-          setRefreshing(true);
-        } else {
-          setLoading(true);
-        }
-      } else {
-        setLoadingMore(true);
-      }
+  const loadData = useCallback(
+    async (page: number, isRefresh = false) => {
+      try {
+        setError(null);
 
-      const newData = await fetchData(page, pageSize);
-      
-      if (page === 0) {
-        // First page or refresh
-        setData(newData);
-        currentPage.current = 0;
-      } else {
-        // Subsequent pages
-        setData(prevData => [...prevData, ...newData]);
+        if (page === 0) {
+          if (isRefresh) {
+            setRefreshing(true);
+          } else {
+            setLoading(true);
+          }
+        } else {
+          setLoadingMore(true);
+        }
+
+        const newData = await fetchData(page, pageSize);
+
+        if (page === 0) {
+          // First page or refresh
+          setData(newData);
+          currentPage.current = 0;
+        } else {
+          // Subsequent pages
+          setData((prevData) => [...prevData, ...newData]);
+        }
+
+        // Check if we have more data
+        setHasNextPage(newData.length === pageSize);
+        currentPage.current = page;
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Unknown error'));
+        console.error('Error loading data:', err);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+        setRefreshing(false);
       }
-      
-      // Check if we have more data
-      setHasNextPage(newData.length === pageSize);
-      currentPage.current = page;
-      
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-      console.error('Error loading data:', err);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-      setRefreshing(false);
-    }
-  }, [fetchData, pageSize]);
+    },
+    [fetchData, pageSize]
+  );
 
   const loadMore = useCallback(() => {
     // Prevent multiple simultaneous requests
     if (loadingMore || !hasNextPage || loading) {
       return;
     }
-    
+
     const nextPage = currentPage.current + 1;
     loadData(nextPage);
   }, [loadData, loadingMore, hasNextPage, loading]);
@@ -85,7 +87,7 @@ export function useInfiniteScroll<T>({
     if (refreshing || loading) {
       return;
     }
-    
+
     setHasNextPage(true);
     await loadData(0, true);
   }, [loadData, refreshing, loading]);
@@ -104,6 +106,6 @@ export function useInfiniteScroll<T>({
     error,
     loadMore,
     refresh,
-    refreshing
+    refreshing,
   };
 }

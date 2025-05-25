@@ -1,7 +1,7 @@
-import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
 import PostCard from '@/components/PostCard';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // モックの設定
 vi.mock('@/components/ui/Card', () => ({
@@ -13,7 +13,7 @@ vi.mock('@/components/AudioPlayer', () => ({
 }));
 
 vi.mock('@/components/DeleteConfirmDialog', () => ({
-  default: ({ visible, onConfirm, onCancel }: any) => 
+  default: ({ visible, onConfirm, onCancel }: any) =>
     visible ? (
       <div testID="delete-confirm-dialog">
         <button onClick={onConfirm}>Confirm</button>
@@ -32,7 +32,7 @@ describe('PostCard Component', () => {
     user: {
       id: 'user-1',
       displayName: 'テストユーザー',
-      profileImageUrl: 'https://example.com/avatar.jpg'
+      profileImageUrl: 'https://example.com/avatar.jpg',
     },
     contentType: 'text' as const,
     textContent: 'これはテスト投稿です',
@@ -41,7 +41,7 @@ describe('PostCard Component', () => {
     comments: 3,
     isLiked: false,
     isHighlighted: false,
-    isBookmarked: false
+    isBookmarked: false,
   };
 
   it('投稿内容が正しく表示される', () => {
@@ -55,9 +55,7 @@ describe('PostCard Component', () => {
 
   it('いいねボタンが動作する', async () => {
     const onLike = vi.fn();
-    const { getByTestId } = render(
-      <PostCard post={mockPost} onLike={onLike} />
-    );
+    const { getByTestId } = render(<PostCard post={mockPost} onLike={onLike} />);
 
     const likeButton = getByTestId('like-button');
     fireEvent.press(likeButton);
@@ -77,17 +75,13 @@ describe('PostCard Component', () => {
 
   it('自分の投稿に削除ボタンが表示される', () => {
     const myPost = { ...mockPost, user: { ...mockPost.user, id: 'current-user-id' } };
-    const { getByTestId } = render(
-      <PostCard post={myPost} currentUserId="current-user-id" />
-    );
+    const { getByTestId } = render(<PostCard post={myPost} currentUserId="current-user-id" />);
 
     expect(getByTestId('delete-button')).toBeTruthy();
   });
 
   it('他人の投稿に削除ボタンが表示されない', () => {
-    const { queryByTestId } = render(
-      <PostCard post={mockPost} currentUserId="current-user-id" />
-    );
+    const { queryByTestId } = render(<PostCard post={mockPost} currentUserId="current-user-id" />);
 
     expect(queryByTestId('delete-button')).toBeNull();
   });
@@ -99,9 +93,9 @@ describe('PostCard Component', () => {
       mediaUrl: 'https://example.com/image.jpg',
       textContent: undefined,
     };
-    
+
     const { queryByText } = render(<PostCard post={imagePost} />);
-    
+
     // 画像投稿の場合、テキストコンテンツは表示されない
     expect(queryByText('これはテスト投稿です')).toBeNull();
   });
@@ -115,9 +109,9 @@ describe('PostCard Component', () => {
       durationSeconds: 180,
       textContent: undefined,
     };
-    
+
     const { getByTestId } = render(<PostCard post={audioPost} />);
-    
+
     expect(getByTestId('audio-player')).toBeTruthy();
   });
 
@@ -164,9 +158,7 @@ describe('PostCard Component', () => {
 
   it('コメントボタンが動作する', () => {
     const onComment = vi.fn();
-    const { getByTestId } = render(
-      <PostCard post={mockPost} onComment={onComment} />
-    );
+    const { getByTestId } = render(<PostCard post={mockPost} onComment={onComment} />);
 
     const commentButton = getByTestId('comment-button');
     fireEvent.press(commentButton);

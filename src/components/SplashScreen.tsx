@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Easing, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Dimensions, Easing, StyleSheet, View } from 'react-native';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -55,17 +55,14 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
           },
         ]}
       >
-        <Image
-          source={require('../../assets/icon.png')}
-          style={styles.logo}
-          contentFit="contain"
-        />
+        <Image source={require('../../assets/icon.png')} style={styles.logo} contentFit="contain" />
       </Animated.View>
     </View>
   );
 }
 
-const { width, height } = Dimensions.get('window');
+// Just get the window dimensions for reference, not using them in this component
+const dimensions = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
@@ -79,7 +76,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
-    width: width * 0.4,
-    height: width * 0.4,
+    width: 160, // Fixed value instead of using width
+    height: 160, // Fixed value instead of using width
   },
 });

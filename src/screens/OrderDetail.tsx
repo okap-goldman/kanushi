@@ -1,15 +1,8 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
-} from 'react-native';
-import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Image } from 'expo-image';
+import React from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Reusing sample orders data from Orders.tsx
 const SAMPLE_ORDERS = [
@@ -142,9 +135,9 @@ export default function OrderDetail() {
   const navigation = useNavigation();
   const route = useRoute<any>();
   const { orderId } = route.params || { orderId: 'order1' };
-  
+
   // Find the order from the sample data
-  const order = SAMPLE_ORDERS.find(o => o.id === orderId) || SAMPLE_ORDERS[0];
+  const order = SAMPLE_ORDERS.find((o) => o.id === orderId) || SAMPLE_ORDERS[0];
 
   const formatDate = (dateString: string, includeTime = false) => {
     const options: Intl.DateTimeFormatOptions = {
@@ -159,10 +152,7 @@ export default function OrderDetail() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color="#1A202C" />
         </TouchableOpacity>
         <Text style={styles.title}>Order Details</Text>
@@ -177,20 +167,27 @@ export default function OrderDetail() {
               <Text style={styles.orderId}>Order #{order.id}</Text>
               <Text style={styles.orderDate}>{formatDate(order.date)}</Text>
             </View>
-            
-            <View style={[
-              styles.statusBadge,
-              { backgroundColor: ORDER_STATUS[order.status as keyof typeof ORDER_STATUS].color + '20' },
-            ]}>
-              <Text style={[
-                styles.statusText,
-                { color: ORDER_STATUS[order.status as keyof typeof ORDER_STATUS].color },
-              ]}>
+
+            <View
+              style={[
+                styles.statusBadge,
+                {
+                  backgroundColor:
+                    ORDER_STATUS[order.status as keyof typeof ORDER_STATUS].color + '20',
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.statusText,
+                  { color: ORDER_STATUS[order.status as keyof typeof ORDER_STATUS].color },
+                ]}
+              >
                 {ORDER_STATUS[order.status as keyof typeof ORDER_STATUS].label}
               </Text>
             </View>
           </View>
-          
+
           {order.trackingNumber && (
             <View style={styles.trackingContainer}>
               <Text style={styles.trackingLabel}>Tracking Number:</Text>
@@ -201,70 +198,61 @@ export default function OrderDetail() {
             </View>
           )}
         </View>
-        
+
         {/* Order Timeline */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Timeline</Text>
-          
+
           <View style={styles.timeline}>
             {order.orderTimeline?.map((event, index) => (
               <View key={event.status} style={styles.timelineItem}>
                 <View style={styles.timelineIconContainer}>
-                  <View 
+                  <View
                     style={[
                       styles.timelineIcon,
-                      { backgroundColor: ORDER_STATUS[event.status as keyof typeof ORDER_STATUS].color },
+                      {
+                        backgroundColor:
+                          ORDER_STATUS[event.status as keyof typeof ORDER_STATUS].color,
+                      },
                     ]}
                   >
-                    <Feather 
-                      name={ORDER_STATUS[event.status as keyof typeof ORDER_STATUS].icon as any} 
-                      size={14} 
-                      color="#FFFFFF" 
+                    <Feather
+                      name={ORDER_STATUS[event.status as keyof typeof ORDER_STATUS].icon as any}
+                      size={14}
+                      color="#FFFFFF"
                     />
                   </View>
-                  
+
                   {index < order.orderTimeline.length - 1 && (
                     <View style={styles.timelineConnector} />
                   )}
                 </View>
-                
+
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineEventTitle}>
-                    {event.description}
-                  </Text>
-                  <Text style={styles.timelineEventDate}>
-                    {formatDate(event.date, true)}
-                  </Text>
+                  <Text style={styles.timelineEventTitle}>{event.description}</Text>
+                  <Text style={styles.timelineEventDate}>{formatDate(event.date, true)}</Text>
                 </View>
               </View>
             ))}
           </View>
         </View>
-        
+
         {/* Order Items */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Items</Text>
-          
-          {order.items.map(item => (
+
+          {order.items.map((item) => (
             <View key={item.id} style={styles.orderItem}>
-              <Image
-                source={{ uri: item.image }}
-                style={styles.itemImage}
-                contentFit="cover"
-              />
-              
+              <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
+
               <View style={styles.itemDetails}>
                 <Text style={styles.itemName}>{item.name}</Text>
-                
+
                 <View style={styles.itemPriceRow}>
-                  <Text style={styles.itemPrice}>
-                    ¥{item.price.toLocaleString()}
-                  </Text>
-                  <Text style={styles.itemQuantity}>
-                    Quantity: {item.quantity}
-                  </Text>
+                  <Text style={styles.itemPrice}>¥{item.price.toLocaleString()}</Text>
+                  <Text style={styles.itemQuantity}>Quantity: {item.quantity}</Text>
                 </View>
-                
+
                 <Text style={styles.itemTotal}>
                   Subtotal: ¥{(item.price * item.quantity).toLocaleString()}
                 </Text>
@@ -272,16 +260,16 @@ export default function OrderDetail() {
             </View>
           ))}
         </View>
-        
+
         {/* Shipping Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Shipping Information</Text>
-          
+
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Recipient:</Text>
             <Text style={styles.infoValue}>{order.shippingAddress.name}</Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Address:</Text>
             <View>
@@ -294,17 +282,17 @@ export default function OrderDetail() {
               </Text>
             </View>
           </View>
-          
+
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Method:</Text>
             <Text style={styles.infoValue}>{order.shippingMethod}</Text>
           </View>
         </View>
-        
+
         {/* Payment Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Payment Information</Text>
-          
+
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Method:</Text>
             <Text style={styles.infoValue}>
@@ -314,7 +302,7 @@ export default function OrderDetail() {
               {order.paymentMethod.accountName && ` - ${order.paymentMethod.accountName}`}
             </Text>
           </View>
-          
+
           {/* Order Summary */}
           <View style={styles.orderSummary}>
             <View style={styles.summaryRow}>
@@ -323,23 +311,19 @@ export default function OrderDetail() {
                 ¥{(order.total - order.shippingCost).toLocaleString()}
               </Text>
             </View>
-            
+
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Shipping:</Text>
-              <Text style={styles.summaryValue}>
-                ¥{order.shippingCost.toLocaleString()}
-              </Text>
+              <Text style={styles.summaryValue}>¥{order.shippingCost.toLocaleString()}</Text>
             </View>
-            
+
             <View style={[styles.summaryRow, styles.totalRow]}>
               <Text style={styles.totalLabel}>Total:</Text>
-              <Text style={styles.totalValue}>
-                ¥{order.total.toLocaleString()}
-              </Text>
+              <Text style={styles.totalValue}>¥{order.total.toLocaleString()}</Text>
             </View>
           </View>
         </View>
-        
+
         {/* Actions */}
         <View style={styles.actionsContainer}>
           {order.status === 'delivered' && (
@@ -348,7 +332,7 @@ export default function OrderDetail() {
               <Text style={styles.actionButtonText}>Buy Again</Text>
             </TouchableOpacity>
           )}
-          
+
           <TouchableOpacity style={styles.actionButton}>
             <Feather name="help-circle" size={16} color="#0070F3" />
             <Text style={styles.actionButtonText}>Need Help?</Text>

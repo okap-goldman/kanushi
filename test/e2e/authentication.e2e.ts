@@ -3,7 +3,7 @@ describe('Authentication E2E', () => {
     // Given - 既存ユーザーを事前作成
     await createE2EUser({
       email: 'e2e-existing@example.com',
-      displayName: '既存E2Eユーザー'
+      displayName: '既存E2Eユーザー',
     });
 
     // When - アプリ起動してログイン
@@ -54,7 +54,9 @@ describe('Authentication E2E', () => {
     await element(by.id('apple-auth-biometric')).tap();
 
     // Then - オンボーディングまたはホーム画面へ
-    await waitFor(element(by.text('表示名を入力してください')).or(by.text('ファミリータイムライン')))
+    await waitFor(
+      element(by.text('表示名を入力してください')).or(by.text('ファミリータイムライン'))
+    )
       .toBeVisible()
       .withTimeout(10000);
   });

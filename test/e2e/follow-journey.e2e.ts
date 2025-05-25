@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import { test, Page } from '@playwright/test';
+import { type Page, test } from '@playwright/test';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createTestUser, loginAsUser, navigateToScreen } from '../setup/e2e';
 
 describe('フォロー機能のE2Eテスト', () => {
@@ -59,7 +59,7 @@ describe('フォロー機能のE2Eテスト', () => {
         // Step 6: 有意義な理由を入力してフォロー
         const reasonInput = await page.locator('[data-testid="follow-reason-input"]');
         await reasonInput.fill('瞑想音声がとても心に響きました。先生の教えをもっと学びたいです。');
-        
+
         await page.click('[data-testid="follow-confirm-button"]');
 
         // Then - 期待結果を検証
@@ -70,7 +70,7 @@ describe('フォロー機能のE2Eテスト', () => {
         // ファミリータイムラインに移動すると対象ユーザーの投稿が表示される
         await navigateToScreen(page, 'timeline');
         await page.click('[data-testid="timeline-filter-family"]');
-        
+
         await page.waitForSelector(`text=${recommendedUser.displayName}`);
         expect(await page.locator('text=今日の瞑想音声です').isVisible()).toBe(true);
       });
@@ -109,7 +109,7 @@ describe('フォロー機能のE2Eテスト', () => {
         // Step 4: ファミリーフォローで返す
         await page.click('[data-testid="follow-button"]');
         await page.click('text=ファミリーフォローを選ぶ');
-        
+
         const reasonInput = await page.locator('[data-testid="follow-reason-input"]');
         await reasonInput.fill('私の投稿にも興味を持ってくれたので、ぜひ交流したいです');
         await page.click('[data-testid="follow-confirm-button"]');
@@ -160,7 +160,7 @@ describe('フォロー機能のE2Eテスト', () => {
 
           await page.click('[data-testid="follow-button"]');
           await page.click('text=ファミリーフォローを選ぶ');
-          
+
           const reasonInput = await page.locator('[data-testid="follow-reason-input"]');
           await reasonInput.fill('先生の教えから多くを学んでいます');
           await page.click('[data-testid="follow-confirm-button"]');
@@ -191,7 +191,7 @@ describe('フォロー機能のE2Eテスト', () => {
         await loginAsUser(page, teacher);
         await navigateToScreen(page, 'profile');
         await page.click('[data-testid="followers-count"]');
-        
+
         // 3人の生徒がフォロワーとして表示される
         for (const student of students) {
           expect(await page.locator(`text=${student.displayName}`).isVisible()).toBe(true);
@@ -225,13 +225,13 @@ describe('フォロー機能のE2Eテスト', () => {
 
         // Step 2: 一定期間、コンテンツに積極的にエンゲージ
         await navigateToScreen(page, 'timeline');
-        
+
         // いいねとコメントを複数回行う
         for (let i = 0; i < 3; i++) {
           const postElement = await page.locator(`text=価値あるコンテンツ ${i + 1}`).locator('..');
           await postElement.locator('[data-testid="like-button"]').click();
           await postElement.locator('[data-testid="comment-button"]').click();
-          
+
           const commentInput = await page.locator('[data-testid="comment-input"]');
           await commentInput.fill(`素晴らしい投稿です！勉強になります ${i + 1}`);
           await page.click('[data-testid="comment-submit"]');
@@ -242,7 +242,7 @@ describe('フォロー機能のE2Eテスト', () => {
         await page.click('[data-testid="following-button"]');
         await page.click('text=フォロータイプを変更');
         await page.click('text=ファミリーフォローに変更');
-        
+
         const reasonInput = await page.locator('[data-testid="follow-reason-input"]');
         await reasonInput.fill('投稿から多くの学びを得ています。より深い繋がりを持ちたいです。');
         await page.click('[data-testid="confirm-button"]');
@@ -254,7 +254,9 @@ describe('フォロー機能のE2Eテスト', () => {
         // クリエイターに通知が届く
         await loginAsUser(page, creator);
         await navigateToScreen(page, 'notifications');
-        await page.waitForSelector(`text=${follower.displayName}さんがファミリーフォローに変更しました`);
+        await page.waitForSelector(
+          `text=${follower.displayName}さんがファミリーフォローに変更しました`
+        );
       });
     });
   });
@@ -291,10 +293,12 @@ describe('フォロー機能のE2Eテスト', () => {
 
         // ネットワーク復旧後、フォロー操作が完了される
         await page.context().setOffline(false);
-        
+
         // 自動リトライを待つ
         await page.waitForSelector('text=フォローしました', { timeout: 10000 });
-        expect(await page.locator('[data-testid="follow-status"]').textContent()).toBe('フォロー中');
+        expect(await page.locator('[data-testid="follow-status"]').textContent()).toBe(
+          'フォロー中'
+        );
       });
     });
   });

@@ -7,7 +7,7 @@ describe('Profile Screen', () => {
       displayName: 'テストユーザー',
       profileText: '自己紹介文です',
       profileImageUrl: 'https://example.com/image.jpg',
-      introAudioUrl: 'https://example.com/audio.mp3'
+      introAudioUrl: 'https://example.com/audio.mp3',
     };
     jest.spyOn(userService, 'getCurrentUser').mockResolvedValue(mockUser);
 
@@ -27,7 +27,7 @@ describe('Profile Screen', () => {
     // Given
     const otherUser = {
       id: 'other123',
-      displayName: '他のユーザー'
+      displayName: '他のユーザー',
     };
     jest.spyOn(userService, 'getUserById').mockResolvedValue(otherUser);
 
@@ -59,7 +59,7 @@ describe('Profile Screen', () => {
     // Given
     const mockPlayAudio = jest.fn();
     jest.spyOn(audioService, 'play').mockImplementation(mockPlayAudio);
-    
+
     render(<Profile userId="user123" />);
 
     // When

@@ -1,14 +1,8 @@
-import React, { useState } from "react";
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
-import { Plus } from "lucide-react-native";
-import StoryCircle from "./StoryCircle";
-import StoryViewer from "./StoryViewer";
+import { Plus } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import StoryCircle from './StoryCircle';
+import StoryViewer from './StoryViewer';
 
 interface Story {
   id: string;
@@ -16,7 +10,7 @@ interface Story {
   username: string;
   profileImage: string;
   mediaUrl: string;
-  contentType: "image" | "video";
+  contentType: 'image' | 'video';
   caption?: string;
   createdAt: string;
 }
@@ -62,10 +56,7 @@ export default function StoriesRow({
         {/* Create Story Button */}
         <View style={styles.storyItem}>
           <View style={styles.createStoryCircle}>
-            <TouchableOpacity
-              onPress={onCreateStory}
-              style={styles.createStoryButton}
-            >
+            <TouchableOpacity onPress={onCreateStory} style={styles.createStoryButton}>
               <Plus size={32} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -106,24 +97,24 @@ export default function StoriesRow({
 
 const styles = StyleSheet.create({
   container: {
-    width: "100%",
+    width: '100%',
     paddingVertical: 8,
   },
   scrollContent: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 8,
     gap: 8,
   },
   storyItem: {
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     marginHorizontal: 8,
     minWidth: 60,
   },
   createStoryCircle: {
     borderRadius: 30,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: '#f3f4f6',
     padding: 2,
     marginBottom: 4,
   },
@@ -131,14 +122,14 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#000",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   username: {
     fontSize: 12,
-    textAlign: "center",
-    fontWeight: "500",
+    textAlign: 'center',
+    fontWeight: '500',
   },
   emptyContainer: {
     flex: 1,
@@ -147,7 +138,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: "#666",
-    textAlign: "center",
+    color: '#666',
+    textAlign: 'center',
   },
 });

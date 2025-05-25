@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../../src/lib/authService';
 
 // 簡単なモック実装
@@ -44,37 +44,52 @@ describe('AuthService - Google OAuth認証', () => {
 
     // プロフィールが存在しない（新規ユーザー）
     const fromMock = mockSupabase.from('profiles');
-    fromMock.select().eq().single.mockResolvedValueOnce({
-      data: null,
-      error: { code: 'PGRST116' }, // Not found
-    });
+    fromMock
+      .select()
+      .eq()
+      .single.mockResolvedValueOnce({
+        data: null,
+        error: { code: 'PGRST116' }, // Not found
+      });
 
     // 新規プロフィール作成
-    fromMock.insert().select().single.mockResolvedValueOnce({
-      data: {
-        id: 'test-user-id',
-        email: 'test@example.com',
-        displayName: 'Test User',
-      },
-      error: null,
-    });
+    fromMock
+      .insert()
+      .select()
+      .single.mockResolvedValueOnce({
+        data: {
+          id: 'test-user-id',
+          email: 'test@example.com',
+          displayName: 'Test User',
+        },
+        error: null,
+      });
 
     // アカウントが存在しない
-    mockSupabase.from('accounts').select().eq().eq().single.mockResolvedValueOnce({
-      data: null,
-      error: { code: 'PGRST116' },
-    });
+    mockSupabase
+      .from('accounts')
+      .select()
+      .eq()
+      .eq()
+      .single.mockResolvedValueOnce({
+        data: null,
+        error: { code: 'PGRST116' },
+      });
 
     // 新規アカウント作成
-    mockSupabase.from('accounts').insert().select().single.mockResolvedValueOnce({
-      data: {
-        id: 'test-account-id',
-        profileId: 'test-user-id',
-        accountType: 'google',
-        isActive: true,
-      },
-      error: null,
-    });
+    mockSupabase
+      .from('accounts')
+      .insert()
+      .select()
+      .single.mockResolvedValueOnce({
+        data: {
+          id: 'test-account-id',
+          profileId: 'test-user-id',
+          accountType: 'google',
+          isActive: true,
+        },
+        error: null,
+      });
 
     // 最終ログイン時刻更新
     mockSupabase.from('profiles').update().eq.mockResolvedValueOnce({
@@ -143,15 +158,24 @@ describe('AuthService - リフレッシュトークン', () => {
       error: null,
     });
 
-    mockSupabase.from('profiles').select().eq().single.mockResolvedValueOnce({
-      data: { id: 'test-user-id', displayName: 'Test User' },
-      error: null,
-    });
+    mockSupabase
+      .from('profiles')
+      .select()
+      .eq()
+      .single.mockResolvedValueOnce({
+        data: { id: 'test-user-id', displayName: 'Test User' },
+        error: null,
+      });
 
-    mockSupabase.from('accounts').select().eq().eq().single.mockResolvedValueOnce({
-      data: { id: 'test-account-id', profileId: 'test-user-id' },
-      error: null,
-    });
+    mockSupabase
+      .from('accounts')
+      .select()
+      .eq()
+      .eq()
+      .single.mockResolvedValueOnce({
+        data: { id: 'test-account-id', profileId: 'test-user-id' },
+        error: null,
+      });
 
     const result = await authService.refreshToken('valid-refresh-token');
 

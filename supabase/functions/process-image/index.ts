@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 
 // 画像処理のための型定義
 interface ProcessImageRequest {
@@ -21,7 +21,9 @@ interface ProcessImageResponse {
 }
 
 // 画像のメタデータを取得
-async function getImageMetadata(imageData: ArrayBuffer): Promise<{ width: number; height: number }> {
+async function getImageMetadata(
+  imageData: ArrayBuffer
+): Promise<{ width: number; height: number }> {
   // 実際の実装では、画像フォーマットに応じた解析が必要
   // ここでは簡易的に固定値を返す
   return { width: 1920, height: 1080 };
@@ -59,26 +61,26 @@ async function uploadToB2(
   fileName: string,
   contentType: string
 ): Promise<string> {
-  const uploadUrl = Deno.env.get("SUPABASE_URL") + "/functions/v1/upload-to-b2";
-  const authToken = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  
+  const uploadUrl = Deno.env.get('SUPABASE_URL') + '/functions/v1/upload-to-b2';
+  const authToken = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
   // FormDataを作成
   const formData = new FormData();
-  formData.append("file", new Blob([data], { type: contentType }), fileName);
-  formData.append("path", "images");
-  
+  formData.append('file', new Blob([data], { type: contentType }), fileName);
+  formData.append('path', 'images');
+
   const response = await fetch(uploadUrl, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Authorization": `Bearer ${authToken}`,
+      Authorization: `Bearer ${authToken}`,
     },
     body: formData,
   });
-  
+
   if (!response.ok) {
     throw new Error(`Upload failed: ${response.statusText}`);
   }
-  
+
   const result = await response.json();
   return result.url;
 }
@@ -86,24 +88,24 @@ async function uploadToB2(
 // 画像フォーマットを判定
 function getImageFormat(contentType: string): string {
   const typeMap: Record<string, string> = {
-    "image/jpeg": "jpg",
-    "image/jpg": "jpg",
-    "image/png": "png",
-    "image/gif": "gif",
-    "image/webp": "webp",
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
   };
-  return typeMap[contentType] || "jpg";
+  return typeMap[contentType] || 'jpg';
 }
 
 Deno.serve(async (req: Request) => {
   // CORS対応
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
       headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
       },
     });
   }
@@ -117,9 +119,9 @@ Deno.serve(async (req: Request) => {
       maxHeight = 1920,
       quality = 85,
     }: ProcessImageRequest = await req.json();
-    
+
     if (!imageUrl) {
-      throw new Error("imageUrl is required");
+      throw new Error('imageUrl is required');
     }
 
     // 画像ファイルをダウンロード
@@ -127,10 +129,10 @@ Deno.serve(async (req: Request) => {
     if (!imageResponse.ok) {
       throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
     }
-    
-    const contentType = imageResponse.headers.get("content-type") || "image/jpeg";
+
+    const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
     const imageData = await imageResponse.arrayBuffer();
-    
+
     // 画像処理を実行
     const [metadata, resized, thumbnail, optimized] = await Promise.all([
       getImageMetadata(imageData),
@@ -138,12 +140,12 @@ Deno.serve(async (req: Request) => {
       generateThumbnail(imageData),
       optimizeImage(imageData, contentType),
     ]);
-    
+
     // 処理結果をB2にアップロード
     const timestamp = Date.now();
     const baseName = imageUrl.split('/').pop()?.split('.')[0] || 'image';
     const format = getImageFormat(contentType);
-    
+
     const [processedUrl, thumbnailUrl] = await Promise.all([
       // リサイズ・最適化済み画像
       uploadToB2(
@@ -158,7 +160,7 @@ Deno.serve(async (req: Request) => {
         contentType
       ),
     ]);
-    
+
     // レスポンスを返す
     const response: ProcessImageResponse = {
       success: true,
@@ -169,16 +171,16 @@ Deno.serve(async (req: Request) => {
       height: metadata.height,
       size: optimized.byteLength,
     };
-    
+
     return new Response(JSON.stringify(response), {
       status: 200,
       headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
       },
     });
   } catch (error) {
-    console.error("Image processing error:", error);
+    console.error('Image processing error:', error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -188,8 +190,8 @@ Deno.serve(async (req: Request) => {
       {
         status: 500,
         headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
         },
       }
     );
