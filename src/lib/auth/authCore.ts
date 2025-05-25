@@ -483,6 +483,123 @@ export class AuthCore {
     }
   }
 
+  // 複数アカウント管理: アカウント一覧取得
+  async getAccounts(profileId: string): Promise<{
+    accounts: AuthAccount[] | null;
+    error: Error | null;
+  }> {
+    try {
+      const { data: accounts, error } = await this.dbProvider
+        .from('accounts')
+        .select('*')
+        .eq('profileId', profileId)
+        .order('switchOrder');
+
+      if (error) throw error;
+
+      return { accounts, error: null };
+    } catch (error) {
+      return { accounts: null, error: error as Error };
+    }
+  }
+
+  // 複数アカウント管理: アカウント切り替え
+  async switchAccount(currentProfileId: string, targetAccountId: string): Promise<{
+    success: boolean;
+    error: Error | null;
+  }> {
+    try {
+      // ターゲットアカウントの存在確認
+      const { data: targetAccount, error: targetError } = await this.dbProvider
+        .from('accounts')
+        .select('*')
+        .eq('id', targetAccountId)
+        .single();
+
+      if (!targetAccount || targetError) {
+        return {
+          success: false,
+          error: new Error('ACCOUNT_NOT_FOUND'),
+        };
+      }
+
+      // 権限チェック（自分のアカウントか確認）
+      if (targetAccount.profileId !== currentProfileId) {
+        return {
+          success: false,
+          error: new Error('UNAUTHORIZED_ACCOUNT_ACCESS'),
+        };
+      }
+
+      // 現在のアクティブアカウントを非アクティブに
+      await this.dbProvider
+        .from('accounts')
+        .update({ isActive: false, lastSwitchedAt: new Date() })
+        .eq('profileId', currentProfileId);
+
+      // ターゲットアカウントをアクティブに
+      const { error: updateError } = await this.dbProvider
+        .from('accounts')
+        .update({ isActive: true, lastSwitchedAt: new Date() })
+        .eq('id', targetAccountId);
+
+      if (updateError) throw updateError;
+
+      return { success: true, error: null };
+    } catch (error) {
+      return { success: false, error: error as Error };
+    }
+  }
+
+  // 複数アカウント管理: アカウント追加
+  async addAccount(profileId: string, accountType: 'google' | 'apple' | 'passkey'): Promise<{
+    account: AuthAccount | null;
+    error: Error | null;
+  }> {
+    try {
+      // 既存アカウント数チェック
+      const { data: existingAccounts, error: countError } = await this.dbProvider
+        .from('accounts')
+        .select('*')
+        .eq('profileId', profileId);
+
+      if (countError) throw countError;
+
+      if (existingAccounts && existingAccounts.length >= 5) {
+        return {
+          account: null,
+          error: new Error('ACCOUNT_LIMIT_REACHED'),
+        };
+      }
+
+      // 新しいswitchOrderを計算
+      const nextOrder = existingAccounts ? existingAccounts.length + 1 : 1;
+
+      // 新規アカウント作成
+      const newAccount: AuthAccount = {
+        id: `acc_${Date.now()}`,
+        profileId,
+        accountType,
+        isActive: false,
+        switchOrder: nextOrder,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const { data: account, error: insertError } = await this.dbProvider
+        .from('accounts')
+        .insert(newAccount)
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      return { account, error: null };
+    } catch (error) {
+      return { account: null, error: error as Error };
+    }
+  }
+
   // ログアウト
   async signOut(): Promise<{ error: Error | null }> {
     try {

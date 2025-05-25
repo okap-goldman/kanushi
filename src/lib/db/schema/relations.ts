@@ -4,7 +4,7 @@ import {
   posts, stories, hashtags, postHashtags, comments, likes, highlights, bookmarks, offlineContents,
   dmThreads, directMessages,
   liveRooms, roomParticipants, roomChats, gifts,
-  events, eventParticipants,
+  events, eventParticipants, eventVoiceWorkshops, eventArchiveAccess,
   products, carts, cartItems, orders, orderItems,
   groups, groupMembers, groupChats,
   aiPlaylists, aiPlaylistPosts, chatSessions, chatMessages, searchHistories,
@@ -296,7 +296,12 @@ export const eventsRelations = relations(events, ({ one, many }) => ({
   }),
   participants: many(eventParticipants),
   posts: many(posts),
-  schedulePolls: many(schedulePolls)
+  schedulePolls: many(schedulePolls),
+  voiceWorkshop: one(eventVoiceWorkshops, {
+    fields: [events.id],
+    references: [eventVoiceWorkshops.eventId]
+  }),
+  archiveAccess: many(eventArchiveAccess)
 }));
 
 // Event participant relations
@@ -307,6 +312,26 @@ export const eventParticipantsRelations = relations(eventParticipants, ({ one })
   }),
   user: one(profiles, {
     fields: [eventParticipants.userId],
+    references: [profiles.id]
+  })
+}));
+
+// Event voice workshop relations
+export const eventVoiceWorkshopsRelations = relations(eventVoiceWorkshops, ({ one }) => ({
+  event: one(events, {
+    fields: [eventVoiceWorkshops.eventId],
+    references: [events.id]
+  })
+}));
+
+// Event archive access relations
+export const eventArchiveAccessRelations = relations(eventArchiveAccess, ({ one }) => ({
+  event: one(events, {
+    fields: [eventArchiveAccess.eventId],
+    references: [events.id]
+  }),
+  user: one(profiles, {
+    fields: [eventArchiveAccess.userId],
     references: [profiles.id]
   })
 }));

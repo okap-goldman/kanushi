@@ -1,76 +1,248 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import request from 'supertest';
-import { app } from '@/test/setup/api';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { getTimelinePosts } from '@/lib/timelineService';
 import { supabase } from '@/lib/supabase';
 
-describe('Timeline API Tests', () => {
-  let validToken: string;
+// モックの設定
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(),
+    auth: {
+      getUser: vi.fn(),
+    },
+  },
+}));
 
+describe('Timeline Service Tests', () => {
   beforeEach(() => {
-    validToken = 'test-valid-token';
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
-  describe('GET /timeline?type=family', () => {
-    it('ファミリーフォローの投稿を時系列順に取得できる', async () => {
+  describe('getTimelinePosts - タイムライン取得', () => {
+    it('ファミリータイムラインの投稿を時系列順に取得できる', async () => {
       // Arrange
       const userId = 'test-user-id';
-      const expectedPosts = [
-        { id: 'post1', user_id: 'family-user1', created_at: '2024-01-02' },
-        { id: 'post2', user_id: 'family-user2', created_at: '2024-01-01' }
+      const mockFollows = [
+        { followee_id: 'family-user1' },
+        { followee_id: 'family-user2' },
+      ];
+      const mockPosts = [
+        {
+          id: 'post1',
+          user_id: 'family-user1',
+          content_type: 'text',
+          text_content: '投稿1',
+          created_at: '2024-01-02T00:00:00Z',
+          likes_count: 5,
+          comments_count: 2,
+          author: [{ id: 'family-user1', name: 'ユーザー1', image: 'https://example.com/user1.jpg' }],
+          tags: [],
+        },
+        {
+          id: 'post2',
+          user_id: 'family-user2',
+          content_type: 'text',
+          text_content: '投稿2',
+          created_at: '2024-01-01T00:00:00Z',
+          likes_count: 3,
+          comments_count: 1,
+          author: [{ id: 'family-user2', name: 'ユーザー2', image: 'https://example.com/user2.jpg' }],
+          tags: [],
+        },
       ];
 
+      // フォロー関係のモック - 最後のeqでデータを返す
+      const mockFollowsChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockImplementation(function(this: any) {
+          // 3回目のeq呼び出し（status チェック）でデータを返す
+          if (this.eq.mock.calls.length === 3) {
+            return { data: mockFollows, error: null };
+          }
+          return this;
+        }),
+      };
+
+      // 投稿データのモック - limitでデータを返す  
+      const mockPostsChain = {
+        select: vi.fn().mockReturnThis(),
+        in: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnValue({ data: mockPosts, error: null }),
+      };
+
+      (supabase.from as any).mockImplementation((table: string) => {
+        if (table === 'follows') {
+          return mockFollowsChain;
+        } else if (table === 'posts') {
+          return mockPostsChain;
+        }
+      });
+
       // Act
-      const response = await request(app)
-        .get('/timeline?type=family')
-        .set('Authorization', `Bearer ${validToken}`);
+      const result = await getTimelinePosts(userId, 'family');
 
       // Assert
-      expect(response.status).toBe(200);
-      expect(response.body.items).toHaveLength(2);
-      expect(response.body.items[0].id).toBe('post1');
-      expect(response.body.nextCursor).toBeDefined();
+      expect(result.error).toBeNull();
+      expect(result.data?.posts).toHaveLength(2);
+      expect(result.data?.posts[0].id).toBe('post1');
+      expect(result.data?.posts[0].created_at > result.data?.posts[1].created_at).toBe(true);
+      expect(supabase.from).toHaveBeenCalledWith('follows');
+      expect(mockFollowsChain.eq).toHaveBeenCalledWith('follower_id', userId);
+      expect(mockFollowsChain.eq).toHaveBeenCalledWith('follow_type', 'family');
     });
 
-    it('カーソルベースのページネーションが動作する', async () => {
+    it('ページネーションが動作する', async () => {
       // Arrange
-      const firstPageCursor = 'cursor-1';
+      const userId = 'test-user-id';
+      const mockFollows = [{ followee_id: 'user1' }];
+      const mockPosts = Array.from({ length: 20 }, (_, i) => ({
+        id: `post${i}`,
+        user_id: 'user1',
+        content_type: 'text',
+        text_content: `投稿${i}`,
+        created_at: new Date(2024, 0, 20 - i).toISOString(),
+        author: [{ id: 'user1', name: 'ユーザー1', image: 'https://example.com/user1.jpg' }],
+        tags: [],
+      }));
+
+      const mockFollowsChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockImplementation(function(this: any) {
+          if (this.eq.mock.calls.length === 3) {
+            return { data: mockFollows, error: null };
+          }
+          return this;
+        }),
+      };
+
+      const mockPostsChain = {
+        select: vi.fn().mockReturnThis(),
+        in: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnValue({ data: mockPosts, error: null }),
+        lt: vi.fn().mockReturnThis(),
+      };
+
+      (supabase.from as any).mockImplementation((table: string) => {
+        if (table === 'follows') {
+          return mockFollowsChain;
+        } else if (table === 'posts') {
+          return mockPostsChain;
+        }
+      });
 
       // Act
-      const response = await request(app)
-        .get(`/timeline?type=family&cursor=${firstPageCursor}`)
-        .set('Authorization', `Bearer ${validToken}`);
+      const result = await getTimelinePosts(userId, 'family', 20, '2024-01-21T00:00:00Z');
 
       // Assert
-      expect(response.status).toBe(200);
-      expect(response.body.items).toBeDefined();
-      expect(response.body.items.length).toBeLessThanOrEqual(20);
+      expect(result.error).toBeNull();
+      expect(result.data?.posts).toHaveLength(20);
+      expect(result.data?.hasMore).toBeDefined();
+      expect(mockPostsChain.lt).toHaveBeenCalledWith('created_at', '2024-01-21T00:00:00Z');
     });
 
-    it('認証なしでアクセスすると401エラーを返す', async () => {
+    it('フォローしているユーザーがいない場合は空の配列を返す', async () => {
+      // Arrange
+      const userId = 'test-user-id';
+      const mockFollowsChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockImplementation(function(this: any) {
+          if (this.eq.mock.calls.length === 3) {
+            return { data: [], error: null }; // フォローなし
+          }
+          return this;
+        }),
+      };
+
+      (supabase.from as any).mockReturnValue(mockFollowsChain);
+
       // Act
-      const response = await request(app)
-        .get('/timeline?type=family');
+      const result = await getTimelinePosts(userId, 'family');
 
       // Assert
-      expect(response.status).toBe(401);
-      expect(response.body.type).toBe('MISSING_TOKEN');
+      expect(result.error).toBeNull();
+      expect(result.data?.posts).toEqual([]);
     });
   });
 
-  describe('GET /timeline?type=watch', () => {
+  describe('ウォッチタイムライン', () => {
     it('ウォッチフォローの投稿を取得できる', async () => {
+      // Arrange
+      const userId = 'test-user-id';
+      const mockFollows = [
+        { followee_id: 'watch-user1' },
+        { followee_id: 'watch-user2' },
+      ];
+      const mockPosts = [
+        {
+          id: 'post1',
+          user_id: 'watch-user1',
+          content_type: 'text',
+          text_content: 'ウォッチ投稿1',
+          created_at: '2024-01-02T00:00:00Z',
+          author: [{ id: 'watch-user1', name: 'ウォッチユーザー1', image: 'https://example.com/watch1.jpg' }],
+          tags: [],
+        },
+      ];
+
+      const mockFollowsChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockImplementation(function(this: any) {
+          if (this.eq.mock.calls.length === 3) {
+            return { data: mockFollows, error: null };
+          }
+          return this;
+        }),
+      };
+
+      const mockPostsChain = {
+        select: vi.fn().mockReturnThis(),
+        in: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnValue({ data: mockPosts, error: null }),
+      };
+
+      (supabase.from as any).mockImplementation((table: string) => {
+        if (table === 'follows') {
+          return mockFollowsChain;
+        } else if (table === 'posts') {
+          return mockPostsChain;
+        }
+      });
+
       // Act
-      const response = await request(app)
-        .get('/timeline?type=watch')
-        .set('Authorization', `Bearer ${validToken}`);
+      const result = await getTimelinePosts(userId, 'watch');
 
       // Assert
-      expect(response.status).toBe(200);
-      expect(response.body.items).toBeDefined();
-      expect(response.body.items.every(post => 
-        post.user.followType === 'watch'
-      )).toBe(true);
+      expect(result.error).toBeNull();
+      expect(result.data?.posts).toHaveLength(1);
+      expect(mockFollowsChain.eq).toHaveBeenCalledWith('follow_type', 'watch');
+    });
+  });
+
+  describe('エラーハンドリング', () => {
+    it('データベースエラーを適切に処理する', async () => {
+      // Arrange
+      const userId = 'test-user-id';
+      const mockError = new Error('Database error');
+      const mockFollowsChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockImplementation(function(this: any) {
+          if (this.eq.mock.calls.length === 3) {
+            return { data: null, error: mockError };
+          }
+          return this;
+        }),
+      };
+
+      (supabase.from as any).mockReturnValue(mockFollowsChain);
+
+      // Act
+      const result = await getTimelinePosts(userId, 'family');
+
+      // Assert
+      expect(result.error).toBe(mockError);
+      expect(result.data).toBeNull();
     });
   });
 });

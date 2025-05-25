@@ -12,11 +12,11 @@ vi.mock('@/lib/supabase', () => ({
 
 describe('Post Service Tests', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('createPost - 投稿作成', () => {
@@ -37,12 +37,12 @@ describe('Post Service Tests', () => {
         };
 
         const mockSupabaseChain = {
-          insert: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
+          insert: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: mockPost, error: null }),
         };
 
-        (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+        (supabase.from as any).mockReturnValue(mockSupabaseChain);
 
         // Act
         const result = await createPost({
@@ -85,12 +85,12 @@ describe('Post Service Tests', () => {
         };
 
         const mockSupabaseChain = {
-          insert: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
+          insert: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: mockPost, error: null }),
         };
 
-        (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+        (supabase.from as any).mockReturnValue(mockSupabaseChain);
 
         // Act
         const result = await createPost({
@@ -103,6 +103,23 @@ describe('Post Service Tests', () => {
         // Assert
         expect(result.error).toBeNull();
         expect(result.data?.content.length).toBe(10000);
+      });
+
+      it('10,001文字以上のテキストはエラーになる', async () => {
+        // Arrange
+        const tooLongText = 'あ'.repeat(10001);
+
+        // Act
+        const result = await createPost({
+          author_id: 'user-1',
+          media_type: 'text',
+          content: tooLongText,
+          tags: [],
+        });
+
+        // Assert
+        expect(result.error).toBeTruthy();
+        expect(result.error?.message).toContain('exceeds maximum length');
       });
 
       it('ハッシュタグ付きの投稿を作成できる', async () => {
@@ -120,21 +137,21 @@ describe('Post Service Tests', () => {
         ];
 
         const mockSupabaseChain = {
-          insert: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
-          eq: jest.fn().mockReturnThis(),
-          maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+          insert: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: mockPost, error: null }),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
         };
 
-        (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        (supabase.from as any).mockImplementation((table: string) => {
           if (table === 'tags') {
             return {
               ...mockSupabaseChain,
-              select: jest.fn().mockReturnThis(),
-              insert: jest.fn().mockReturnThis(),
-              single: jest.fn().mockImplementation(() => {
-                const tagIndex = (supabase.from as jest.Mock).mock.calls.filter(
+              select: vi.fn().mockReturnThis(),
+              insert: vi.fn().mockReturnThis(),
+              single: vi.fn().mockImplementation(() => {
+                const tagIndex = (supabase.from as any).mock.calls.filter(
                   (call) => call[0] === 'tags'
                 ).length - 1;
                 return Promise.resolve({ data: mockTags[tagIndex % 2], error: null });
@@ -142,7 +159,7 @@ describe('Post Service Tests', () => {
             };
           } else if (table === 'post_tags') {
             return {
-              insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+              insert: vi.fn().mockResolvedValue({ data: null, error: null }),
             };
           }
           return mockSupabaseChain;
@@ -176,12 +193,12 @@ describe('Post Service Tests', () => {
         };
 
         const mockSupabaseChain = {
-          insert: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
+          insert: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: mockPost, error: null }),
         };
 
-        (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+        (supabase.from as any).mockReturnValue(mockSupabaseChain);
 
         // Act
         const result = await createPost({
@@ -222,12 +239,12 @@ describe('Post Service Tests', () => {
         };
 
         const mockSupabaseChain = {
-          insert: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
+          insert: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: mockPost, error: null }),
         };
 
-        (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+        (supabase.from as any).mockReturnValue(mockSupabaseChain);
 
         // Act
         const result = await createPost({
@@ -250,12 +267,12 @@ describe('Post Service Tests', () => {
         // Arrange
         const mockError = new Error('Database error');
         const mockSupabaseChain = {
-          insert: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          single: jest.fn().mockResolvedValue({ data: null, error: mockError }),
+          insert: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: null, error: mockError }),
         };
 
-        (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+        (supabase.from as any).mockReturnValue(mockSupabaseChain);
 
         // Act
         const result = await createPost({
@@ -276,14 +293,14 @@ describe('Post Service Tests', () => {
     it('いいねを追加できる', async () => {
       // Arrange
       const mockSupabaseChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-        insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        insert: vi.fn().mockResolvedValue({ data: null, error: null }),
       };
 
-      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
-      (supabase.rpc as jest.Mock).mockResolvedValue({ data: null, error: null });
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
+      (supabase.rpc as any).mockResolvedValue({ data: null, error: null });
 
       // Act
       const result = await toggleLike('post-1', 'user-1');
@@ -299,14 +316,14 @@ describe('Post Service Tests', () => {
       // Arrange
       const mockLike = { id: 'like-1', post_id: 'post-1', user_id: 'user-1' };
       const mockSupabaseChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        maybeSingle: jest.fn().mockResolvedValue({ data: mockLike, error: null }),
-        delete: jest.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: mockLike, error: null }),
+        delete: vi.fn().mockReturnThis(),
       };
 
-      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
-      (supabase.rpc as jest.Mock).mockResolvedValue({ data: null, error: null });
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
+      (supabase.rpc as any).mockResolvedValue({ data: null, error: null });
 
       // Act
       const result = await toggleLike('post-1', 'user-1');
@@ -321,12 +338,12 @@ describe('Post Service Tests', () => {
       // Arrange
       const mockError = new Error('Database error');
       const mockSupabaseChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: mockError }),
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: mockError }),
       };
 
-      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
 
       // Act
       const result = await toggleLike('post-1', 'user-1');
@@ -349,13 +366,13 @@ describe('Post Service Tests', () => {
       };
 
       const mockSupabaseChain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: mockComment, error: null }),
+        insert: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockComment, error: null }),
       };
 
-      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
-      (supabase.rpc as jest.Mock).mockResolvedValue({ data: null, error: null });
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
+      (supabase.rpc as any).mockResolvedValue({ data: null, error: null });
 
       // Act
       const result = await createComment({
@@ -394,13 +411,13 @@ describe('Post Service Tests', () => {
       };
 
       const mockSupabaseChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
-        update: jest.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockPost, error: null }),
+        update: vi.fn().mockReturnThis(),
       };
 
-      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
 
       // Act
       const result = await deletePost('post-1', 'user-1');
@@ -421,12 +438,12 @@ describe('Post Service Tests', () => {
       };
 
       const mockSupabaseChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockPost, error: null }),
       };
 
-      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
 
       // Act
       const result = await deletePost('post-1', 'user-1');
@@ -439,12 +456,12 @@ describe('Post Service Tests', () => {
     it('存在しない投稿を削除しようとするとエラー', async () => {
       // Arrange
       const mockSupabaseChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: null, error: null }),
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
       };
 
-      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
 
       // Act
       const result = await deletePost('non-existent', 'user-1');

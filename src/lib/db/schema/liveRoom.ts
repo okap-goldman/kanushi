@@ -1,7 +1,10 @@
-import { pgTable, uuid, text, timestamp, boolean, integer, decimal, unique, index, check } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, boolean, integer, decimal, unique, index, check, pgEnum } from 'drizzle-orm/pg-core';
 import { roomStatusEnum, participantRoleEnum } from './enums';
 import { profiles } from './profile';
 import { posts } from './post';
+
+// Speaker request status enum
+export const speakerRequestStatusEnum = pgEnum('speaker_request_status', ['pending', 'approved', 'rejected']);
 
 // Live room table
 export const liveRooms = pgTable('live_room', {
@@ -52,6 +55,21 @@ export const roomChats = pgTable('room_chat', {
   userIdIdx: index('idx_room_chat_user_id').on(table.userId),
   createdAtIdx: index('idx_room_chat_created_at').on(table.createdAt.desc()),
   isPinnedIdx: index('idx_room_chat_is_pinned').on(table.isPinned)
+}));
+
+// Speaker request table
+export const speakerRequests = pgTable('speaker_request', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  roomId: uuid('room_id').notNull().references(() => liveRooms.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  status: speakerRequestStatusEnum('status').notNull().default('pending'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => ({
+  roomIdIdx: index('idx_speaker_request_room_id').on(table.roomId),
+  userIdIdx: index('idx_speaker_request_user_id').on(table.userId),
+  statusIdx: index('idx_speaker_request_status').on(table.status),
+  uniqueRoomUser: unique().on(table.roomId, table.userId)
 }));
 
 // Gift table

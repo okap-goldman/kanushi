@@ -131,3 +131,41 @@ export const offlineContents = pgTable('offline_content', {
   expiresAtIdx: index('idx_offline_content_expires_at').on(table.expiresAt),
   uniqueUserPost: unique().on(table.userId, table.postId)
 }));
+
+// Story viewer table
+export const storyViewers = pgTable('story_viewer', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  storyId: uuid('story_id').notNull().references(() => stories.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  viewedAt: timestamp('viewed_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => ({
+  storyIdIdx: index('idx_story_viewer_story_id').on(table.storyId),
+  userIdIdx: index('idx_story_viewer_user_id').on(table.userId),
+  uniqueStoryViewer: unique().on(table.storyId, table.userId)
+}));
+
+// Story reaction table
+export const storyReactions = pgTable('story_reaction', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  storyId: uuid('story_id').notNull().references(() => stories.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  emoji: text('emoji').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => ({
+  storyIdIdx: index('idx_story_reaction_story_id').on(table.storyId),
+  userIdIdx: index('idx_story_reaction_user_id').on(table.userId),
+  uniqueStoryReaction: unique().on(table.storyId, table.userId)
+}));
+
+// Story reply table (sent as DM)
+export const storyReplies = pgTable('story_reply', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  storyId: uuid('story_id').notNull().references(() => stories.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  replyText: text('reply_text').notNull(),
+  messageId: uuid('message_id'), // References messages table after DM is sent
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => ({
+  storyIdIdx: index('idx_story_reply_story_id').on(table.storyId),
+  userIdIdx: index('idx_story_reply_user_id').on(table.userId)
+}));
