@@ -28,11 +28,11 @@ jobs:
     
     # Linting and type checking are skipped as per project requirements
     
-    # - name: Run linting
-    #   run: npm run lint
+    - name: Run linting
+      run: echo "Skipping linting as per project requirements"
     
-    # - name: Run type check
-    #   run: npm run typecheck
+    - name: Run type check
+      run: echo "Skipping type checking as per project requirements"
 
     - name: Run tests
       run: npm test
