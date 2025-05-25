@@ -18,9 +18,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../hooks/use-toast';
 import { supabase } from '../../lib/supabase';
-import { Avatar } from '../ui/avatar';
-import { Button } from '../ui/button';
-import { Card } from '../ui/card';
+import { Avatar } from '../ui/Avatar';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
 
 export function ProfileEdit() {
   const navigation = useNavigation();

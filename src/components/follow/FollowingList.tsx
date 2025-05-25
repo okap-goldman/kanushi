@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { followService } from '../../lib/followService';
-import { Badge } from '../ui/badge';
+import { Badge } from '../ui/Badge';
 
 interface FollowingListProps {
   userId: string;

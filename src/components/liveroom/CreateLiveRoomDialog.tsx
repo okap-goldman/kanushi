@@ -1,8 +1,8 @@
 import { liveRoomService } from '@/lib/liveRoomService';
 import React, { useState } from 'react';
 import { Modal, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Button } from '../ui/Button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
 
 interface CreateLiveRoomDialogProps {
   visible: boolean;

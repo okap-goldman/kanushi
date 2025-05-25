@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Avatar } from '../ui/avatar';
+import { Avatar } from '../ui/Avatar';
 
 interface Participant {
   user_id: string;

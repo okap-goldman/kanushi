@@ -3,7 +3,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Mic, MicOff, MoreVertical, Radio, Users, X } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Button } from '../ui/button';
+import { Button } from '../ui/Button';
 import { LiveRoomChat } from './LiveRoomChat';
 import { LiveRoomParticipants } from './LiveRoomParticipants';
 

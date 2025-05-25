@@ -11,11 +11,11 @@ import {
 import { AuthContext } from '../../context/AuthContext';
 import { useToast } from '../../hooks/use-toast';
 import { followService } from '../../lib/followService';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/Dialog';
+import { Input } from '../ui/Input';
+import { Label } from '../ui/Label';
 
 interface FollowButtonProps {
   userId: string;
