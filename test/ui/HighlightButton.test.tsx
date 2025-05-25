@@ -1,31 +1,33 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { HighlightButton } from '../../src/components/post/HighlightButton';
 import * as highlightService from '../../src/lib/highlightService';
 
-vi.mock('../../src/lib/highlightService', () => ({
-  createHighlight: vi.fn(),
-  removeHighlight: vi.fn(),
-  checkHighlighted: vi.fn(),
-  getHighlights: vi.fn(),
+// Mock highlightService
+jest.mock('../../src/lib/highlightService', () => ({
+  createHighlight: jest.fn(),
+  removeHighlight: jest.fn(),
+  checkHighlighted: jest.fn(),
+  getHighlights: jest.fn()
 }));
 
-vi.mock('../../src/context/AuthContext', () => ({
+// Mock AuthContext
+jest.mock('../../src/context/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'user1' } }),
 }));
 
-vi.mock('../../src/hooks/use-toast', () => ({
-  useToast: () => ({ toast: vi.fn() }),
+// Mock useToast
+jest.mock('../../src/hooks/use-toast', () => ({
+  useToast: () => ({ toast: jest.fn() }),
 }));
 
 describe('HighlightButton', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it('未ハイライト状態で正しく表示される', () => {
-    (highlightService.checkHighlighted as any).mockResolvedValue({ data: false, error: null });
+    (highlightService.checkHighlighted as jest.Mock).mockResolvedValue({ data: false, error: null });
 
     const { getByTestId } = render(
       <HighlightButton postId="post1" initialHighlighted={false} initialCount={0} />
@@ -36,7 +38,7 @@ describe('HighlightButton', () => {
   });
 
   it('ハイライト済み状態で正しく表示される', () => {
-    (highlightService.checkHighlighted as any).mockResolvedValue({ data: true, error: null });
+    (highlightService.checkHighlighted as jest.Mock).mockResolvedValue({ data: true, error: null });
 
     const { getByTestId } = render(
       <HighlightButton postId="post1" initialHighlighted={true} initialCount={5} />
@@ -48,7 +50,7 @@ describe('HighlightButton', () => {
   });
 
   it('ボタンクリックでダイアログが表示される', async () => {
-    (highlightService.checkHighlighted as any).mockResolvedValue({ data: false, error: null });
+    (highlightService.checkHighlighted as jest.Mock).mockResolvedValue({ data: false, error: null });
 
     const { getByTestId, queryByTestId } = render(
       <HighlightButton postId="post1" />
@@ -64,8 +66,8 @@ describe('HighlightButton', () => {
   });
 
   it('理由を入力してハイライトを作成できる', async () => {
-    (highlightService.checkHighlighted as any).mockResolvedValue({ data: false, error: null });
-    (highlightService.createHighlight as any).mockResolvedValue({ 
+    (highlightService.checkHighlighted as jest.Mock).mockResolvedValue({ data: false, error: null });
+    (highlightService.createHighlight as jest.Mock).mockResolvedValue({ 
       data: { 
         id: 'highlight1', 
         reason: '素晴らしい投稿です',
@@ -75,7 +77,7 @@ describe('HighlightButton', () => {
       }, 
       error: null 
     });
-    const onHighlightChange = vi.fn();
+    const onHighlightChange = jest.fn();
 
     const { getByTestId, getByPlaceholderText } = render(
       <HighlightButton postId="post1" onHighlightChange={onHighlightChange} />
@@ -99,9 +101,9 @@ describe('HighlightButton', () => {
   });
 
   it('ハイライト済みの場合、ハイライトを解除できる', async () => {
-    (highlightService.checkHighlighted as any).mockResolvedValue({ data: true, error: null });
-    (highlightService.removeHighlight as any).mockResolvedValue({ data: true, error: null });
-    const onHighlightChange = vi.fn();
+    (highlightService.checkHighlighted as jest.Mock).mockResolvedValue({ data: true, error: null });
+    (highlightService.removeHighlight as jest.Mock).mockResolvedValue({ data: true, error: null });
+    const onHighlightChange = jest.fn();
 
     const { getByTestId } = render(
       <HighlightButton 
@@ -123,8 +125,8 @@ describe('HighlightButton', () => {
   });
 
   it('空の理由ではハイライトできない', async () => {
-    (highlightService.checkHighlighted as any).mockResolvedValue({ data: false, error: null });
-    const onHighlightChange = vi.fn();
+    (highlightService.checkHighlighted as jest.Mock).mockResolvedValue({ data: false, error: null });
+    const onHighlightChange = jest.fn();
 
     const { getByTestId, getByText } = render(
       <HighlightButton postId="post1" onHighlightChange={onHighlightChange} />
@@ -142,8 +144,8 @@ describe('HighlightButton', () => {
   });
 
   it('短すぎる理由ではハイライトできない', async () => {
-    (highlightService.checkHighlighted as any).mockResolvedValue({ data: false, error: null });
-    const onHighlightChange = vi.fn();
+    (highlightService.checkHighlighted as jest.Mock).mockResolvedValue({ data: false, error: null });
+    const onHighlightChange = jest.fn();
 
     const { getByTestId, getByPlaceholderText, getByText } = render(
       <HighlightButton postId="post1" onHighlightChange={onHighlightChange} />
@@ -164,12 +166,12 @@ describe('HighlightButton', () => {
   });
 
   it('ハイライト作成時にエラーが発生した場合、エラーメッセージが表示される', async () => {
-    (highlightService.checkHighlighted as any).mockResolvedValue({ data: false, error: null });
-    (highlightService.createHighlight as any).mockResolvedValue({ 
+    (highlightService.checkHighlighted as jest.Mock).mockResolvedValue({ data: false, error: null });
+    (highlightService.createHighlight as jest.Mock).mockResolvedValue({ 
       data: null, 
       error: new Error('データベースエラーが発生しました')
     });
-    const onHighlightChange = vi.fn();
+    const onHighlightChange = jest.fn();
 
     const { getByTestId, getByPlaceholderText, getByText } = render(
       <HighlightButton postId="post1" onHighlightChange={onHighlightChange} />
@@ -187,5 +189,4 @@ describe('HighlightButton', () => {
       expect(onHighlightChange).not.toHaveBeenCalled();
     });
   });
-
 });
