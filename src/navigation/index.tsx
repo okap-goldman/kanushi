@@ -23,7 +23,7 @@ import Orders from '../screens/Orders';
 import ProductDetail from '../screens/ProductDetail';
 import Profile from '../screens/Profile';
 import ProfileEdit from '../screens/ProfileEdit';
-import Search from '../screens/Search';
+import { Search } from '../screens/Search';
 import Shop from '../screens/Shop';
 
 // LiveRoom Screens
