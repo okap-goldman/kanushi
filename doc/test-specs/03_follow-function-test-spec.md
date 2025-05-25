@@ -28,376 +28,91 @@ TDD（テスト駆動開発）での実装を前提とし、APIユニットテ�
 
 ### 1.1.1 ファミリーフォロー正常系
 
-```typescript
-describe('POST /follows - Family Follow', () => {
-  test('should create family follow with required reason', async () => {
-    // Given
-    const followRequest = {
-      followeeId: 'user-123',
-      followType: 'family',
-      followReason: '同じ価値観を持つ方だと感じたため'
-    };
+**テストケース**: ファミリーフォロー作成（理由あり）
+- **入力**: ユーザーID、フォロータイプ（family）、フォロー理由
+- **期待結果**: ステータス201、フォローレコード作成、理由が保存される
 
-    // When
-    const response = await followApi.createFollow(followRequest);
-
-    // Then
-    expect(response.status).toBe(201);
-    expect(response.data).toMatchObject({
-      id: expect.any(String),
-      followType: 'family',
-      followReason: '同じ価値観を持つ方だと感じたため',
-      status: 'active',
-      createdAt: expect.any(String)
-    });
-  });
-
-  test('should reject family follow without reason', async () => {
-    // Given
-    const followRequest = {
-      followeeId: 'user-123',
-      followType: 'family'
-      // followReason is missing
-    };
-
-    // When & Then
-    await expect(followApi.createFollow(followRequest))
-      .rejects.toMatchObject({
-        status: 400,
-        data: {
-          type: 'VALIDATION_ERROR',
-          errors: [
-            {
-              field: 'followReason',
-              message: 'ファミリーフォローには理由の入力が必要です'
-            }
-          ]
-        }
-      });
-  });
-});
-```
+**テストケース**: ファミリーフォロー作成（理由なし）
+- **入力**: ユーザーID、フォロータイプ（family）、理由なし
+- **期待結果**: バリデーションエラー（400）、「ファミリーフォローには理由の入力が必要です」メッセージ
 
 ### 1.1.2 ウォッチフォロー正常系
 
-```typescript
-describe('POST /follows - Watch Follow', () => {
-  test('should create watch follow without reason', async () => {
-    // Given
-    const followRequest = {
-      followeeId: 'user-456',
-      followType: 'watch'
-      // followReason is optional
-    };
+**テストケース**: ウォッチフォロー作成（理由なし）
+- **入力**: ユーザーID、フォロータイプ（watch）
+- **期待結果**: ステータス201、フォローレコード作成、理由はnull
 
-    // When
-    const response = await followApi.createFollow(followRequest);
-
-    // Then
-    expect(response.status).toBe(201);
-    expect(response.data).toMatchObject({
-      id: expect.any(String),
-      followType: 'watch',
-      followReason: null,
-      status: 'active',
-      createdAt: expect.any(String)
-    });
-  });
-
-  test('should create watch follow with optional reason', async () => {
-    // Given
-    const followRequest = {
-      followeeId: 'user-456',
-      followType: 'watch',
-      followReason: '投稿内容に興味があります'
-    };
-
-    // When
-    const response = await followApi.createFollow(followRequest);
-
-    // Then
-    expect(response.status).toBe(201);
-    expect(response.data.followReason).toBe('投稿内容に興味があります');
-  });
-});
-```
+**テストケース**: ウォッチフォロー作成（理由あり）
+- **入力**: ユーザーID、フォロータイプ（watch）、任意のフォロー理由
+- **期待結果**: ステータス201、フォローレコード作成、任意の理由が保存される
 
 ### 1.1.3 フォロー作成異常系
 
-```typescript
-describe('POST /follows - Error Cases', () => {
-  test('should reject duplicate follow', async () => {
-    // Given
-    const followRequest = {
-      followeeId: 'user-123',
-      followType: 'family',
-      followReason: 'テスト理由'
-    };
+**テストケース**: 重複フォロー
+- **入力**: すでにフォロー済みのユーザーに対する再フォロー
+- **期待結果**: ステータス409、「すでにフォローしています」エラー
 
-    // When
-    await followApi.createFollow(followRequest); // First follow
-    
-    // Then
-    await expect(followApi.createFollow(followRequest))
-      .rejects.toMatchObject({
-        status: 409,
-        data: {
-          type: 'FOLLOW_ALREADY_EXISTS',
-          title: 'すでにフォローしています'
-        }
-      });
-  });
+**テストケース**: 自分自身のフォロー
+- **入力**: 自分自身のユーザーIDに対するフォロー
+- **期待結果**: ステータス400、「自分自身をフォローすることはできません」エラー
 
-  test('should reject self follow', async () => {
-    // Given
-    const followRequest = {
-      followeeId: 'current-user-id',
-      followType: 'watch'
-    };
-
-    // When & Then
-    await expect(followApi.createFollow(followRequest))
-      .rejects.toMatchObject({
-        status: 400,
-        data: {
-          type: 'INVALID_FOLLOW_TARGET',
-          title: '自分自身をフォローすることはできません'
-        }
-      });
-  });
-
-  test('should handle rate limiting', async () => {
-    // Given
-    const requests = Array.from({ length: 21 }, (_, i) => ({
-      followeeId: `user-${i}`,
-      followType: 'watch'
-    }));
-
-    // When
-    for (let i = 0; i < 20; i++) {
-      await followApi.createFollow(requests[i]);
-    }
-
-    // Then
-    await expect(followApi.createFollow(requests[20]))
-      .rejects.toMatchObject({
-        status: 429,
-        data: {
-          type: 'RATE_LIMIT_EXCEEDED',
-          retryAfter: expect.any(Number)
-        }
-      });
-  });
-});
-```
+**テストケース**: レート制限
+- **入力**: 短時間での多数のフォローリクエスト（20件超）
+- **期待結果**: ステータス429、「RATE_LIMIT_EXCEEDED」エラー
 
 ## 1.2 アンフォローAPI (DELETE /follows/{followId})
 
 ### 1.2.1 アンフォロー正常系
 
-```typescript
-describe('DELETE /follows/{followId}', () => {
-  test('should unfollow with reason', async () => {
-    // Given
-    const followId = 'follow-123';
-    const unfollowRequest = {
-      unfollowReason: '価値観の違いを感じたため'
-    };
+**テストケース**: 理由ありアンフォロー
+- **入力**: フォローID、アンフォロー理由
+- **期待結果**: ステータス204、フォローレコード削除
 
-    // When
-    const response = await followApi.unfollowUser(followId, unfollowRequest);
-
-    // Then
-    expect(response.status).toBe(204);
-  });
-
-  test('should unfollow without reason', async () => {
-    // Given
-    const followId = 'follow-123';
-    const unfollowRequest = {
-      unfollowReason: ''
-    };
-
-    // When
-    const response = await followApi.unfollowUser(followId, unfollowRequest);
-
-    // Then
-    expect(response.status).toBe(204);
-  });
-});
-```
+**テストケース**: 理由なしアンフォロー
+- **入力**: フォローID、理由なし
+- **期待結果**: ステータス204、フォローレコード削除
 
 ### 1.2.2 アンフォロー異常系
 
-```typescript
-describe('DELETE /follows/{followId} - Error Cases', () => {
-  test('should reject unfollow of non-existent follow', async () => {
-    // Given
-    const nonExistentFollowId = 'non-existent-follow';
-    const unfollowRequest = { unfollowReason: 'テスト' };
+**テストケース**: 存在しないフォローのアンフォロー
+- **入力**: 存在しないフォローID
+- **期待結果**: ステータス404、「RESOURCE_NOT_FOUND」エラー
 
-    // When & Then
-    await expect(followApi.unfollowUser(nonExistentFollowId, unfollowRequest))
-      .rejects.toMatchObject({
-        status: 404,
-        data: {
-          type: 'RESOURCE_NOT_FOUND',
-          resource: 'follow'
-        }
-      });
-  });
-
-  test('should reject unfollow of others follow', async () => {
-    // Given
-    const othersFollowId = 'others-follow-123';
-    const unfollowRequest = { unfollowReason: 'テスト' };
-
-    // When & Then
-    await expect(followApi.unfollowUser(othersFollowId, unfollowRequest))
-      .rejects.toMatchObject({
-        status: 403,
-        data: {
-          type: 'UNAUTHORIZED_ACTION',
-          title: '他のユーザーのフォロー関係は操作できません'
-        }
-      });
-  });
-});
-```
+**テストケース**: 他ユーザーのフォロー関係のアンフォロー
+- **入力**: 自分が作成していないフォローID
+- **期待結果**: ステータス403、「他のユーザーのフォロー関係は操作できません」エラー
 
 ## 1.3 フォロワー一覧取得API (GET /users/{userId}/followers)
 
 ### 1.3.1 フォロワー一覧正常系
 
-```typescript
-describe('GET /users/{userId}/followers', () => {
-  test('should get followers list with pagination', async () => {
-    // Given
-    const userId = 'user-123';
-    const queryParams = { limit: 20 };
+**テストケース**: ページネーション付きフォロワー一覧取得
+- **入力**: ユーザーID、limit=20
+- **期待結果**: ステータス200、フォロワーリスト（ユーザー情報、フォロータイプ、理由、相互フォロー状態を含む）
 
-    // When
-    const response = await followApi.getFollowers(userId, queryParams);
+**テストケース**: フォロワーがいないユーザーの一覧取得
+- **入力**: フォロワーがいないユーザーID
+- **期待結果**: ステータス200、空の配列、nextCursor=null
 
-    // Then
-    expect(response.status).toBe(200);
-    expect(response.data).toMatchObject({
-      items: expect.arrayContaining([
-        {
-          user: {
-            id: expect.any(String),
-            displayName: expect.any(String),
-            profileImageUrl: expect.any(String)
-          },
-          followType: expect.stringMatching(/^(family|watch)$/),
-          followReason: expect.any(String),
-          isFollowingBack: expect.any(Boolean),
-          createdAt: expect.any(String)
-        }
-      ]),
-      nextCursor: expect.any(String)
-    });
-  });
-
-  test('should handle empty followers list', async () => {
-    // Given
-    const userWithNoFollowers = 'user-no-followers';
-
-    // When
-    const response = await followApi.getFollowers(userWithNoFollowers);
-
-    // Then
-    expect(response.status).toBe(200);
-    expect(response.data).toMatchObject({
-      items: [],
-      nextCursor: null
-    });
-  });
-
-  test('should get followers with cursor pagination', async () => {
-    // Given
-    const userId = 'user-with-many-followers';
-    const firstPageParams = { limit: 10 };
-
-    // When
-    const firstPage = await followApi.getFollowers(userId, firstPageParams);
-    const secondPage = await followApi.getFollowers(userId, {
-      cursor: firstPage.data.nextCursor,
-      limit: 10
-    });
-
-    // Then
-    expect(firstPage.data.items).toHaveLength(10);
-    expect(secondPage.data.items).toHaveLength(expect.any(Number));
-    expect(firstPage.data.items[0].user.id)
-      .not.toBe(secondPage.data.items[0].user.id);
-  });
-});
-```
+**テストケース**: カーソルページネーション
+- **入力**: 多数のフォロワーがいるユーザーID、最初のページの結果から取得したカーソル
+- **期待結果**: ステータス200、次のページのフォロワーリスト（重複なし）
 
 ## 1.4 フォロー中一覧取得API (GET /users/{userId}/following)
 
 ### 1.4.1 フォロー中一覧正常系
 
-```typescript
-describe('GET /users/{userId}/following', () => {
-  test('should get following list with latest posts', async () => {
-    // Given
-    const userId = 'user-123';
+**テストケース**: 最新投稿付きフォロー中一覧取得
+- **入力**: ユーザーID
+- **期待結果**: ステータス200、フォロー中ユーザーリスト（ユーザー情報、フォロータイプ、最新投稿情報を含む）
 
-    // When
-    const response = await followApi.getFollowing(userId);
+**テストケース**: フォロータイプでのフィルタリング
+- **入力**: ユーザーID、type=family または type=watch
+- **期待結果**: ステータス200、指定したタイプのフォローのみを含むリスト
 
-    // Then
-    expect(response.status).toBe(200);
-    expect(response.data.items[0]).toMatchObject({
-      user: expect.objectContaining({
-        id: expect.any(String),
-        displayName: expect.any(String)
-      }),
-      followType: expect.stringMatching(/^(family|watch)$/),
-      latestPost: expect.objectContaining({
-        id: expect.any(String),
-        contentType: expect.stringMatching(/^(text|image|audio)$/),
-        createdAt: expect.any(String)
-      }),
-      createdAt: expect.any(String)
-    });
-  });
-
-  test('should filter following by type', async () => {
-    // Given
-    const userId = 'user-123';
-    
-    // When
-    const familyFollowing = await followApi.getFollowing(userId, { type: 'family' });
-    const watchFollowing = await followApi.getFollowing(userId, { type: 'watch' });
-
-    // Then
-    familyFollowing.data.items.forEach(item => {
-      expect(item.followType).toBe('family');
-    });
-    watchFollowing.data.items.forEach(item => {
-      expect(item.followType).toBe('watch');
-    });
-  });
-
-  test('should handle users with no posts in following list', async () => {
-    // Given
-    const userId = 'user-following-new-users';
-
-    // When
-    const response = await followApi.getFollowing(userId);
-
-    // Then
-    const userWithNoPosts = response.data.items.find(item => 
-      item.latestPost === null
-    );
-    expect(userWithNoPosts).toBeDefined();
-    expect(userWithNoPosts.user).toBeDefined();
-  });
-});
-```
+**テストケース**: 投稿のないユーザーの処理
+- **入力**: 投稿のないユーザーをフォローしているユーザーID
+- **期待結果**: ステータス200、latestPost=null のユーザーを含むリスト
 
 ---
 
@@ -407,371 +122,75 @@ describe('GET /users/{userId}/following', () => {
 
 ### 2.1.1 フォローボタン表示テスト
 
-```typescript
-describe('FollowButton Component', () => {
-  test('should render follow button for unfollowed user', () => {
-    // Given
-    const props = {
-      userId: 'user-123',
-      followStatus: 'not_following',
-      onFollow: jest.fn()
-    };
+**テストケース**: 未フォローユーザーに対するボタン表示
+- **入力**: userId, followStatus='not_following'
+- **期待結果**: 「フォロー」ボタンが表示される
 
-    // When
-    render(<FollowButton {...props} />);
+**テストケース**: フォロー済みユーザーに対するボタン表示
+- **入力**: userId, followStatus='following', followType='family'
+- **期待結果**: 「フォロー中」ボタンとファミリーバッジが表示される
 
-    // Then
-    expect(screen.getByText('フォロー')).toBeOnTheScreen();
-    expect(screen.queryByText('フォロー中')).not.toBeOnTheScreen();
-  });
-
-  test('should render following button for followed user', () => {
-    // Given
-    const props = {
-      userId: 'user-123',
-      followStatus: 'following',
-      followType: 'family',
-      onUnfollow: jest.fn()
-    };
-
-    // When
-    render(<FollowButton {...props} />);
-
-    // Then
-    expect(screen.getByText('フォロー中')).toBeOnTheScreen();
-    expect(screen.getByTestId('follow-type-badge')).toHaveTextContent('ファミリー');
-  });
-
-  test('should show loading state during follow action', () => {
-    // Given
-    const props = {
-      userId: 'user-123',
-      followStatus: 'not_following',
-      isLoading: true,
-      onFollow: jest.fn()
-    };
-
-    // When
-    render(<FollowButton {...props} />);
-
-    // Then
-    expect(screen.getByTestId('loading-spinner')).toBeOnTheScreen();
-    expect(screen.getByText('フォロー')).toBeDisabled();
-  });
-});
-```
+**テストケース**: フォロー処理中のローディング表示
+- **入力**: userId, followStatus='not_following', isLoading=true
+- **期待結果**: ローディングスピナーが表示され、ボタンが無効化される
 
 ### 2.1.2 フォローボタンインタラクション
 
-```typescript
-describe('FollowButton Interactions', () => {
-  test('should open follow type selection modal on follow button press', async () => {
-    // Given
-    const mockOnFollow = jest.fn();
-    const props = {
-      userId: 'user-123',
-      followStatus: 'not_following',
-      onFollow: mockOnFollow
-    };
+**テストケース**: フォローボタンプレス時のモーダル表示
+- **入力**: 「フォロー」ボタンをタップ
+- **期待結果**: フォロー種類選択モーダル（ファミリー/ウォッチ）が表示される
 
-    // When
-    render(<FollowButton {...props} />);
-    const followButton = screen.getByText('フォロー');
-    
-    await act(() => {
-      fireEvent.press(followButton);
-    });
-
-    // Then
-    expect(screen.getByText('フォローの種類を選択')).toBeOnTheScreen();
-    expect(screen.getByText('ファミリーフォロー')).toBeOnTheScreen();
-    expect(screen.getByText('ウォッチフォロー')).toBeOnTheScreen();
-  });
-
-  test('should open unfollow confirmation on long press', async () => {
-    // Given
-    const mockOnUnfollow = jest.fn();
-    const props = {
-      userId: 'user-123',
-      followStatus: 'following',
-      followType: 'watch',
-      onUnfollow: mockOnUnfollow
-    };
-
-    // When
-    render(<FollowButton {...props} />);
-    const followingButton = screen.getByText('フォロー中');
-    
-    await act(() => {
-      fireEvent(followingButton, 'longPress');
-    });
-
-    // Then
-    expect(screen.getByText('アンフォロー')).toBeOnTheScreen();
-    expect(screen.getByText('キャンセル')).toBeOnTheScreen();
-  });
-});
-```
+**テストケース**: フォロー中ボタン長押し時のアンフォロー確認
+- **入力**: 「フォロー中」ボタンを長押し
+- **期待結果**: アンフォロー確認ダイアログが表示される
 
 ## 2.2 フォロー理由入力ダイアログ
 
 ### 2.2.1 ファミリーフォロー理由入力
 
-```typescript
-describe('FollowReasonDialog Component', () => {
-  test('should render family follow reason input dialog', () => {
-    // Given
-    const props = {
-      visible: true,
-      followType: 'family',
-      onSubmit: jest.fn(),
-      onCancel: jest.fn()
-    };
+**テストケース**: ファミリーフォロー理由入力ダイアログ表示
+- **入力**: visible=true, followType='family'
+- **期待結果**: 「ファミリーフォローの理由」タイトル、理由入力フィールド、無効状態の「フォロー」ボタン
 
-    // When
-    render(<FollowReasonDialog {...props} />);
+**テストケース**: 理由入力時のボタン有効化
+- **入力**: 理由を入力
+- **期待結果**: 「フォロー」ボタンが有効になる
 
-    // Then
-    expect(screen.getByText('ファミリーフォローの理由')).toBeOnTheScreen();
-    expect(screen.getByPlaceholderText('フォローする理由を入力してください'))
-      .toBeOnTheScreen();
-    expect(screen.getByText('フォロー')).toBeDisabled(); // 初期状態では無効
-  });
-
-  test('should enable submit button when reason is entered', async () => {
-    // Given
-    const mockOnSubmit = jest.fn();
-    const props = {
-      visible: true,
-      followType: 'family',
-      onSubmit: mockOnSubmit,
-      onCancel: jest.fn()
-    };
-
-    // When
-    render(<FollowReasonDialog {...props} />);
-    const reasonInput = screen.getByPlaceholderText('フォローする理由を入力してください');
-    
-    await act(() => {
-      fireEvent.changeText(reasonInput, '同じ価値観を持つ方だと感じたため');
-    });
-
-    // Then
-    expect(screen.getByText('フォロー')).not.toBeDisabled();
-  });
-
-  test('should submit family follow with reason', async () => {
-    // Given
-    const mockOnSubmit = jest.fn();
-    const props = {
-      visible: true,
-      followType: 'family',
-      onSubmit: mockOnSubmit,
-      onCancel: jest.fn()
-    };
-
-    // When
-    render(<FollowReasonDialog {...props} />);
-    const reasonInput = screen.getByPlaceholderText('フォローする理由を入力してください');
-    
-    await act(() => {
-      fireEvent.changeText(reasonInput, 'テスト理由');
-    });
-    
-    await act(() => {
-      fireEvent.press(screen.getByText('フォロー'));
-    });
-
-    // Then
-    expect(mockOnSubmit).toHaveBeenCalledWith({
-      followType: 'family',
-      followReason: 'テスト理由'
-    });
-  });
-});
-```
+**テストケース**: 理由入力とフォロー実行
+- **入力**: 理由を入力して「フォロー」ボタンをタップ
+- **期待結果**: onSubmitコールバックが適切なパラメータで呼び出される
 
 ### 2.2.2 ウォッチフォロー即時実行
 
-```typescript
-describe('WatchFollowDialog Component', () => {
-  test('should immediately execute watch follow', async () => {
-    // Given
-    const mockOnSubmit = jest.fn();
-    const props = {
-      visible: true,
-      followType: 'watch',
-      onSubmit: mockOnSubmit,
-      onCancel: jest.fn()
-    };
-
-    // When
-    render(<FollowReasonDialog {...props} />);
-    
-    await act(() => {
-      fireEvent.press(screen.getByText('フォロー'));
-    });
-
-    // Then
-    expect(mockOnSubmit).toHaveBeenCalledWith({
-      followType: 'watch',
-      followReason: null
-    });
-  });
-});
-```
+**テストケース**: ウォッチフォロー処理
+- **入力**: visible=true, followType='watch'
+- **期待結果**: 「フォロー」ボタンをタップするとすぐにonSubmitコールバックが呼び出される（理由はnull）
 
 ## 2.3 フォロワー/フォロー中一覧コンポーネント
 
 ### 2.3.1 フォロワー一覧表示
 
-```typescript
-describe('FollowersList Component', () => {
-  const mockFollowers = [
-    {
-      user: {
-        id: 'user-1',
-        displayName: 'ユーザー1',
-        profileImageUrl: 'https://example.com/user1.jpg'
-      },
-      followType: 'family',
-      followReason: 'テスト理由',
-      isFollowingBack: true,
-      createdAt: '2025-05-25T10:00:00Z'
-    },
-    {
-      user: {
-        id: 'user-2',
-        displayName: 'ユーザー2',
-        profileImageUrl: 'https://example.com/user2.jpg'
-      },
-      followType: 'watch',
-      followReason: null,
-      isFollowingBack: false,
-      createdAt: '2025-05-25T11:00:00Z'
-    }
-  ];
+**テストケース**: フォロワー一覧の表示
+- **入力**: フォロワーデータの配列
+- **期待結果**: 各フォロワーの表示名、プロフィール画像、フォロータイプが表示される
 
-  test('should render followers list', () => {
-    // Given
-    const props = {
-      followers: mockFollowers,
-      onLoadMore: jest.fn(),
-      onUserPress: jest.fn()
-    };
+**テストケース**: 相互フォロー表示
+- **入力**: isFollowingBack=true/false のフォロワーデータ
+- **期待結果**: 相互フォロー中のユーザーには相互フォローアイコンが表示される
 
-    // When
-    render(<FollowersList {...props} />);
-
-    // Then
-    expect(screen.getByText('ユーザー1')).toBeOnTheScreen();
-    expect(screen.getByText('ユーザー2')).toBeOnTheScreen();
-    expect(screen.getByText('ファミリー')).toBeOnTheScreen();
-    expect(screen.getByText('ウォッチ')).toBeOnTheScreen();
-  });
-
-  test('should show mutual follow indicator', () => {
-    // Given
-    const props = {
-      followers: mockFollowers,
-      onLoadMore: jest.fn(),
-      onUserPress: jest.fn()
-    };
-
-    // When
-    render(<FollowersList {...props} />);
-
-    // Then
-    expect(screen.getByTestId('mutual-follow-user-1')).toBeOnTheScreen();
-    expect(screen.queryByTestId('mutual-follow-user-2')).not.toBeOnTheScreen();
-  });
-
-  test('should handle user press', async () => {
-    // Given
-    const mockOnUserPress = jest.fn();
-    const props = {
-      followers: mockFollowers,
-      onLoadMore: jest.fn(),
-      onUserPress: mockOnUserPress
-    };
-
-    // When
-    render(<FollowersList {...props} />);
-    
-    await act(() => {
-      fireEvent.press(screen.getByText('ユーザー1'));
-    });
-
-    // Then
-    expect(mockOnUserPress).toHaveBeenCalledWith('user-1');
-  });
-});
-```
+**テストケース**: ユーザープレス処理
+- **入力**: フォロワーリスト内のユーザーをタップ
+- **期待結果**: onUserPressコールバックが対象ユーザーIDで呼び出される
 
 ### 2.3.2 フォロー中一覧表示
 
-```typescript
-describe('FollowingList Component', () => {
-  const mockFollowing = [
-    {
-      user: {
-        id: 'user-1',
-        displayName: 'ユーザー1',
-        profileImageUrl: 'https://example.com/user1.jpg'
-      },
-      followType: 'family',
-      followReason: 'テスト理由',
-      latestPost: {
-        id: 'post-1',
-        contentType: 'audio',
-        textContent: '最新の音声投稿です',
-        createdAt: '2025-05-25T12:00:00Z'
-      },
-      createdAt: '2025-05-25T10:00:00Z'
-    }
-  ];
+**テストケース**: 最新投稿付きフォロー中一覧
+- **入力**: ユーザーと最新投稿データを含むフォロー中データの配列
+- **期待結果**: 各フォロー中ユーザーの表示名、プロフィール画像、最新投稿内容、投稿タイプアイコンが表示される
 
-  test('should render following list with latest posts', () => {
-    // Given
-    const props = {
-      following: mockFollowing,
-      onLoadMore: jest.fn(),
-      onUserPress: jest.fn(),
-      onPostPress: jest.fn()
-    };
-
-    // When
-    render(<FollowingList {...props} />);
-
-    // Then
-    expect(screen.getByText('ユーザー1')).toBeOnTheScreen();
-    expect(screen.getByText('最新の音声投稿です')).toBeOnTheScreen();
-    expect(screen.getByTestId('post-type-audio')).toBeOnTheScreen();
-  });
-
-  test('should filter by follow type', async () => {
-    // Given
-    const mixedFollowing = [
-      { ...mockFollowing[0], followType: 'family' },
-      { ...mockFollowing[0], user: { ...mockFollowing[0].user, id: 'user-2' }, followType: 'watch' }
-    ];
-    const props = {
-      following: mixedFollowing,
-      selectedFilter: 'family',
-      onFilterChange: jest.fn(),
-      onLoadMore: jest.fn()
-    };
-
-    // When
-    render(<FollowingList {...props} />);
-
-    // Then
-    expect(screen.getByTestId('follow-type-filter-family')).toHaveStyle({
-      backgroundColor: expect.any(String) // アクティブな色
-    });
-  });
-});
-```
+**テストケース**: フォロータイプでのフィルタリング表示
+- **入力**: selectedFilter='family'のフォロー中リスト
+- **期待結果**: 「ファミリー」フィルターがアクティブ表示され、family タイプのフォローのみ表示される
 
 ---
 
@@ -781,201 +200,58 @@ describe('FollowingList Component', () => {
 
 ### 3.1.1 ファミリーフォロー完全フロー
 
-```typescript
-describe('Family Follow Integration', () => {
-  test('should complete family follow flow with notification', async () => {
-    // Given
-    const targetUser = await createTestUser({
-      displayName: 'テストユーザー',
-      notificationSettings: { follow: true }
-    });
-    const currentUser = await createTestUser({
-      displayName: '現在のユーザー'
-    });
-
-    // When
-    render(<UserProfileScreen userId={targetUser.id} />);
-    
-    // Step 1: Press follow button
-    await act(() => {
-      fireEvent.press(screen.getByText('フォロー'));
-    });
-
-    // Step 2: Select family follow
-    await act(() => {
-      fireEvent.press(screen.getByText('ファミリーフォロー'));
-    });
-
-    // Step 3: Enter reason
-    await act(() => {
-      fireEvent.changeText(
-        screen.getByPlaceholderText('フォローする理由を入力してください'),
-        '素晴らしい投稿をされているため'
-      );
-    });
-
-    // Step 4: Submit follow
-    await act(() => {
-      fireEvent.press(screen.getByText('フォロー'));
-    });
-
-    // Then
-    await waitFor(() => {
-      expect(screen.getByText('フォロー中')).toBeOnTheScreen();
-    });
-
-    // Verify notification was sent
-    const notifications = await getNotificationsForUser(targetUser.id);
-    expect(notifications).toContainEqual(
-      expect.objectContaining({
-        type: 'follow',
-        data: expect.objectContaining({
-          followType: 'family',
-          followerName: '現在のユーザー'
-        })
-      })
-    );
-  });
-});
-```
+**テストケース**: 通知付きファミリーフォロー完全フロー
+- **前提条件**: 通知設定有効のターゲットユーザーとフォローするユーザー
+- **手順**:
+  1. ユーザープロフィール画面でフォローボタンをタップ
+  2. ファミリーフォローを選択
+  3. フォロー理由を入力
+  4. フォロー確定
+- **期待結果**:
+  - フォローボタンが「フォロー中」に変わる
+  - ターゲットユーザーに通知が送信される
 
 ### 3.1.2 アンフォロー完全フロー
 
-```typescript
-describe('Unfollow Integration', () => {
-  test('should complete unfollow flow', async () => {
-    // Given
-    const targetUser = await createTestUser();
-    const currentUser = await createTestUser();
-    await createFollowRelation(currentUser.id, targetUser.id, 'watch');
-
-    // When
-    render(<UserProfileScreen userId={targetUser.id} />);
-    
-    // Step 1: Long press following button
-    await act(() => {
-      fireEvent(screen.getByText('フォロー中'), 'longPress');
-    });
-
-    // Step 2: Confirm unfollow
-    await act(() => {
-      fireEvent.press(screen.getByText('アンフォロー'));
-    });
-
-    // Step 3: Enter unfollow reason (optional)
-    await act(() => {
-      fireEvent.changeText(
-        screen.getByPlaceholderText('理由を入力（任意）'),
-        '投稿内容の方向性が変わったため'
-      );
-    });
-
-    // Step 4: Confirm
-    await act(() => {
-      fireEvent.press(screen.getByText('確定'));
-    });
-
-    // Then
-    await waitFor(() => {
-      expect(screen.getByText('フォロー')).toBeOnTheScreen();
-    });
-
-    // Verify unfollow was recorded
-    const followRecord = await getFollowRecord(currentUser.id, targetUser.id);
-    expect(followRecord.status).toBe('unfollowed');
-    expect(followRecord.unfollowReason).toBe('投稿内容の方向性が変わったため');
-  });
-});
-```
+**テストケース**: アンフォロー完全フロー
+- **前提条件**: 既にフォロー済みのユーザー関係
+- **手順**:
+  1. フォロー中ボタンを長押し
+  2. アンフォローを選択
+  3. アンフォロー理由を入力（任意）
+  4. 確定ボタンをタップ
+- **期待結果**:
+  - ボタンが「フォロー」状態に戻る
+  - フォローレコードがunfollowed状態で更新される
+  - アンフォロー理由が記録される
 
 ## 3.2 リアルタイム更新テスト
 
 ### 3.2.1 フォロワー数のリアルタイム更新
 
-```typescript
-describe('Real-time Follow Updates', () => {
-  test('should update follower count in real-time', async () => {
-    // Given
-    const targetUser = await createTestUser();
-    const follower1 = await createTestUser();
-    const follower2 = await createTestUser();
-
-    // When
-    render(<UserProfileScreen userId={targetUser.id} />);
-    
-    // Initially 0 followers
-    expect(screen.getByText('フォロワー: 0')).toBeOnTheScreen();
-
-    // Simulate real-time follow from another user
-    await simulateFollowFromAnotherUser(follower1.id, targetUser.id, 'family');
-
-    // Then
-    await waitFor(() => {
-      expect(screen.getByText('フォロワー: 1')).toBeOnTheScreen();
-    });
-
-    // Another follow
-    await simulateFollowFromAnotherUser(follower2.id, targetUser.id, 'watch');
-
-    await waitFor(() => {
-      expect(screen.getByText('フォロワー: 2')).toBeOnTheScreen();
-    });
-  });
-});
-```
+**テストケース**: フォロワー数のリアルタイム更新
+- **前提条件**: 対象ユーザーと複数のフォロワー候補
+- **手順**:
+  1. 対象ユーザーのプロフィール画面を表示（フォロワー数0）
+  2. 別ユーザーから対象ユーザーへのフォロー操作をシミュレート
+  3. さらに別のユーザーからのフォローをシミュレート
+- **期待結果**:
+  - 最初のフォロー後、フォロワー数が1に更新される
+  - 2つ目のフォロー後、フォロワー数が2に更新される
 
 ## 3.3 データ整合性テスト
 
 ### 3.3.1 フォロー状態の一貫性
 
-```typescript
-describe('Follow Data Consistency', () => {
-  test('should maintain follow state consistency across screens', async () => {
-    // Given
-    const targetUser = await createTestUser();
-    const currentUser = await createTestUser();
-
-    // When
-    // Screen 1: Profile screen follow
-    const { unmount: unmountProfile } = render(
-      <UserProfileScreen userId={targetUser.id} />
-    );
-    
-    await act(() => {
-      fireEvent.press(screen.getByText('フォロー'));
-    });
-    await act(() => {
-      fireEvent.press(screen.getByText('ウォッチフォロー'));
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('フォロー中')).toBeOnTheScreen();
-    });
-
-    unmountProfile();
-
-    // Screen 2: Following list should show the user
-    render(<FollowingListScreen />);
-    
-    await waitFor(() => {
-      expect(screen.getByText(targetUser.displayName)).toBeOnTheScreen();
-    });
-
-    // Screen 3: Timeline should show posts from followed user
-    render(<TimelineScreen type="watch" />);
-    
-    // Create a post from the followed user
-    await createPostFromUser(targetUser.id, {
-      contentType: 'text',
-      textContent: 'テスト投稿'
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('テスト投稿')).toBeOnTheScreen();
-    });
-  });
-});
-```
+**テストケース**: 画面間でのフォロー状態一貫性
+- **前提条件**: 対象ユーザーと現在のユーザー
+- **手順**:
+  1. プロフィール画面でユーザーをフォロー
+  2. フォロー中一覧画面に移動
+  3. タイムライン画面に移動し、フォロー中ユーザーが投稿
+- **期待結果**:
+  - フォロー中一覧にフォローしたユーザーが表示される
+  - ウォッチタイムラインにフォローしたユーザーの投稿が表示される
 
 ---
 
@@ -985,350 +261,73 @@ describe('Follow Data Consistency', () => {
 
 ### 4.1.1 新規ユーザーの初回フォロー体験
 
-```typescript
-describe('E2E: First Follow Experience', () => {
-  test('should guide new user through first follow', async () => {
-    // Given
-    const newUser = await createNewUser({
-      displayName: '新規ユーザー',
-      isFirstTime: true
-    });
-    const recommendedUser = await createTestUser({
-      displayName: 'おすすめユーザー',
-      hasPopularPosts: true
-    });
-
-    // When
-    await loginAsUser(newUser);
-    await navigateToDiscoverScreen();
-
-    // Step 1: See recommended users
-    await waitFor(() => {
-      expect(screen.getByText('おすすめのユーザー')).toBeOnTheScreen();
-    });
-
-    // Step 2: Tap on recommended user
-    await act(() => {
-      fireEvent.press(screen.getByText('おすすめユーザー'));
-    });
-
-    // Step 3: View profile and decide to follow
-    await waitFor(() => {
-      expect(screen.getByText('おすすめユーザー')).toBeOnTheScreen();
-      expect(screen.getByText('フォロー')).toBeOnTheScreen();
-    });
-
-    // Step 4: Choose family follow (first time tutorial)
-    await act(() => {
-      fireEvent.press(screen.getByText('フォロー'));
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('フォローの種類について')).toBeOnTheScreen();
-    });
-
-    await act(() => {
-      fireEvent.press(screen.getByText('ファミリーフォローを選ぶ'));
-    });
-
-    // Step 5: Enter meaningful reason
-    await act(() => {
-      fireEvent.changeText(
-        screen.getByPlaceholderText('フォローする理由を入力してください'),
-        'スピリチュアルな投稿に共感しました'
-      );
-    });
-
-    await act(() => {
-      fireEvent.press(screen.getByText('フォロー'));
-    });
-
-    // Then
-    await waitFor(() => {
-      expect(screen.getByText('フォロー中')).toBeOnTheScreen();
-      expect(screen.getByText('ファミリー')).toBeOnTheScreen();
-    });
-
-    // Verify the experience enhanced timeline
-    await navigateToTimeline();
-    await waitFor(() => {
-      expect(screen.getByText('ファミリータイムライン')).toBeOnTheScreen();
-    });
-  });
-});
-```
+**テストケース**: 新規ユーザーのフォロー初体験
+- **前提条件**: 初回ログインの新規ユーザー、人気投稿のあるおすすめユーザー
+- **手順**:
+  1. ディスカバー画面でおすすめユーザーを表示
+  2. おすすめユーザーをタップ
+  3. プロフィールでフォローボタンをタップ
+  4. 初回ユーザー向けフォロータイプ説明を表示
+  5. ファミリーフォローを選択
+  6. 有意義な理由を入力してフォロー
+- **期待結果**:
+  - フォロー状態になり、ファミリーバッジが表示される
+  - ファミリータイムラインに移動すると対象ユーザーの投稿が表示される
 
 ### 4.1.2 相互フォロー発見と深い繋がり構築
 
-```typescript
-describe('E2E: Mutual Follow Discovery', () => {
-  test('should facilitate mutual follow relationship', async () => {
-    // Given
-    const user1 = await createTestUser({ displayName: 'ユーザー1' });
-    const user2 = await createTestUser({ displayName: 'ユーザー2' });
-
-    // When
-    // User1 follows User2 first
-    await loginAsUser(user1);
-    await searchAndFollowUser(user2.displayName, 'watch', '投稿に興味があります');
-
-    // User2 discovers User1 followed them
-    await loginAsUser(user2);
-    await navigateToNotifications();
-
-    await waitFor(() => {
-      expect(screen.getByText('ユーザー1さんがあなたをフォローしました')).toBeOnTheScreen();
-    });
-
-    // User2 checks User1's profile
-    await act(() => {
-      fireEvent.press(screen.getByText('ユーザー1さんがあなたをフォローしました'));
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('ユーザー1')).toBeOnTheScreen();
-      expect(screen.getByText('あなたをフォロー中')).toBeOnTheScreen();
-    });
-
-    // User2 decides to follow back as family
-    await act(() => {
-      fireEvent.press(screen.getByText('フォロー'));
-    });
-
-    await act(() => {
-      fireEvent.press(screen.getByText('ファミリーフォロー'));
-    });
-
-    await act(() => {
-      fireEvent.changeText(
-        screen.getByPlaceholderText('フォローする理由を入力してください'),
-        '私の投稿にも興味を持ってくれたので、ぜひ交流したいです'
-      );
-    });
-
-    await act(() => {
-      fireEvent.press(screen.getByText('フォロー'));
-    });
-
-    // Then
-    await waitFor(() => {
-      expect(screen.getByText('相互フォロー')).toBeOnTheScreen();
-    });
-
-    // Verify both users see enhanced content
-    await navigateToTimeline();
-    await waitFor(() => {
-      expect(screen.getByText('ファミリータイムライン')).toBeOnTheScreen();
-    });
-
-    // User1 also sees the mutual relationship
-    await loginAsUser(user1);
-    await navigateToNotifications();
-
-    await waitFor(() => {
-      expect(screen.getByText('ユーザー2さんがあなたをファミリーフォローしました')).toBeOnTheScreen();
-    });
-  });
-});
-```
+**テストケース**: 相互フォロー関係構築
+- **前提条件**: 2人のユーザー
+- **手順**:
+  1. ユーザー1がユーザー2をウォッチフォロー
+  2. ユーザー2が通知を確認し、ユーザー1がフォローしたことを確認
+  3. ユーザー1のプロフィールを確認
+  4. ファミリーフォローで返す（理由：「私の投稿にも興味を持ってくれたので、ぜひ交流したいです」）
+- **期待結果**:
+  - 相互フォロー表示が出る
+  - ユーザー1にもフォローバック通知が届く
 
 ## 4.2 複数ユーザーシナリオ
 
 ### 4.2.1 コミュニティ形成シナリオ
 
-```typescript
-describe('E2E: Community Formation', () => {
-  test('should enable community building through follows', async () => {
-    // Given
-    const spiritual_teacher = await createTestUser({
-      displayName: 'スピリチュアル先生',
-      userType: 'teacher',
-      hasVerifiedBadge: true
-    });
-    const student1 = await createTestUser({ displayName: '生徒1' });
-    const student2 = await createTestUser({ displayName: '生徒2' });
-    const student3 = await createTestUser({ displayName: '生徒3' });
-
-    // When
-    // Teacher posts valuable content
-    await loginAsUser(spiritual_teacher);
-    await createPost({
-      contentType: 'audio',
-      textContent: '今日の瞑想ガイダンス',
-      audioContent: 'meditation_guide.mp3'
-    });
-
-    // Students discover and follow teacher
-    for (const student of [student1, student2, student3]) {
-      await loginAsUser(student);
-      await searchUser('スピリチュアル先生');
-      await followUser('family', `${student.displayName}として深く学びたいです`);
-    }
-
-    // Students discover each other through teacher's followers
-    await loginAsUser(student1);
-    await navigateToUserProfile('スピリチュアル先生');
-    await openFollowersList();
-
-    await waitFor(() => {
-      expect(screen.getByText('生徒2')).toBeOnTheScreen();
-      expect(screen.getByText('生徒3')).toBeOnTheScreen();
-    });
-
-    // Follow fellow students
-    await followUserFromList('生徒2', 'watch', '同じ先生から学ぶ仲間として');
-    await followUserFromList('生徒3', 'watch', '一緒に成長していきましょう');
-
-    // Then
-    // Verify community timeline shows diverse content
-    await navigateToTimeline();
-    await waitFor(() => {
-      expect(screen.getByText('今日の瞑想ガイダンス')).toBeOnTheScreen();
-      expect(screen.getAllByText(/生徒[23]/).length).toBeGreaterThan(0);
-    });
-
-    // Teacher can see growing community
-    await loginAsUser(spiritual_teacher);
-    await navigateToFollowersList();
-    
-    await waitFor(() => {
-      expect(screen.getAllByText(/生徒[123]/).length).toBe(3);
-      expect(screen.getAllByText('ファミリー').length).toBe(3);
-    });
-  });
-});
-```
+**テストケース**: フォローを通じたコミュニティ形成
+- **前提条件**: スピリチュアル先生（認証済み）と3人の生徒
+- **手順**:
+  1. 先生が価値ある音声コンテンツを投稿
+  2. 生徒たちが先生をファミリーフォロー
+  3. 生徒1が先生のフォロワーリストから他の生徒を発見
+  4. 生徒1が他の生徒をウォッチフォロー
+- **期待結果**:
+  - 生徒1のタイムラインに先生と他の生徒の投稿が表示される
+  - 先生側からはコミュニティが形成されていることが確認できる
 
 ### 4.2.2 フォロー関係の自然な発展
 
-```typescript
-describe('E2E: Natural Follow Relationship Evolution', () => {
-  test('should support relationship progression from watch to family', async () => {
-    // Given
-    const content_creator = await createTestUser({
-      displayName: 'クリエイター',
-      hasRegularPosts: true
-    });
-    const follower = await createTestUser({ displayName: 'フォロワー' });
-
-    // When
-    // Initial watch follow
-    await loginAsUser(follower);
-    await followUser(content_creator.id, 'watch');
-
-    // Engage with content over time
-    for (let day = 1; day <= 7; day++) {
-      await simulateDayPassing();
-      
-      const posts = await getRecentPosts(content_creator.id);
-      for (const post of posts) {
-        await likePost(post.id);
-        if (day % 3 === 0) {
-          await commentOnPost(post.id, '素晴らしい内容ですね！');
-        }
-      }
-    }
-
-    // Creator notices active engagement
-    await loginAsUser(content_creator);
-    await checkNotifications();
-    
-    // Decide to upgrade to family follow
-    await loginAsUser(follower);
-    await navigateToUserProfile(content_creator.id);
-    
-    await act(() => {
-      fireEvent(screen.getByText('フォロー中'), 'longPress');
-    });
-
-    await act(() => {
-      fireEvent.press(screen.getByText('ファミリーフォローに変更'));
-    });
-
-    await act(() => {
-      fireEvent.changeText(
-        screen.getByPlaceholderText('変更理由を入力してください'),
-        '一週間拝見して、本当に深い学びがあると感じました。より近くで学ばせていただきたいです。'
-      );
-    });
-
-    await act(() => {
-      fireEvent.press(screen.getByText('変更'));
-    });
-
-    // Then
-    await waitFor(() => {
-      expect(screen.getByText('ファミリー')).toBeOnTheScreen();
-    });
-
-    // Creator receives upgrade notification
-    await loginAsUser(content_creator);
-    await waitFor(() => {
-      expect(screen.getByText('フォロワーさんがファミリーフォローに変更しました')).toBeOnTheScreen();
-    });
-  });
-});
-```
+**テストケース**: ウォッチからファミリーへの関係発展
+- **前提条件**: コンテンツクリエイターとフォロワー
+- **手順**:
+  1. フォロワーが最初にウォッチフォロー
+  2. 一定期間、コンテンツに積極的にエンゲージ（いいね、コメント）
+  3. 価値を認識し、ファミリーフォローに変更
+- **期待結果**:
+  - フォロータイプが更新される
+  - クリエイターに通知が届く
 
 ## 4.3 エラーシナリオと復旧テスト
 
 ### 4.3.1 ネットワーク断続時のフォロー操作
 
-```typescript
-describe('E2E: Network Resilience', () => {
-  test('should handle follow actions during network interruption', async () => {
-    // Given
-    const user1 = await createTestUser();
-    const user2 = await createTestUser();
-
-    // When
-    await loginAsUser(user1);
-    await navigateToUserProfile(user2.id);
-
-    // Start follow action
-    await act(() => {
-      fireEvent.press(screen.getByText('フォロー'));
-    });
-
-    await act(() => {
-      fireEvent.press(screen.getByText('ファミリーフォロー'));
-    });
-
-    await act(() => {
-      fireEvent.changeText(
-        screen.getByPlaceholderText('フォローする理由を入力してください'),
-        'ネットワークテスト用理由'
-      );
-    });
-
-    // Simulate network disconnection
-    await simulateNetworkDisconnection();
-
-    await act(() => {
-      fireEvent.press(screen.getByText('フォロー'));
-    });
-
-    // Should show offline indicator
-    await waitFor(() => {
-      expect(screen.getByText('オフライン状態です')).toBeOnTheScreen();
-      expect(screen.getByText('接続復旧時に送信されます')).toBeOnTheScreen();
-    });
-
-    // Restore network
-    await simulateNetworkReconnection();
-
-    // Then
-    await waitFor(() => {
-      expect(screen.getByText('フォロー中')).toBeOnTheScreen();
-    }, { timeout: 10000 });
-
-    // Verify follow was actually created
-    const followRecord = await getFollowRecord(user1.id, user2.id);
-    expect(followRecord.followType).toBe('family');
-    expect(followRecord.followReason).toBe('ネットワークテスト用理由');
-  });
-});
-```
+**テストケース**: ネットワーク回復力
+- **前提条件**: 2人のユーザー
+- **手順**:
+  1. ユーザープロフィール画面でフォローボタンをタップ
+  2. ファミリーフォローを選択し理由を入力
+  3. ネットワーク切断をシミュレート
+  4. フォロー確定
+- **期待結果**:
+  - オフライン状態とキューイングメッセージが表示される
+  - ネットワーク復旧後、フォロー操作が完了される
 
 ---
 
@@ -1336,108 +335,39 @@ describe('E2E: Network Resilience', () => {
 
 ## 5.1 CI/CDパイプラインでの実行順序
 
-```typescript
-// Jest configuration for different test types
-module.exports = {
-  projects: [
-    {
-      displayName: 'API Unit Tests',
-      testMatch: ['<rootDir>/src/**/*.api.test.{js,ts}'],
-      testEnvironment: 'node',
-      setupFilesAfterEnv: ['<rootDir>/test/setup/api.ts']
-    },
-    {
-      displayName: 'UI Unit Tests',
-      testMatch: ['<rootDir>/src/**/*.component.test.{js,ts,tsx}'],
-      testEnvironment: 'jsdom',
-      setupFilesAfterEnv: ['<rootDir>/test/setup/ui.ts']
-    },
-    {
-      displayName: 'Integration Tests',
-      testMatch: ['<rootDir>/test/integration/**/*.test.{js,ts,tsx}'],
-      testEnvironment: 'jsdom',
-      setupFilesAfterEnv: ['<rootDir>/test/setup/integration.ts']
-    },
-    {
-      displayName: 'E2E Tests',
-      testMatch: ['<rootDir>/test/e2e/**/*.test.{js,ts,tsx}'],
-      testEnvironment: 'jsdom',
-      setupFilesAfterEnv: ['<rootDir>/test/setup/e2e.ts']
-    }
-  ]
-};
-```
+**テスト実行順序**:
+1. APIユニットテスト - サービスロジックの検証
+2. UIユニットテスト - コンポーネント単体の検証
+3. 結合テスト - 複数コンポーネント/サービスの連携検証
+4. E2Eテスト - エンドユーザー体験の検証
+
+**テスト設定**:
+- APIテスト: サーバー環境（Node.js）
+- UIテスト: DOM環境（jsdom）
+- テスト固有のセットアップファイル使用
 
 ## 5.2 テストデータ管理
 
 ### 5.2.1 テスト用ユーザー作成ヘルパー
 
-```typescript
-// test/helpers/userHelpers.ts
-export const createTestUser = async (options: Partial<User> = {}): Promise<User> => {
-  const defaultUser: Partial<User> = {
-    displayName: `テストユーザー${Date.now()}`,
-    profileText: 'テストプロフィール',
-    notificationSettings: {
-      comment: true,
-      highlight: true,
-      follow: true,
-      gift: true
-    }
-  };
-
-  return await userApi.createUser({ ...defaultUser, ...options });
-};
-
-export const createFollowRelation = async (
-  followerId: string,
-  followeeId: string,
-  followType: 'family' | 'watch',
-  reason?: string
-): Promise<Follow> => {
-  return await followApi.createFollow({
-    followeeId,
-    followType,
-    followReason: reason || (followType === 'family' ? 'テスト理由' : null)
-  });
-};
-```
+**テスト用ヘルパー関数**:
+- `createTestUser()` - テスト用ユーザーを作成
+- `createFollowRelation()` - テスト用フォロー関係を作成
 
 ### 5.2.2 モックサービス設定
 
-```typescript
-// test/setup/mocks.ts
-export const setupMocks = () => {
-  // Notification service mock
-  jest.mock('@/services/notificationService', () => ({
-    sendPushNotification: jest.fn().mockResolvedValue(true),
-    createNotification: jest.fn().mockResolvedValue({ id: 'notification-id' })
-  }));
-
-  // Real-time service mock
-  jest.mock('@/services/realtimeService', () => ({
-    subscribe: jest.fn(),
-    broadcast: jest.fn(),
-    unsubscribe: jest.fn()
-  }));
-
-  // Storage service mock (use real implementation for integration tests)
-  if (process.env.TEST_TYPE !== 'integration') {
-    jest.mock('@/services/storageService', () => ({
-      uploadImage: jest.fn().mockResolvedValue('https://test.com/image.jpg'),
-      uploadAudio: jest.fn().mockResolvedValue('https://test.com/audio.mp3')
-    }));
-  }
-};
-```
+**モック対象**:
+- 通知サービス - プッシュ通知送信のモック
+- リアルタイムサービス - WebSocket通信のモック
+- ストレージサービス - 結合テスト以外でのモック
 
 ## 5.3 カバレッジ目標
 
 | テストタイプ | 目標カバレッジ | 重要ファイル |
-|-------------|---------------|--------------|
-| APIユニット | 95%+ | followApi.ts, followService.ts |
-| UIユニット | 90%+ | FollowButton.tsx, FollowDialog.tsx |
-| 結合テスト | 85%+ | フォロー関連コンポーネント群 |
+|-------------|---------------|--------------| 
+| APIユニット | 95%+ | followApi.ts, followService.ts | 
+| UIユニット | 90%+ | FollowButton.tsx, FollowDialog.tsx | 
+| 結合テスト | 85%+ | フォロー関連コンポーネント群 | 
 | E2Eテスト | 主要ユーザーフロー100% | 全体的なフロー |
 
 ---
@@ -1446,60 +376,23 @@ export const setupMocks = () => {
 
 ## 6.1 非同期処理のテスト
 
-```typescript
-// ❌ Bad: タイムアウトなしの待機
-test('should update follow status', async () => {
-  await followUser();
-  expect(screen.getByText('フォロー中')).toBeOnTheScreen();
-});
-
-// ✅ Good: 適切なタイムアウトと条件指定
-test('should update follow status', async () => {
-  await followUser();
-  await waitFor(() => {
-    expect(screen.getByText('フォロー中')).toBeOnTheScreen();
-  }, { timeout: 5000 });
-});
-```
+**推奨事項**:
+- タイムアウトを適切に設定する（特に外部サービス連携時）
+- waitFor を使用して非同期処理の完了を待つ
+- 短時間で終了する安定したテストを書く
 
 ## 6.2 状態管理のテスト
 
-```typescript
-// フォロー状態の変更が他のコンポーネントに正しく反映されることを確認
-test('should update follow state across components', async () => {
-  const { rerender } = render(<FollowButton userId="user-123" />);
-  
-  await followUser('user-123');
-  
-  rerender(<FollowButton userId="user-123" />);
-  
-  await waitFor(() => {
-    expect(screen.getByText('フォロー中')).toBeOnTheScreen();
-  });
-});
-```
+**推奨事項**:
+- コンポーネント間の状態共有を検証
+- フォロー状態変更が複数画面に正しく反映されることを確認
+- 状態管理ライブラリとの連携を確認
 
 ## 6.3 エラーハンドリングのテスト
 
-```typescript
-// すべてのエラーケースを網羅的にテスト
-describe('Error Handling', () => {
-  test.each([
-    [400, 'VALIDATION_ERROR', 'バリデーションエラー'],
-    [401, 'UNAUTHORIZED', '認証エラー'],
-    [403, 'FORBIDDEN', '権限エラー'],
-    [429, 'RATE_LIMIT_EXCEEDED', 'レート制限エラー'],
-    [500, 'INTERNAL_ERROR', 'サーバーエラー']
-  ])('should handle %i error correctly', async (status, type, expectedMessage) => {
-    mockApiError(status, type);
-    
-    await followUser();
-    
-    await waitFor(() => {
-      expect(screen.getByText(expectedMessage)).toBeOnTheScreen();
-    });
-  });
-});
-```
+**推奨事項**:
+- すべてのエラーケースを網羅的にテスト
+- ネットワークエラー、バリデーションエラー、権限エラーなどを確認
+- ユーザーフレンドリーなエラーメッセージが表示されることを確認
 
 このテスト仕様書により、フォロー機能の全ての側面を包括的にテストし、高品質で信頼性の高い実装を保証することができます。
