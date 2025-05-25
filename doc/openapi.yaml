@@ -1,0 +1,852 @@
+openapi: 3.1.0
+info:
+  title: Awakener SNS API
+  version: 1.0.0
+  description: |
+    「目醒め人のためのSNS」の公式 REST API。
+    認証方式は Supabase JWT (RFC 6750)。
+servers:
+  - url: https://supabase-functions.awakener.jp/functions/v1
+    description: Production
+  - url: https://stg-supabase-functions.awakener.jp/functions/v1
+    description: Staging
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase JWT認証トークン
+  schemas:
+    Error:
+      type: object
+      properties:
+        status:
+          type: integer
+        title:
+          type: string
+        detail:
+          type: string
+      required: [status, title]
+    CursorPagination:
+      type: object
+      properties:
+        items:
+          type: array
+          items: {}
+        nextCursor:
+          type: string
+          nullable: true
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        handle:
+          type: string
+          example: "@aya"
+        profileText:
+          type: string
+        profileImageUrl:
+          type: string
+          format: uri
+        introAudioUrl:
+          type: string
+          format: uri
+        externalLinkUrl:
+          type: string
+          format: uri
+        prefecture:
+          type: string
+        city:
+          type: string
+      required: [id, displayName]
+    Follow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        follower:
+          $ref: '#/components/schemas/User'
+        followee:
+          $ref: '#/components/schemas/User'
+        followType:
+          type: string
+          enum: [family, watch]
+        status:
+          type: string
+          enum: [active, unfollowed]
+        followReason:
+          type: string
+        unfollowReason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        unfollowedAt:
+          type: string
+          format: date-time
+          nullable: true
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user:
+          $ref: '#/components/schemas/User'
+        contentType:
+          type: string
+          enum: [text, image, video, audio]
+        textContent:
+          type: string
+        mediaUrl:
+          type: string
+          format: uri
+          nullable: true
+        previewUrl:
+          type: string
+          format: uri
+          nullable: true
+        youtubeVideoId:
+          type: string
+        eventId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, user, contentType, createdAt]
+    Comment:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        postId: {type: string, format: uuid}
+        user: {$ref: '#/components/schemas/User'}
+        body: {type: string}
+        createdAt: {type: string, format: date-time}
+    Like:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        postId: {type: string, format: uuid}
+        userId: {type: string, format: uuid}
+        createdAt: {type: string, format: date-time}
+    Highlight:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        postId: {type: string, format: uuid}
+        user: {$ref: '#/components/schemas/User'}
+        reason: {type: string}
+        createdAt: {type: string, format: date-time}
+    Event:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        creatorUserId: {type: string, format: uuid}
+        name: {type: string}
+        description: {type: string}
+        location: {type: string}
+        startsAt: {type: string, format: date-time}
+        endsAt: {type: string, format: date-time}
+        fee: {type: number}
+        currency: {type: string}
+        refundPolicy: {type: string}
+        createdAt: {type: string, format: date-time}
+      required: [id, name, startsAt]
+    Participant:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        user: {$ref: '#/components/schemas/User'}
+        status:
+          type: string
+          enum: [going, interested]
+        paymentStatus:
+          type: string
+          enum: [pending, paid, refunded]
+        joinedAt: {type: string, format: date-time}
+    Product:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        sellerUser: {$ref: '#/components/schemas/User'}
+        title: {type: string}
+        description: {type: string}
+        price: {type: number}
+        currency: {type: string}
+        imageUrl: {type: string, format: uri}
+        stock: {type: integer}
+        createdAt: {type: string, format: date-time}
+    Order:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        buyerUser: {$ref: '#/components/schemas/User'}
+        product: {$ref: '#/components/schemas/Product'}
+        quantity: {type: integer}
+        amount: {type: number}
+        stripePaymentId: {type: string}
+        status:
+          type: string
+          enum: [pending, paid, shipped, refunded]
+        createdAt: {type: string, format: date-time}
+    ChatSession:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        userId: {type: string, format: uuid}
+        createdAt: {type: string, format: date-time}
+        endedAt: {type: string, format: date-time, nullable: true}
+    ChatMessage:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        sessionId: {type: string, format: uuid}
+        role: {type: string, enum: [user, assistant]}
+        content: {type: string}
+        createdAt: {type: string, format: date-time}
+    SearchHistory:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        userId: {type: string, format: uuid}
+        query: {type: string}
+        searchedAt: {type: string, format: date-time}
+    Notification:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        userId: {type: string, format: uuid}
+        title: {type: string}
+        body: {type: string}
+        data: {type: object}
+        createdAt: {type: string, format: date-time}
+        read: {type: boolean}
+      required: [id, userId, title, body, createdAt]
+    NotificationSettings:
+      type: object
+      properties:
+        comment: {type: boolean}
+        highlight: {type: boolean}
+        follow: {type: boolean}
+  parameters:
+    postId:
+      name: postId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+      description: 投稿ID
+      
+paths:
+  /auth/google:
+    post:
+      tags: [Auth]
+      summary: Google IDトークンをJWTに交換
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idToken: {type: string}
+      responses:
+        '200':
+          description: JWT発行
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: {type: string}
+                  refreshToken: {type: string}
+                  expiresIn: {type: integer}
+        default:
+          $ref: '#/components/schemas/Error'
+
+  /users/me:
+    get:
+      tags: [User]
+      summary: 自身のプロフィール取得
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    put:
+      tags: [User]
+      summary: プロフィール更新
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName: {type: string}
+                profileText: {type: string}
+                prefecture: {type: string}
+                city: {type: string}
+                externalLinkUrl: {type: string, format: uri}
+                notificationSettings:
+                  $ref: '#/components/schemas/NotificationSettings'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users/{userId}:
+    get:
+      tags: [User]
+      summary: 他ユーザーのプロフィール取得
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User'}
+
+  /users/me/avatar:
+    post:
+      tags: [User]
+      summary: プロフィール画像アップロード
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: {type: string, format: binary}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imageUrl: {type: string, format: uri}
+
+  /users/me/intro-audio:
+    post:
+      tags: [User]
+      summary: 自己紹介音声アップロード
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: {type: string, format: binary}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audioUrl: {type: string, format: uri}
+
+  /users/me/notification-settings:
+    patch:
+      tags: [User]
+      summary: 通知設定更新
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSettings'
+      responses:
+        '200': {description: Updated}
+        
+  /users/me/fcm-token:
+    put:
+      tags: [User]
+      summary: FCMトークン更新 (プッシュ通知用)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fcmToken: {type: string}
+              required: [fcmToken]
+      responses:
+        '200': {description: FCMトークン更新完了}
+
+  /timeline:
+    get:
+      tags: [Timeline]
+      summary: ファミリーまたはウォッチタイムライン取得
+      parameters:
+        - in: query
+          name: type
+          schema: {type: string, enum: [family, watch]}
+          required: true
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+
+  /posts:
+    post:
+      tags: [Post]
+      summary: 新規投稿作成
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                contentType: {type: string, enum: [text, image, video, audio]}
+                textContent: {type: string}
+                file: {type: string, format: binary, nullable: true}
+                eventId: {type: string, format: uuid, nullable: true}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Post'}
+
+  /posts/{postId}:
+    get:
+      tags: [Post]
+      summary: 投稿詳細取得
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Post'}
+    delete:
+      tags: [Post]
+      summary: 投稿削除
+      parameters:
+        - $ref: '#/components/parameters/postId'
+      responses:
+        '204': {description: Deleted}
+
+  /posts/{postId}/like:
+    post:
+      tags: [Like]
+      summary: いいね
+      parameters:
+        - $ref: '#/components/parameters/postId'
+      responses:
+        '204': {description: Liked}
+    delete:
+      tags: [Like]
+      summary: いいね取り消し
+      parameters:
+        - $ref: '#/components/parameters/postId'
+      responses:
+        '204': {description: Unliked}
+
+  /posts/{postId}/comments:
+    get:
+      tags: [Comment]
+      summary: コメント一覧取得
+      parameters:
+        - $ref: '#/components/parameters/postId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Comment'}
+    post:
+      tags: [Comment]
+      summary: コメント追加
+      parameters:
+        - $ref: '#/components/parameters/postId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                body: {type: string}
+              required: [body]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Comment'}
+              
+  /posts/{postId}/highlight:
+    post:
+      tags: [Highlight]
+      summary: 投稿をハイライト
+      parameters:
+        - $ref: '#/components/parameters/postId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: {type: string}
+              required: [reason]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Highlight'}
+
+  /follows:
+    post:
+      tags: [Follow]
+      summary: ユーザーをフォロー
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                followeeId: {type: string, format: uuid}
+                followType: {type: string, enum: [family, watch]}
+                followReason: {type: string}
+              required: [followeeId, followType]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Follow'}
+              
+  /follows/{followId}:
+    delete:
+      tags: [Follow]
+      summary: フォロー解除
+      parameters:
+        - name: followId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                unfollowReason: {type: string}
+              required: [unfollowReason]
+      responses:
+        '204': {description: Unfollowed}
+        
+  /events:
+    get:
+      tags: [Event]
+      summary: イベント一覧取得
+      parameters:
+        - in: query
+          name: cursor
+          schema: {type: string}
+        - in: query
+          name: filter
+          schema: {type: string, enum: [upcoming, past, created, participating]}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+    post:
+      tags: [Event]
+      summary: イベント作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                description: {type: string}
+                location: {type: string}
+                startsAt: {type: string, format: date-time}
+                endsAt: {type: string, format: date-time}
+                fee: {type: number}
+                currency: {type: string}
+                refundPolicy: {type: string}
+              required: [name, startsAt]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event'}
+
+  /events/{eventId}:
+    get:
+      tags: [Event]
+      summary: イベント詳細取得
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event'}
+    put:
+      tags: [Event]
+      summary: イベント更新
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                description: {type: string}
+                location: {type: string}
+                startsAt: {type: string, format: date-time}
+                endsAt: {type: string, format: date-time}
+                fee: {type: number}
+                currency: {type: string}
+                refundPolicy: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event'}
+              
+  /events/{eventId}/participate:
+    post:
+      tags: [Event]
+      summary: イベント参加登録
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: {type: string, enum: [going, interested]}
+              required: [status]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Participant'}
+              
+  /uploads/presigned:
+    post:
+      tags: [Upload]
+      summary: プリサインドURL取得
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileType: {type: string}
+                contentType: {type: string}
+              required: [fileType, contentType]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uploadUrl: {type: string, format: uri}
+                  objectKey: {type: string}
+                  expiresAt: {type: string, format: date-time}
+
+  /chat/sessions:
+    get:
+      tags: [Chat]
+      summary: チャットセッション一覧取得
+      parameters:
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+    post:
+      tags: [Chat]
+      summary: 新規チャットセッション作成
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatSession'}
+              
+  /chat/sessions/{sessionId}/messages:
+    get:
+      tags: [Chat]
+      summary: チャットメッセージ取得
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+    post:
+      tags: [Chat]
+      summary: メッセージ送信
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content: {type: string}
+              required: [content]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatMessage'}
+              
+  /search:
+    get:
+      tags: [Search]
+      summary: 検索
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: {type: string}
+        - in: query
+          name: type
+          schema: {type: string, enum: [user, post, event]}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+
+  /analysis:
+    get:
+      tags: [Analysis]
+      summary: ユーザー分析結果取得
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  awakenessLevel: {type: number}
+                  insights: {type: string}
+                  nextActions: 
+                    type: array
+                    items: {type: string}
+                    
+  /notifications:
+    get:
+      tags: [Notification]
+      summary: 通知一覧取得
+      parameters:
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+                
+  /notifications/{notificationId}:
+    patch:
+      tags: [Notification]
+      summary: 通知既読状態更新
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                read: {type: boolean}
+              required: [read]
+      responses:
+        '200': {description: Updated}
+        
+  /webhooks/stripe:
+    post:
+      tags: [Webhook]
+      summary: Stripe Webhook
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200': {description: OK}
