@@ -25,11 +25,103 @@ components:
       properties:
         status:
           type: integer
+          description: HTTPステータスコード
         title:
           type: string
+          description: エラーの概要
         detail:
           type: string
-      required: [status, title]
+          description: エラーの詳細説明
+        type:
+          type: string
+          description: エラータイプ識別子
+          example: "INVALID_REQUEST"
+        field:
+          type: string
+          description: エラーが発生したフィールド名（バリデーションエラーの場合）
+          nullable: true
+        traceId:
+          type: string
+          description: トレース用ID
+      required: [status, title, type]
+    ValidationError:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 400
+        title:
+          type: string
+          example: "Validation Error"
+        type:
+          type: string
+          example: "VALIDATION_ERROR"
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+      required: [status, title, type, errors]
+    AuthError:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 401
+        title:
+          type: string
+          example: "Authentication Error"
+        type:
+          type: string
+          enum: ["INVALID_TOKEN", "TOKEN_EXPIRED", "MISSING_TOKEN"]
+        detail:
+          type: string
+      required: [status, title, type]
+    NotFoundError:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 404
+        title:
+          type: string
+          example: "Not Found"
+        type:
+          type: string
+          example: "RESOURCE_NOT_FOUND"
+        resource:
+          type: string
+          description: 見つからなかったリソースの種類
+        id:
+          type: string
+          description: リソースID
+      required: [status, title, type]
+    RateLimitError:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 429
+        title:
+          type: string
+          example: "Rate Limit Exceeded"
+        type:
+          type: string
+          example: "RATE_LIMIT_EXCEEDED"
+        retryAfter:
+          type: integer
+          description: 再試行可能になるまでの秒数
+        limit:
+          type: integer
+          description: レート制限の上限
+        window:
+          type: string
+          description: レート制限の時間枠
+      required: [status, title, type, retryAfter]
     CursorPagination:
       type: object
       properties:
@@ -116,10 +208,39 @@ components:
           nullable: true
         youtubeVideoId:
           type: string
+          description: "将来の拡張用（現在未使用）"
+          nullable: true
         eventId:
           type: string
           format: uuid
           nullable: true
+        waveformUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: "音声投稿の波形画像URL"
+        durationSeconds:
+          type: integer
+          nullable: true
+          description: "音声・動画の再生時間（秒）"
+        aiMetadata:
+          type: object
+          nullable: true
+          description: "AI生成メタデータ"
+          properties:
+            summary:
+              type: string
+              description: "音声投稿のAI要約"
+            tags:
+              type: array
+              items:
+                type: string
+              description: "AI生成タグ"
+            recommendedViewers:
+              type: array
+              items:
+                type: string
+              description: "推奨視聴者属性"
         createdAt:
           type: string
           format: date-time
@@ -181,24 +302,66 @@ components:
         sellerUser: {$ref: '#/components/schemas/User'}
         title: {type: string}
         description: {type: string}
+        productType: {type: string, enum: [physical, online_session, audio]}
         price: {type: number}
         currency: {type: string}
         imageUrl: {type: string, format: uri}
+        previewUrl: {type: string, format: uri, nullable: true}
+        previewDuration: {type: integer, nullable: true}
         stock: {type: integer}
+        sourcePostId: {type: string, format: uuid, nullable: true}
+        aiDescription: {type: object, nullable: true}
         createdAt: {type: string, format: date-time}
+      required: [id, sellerUser, title, productType, price, currency]
+    Cart:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        buyerUser: {$ref: '#/components/schemas/User'}
+        status: {type: string, enum: [active, checked_out]}
+        items: 
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        totalAmount: {type: number}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+      required: [id, buyerUser, status, items, totalAmount, createdAt]
+    CartItem:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        product: {$ref: '#/components/schemas/Product'}
+        quantity: {type: integer}
+        addedAt: {type: string, format: date-time}
+      required: [id, product, quantity, addedAt]
     Order:
       type: object
       properties:
         id: {type: string, format: uuid}
         buyerUser: {$ref: '#/components/schemas/User'}
-        product: {$ref: '#/components/schemas/Product'}
-        quantity: {type: integer}
         amount: {type: number}
-        stripePaymentId: {type: string}
+        storesPaymentId: {type: string}
         status:
           type: string
-          enum: [pending, paid, shipped, refunded]
+          enum: [pending, paid, shipped, completed, cancelled, refunded]
+        shippingInfo: {type: object}
+        trackingNumber: {type: string, nullable: true}
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
         createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+      required: [id, buyerUser, amount, status, items, createdAt]
+    OrderItem:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        product: {$ref: '#/components/schemas/Product'}
+        quantity: {type: integer}
+        price: {type: number}
+      required: [id, product, quantity, price]
     ChatSession:
       type: object
       properties:
@@ -238,6 +401,147 @@ components:
         comment: {type: boolean}
         highlight: {type: boolean}
         follow: {type: boolean}
+        gift: {type: boolean}
+    Story:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        user: {$ref: '#/components/schemas/User'}
+        imageUrl: {type: string, format: uri}
+        editData: {type: object}
+        isRepost: {type: boolean}
+        originalStoryId: {type: string, format: uuid, nullable: true}
+        expiresAt: {type: string, format: date-time}
+        createdAt: {type: string, format: date-time}
+      required: [id, user, imageUrl, isRepost, expiresAt, createdAt]
+    DmThread:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        user1: {$ref: '#/components/schemas/User'}
+        user2: {$ref: '#/components/schemas/User'}
+        lastMessage: {$ref: '#/components/schemas/DirectMessage'}
+        unreadCount: {type: integer}
+        createdAt: {type: string, format: date-time}
+      required: [id, user1, user2, createdAt]
+    DirectMessage:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        threadId: {type: string, format: uuid}
+        sender: {$ref: '#/components/schemas/User'}
+        messageType: {type: string, enum: [text, image, audio]}
+        textContent: {type: string, nullable: true}
+        mediaUrl: {type: string, format: uri, nullable: true}
+        isRead: {type: boolean}
+        createdAt: {type: string, format: date-time}
+      required: [id, threadId, sender, messageType, isRead, createdAt]
+    LiveRoom:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        hostUser: {$ref: '#/components/schemas/User'}
+        title: {type: string}
+        status: {type: string, enum: [preparing, live, ended]}
+        livekitRoomName: {type: string}
+        maxSpeakers: {type: integer}
+        isRecording: {type: boolean}
+        participantCount: {type: integer}
+        startedAt: {type: string, format: date-time, nullable: true}
+        endedAt: {type: string, format: date-time, nullable: true}
+        createdAt: {type: string, format: date-time}
+      required: [id, hostUser, title, status, maxSpeakers, isRecording, createdAt]
+    RoomParticipant:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        user: {$ref: '#/components/schemas/User'}
+        role: {type: string, enum: [host, speaker, listener]}
+        joinedAt: {type: string, format: date-time}
+      required: [id, user, role, joinedAt]
+    RoomChat:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        user: {$ref: '#/components/schemas/User'}
+        content: {type: string}
+        sharedUrl: {type: string, format: uri, nullable: true}
+        isPinned: {type: boolean}
+        createdAt: {type: string, format: date-time}
+      required: [id, user, content, isPinned, createdAt]
+    Gift:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        sender: {$ref: '#/components/schemas/User'}
+        amount: {type: integer}
+        message: {type: string, nullable: true}
+        createdAt: {type: string, format: date-time}
+      required: [id, sender, amount, createdAt]
+    Group:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        ownerUser: {$ref: '#/components/schemas/User'}
+        name: {type: string}
+        description: {type: string}
+        groupType: {type: string, enum: [free, subscription]}
+        subscriptionPrice: {type: number, nullable: true}
+        storesPriceId: {type: string, nullable: true}
+        memberLimit: {type: integer}
+        memberCount: {type: integer}
+        createdAt: {type: string, format: date-time}
+      required: [id, ownerUser, name, groupType, memberLimit, memberCount, createdAt]
+    GroupMember:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        user: {$ref: '#/components/schemas/User'}
+        role: {type: string, enum: [owner, admin, member]}
+        status: {type: string, enum: [active, left, banned]}
+        joinedAt: {type: string, format: date-time}
+      required: [id, user, role, status, joinedAt]
+    GroupChat:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        user: {$ref: '#/components/schemas/User'}
+        messageType: {type: string, enum: [text, image, audio]}
+        textContent: {type: string, nullable: true}
+        mediaUrl: {type: string, format: uri, nullable: true}
+        createdAt: {type: string, format: date-time}
+      required: [id, user, messageType, createdAt]
+    AiPlaylist:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        user: {$ref: '#/components/schemas/User'}
+        title: {type: string}
+        description: {type: string}
+        playlistType: {type: string, enum: [curated, radio, chart]}
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+        generatedAt: {type: string, format: date-time}
+        expiresAt: {type: string, format: date-time}
+      required: [id, user, title, playlistType, posts, generatedAt]
+    HitChart:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        category: {type: string, enum: [top50, rising20]}
+        posts:
+          type: array
+          items:
+            type: object
+            properties:
+              rank: {type: integer}
+              post: {$ref: '#/components/schemas/Post'}
+              score: {type: number}
+              change: {type: integer, description: "順位変動"}
+        updatedAt: {type: string, format: date-time}
+      required: [id, category, posts, updatedAt]
   parameters:
     postId:
       name: postId
@@ -271,8 +575,24 @@ paths:
                   accessToken: {type: string}
                   refreshToken: {type: string}
                   expiresIn: {type: integer}
-        default:
-          $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /users/me:
     get:
@@ -565,6 +885,110 @@ paths:
       responses:
         '204': {description: Unfollowed}
         
+  /users/{userId}/followers:
+    get:
+      tags: [Follow]
+      summary: フォロワー一覧取得
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - in: query
+          name: cursor
+          schema: {type: string}
+        - in: query
+          name: limit
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user:
+                          $ref: '#/components/schemas/User'
+                        followType:
+                          type: string
+                          enum: [family, watch]
+                        followReason:
+                          type: string
+                          nullable: true
+                        isFollowingBack:
+                          type: boolean
+                          description: "現在のユーザーがこのフォロワーをフォローしているか"
+                        createdAt:
+                          type: string
+                          format: date-time
+                      required: [user, followType, isFollowingBack, createdAt]
+                  nextCursor:
+                    type: string
+                    nullable: true
+                required: [items]
+        '404':
+          $ref: '#/components/schemas/NotFoundError'
+
+  /users/{userId}/following:
+    get:
+      tags: [Follow]
+      summary: フォロー中ユーザー一覧取得
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - in: query
+          name: type
+          schema: {type: string, enum: [family, watch]}
+          description: "フォロータイプでフィルタ"
+        - in: query
+          name: cursor
+          schema: {type: string}
+        - in: query
+          name: limit
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user:
+                          $ref: '#/components/schemas/User'
+                        followType:
+                          type: string
+                          enum: [family, watch]
+                        followReason:
+                          type: string
+                          nullable: true
+                        latestPost:
+                          allOf:
+                            - $ref: '#/components/schemas/Post'
+                            - nullable: true
+                          description: "そのユーザーの最新投稿"
+                        createdAt:
+                          type: string
+                          format: date-time
+                      required: [user, followType, createdAt]
+                  nextCursor:
+                    type: string
+                    nullable: true
+                required: [items]
+        '404':
+          $ref: '#/components/schemas/NotFoundError'
+        
   /events:
     get:
       tags: [Event]
@@ -838,10 +1262,1266 @@ paths:
       responses:
         '200': {description: Updated}
         
-  /webhooks/stripe:
+  # Stories endpoints
+  /stories:
+    get:
+      tags: [Story]
+      summary: ストーリーズ一覧取得
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Story'
+        '401':
+          $ref: '#/components/schemas/AuthError'
+    post:
+      tags: [Story]
+      summary: ストーリー投稿
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image: {type: string, format: binary}
+                textContent: {type: string}
+                stickers: {type: array, items: {type: object}}
+                location: {type: string}
+              required: [image]
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Story'
+        '400':
+          $ref: '#/components/schemas/ValidationError'
+        '401':
+          $ref: '#/components/schemas/AuthError'
+
+  /stories/{storyId}:
+    delete:
+      tags: [Story]
+      summary: ストーリー削除
+      parameters:
+        - name: storyId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '204': {description: 削除成功}
+        '404':
+          $ref: '#/components/schemas/NotFoundError'
+
+  /stories/{storyId}/repost:
+    post:
+      tags: [Story]
+      summary: ストーリー再投稿
+      parameters:
+        - name: storyId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '201':
+          description: 再投稿成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Story'
+        '404':
+          $ref: '#/components/schemas/NotFoundError'
+
+  # Direct Message endpoints
+  /dm/threads:
+    get:
+      tags: [DirectMessage]
+      summary: DM会話一覧取得
+      parameters:
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+
+  /dm/threads/{userId}:
+    post:
+      tags: [DirectMessage]
+      summary: DM会話開始
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+          description: 相手ユーザーID
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DmThread'
+        '404':
+          $ref: '#/components/schemas/NotFoundError'
+
+  /dm/threads/{threadId}/messages:
+    get:
+      tags: [DirectMessage]
+      summary: DM履歴取得
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+    post:
+      tags: [DirectMessage]
+      summary: DM送信
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                messageType: {type: string, enum: [text, image, audio]}
+                textContent: {type: string}
+                file: {type: string, format: binary}
+              required: [messageType]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectMessage'
+        '400':
+          $ref: '#/components/schemas/ValidationError'
+
+  /dm/messages/{messageId}/read:
+    put:
+      tags: [DirectMessage]
+      summary: DM既読状態更新
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: 既読更新成功}
+        '404':
+          $ref: '#/components/schemas/NotFoundError'
+
+  # Live Room endpoints
+  /live-rooms:
+    get:
+      tags: [LiveRoom]
+      summary: ライブルーム一覧取得
+      parameters:
+        - in: query
+          name: status
+          schema: {type: string, enum: [live, ended, all]}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+    post:
+      tags: [LiveRoom]
+      summary: ライブルーム作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: {type: string}
+                maxSpeakers: {type: integer, default: 10}
+                isRecording: {type: boolean, default: false}
+              required: [title]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveRoom'
+        '400':
+          $ref: '#/components/schemas/ValidationError'
+
+  /live-rooms/{roomId}:
+    get:
+      tags: [LiveRoom]
+      summary: ライブルーム詳細取得
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveRoom'
+        '404':
+          $ref: '#/components/schemas/NotFoundError'
+
+  /live-rooms/{roomId}/start:
+    post:
+      tags: [LiveRoom]
+      summary: ライブ開始
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: ライブ開始成功}
+        '404':
+          $ref: '#/components/schemas/NotFoundError'
+
+  /live-rooms/{roomId}/end:
+    post:
+      tags: [LiveRoom]
+      summary: ライブ終了
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                createPost: {type: boolean, description: "録音を投稿として保存"}
+      responses:
+        '200': {description: ライブ終了成功}
+        '404':
+          $ref: '#/components/schemas/NotFoundError'
+
+  /live-rooms/{roomId}/join:
+    post:
+      tags: [LiveRoom]
+      summary: ライブルーム参加
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: {type: string, description: "LiveKit接続トークン"}
+                  url: {type: string, description: "LiveKit接続URL"}
+        '404':
+          $ref: '#/components/schemas/NotFoundError'
+
+  /live-rooms/{roomId}/leave:
+    post:
+      tags: [LiveRoom]
+      summary: ライブルーム退出
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: 退出成功}
+
+  /live-rooms/{roomId}/request-speaker:
+    post:
+      tags: [LiveRoom]
+      summary: 登壇リクエスト
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: リクエスト送信成功}
+        '400':
+          $ref: '#/components/schemas/Error'
+
+  /live-rooms/{roomId}/approve-speaker:
+    post:
+      tags: [LiveRoom]
+      summary: 登壇承認
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId: {type: string, format: uuid}
+              required: [userId]
+      responses:
+        '200': {description: 承認成功}
+        '403':
+          $ref: '#/components/schemas/Error'
+
+  /live-rooms/{roomId}/chat:
+    get:
+      tags: [LiveRoom]
+      summary: ルームチャット履歴取得
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+    post:
+      tags: [LiveRoom]
+      summary: ルームチャット送信
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content: {type: string}
+                sharedUrl: {type: string, format: uri}
+              required: [content]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomChat'
+
+  /live-rooms/{roomId}/chat/{chatId}/pin:
+    put:
+      tags: [LiveRoom]
+      summary: チャットメッセージピン留め
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - name: chatId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: ピン留め成功}
+        '403':
+          $ref: '#/components/schemas/Error'
+
+  /posts/{postId}/gift:
+    post:
+      tags: [Gift]
+      summary: 光ギフト送信
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: {type: integer, enum: [300, 600, 1200]}
+                message: {type: string}
+              required: [amount]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gift'
+        '400':
+          $ref: '#/components/schemas/ValidationError'
+
+  /live-rooms/{roomId}/gift:
+    post:
+      tags: [Gift]
+      summary: ライブルームギフト送信
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: {type: integer, enum: [300, 600, 1200]}
+                message: {type: string}
+              required: [amount]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gift'
+
+  # Shop endpoints
+  /products:
+    get:
+      tags: [Shop]
+      summary: 商品一覧取得
+      parameters:
+        - in: query
+          name: sellerId
+          schema: {type: string, format: uuid}
+        - in: query
+          name: productType
+          schema: {type: string, enum: [physical, online_session, audio]}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+    post:
+      tags: [Shop]
+      summary: 商品出品
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title: {type: string}
+                description: {type: string}
+                productType: {type: string, enum: [physical, online_session, audio]}
+                price: {type: number}
+                currency: {type: string, default: JPY}
+                stock: {type: integer}
+                image: {type: string, format: binary}
+                sourcePostId: {type: string, format: uuid}
+              required: [title, productType, price]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/schemas/ValidationError'
+
+  /products/{productId}:
+    get:
+      tags: [Shop]
+      summary: 商品詳細取得
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/schemas/NotFoundError'
+    put:
+      tags: [Shop]
+      summary: 商品情報更新
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: {type: string}
+                description: {type: string}
+                price: {type: number}
+                stock: {type: integer}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '403':
+          $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Shop]
+      summary: 商品削除
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '204': {description: 削除成功}
+        '403':
+          $ref: '#/components/schemas/Error'
+
+  /products/from-post:
+    post:
+      tags: [Shop]
+      summary: 音声投稿から即時出品
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId: {type: string, format: uuid}
+                price: {type: number}
+                generateAiDescription: {type: boolean, default: true}
+              required: [postId, price]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/schemas/ValidationError'
+
+  /cart:
+    get:
+      tags: [Shop]
+      summary: カート内容取得
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+    delete:
+      tags: [Shop]
+      summary: カート内容クリア
+      responses:
+        '204': {description: クリア成功}
+
+  /cart/items:
+    post:
+      tags: [Shop]
+      summary: カートに商品追加
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productId: {type: string, format: uuid}
+                quantity: {type: integer, minimum: 1}
+              required: [productId, quantity]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+        '400':
+          $ref: '#/components/schemas/ValidationError'
+
+  /cart/items/{itemId}:
+    put:
+      tags: [Shop]
+      summary: カート内商品数量更新
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity: {type: integer, minimum: 1}
+              required: [quantity]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+    delete:
+      tags: [Shop]
+      summary: カートから商品削除
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '204': {description: 削除成功}
+
+  /cart/checkout:
+    post:
+      tags: [Shop]
+      summary: チェックアウト開始
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                shippingInfo:
+                  type: object
+                  properties:
+                    postalCode: {type: string}
+                    prefecture: {type: string}
+                    city: {type: string}
+                    address1: {type: string}
+                    address2: {type: string}
+                    name: {type: string}
+                    phone: {type: string}
+              required: [shippingInfo]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orderId: {type: string, format: uuid}
+                  paymentUrl: {type: string, format: uri}
+        '400':
+          $ref: '#/components/schemas/ValidationError'
+
+  /orders:
+    get:
+      tags: [Shop]
+      summary: 注文履歴取得
+      parameters:
+        - in: query
+          name: status
+          schema: {type: string, enum: [pending, paid, shipped, completed, cancelled, refunded]}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+
+  /orders/{orderId}:
+    get:
+      tags: [Shop]
+      summary: 注文詳細取得
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          $ref: '#/components/schemas/NotFoundError'
+
+  /orders/{orderId}/shipping:
+    put:
+      tags: [Shop]
+      summary: 配送情報更新（出品者用）
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trackingNumber: {type: string}
+                status: {type: string, enum: [shipped]}
+              required: [status]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '403':
+          $ref: '#/components/schemas/Error'
+
+  /seller/orders:
+    get:
+      tags: [Shop]
+      summary: 出品者の注文一覧取得
+      parameters:
+        - in: query
+          name: status
+          schema: {type: string, enum: [pending, paid, shipped, completed, cancelled, refunded]}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+
+  /seller/dashboard:
+    get:
+      tags: [Shop]
+      summary: 売上ダッシュボード取得
+      parameters:
+        - in: query
+          name: period
+          schema: {type: string, enum: [daily, weekly, monthly, yearly]}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalRevenue: {type: number}
+                  totalOrders: {type: integer}
+                  averageOrderValue: {type: number}
+                  revenueChart:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date: {type: string, format: date}
+                        revenue: {type: number}
+
+  # Group endpoints
+  /groups:
+    get:
+      tags: [Group]
+      summary: グループ一覧取得
+      parameters:
+        - in: query
+          name: filter
+          schema: {type: string, enum: [joined, owned, recommended]}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+    post:
+      tags: [Group]
+      summary: グループ作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                description: {type: string}
+                groupType: {type: string, enum: [free, subscription]}
+                subscriptionPrice: {type: number}
+                memberLimit: {type: integer, default: 100}
+              required: [name, groupType]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          $ref: '#/components/schemas/ValidationError'
+
+  /groups/{groupId}:
+    get:
+      tags: [Group]
+      summary: グループ詳細取得
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '404':
+          $ref: '#/components/schemas/NotFoundError'
+    put:
+      tags: [Group]
+      summary: グループ情報更新
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                description: {type: string}
+                memberLimit: {type: integer}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '403':
+          $ref: '#/components/schemas/Error'
+
+  /groups/{groupId}/join:
+    post:
+      tags: [Group]
+      summary: グループ参加
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMember'
+        '402':
+          description: Payment Required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentUrl: {type: string, format: uri}
+
+  /groups/{groupId}/leave:
+    post:
+      tags: [Group]
+      summary: グループ退出
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: 退出成功}
+
+  /groups/{groupId}/members:
+    get:
+      tags: [Group]
+      summary: グループメンバー一覧取得
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+
+  /groups/{groupId}/members/{userId}:
+    delete:
+      tags: [Group]
+      summary: メンバー除名
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - name: userId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '204': {description: 除名成功}
+        '403':
+          $ref: '#/components/schemas/Error'
+
+  /groups/{groupId}/posts:
+    get:
+      tags: [Group]
+      summary: グループ投稿取得
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+    post:
+      tags: [Group]
+      summary: グループ投稿作成
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                contentType: {type: string, enum: [text, image, audio]}
+                textContent: {type: string}
+                file: {type: string, format: binary}
+              required: [contentType]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+
+  /groups/{groupId}/chat:
+    get:
+      tags: [Group]
+      summary: グループチャット履歴取得
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+    post:
+      tags: [Group]
+      summary: グループチャット送信
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                messageType: {type: string, enum: [text, image, audio]}
+                textContent: {type: string}
+                file: {type: string, format: binary}
+              required: [messageType]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupChat'
+
+  # AI endpoints
+  /ai/playlists:
+    get:
+      tags: [AI]
+      summary: AIプレイリスト取得
+      parameters:
+        - in: query
+          name: type
+          schema: {type: string, enum: [curated, radio]}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AiPlaylist'
+
+  /ai/playlists/{playlistId}:
+    get:
+      tags: [AI]
+      summary: AIプレイリスト詳細取得
+      parameters:
+        - name: playlistId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPlaylist'
+
+  /ai/radio:
+    get:
+      tags: [AI]
+      summary: MyRadio取得
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiPlaylist'
+
+  /ai/hit-charts:
+    get:
+      tags: [AI]
+      summary: ヒットチャート取得
+      parameters:
+        - in: query
+          name: category
+          schema: {type: string, enum: [top50, rising20]}
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HitChart'
+
+  /ai/generate-summary:
+    post:
+      tags: [AI]
+      summary: 音声投稿のAI要約生成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId: {type: string, format: uuid}
+              required: [postId]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary: {type: string}
+                  tags: {type: array, items: {type: string}}
+                  recommendedViewers: {type: array, items: {type: string}}
+
+  /offline-content:
+    get:
+      tags: [Offline]
+      summary: オフラインコンテンツ一覧取得
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        post: {$ref: '#/components/schemas/Post'}
+                        sizeBytes: {type: integer}
+                        cachedAt: {type: string, format: date-time}
+                        expiresAt: {type: string, format: date-time, description: "コンテンツの有効期限（保存から1ヶ月後）"}
+                  totalSizeBytes: {type: integer}
+                  maxSizeBytes: {type: integer}
+
+  /offline-content/{postId}:
+    post:
+      tags: [Offline]
+      summary: オフラインコンテンツ追加
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '201': {description: 追加成功}
+        '409':
+          description: Conflict - Already cached
+        '507':
+          description: Insufficient Storage
+    delete:
+      tags: [Offline]
+      summary: オフラインコンテンツ削除
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '204': {description: 削除成功}
+
+  # Account management
+  /accounts:
+    get:
+      tags: [Account]
+      summary: アカウント一覧取得
+      description: "ユーザーは最大5つのアカウントを保持可能"
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 5
+                items:
+                  type: object
+                  properties:
+                    id: {type: string, format: uuid}
+                    profile: {$ref: '#/components/schemas/User'}
+                    isActive: {type: boolean}
+                    switchOrder: {type: integer, minimum: 1, maximum: 5, description: "アカウントの切替順序（1-5）"}
+                    lastSwitchedAt: {type: string, format: date-time}
+
+  /accounts/{accountId}/switch:
+    post:
+      tags: [Account]
+      summary: アカウント切替
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: {type: string}
+                  refreshToken: {type: string}
+
+  # Bookmark
+  /bookmarks:
+    get:
+      tags: [Bookmark]
+      summary: ブックマーク一覧取得
+      parameters:
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+
+  /posts/{postId}/bookmark:
+    post:
+      tags: [Bookmark]
+      summary: ブックマーク追加
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '201': {description: 追加成功}
+    delete:
+      tags: [Bookmark]
+      summary: ブックマーク削除
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '204': {description: 削除成功}
+
+  /webhooks/stores:
     post:
       tags: [Webhook]
-      summary: Stripe Webhook
+      summary: Stores.jp Webhook
       security: []
       requestBody:
         content:
@@ -850,3 +2530,150 @@ paths:
               type: object
       responses:
         '200': {description: OK}
+
+  # Schedule Poll endpoints (優先度L)
+  /schedule-polls:
+    get:
+      tags: [Schedule]
+      summary: 日程調整一覧取得
+      parameters:
+        - in: query
+          name: filter
+          schema: {type: string, enum: [created, participating, active, completed]}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursorPagination'
+    post:
+      tags: [Schedule]
+      summary: 日程調整作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: {type: string}
+                description: {type: string}
+                relatedEventId: {type: string, format: uuid, nullable: true}
+                candidates:
+                  type: array
+                  items:
+                    type: string
+                    format: date-time
+                  description: "候補日時リスト"
+                deadlineAt: {type: string, format: date-time}
+              required: [title, candidates]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: {type: string, format: uuid}
+                  title: {type: string}
+                  description: {type: string}
+                  candidates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: {type: string, format: uuid}
+                        datetime: {type: string, format: date-time}
+
+  /schedule-polls/{pollId}:
+    get:
+      tags: [Schedule]
+      summary: 日程調整詳細取得
+      parameters:
+        - name: pollId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: {type: string, format: uuid}
+                  title: {type: string}
+                  description: {type: string}
+                  creatorUser: {$ref: '#/components/schemas/User'}
+                  candidates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: {type: string, format: uuid}
+                        datetime: {type: string, format: date-time}
+                        votes:
+                          type: object
+                          properties:
+                            available: {type: integer}
+                            maybe: {type: integer}
+                            unavailable: {type: integer}
+
+  /schedule-polls/{pollId}/vote:
+    post:
+      tags: [Schedule]
+      summary: 日程調整投票
+      parameters:
+        - name: pollId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                votes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      candidateId: {type: string, format: uuid}
+                      voteType: {type: string, enum: [available, maybe, unavailable]}
+                    required: [candidateId, voteType]
+              required: [votes]
+      responses:
+        '200': {description: 投票完了}
+
+  /schedule-polls/{pollId}/finalize:
+    post:
+      tags: [Schedule]
+      summary: 日程確定
+      parameters:
+        - name: pollId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                candidateId: {type: string, format: uuid}
+              required: [candidateId]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  finalizedDatetime: {type: string, format: date-time}
+                  icsUrl: {type: string, format: uri, description: "カレンダー登録用ICSファイルURL"}
