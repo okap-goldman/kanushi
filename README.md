@@ -11,8 +11,6 @@ Kanushi（かぬし）は「目醒め人のためのSNS」です。音声コン�
 ```bash
 # 開発サーバーを起動
 npm run web          # Web版開発サーバー
-npm run ios          # iOS Simulator
-npm run android      # Android Emulator
 
 # コード品質チェック
 npm run check        # TypeScript型チェック + Biome lint/format
@@ -20,6 +18,9 @@ npm run check        # TypeScript型チェック + Biome lint/format
 # テスト実行
 npm test             # 全テスト実行
 npm run test:ui      # Vitest UIモード
+npm run test:api     # APIテスト（単体テスト）のみ実行
+npm run test:integration # 結合テストのみ実行
+npm run test:e2e     # E2Eテストのみ実行
 
 # データベース操作
 npm run db:generate  # スキーマ変更からマイグレーションを生成
