@@ -1,5 +1,8 @@
-import { pgTable, uuid, text, timestamp, boolean, integer, unique, check, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, boolean, integer, unique, check, index, pgEnum } from 'drizzle-orm/pg-core';
 import { followTypeEnum, followStatusEnum } from './enums';
+
+// Account type enum
+export const accountTypeEnum = pgEnum('account_type', ['google', 'apple', 'passkey']);
 
 // Profile table
 export const profiles = pgTable('profile', {
@@ -26,15 +29,35 @@ export const profiles = pgTable('profile', {
 export const accounts = pgTable('account', {
   id: uuid('id').primaryKey().defaultRandom(),
   profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  accountType: accountTypeEnum('account_type').notNull(),
   isActive: boolean('is_active').notNull().default(false),
   switchOrder: integer('switch_order').notNull(),
   lastSwitchedAt: timestamp('last_switched_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => ({
   profileIdIdx: index('idx_account_profile_id').on(table.profileId),
   isActiveIdx: index('idx_account_is_active').on(table.isActive),
+  accountTypeIdx: index('idx_account_type').on(table.accountType),
   uniqueProfileOrder: unique().on(table.profileId, table.switchOrder),
+  uniqueProfileType: unique().on(table.profileId, table.accountType),
   switchOrderCheck: check('switch_order_check', 'switch_order BETWEEN 1 AND 5')
+}));
+
+// Passkey table for WebAuthn credentials
+export const passkeys = pgTable('passkey', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  credentialId: text('credential_id').notNull().unique(),
+  publicKey: text('public_key').notNull(),
+  counter: integer('counter').notNull().default(0),
+  deviceName: text('device_name'),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => ({
+  profileIdIdx: index('idx_passkey_profile_id').on(table.profileId),
+  credentialIdIdx: index('idx_passkey_credential_id').on(table.credentialId)
 }));
 
 // Follow table

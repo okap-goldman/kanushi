@@ -402,6 +402,230 @@ describe('AuthCore - Apple Sign-In認証', () => {
   });
 });
 
+describe('AuthCore - Email + Passkey認証', () => {
+  let authCore: AuthCore;
+  let mockAuthProvider: any;
+  let mockDbProvider: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuthProvider = createMockAuthProvider();
+    mockDbProvider = createMockDbProvider();
+    authCore = new AuthCore(mockAuthProvider, mockDbProvider);
+  });
+
+  it('パスキーを使った新規登録が正常に完了すること', async () => {
+    const mockUser = {
+      id: 'passkey-user-id',
+      email: 'passkey@example.com',
+      user_metadata: {},
+    };
+
+    let fromCallCount = 0;
+    mockDbProvider.from.mockImplementation((table: string) => {
+      fromCallCount++;
+      
+      // 1回目: profiles select (メールアドレスの重複チェック)
+      if (fromCallCount === 1 && table === 'profiles') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: { code: 'PGRST116' }, // Not found
+          }),
+        };
+      }
+      
+      // 2回目: profiles insert
+      if (fromCallCount === 2 && table === 'profiles') {
+        return {
+          insert: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'passkey-user-id',
+              email: 'passkey@example.com',
+              displayName: 'passkey',
+            },
+            error: null,
+          }),
+        };
+      }
+      
+      // 3回目: passkeys insert
+      if (fromCallCount === 3 && table === 'passkeys') {
+        return {
+          insert: vi.fn().mockResolvedValue({
+            error: null,
+          }),
+        };
+      }
+      
+      // 4回目: accounts select
+      if (fromCallCount === 4 && table === 'accounts') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: { code: 'PGRST116' },
+          }),
+        };
+      }
+      
+      // 5回目: accounts insert
+      if (fromCallCount === 5 && table === 'accounts') {
+        return {
+          insert: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'passkey-account-id',
+              profileId: 'passkey-user-id',
+              accountType: 'passkey',
+              isActive: true,
+            },
+            error: null,
+          }),
+        };
+      }
+    });
+
+    const result = await authCore.registerWithPasskey('passkey@example.com', 'mock-credential-id', 'mock-public-key');
+
+    expect(result.error).toBeNull();
+    expect(result.user).toBeDefined();
+    expect(result.user?.email).toBe('passkey@example.com');
+    expect(result.account?.accountType).toBe('passkey');
+  });
+
+  it('既に登録済みのメールアドレスでパスキー登録を試みた際にエラーが発生すること', async () => {
+    // 既存のプロフィール
+    mockDbProvider.from.mockImplementation((table: string) => {
+      if (table === 'profiles') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'existing-user-id',
+              email: 'existing@example.com',
+              displayName: 'Existing User',
+            },
+            error: null,
+          }),
+        };
+      }
+    });
+
+    const result = await authCore.registerWithPasskey('existing@example.com', 'mock-credential-id', 'mock-public-key');
+
+    expect(result.user).toBeNull();
+    expect(result.error?.message).toBe('EMAIL_ALREADY_REGISTERED');
+  });
+
+  it('パスキーを使ったログインが正常に完了すること', async () => {
+    const mockUser = {
+      id: 'passkey-user-id',
+      email: 'passkey@example.com',
+      user_metadata: {},
+    };
+
+    let fromCallCount = 0;
+    mockDbProvider.from.mockImplementation((table: string) => {
+      fromCallCount++;
+      
+      // 1回目: passkeys select
+      if (fromCallCount === 1 && table === 'passkeys') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'passkey-id',
+              profileId: 'passkey-user-id',
+              credentialId: 'mock-credential-id',
+              publicKey: 'mock-public-key',
+            },
+            error: null,
+          }),
+        };
+      }
+      
+      // 2回目: profiles select
+      if (fromCallCount === 2 && table === 'profiles') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'passkey-user-id',
+              email: 'passkey@example.com',
+              displayName: 'Passkey User',
+            },
+            error: null,
+          }),
+        };
+      }
+      
+      // 3回目: accounts select
+      if (fromCallCount === 3 && table === 'accounts') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'passkey-account-id',
+              profileId: 'passkey-user-id',
+              accountType: 'passkey',
+              isActive: true,
+            },
+            error: null,
+          }),
+        };
+      }
+      
+      // 4回目: passkeys update (lastUsedAt)
+      if (fromCallCount === 4 && table === 'passkeys') {
+        return {
+          update: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({
+            error: null,
+          }),
+        };
+      }
+    });
+
+    const result = await authCore.signInWithPasskey('mock-credential-id', 'mock-signature');
+
+    expect(result.error).toBeNull();
+    expect(result.user).toBeDefined();
+    expect(result.user?.email).toBe('passkey@example.com');
+  });
+
+  it('無効なパスキー情報でログインを試みた際にエラーが発生すること', async () => {
+    // パスキーが見つからない
+    mockDbProvider.from.mockImplementation((table: string) => {
+      if (table === 'passkeys') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: { code: 'PGRST116' }, // Not found
+          }),
+        };
+      }
+    });
+
+    const result = await authCore.signInWithPasskey('invalid-credential-id', 'mock-signature');
+
+    expect(result.user).toBeNull();
+    expect(result.error?.message).toBe('INVALID_PASSKEY');
+  });
+});
+
 describe('AuthCore - ログアウト', () => {
   let authCore: AuthCore;
   let mockAuthProvider: any;

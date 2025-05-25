@@ -5,8 +5,8 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
 
 // Follow enums
-export const followTypeEnum = pgEnum('follow_type', ['normal', 'close_friend']);
-export const followStatusEnum = pgEnum('follow_status', ['active', 'pending', 'blocked']);
+export const followTypeEnum = pgEnum('follow_type', ['family', 'watch']);
+export const followStatusEnum = pgEnum('follow_status', ['active', 'unfollowed', 'blocked']);
 
 // Post enums
 export const contentTypeEnum = pgEnum('content_type', ['text', 'image', 'audio', 'video']);

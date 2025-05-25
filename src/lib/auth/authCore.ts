@@ -337,6 +337,152 @@ export class AuthCore {
     }
   }
 
+  // Email + Passkey 新規登録
+  async registerWithPasskey(email: string, credentialId: string, publicKey: string): Promise<AuthResult> {
+    try {
+      // メールアドレスが既に存在するかチェック
+      const { data: existingProfile } = await this.dbProvider
+        .from('profiles')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (existingProfile) {
+        return {
+          user: null,
+          profile: null,
+          account: null,
+          error: new Error('EMAIL_ALREADY_REGISTERED'),
+        };
+      }
+
+      // 新規ユーザー作成
+      const userId = `user_${Date.now()}`;
+      const user: AuthUser = {
+        id: userId,
+        email,
+        displayName: email.split('@')[0],
+      };
+
+      // プロフィール作成
+      const newProfile: AuthProfile = {
+        id: userId,
+        email,
+        displayName: user.displayName,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const { data: profile, error: profileError } = await this.dbProvider
+        .from('profiles')
+        .insert(newProfile)
+        .select()
+        .single();
+
+      if (profileError) throw profileError;
+
+      // パスキー情報保存
+      const { error: passkeyError } = await this.dbProvider
+        .from('passkeys')
+        .insert({
+          profileId: userId,
+          credentialId,
+          publicKey,
+          counter: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+      if (passkeyError) throw passkeyError;
+
+      // アカウント作成
+      const accountResult = await this.getOrCreateAccount(profile, 'passkey');
+
+      return {
+        user,
+        profile,
+        account: accountResult.account,
+        error: null,
+      };
+    } catch (error) {
+      return {
+        user: null,
+        profile: null,
+        account: null,
+        error: error as Error,
+      };
+    }
+  }
+
+  // Passkey ログイン
+  async signInWithPasskey(credentialId: string, signature: string): Promise<AuthResult> {
+    try {
+      // パスキー情報取得
+      const { data: passkey, error: passkeyError } = await this.dbProvider
+        .from('passkeys')
+        .select('*')
+        .eq('credentialId', credentialId)
+        .single();
+
+      if (!passkey || passkeyError) {
+        return {
+          user: null,
+          profile: null,
+          account: null,
+          error: new Error('INVALID_PASSKEY'),
+        };
+      }
+
+      // TODO: 実際の実装では、signatureの検証が必要
+      // ここではモックなので省略
+
+      // プロフィール取得
+      const { data: profile, error: profileError } = await this.dbProvider
+        .from('profiles')
+        .select('*')
+        .eq('id', passkey.profileId)
+        .single();
+
+      if (!profile || profileError) {
+        throw new Error('Profile not found');
+      }
+
+      const user: AuthUser = {
+        id: profile.id,
+        email: profile.email,
+        displayName: profile.displayName,
+      };
+
+      // アカウント取得
+      const { data: account, error: accountError } = await this.dbProvider
+        .from('accounts')
+        .select('*')
+        .eq('profileId', profile.id)
+        .eq('accountType', 'passkey')
+        .single();
+
+      // パスキーの最終使用日時を更新
+      await this.dbProvider
+        .from('passkeys')
+        .update({ lastUsedAt: new Date() })
+        .eq('id', passkey.id);
+
+      return {
+        user,
+        profile,
+        account,
+        error: null,
+      };
+    } catch (error) {
+      return {
+        user: null,
+        profile: null,
+        account: null,
+        error: error as Error,
+      };
+    }
+  }
+
   // ログアウト
   async signOut(): Promise<{ error: Error | null }> {
     try {

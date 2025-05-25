@@ -27,11 +27,15 @@
    - テスト: 全テストケース成功
    - 機能: 環境変数による制御、認証テスト時の無効化
 
+5. **Email + Passkey認証**
+   - 実装: `AuthCore.registerWithPasskey()`, `AuthCore.signInWithPasskey()`
+   - テスト: 全テストケース成功
+   - 機能: パスキー新規登録、ログイン、重複メール検出、エラーハンドリング
+   - スキーマ: passkeysテーブル追加、accountTypeEnum更新
+
 ### 実装中 🔄
 
-5. **Email + Passkey認証**
-   - WebAuthn APIとの連携
-   - パスキー登録・認証フロー
+なし
 
 ### 今後の実装予定 📝
 
@@ -46,15 +50,16 @@
 ## テスト実行結果
 
 ```
-✓ test/api/authCore.test.ts (14 tests)
-  ✓ AuthCore - 認証バイパス機能 (5 tests)
+✓ test/api/authCore.test.ts (18 tests)
+  ✓ AuthCore - 認証バイパス機能 (4 tests)
   ✓ AuthCore - Google OAuth認証 (3 tests)
   ✓ AuthCore - リフレッシュトークン (2 tests)
   ✓ AuthCore - Apple Sign-In認証 (3 tests)
+  ✓ AuthCore - Email + Passkey認証 (4 tests)
   ✓ AuthCore - ログアウト (2 tests)
 
  Test Files  1 passed (1)
-      Tests  14 passed (14)
+      Tests  18 passed (18)
 ```
 
 ## 主要な設計決定

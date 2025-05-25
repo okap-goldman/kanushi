@@ -1,185 +1,457 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import request from 'supertest';
-import { app } from '@/test/setup/api';
-import fs from 'fs/promises';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { createPost, getPosts, toggleLike, createComment, getComments, deletePost } from '@/lib/postService';
+import { supabase } from '@/lib/supabase';
 
-describe('Post API Tests', () => {
-  let validToken: string;
+// モックの設定
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(),
+    rpc: vi.fn(),
+  },
+}));
 
+describe('Post Service Tests', () => {
   beforeEach(() => {
-    validToken = 'test-valid-token';
     jest.clearAllMocks();
   });
 
-  describe('POST /posts - 音声投稿', () => {
-    it('音声ファイルを含む投稿を作成できる', async () => {
-      // Arrange
-      const audioBuffer = await fs.readFile('test-audio.mp3');
-      
-      // Act
-      const response = await request(app)
-        .post('/posts')
-        .set('Authorization', `Bearer ${validToken}`)
-        .field('contentType', 'audio')
-        .field('textContent', 'テスト音声投稿')
-        .attach('file', audioBuffer, 'test.mp3');
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
-      // Assert
-      expect(response.status).toBe(201);
-      expect(response.body.contentType).toBe('audio');
-      expect(response.body.mediaUrl).toMatch(/^https:\/\//);
-      expect(response.body.waveformUrl).toBeDefined();
-      expect(response.body.durationSeconds).toBeGreaterThan(0);
-      expect(response.body.aiMetadata).toMatchObject({
-        summary: expect.any(String),
-        tags: expect.any(Array)
+  describe('createPost - 投稿作成', () => {
+    describe('テキスト投稿', () => {
+      it('テキストのみの投稿を作成できる', async () => {
+        // Arrange
+        const mockPost = {
+          id: 'post-1',
+          user_id: 'user-1',
+          content_type: 'text',
+          text_content: 'これはテスト投稿です。',
+          media_url: null,
+          audio_url: null,
+          likes_count: 0,
+          comments_count: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        const mockSupabaseChain = {
+          insert: jest.fn().mockReturnThis(),
+          select: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
+        };
+
+        (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+
+        // Act
+        const result = await createPost({
+          author_id: 'user-1',
+          media_type: 'text',
+          content: 'これはテスト投稿です。',
+          tags: [],
+        });
+
+        // Assert
+        expect(result.error).toBeNull();
+        expect(result.data).toBeTruthy();
+        expect(result.data?.media_type).toBe('text');
+        expect(result.data?.content).toBe('これはテスト投稿です。');
+        expect(supabase.from).toHaveBeenCalledWith('posts');
+        expect(mockSupabaseChain.insert).toHaveBeenCalledWith({
+          user_id: 'user-1',
+          content_type: 'text',
+          text_content: 'これはテスト投稿です。',
+          media_url: null,
+          audio_url: null,
+          thumbnail_url: undefined,
+          likes_count: 0,
+          comments_count: 0,
+        });
+      });
+
+      it('最大10,000文字のテキストを投稿できる', async () => {
+        // Arrange
+        const longText = 'あ'.repeat(10000);
+        const mockPost = {
+          id: 'post-2',
+          user_id: 'user-1',
+          content_type: 'text',
+          text_content: longText,
+          media_url: null,
+          audio_url: null,
+          likes_count: 0,
+          comments_count: 0,
+        };
+
+        const mockSupabaseChain = {
+          insert: jest.fn().mockReturnThis(),
+          select: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
+        };
+
+        (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+
+        // Act
+        const result = await createPost({
+          author_id: 'user-1',
+          media_type: 'text',
+          content: longText,
+          tags: [],
+        });
+
+        // Assert
+        expect(result.error).toBeNull();
+        expect(result.data?.content.length).toBe(10000);
+      });
+
+      it('ハッシュタグ付きの投稿を作成できる', async () => {
+        // Arrange
+        const mockPost = {
+          id: 'post-3',
+          user_id: 'user-1',
+          content_type: 'text',
+          text_content: 'ハッシュタグテスト',
+        };
+
+        const mockTags = [
+          { id: 'tag-1', name: '目醒め' },
+          { id: 'tag-2', name: 'スピリチュアル' },
+        ];
+
+        const mockSupabaseChain = {
+          insert: jest.fn().mockReturnThis(),
+          select: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
+          eq: jest.fn().mockReturnThis(),
+          maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+        };
+
+        (supabase.from as jest.Mock).mockImplementation((table: string) => {
+          if (table === 'tags') {
+            return {
+              ...mockSupabaseChain,
+              select: jest.fn().mockReturnThis(),
+              insert: jest.fn().mockReturnThis(),
+              single: jest.fn().mockImplementation(() => {
+                const tagIndex = (supabase.from as jest.Mock).mock.calls.filter(
+                  (call) => call[0] === 'tags'
+                ).length - 1;
+                return Promise.resolve({ data: mockTags[tagIndex % 2], error: null });
+              }),
+            };
+          } else if (table === 'post_tags') {
+            return {
+              insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+            };
+          }
+          return mockSupabaseChain;
+        });
+
+        // Act
+        const result = await createPost({
+          author_id: 'user-1',
+          media_type: 'text',
+          content: 'ハッシュタグテスト',
+          tags: [{ name: '目醒め' }, { name: 'スピリチュアル' }],
+        });
+
+        // Assert
+        expect(result.error).toBeNull();
+        expect(supabase.from).toHaveBeenCalledWith('tags');
+        expect(supabase.from).toHaveBeenCalledWith('post_tags');
       });
     });
 
-    it('音声投稿にイベントタグを付けられる', async () => {
-      // Arrange
-      const eventId = 'test-event-id';
-      const audioBuffer = await fs.readFile('test-audio.mp3');
+    describe('音声投稿', () => {
+      it('音声URLを含む投稿を作成できる', async () => {
+        // Arrange
+        const mockPost = {
+          id: 'post-4',
+          user_id: 'user-1',
+          content_type: 'audio',
+          text_content: 'テスト音声投稿',
+          audio_url: 'https://storage.example.com/audio/test.mp3',
+          media_url: null,
+        };
 
-      // Act
-      const response = await request(app)
-        .post('/posts')
-        .set('Authorization', `Bearer ${validToken}`)
-        .field('contentType', 'audio')
-        .field('textContent', 'イベント関連音声')
-        .field('eventId', eventId)
-        .attach('file', audioBuffer, 'test.mp3');
+        const mockSupabaseChain = {
+          insert: jest.fn().mockReturnThis(),
+          select: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
+        };
 
-      // Assert
-      expect(response.status).toBe(201);
-      expect(response.body.eventId).toBe(eventId);
+        (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+
+        // Act
+        const result = await createPost({
+          author_id: 'user-1',
+          media_type: 'audio',
+          content: 'https://storage.example.com/audio/test.mp3',
+          caption: 'テスト音声投稿',
+          tags: [],
+        });
+
+        // Assert
+        expect(result.error).toBeNull();
+        expect(result.data?.media_type).toBe('audio');
+        expect(result.data?.content).toBe('https://storage.example.com/audio/test.mp3');
+        expect(mockSupabaseChain.insert).toHaveBeenCalledWith({
+          user_id: 'user-1',
+          content_type: 'audio',
+          text_content: 'テスト音声投稿',
+          media_url: null,
+          audio_url: 'https://storage.example.com/audio/test.mp3',
+          thumbnail_url: undefined,
+          likes_count: 0,
+          comments_count: 0,
+        });
+      });
     });
 
-    it('音声ファイルサイズが制限を超える場合413エラーを返す', async () => {
-      // Arrange
-      const largeAudioBuffer = Buffer.alloc(100 * 1024 * 1024); // 100MB
+    describe('画像投稿', () => {
+      it('画像URLを含む投稿を作成できる', async () => {
+        // Arrange
+        const mockPost = {
+          id: 'post-5',
+          user_id: 'user-1',
+          content_type: 'image',
+          text_content: 'テスト画像投稿',
+          media_url: 'https://storage.example.com/images/test.jpg',
+          audio_url: null,
+        };
 
-      // Act
-      const response = await request(app)
-        .post('/posts')
-        .set('Authorization', `Bearer ${validToken}`)
-        .field('contentType', 'audio')
-        .attach('file', largeAudioBuffer, 'large.mp3');
+        const mockSupabaseChain = {
+          insert: jest.fn().mockReturnThis(),
+          select: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
+        };
 
-      // Assert
-      expect(response.status).toBe(413);
-      expect(response.body.type).toBe('PAYLOAD_TOO_LARGE');
+        (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+
+        // Act
+        const result = await createPost({
+          author_id: 'user-1',
+          media_type: 'image',
+          content: 'https://storage.example.com/images/test.jpg',
+          caption: 'テスト画像投稿',
+          tags: [],
+        });
+
+        // Assert
+        expect(result.error).toBeNull();
+        expect(result.data?.media_type).toBe('image');
+        expect(result.data?.content).toBe('https://storage.example.com/images/test.jpg');
+      });
+    });
+
+    describe('エラーハンドリング', () => {
+      it('データベースエラーを適切に処理する', async () => {
+        // Arrange
+        const mockError = new Error('Database error');
+        const mockSupabaseChain = {
+          insert: jest.fn().mockReturnThis(),
+          select: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({ data: null, error: mockError }),
+        };
+
+        (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+
+        // Act
+        const result = await createPost({
+          author_id: 'user-1',
+          media_type: 'text',
+          content: 'エラーテスト',
+          tags: [],
+        });
+
+        // Assert
+        expect(result.error).toBe(mockError);
+        expect(result.data).toBeNull();
+      });
     });
   });
 
-  describe('POST /posts - 画像投稿', () => {
-    it('画像ファイルを含む投稿を作成できる', async () => {
+  describe('toggleLike - いいね機能', () => {
+    it('いいねを追加できる', async () => {
       // Arrange
-      const imageBuffer = await fs.readFile('test-image.jpg');
+      const mockSupabaseChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+        insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+      };
+
+      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+      (supabase.rpc as jest.Mock).mockResolvedValue({ data: null, error: null });
 
       // Act
-      const response = await request(app)
-        .post('/posts')
-        .set('Authorization', `Bearer ${validToken}`)
-        .field('contentType', 'image')
-        .field('textContent', 'テスト画像投稿')
-        .attach('file', imageBuffer, 'test.jpg');
+      const result = await toggleLike('post-1', 'user-1');
 
       // Assert
-      expect(response.status).toBe(201);
-      expect(response.body.contentType).toBe('image');
-      expect(response.body.mediaUrl).toMatch(/^https:\/\//);
-      expect(response.body.previewUrl).toBeDefined();
+      expect(result.error).toBeNull();
+      expect(result.data?.liked).toBe(true);
+      expect(supabase.from).toHaveBeenCalledWith('likes');
+      expect(supabase.rpc).toHaveBeenCalledWith('increment_like_count', { post_id: 'post-1' });
     });
 
-    it('GIF画像を投稿できる', async () => {
+    it('いいねを削除できる', async () => {
       // Arrange
-      const gifBuffer = await fs.readFile('test-animation.gif');
+      const mockLike = { id: 'like-1', post_id: 'post-1', user_id: 'user-1' };
+      const mockSupabaseChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: mockLike, error: null }),
+        delete: jest.fn().mockReturnThis(),
+      };
+
+      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+      (supabase.rpc as jest.Mock).mockResolvedValue({ data: null, error: null });
 
       // Act
-      const response = await request(app)
-        .post('/posts')
-        .set('Authorization', `Bearer ${validToken}`)
-        .field('contentType', 'image')
-        .attach('file', gifBuffer, 'test.gif');
+      const result = await toggleLike('post-1', 'user-1');
 
       // Assert
-      expect(response.status).toBe(201);
-      expect(response.body.mediaUrl).toMatch(/\.gif$/);
+      expect(result.error).toBeNull();
+      expect(result.data?.liked).toBe(false);
+      expect(supabase.rpc).toHaveBeenCalledWith('decrement_like_count', { post_id: 'post-1' });
+    });
+
+    it('エラーを適切に処理する', async () => {
+      // Arrange
+      const mockError = new Error('Database error');
+      const mockSupabaseChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: mockError }),
+      };
+
+      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+
+      // Act
+      const result = await toggleLike('post-1', 'user-1');
+
+      // Assert
+      expect(result.error).toBe(mockError);
+      expect(result.data).toBeNull();
     });
   });
 
-  describe('POST /posts - テキスト投稿', () => {
-    it('テキストのみの投稿を作成できる', async () => {
+  describe('createComment - コメント機能', () => {
+    it('コメントを作成できる', async () => {
+      // Arrange
+      const mockComment = {
+        id: 'comment-1',
+        post_id: 'post-1',
+        user_id: 'user-1',
+        content: 'テストコメント',
+        created_at: new Date().toISOString(),
+      };
+
+      const mockSupabaseChain = {
+        insert: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: mockComment, error: null }),
+      };
+
+      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+      (supabase.rpc as jest.Mock).mockResolvedValue({ data: null, error: null });
+
       // Act
-      const response = await request(app)
-        .post('/posts')
-        .set('Authorization', `Bearer ${validToken}`)
-        .send({
-          contentType: 'text',
-          textContent: 'これはテスト投稿です。'
-        });
+      const result = await createComment({
+        post_id: 'post-1',
+        author_id: 'user-1',
+        content: 'テストコメント',
+      });
 
       // Assert
-      expect(response.status).toBe(201);
-      expect(response.body.contentType).toBe('text');
-      expect(response.body.textContent).toBe('これはテスト投稿です。');
-      expect(response.body.mediaUrl).toBeNull();
+      expect(result.error).toBeNull();
+      expect(result.data).toBeTruthy();
+      expect(supabase.from).toHaveBeenCalledWith('comments');
+      expect(supabase.rpc).toHaveBeenCalledWith('increment_comment_count', { post_id: 'post-1' });
     });
 
-    it('最大10,000文字のテキストを投稿できる', async () => {
-      // Arrange
-      const longText = 'あ'.repeat(10000);
-
-      // Act
-      const response = await request(app)
-        .post('/posts')
-        .set('Authorization', `Bearer ${validToken}`)
-        .send({
-          contentType: 'text',
-          textContent: longText
-        });
+    it('空のコメントはエラーになる', async () => {
+      // Arrange & Act
+      const result = await createComment({
+        post_id: 'post-1',
+        author_id: 'user-1',
+        content: '',
+      });
 
       // Assert
-      expect(response.status).toBe(201);
-      expect(response.body.textContent.length).toBe(10000);
+      expect(result.error).toBeTruthy();
+      expect(result.error?.message).toContain('Content cannot be empty');
+    });
+  });
+
+  describe('deletePost - 投稿削除', () => {
+    it('自分の投稿を削除できる', async () => {
+      // Arrange
+      const mockPost = {
+        id: 'post-1',
+        user_id: 'user-1',
+      };
+
+      const mockSupabaseChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
+        update: jest.fn().mockReturnThis(),
+      };
+
+      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
+
+      // Act
+      const result = await deletePost('post-1', 'user-1');
+
+      // Assert
+      expect(result.error).toBeNull();
+      expect(result.data).toBe(true);
+      expect(mockSupabaseChain.update).toHaveBeenCalledWith({ 
+        deleted_at: expect.any(String) 
+      });
     });
 
-    it('10,001文字以上のテキストは400エラーを返す', async () => {
+    it('他人の投稿は削除できない', async () => {
       // Arrange
-      const tooLongText = 'あ'.repeat(10001);
+      const mockPost = {
+        id: 'post-1',
+        user_id: 'user-2', // 別のユーザー
+      };
+
+      const mockSupabaseChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: mockPost, error: null }),
+      };
+
+      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
 
       // Act
-      const response = await request(app)
-        .post('/posts')
-        .set('Authorization', `Bearer ${validToken}`)
-        .send({
-          contentType: 'text',
-          textContent: tooLongText
-        });
+      const result = await deletePost('post-1', 'user-1');
 
       // Assert
-      expect(response.status).toBe(400);
-      expect(response.body.type).toBe('VALIDATION_ERROR');
-      expect(response.body.errors[0].field).toBe('textContent');
+      expect(result.error).toBeTruthy();
+      expect(result.error?.message).toContain('permission');
     });
 
-    it('ハッシュタグを最大5個まで付けられる', async () => {
+    it('存在しない投稿を削除しようとするとエラー', async () => {
       // Arrange
-      const hashtags = ['#目醒め', '#スピリチュアル', '#音声', '#瞑想', '#ヒーリング'];
+      const mockSupabaseChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: null, error: null }),
+      };
+
+      (supabase.from as jest.Mock).mockReturnValue(mockSupabaseChain);
 
       // Act
-      const response = await request(app)
-        .post('/posts')
-        .set('Authorization', `Bearer ${validToken}`)
-        .send({
-          contentType: 'text',
-          textContent: 'ハッシュタグテスト ' + hashtags.join(' ')
-        });
+      const result = await deletePost('non-existent', 'user-1');
 
       // Assert
-      expect(response.status).toBe(201);
-      // ハッシュタグが正しく保存されていることを確認
+      expect(result.error).toBeTruthy();
+      expect(result.error?.message).toContain('not found');
     });
   });
 });
