@@ -7,1042 +7,270 @@ APIユニットテスト、UIユニットテスト、結合テスト、E2Eテス
 ## テスト環境設定
 
 ### 依存関係
-```json
-{
-  "devDependencies": {
-    "jest-expo": "~53.0.0",
-    "@testing-library/react-native": "^13",
-    "@testing-library/jest-native": "^6",
-    "react-native-reanimated": "~3.17.0"
-  }
-}
-```
+- jest-expo: ~53.0.0
+- @testing-library/react-native: ^13
+- @testing-library/jest-native: ^6
+- react-native-reanimated: ~3.17.0
 
 ### Jest設定
-```javascript
-// jest.config.js
-module.exports = {
-  preset: 'jest-expo',
-  setupFilesAfterEnv: ['@testing-library/jest-native/extend-expect'],
-  moduleNameMapper: {
-    'react-native-reanimated': 'react-native-reanimated/mock'
-  },
-  transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)'
-  ]
-};
-```
+- preset: 'jest-expo'
+- setupFilesAfterEnv: ['@testing-library/jest-native/extend-expect']
+- moduleNameMapper: {'react-native-reanimated': 'react-native-reanimated/mock'}
+- 適切なtransformIgnorePatterns設定
 
 ## 1. APIユニットテスト
 
 ### 1.1 商品管理API
 
-#### GET /api/products
-```typescript
-describe('GET /api/products', () => {
-  it('商品一覧を正常に取得できること', async () => {
-    const response = await fetch('/api/products');
-    const data = await response.json();
-    
-    expect(response.status).toBe(200);
-    expect(data).toHaveProperty('products');
-    expect(Array.isArray(data.products)).toBe(true);
-    expect(data).toHaveProperty('total');
-    expect(data).toHaveProperty('page');
-    expect(data).toHaveProperty('per_page');
-  });
+**テストケース**: GET /api/products - 商品一覧を正常に取得できること
+- **入力**: API呼び出し
+- **期待結果**: ステータス200、products配列、total件数を含むレスポンス
 
-  it('カテゴリフィルタが正しく適用されること', async () => {
-    const response = await fetch('/api/products?category=AUDIO');
-    const data = await response.json();
-    
-    expect(response.status).toBe(200);
-    expect(data.products.every(p => p.category === 'AUDIO')).toBe(true);
-  });
+**テストケース**: GET /api/products?category=digital - カテゴリでフィルタリングできること
+- **入力**: カテゴリパラメータ付きAPI呼び出し
+- **期待結果**: 指定カテゴリに属する商品のみ返される
 
-  it('価格範囲フィルタが正しく適用されること', async () => {
-    const response = await fetch('/api/products?min_price=1000&max_price=5000');
-    const data = await response.json();
-    
-    expect(response.status).toBe(200);
-    expect(data.products.every(p => p.price >= 1000 && p.price <= 5000)).toBe(true);
-  });
+**テストケース**: GET /api/products?search=目醒め - 検索キーワードで商品を検索できること
+- **入力**: 検索キーワードパラメータ付きAPI呼び出し
+- **期待結果**: 検索キーワードに関連する商品のみ返される
 
-  it('ページネーションが正しく動作すること', async () => {
-    const response = await fetch('/api/products?page=2&per_page=10');
-    const data = await response.json();
-    
-    expect(response.status).toBe(200);
-    expect(data.page).toBe(2);
-    expect(data.per_page).toBe(10);
-    expect(data.products.length).toBeLessThanOrEqual(10);
-  });
-});
-```
+**テストケース**: GET /api/products/[id] - 商品詳細を取得できること
+- **入力**: 有効な商品ID
+- **期待結果**: ステータス200、商品の詳細情報を含むレスポンス
 
-#### POST /api/products
-```typescript
-describe('POST /api/products', () => {
-  it('物理商品を正常に作成できること', async () => {
-    const product = {
-      name: 'ヒーリングクリスタル',
-      description: 'エネルギー浄化用クリスタル',
-      price: 3000,
-      category: 'PHYSICAL',
-      inventory_count: 10,
-      shipping_fee: 500
-    };
+**テストケース**: GET /api/products/[id] - 存在しないIDの場合404を返すこと
+- **入力**: 存在しない商品ID
+- **期待結果**: ステータス404、エラーメッセージ
 
-    const response = await fetch('/api/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(product)
-    });
-    const data = await response.json();
-    
-    expect(response.status).toBe(201);
-    expect(data).toHaveProperty('id');
-    expect(data.name).toBe(product.name);
-    expect(data.category).toBe('PHYSICAL');
-  });
+### 1.2 カート操作API
 
-  it('オンラインセッション商品を正常に作成できること', async () => {
-    const product = {
-      name: '個人カウンセリング',
-      description: '60分の個人セッション',
-      price: 10000,
-      category: 'ONLINE_SESSION',
-      session_duration: 60,
-      available_dates: ['2024-01-15', '2024-01-16']
-    };
+**テストケース**: POST /api/cart/items - 商品をカートに追加できること
+- **入力**: 商品ID、数量
+- **期待結果**: ステータス200、更新されたカート情報
 
-    const response = await fetch('/api/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(product)
-    });
-    
-    expect(response.status).toBe(201);
-    expect(data.category).toBe('ONLINE_SESSION');
-    expect(data.session_duration).toBe(60);
-  });
+**テストケース**: PUT /api/cart/items/[id] - カート内商品の数量を更新できること
+- **入力**: カートアイテムID、新しい数量
+- **期待結果**: ステータス200、更新されたカート情報
 
-  it('必須フィールドが不足している場合エラーになること', async () => {
-    const invalidProduct = { name: 'テスト商品' };
+**テストケース**: DELETE /api/cart/items/[id] - カートから商品を削除できること
+- **入力**: カートアイテムID
+- **期待結果**: ステータス200、更新されたカート情報
 
-    const response = await fetch('/api/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(invalidProduct)
-    });
-    
-    expect(response.status).toBe(400);
-    const error = await response.json();
-    expect(error).toHaveProperty('message');
-  });
-});
-```
+**テストケース**: GET /api/cart - カート情報を取得できること
+- **入力**: API呼び出し
+- **期待結果**: ステータス200、カート内商品リスト、合計金額情報
 
-### 1.2 音声即時出品API
+### 1.3 注文処理API
 
-#### POST /api/posts/{postId}/instant-sell
-```typescript
-describe('POST /api/posts/{postId}/instant-sell', () => {
-  it('音声投稿から商品を作成できること', async () => {
-    const postId = 'test-post-id';
-    const response = await fetch(`/api/posts/${postId}/instant-sell`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ price: 1500 })
-    });
-    const data = await response.json();
-    
-    expect(response.status).toBe(201);
-    expect(data).toHaveProperty('product_id');
-    expect(data).toHaveProperty('ai_description');
-    expect(data.category).toBe('AUDIO');
-    expect(data.price).toBe(1500);
-  });
+**テストケース**: POST /api/orders - 注文を作成できること
+- **入力**: 配送先情報、支払い方法
+- **期待結果**: ステータス201、注文番号、注文詳細を含むレスポンス
 
-  it('AI商品説明が生成されること', async () => {
-    const postId = 'test-post-id';
-    const response = await fetch(`/api/posts/${postId}/instant-sell`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ price: 2000 })
-    });
-    const data = await response.json();
-    
-    expect(data.ai_description).toBeTruthy();
-    expect(data.ai_description.length).toBeGreaterThan(50);
-  });
+**テストケース**: POST /api/orders/payment - 支払い処理を実行できること
+- **入力**: 注文ID、支払い情報
+- **期待結果**: ステータス200、支払い処理結果
 
-  it('存在しない投稿IDの場合エラーになること', async () => {
-    const response = await fetch('/api/posts/invalid-id/instant-sell', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ price: 1500 })
-    });
-    
-    expect(response.status).toBe(404);
-  });
-});
-```
+**テストケース**: GET /api/orders - 注文履歴を取得できること
+- **入力**: API呼び出し
+- **期待結果**: ステータス200、ユーザーの注文リスト
 
-### 1.3 カート操作API
+**テストケース**: GET /api/orders/[id] - 注文詳細を取得できること
+- **入力**: 注文ID
+- **期待結果**: ステータス200、注文の詳細情報
 
-#### GET /api/cart
-```typescript
-describe('GET /api/cart', () => {
-  it('カートの内容を取得できること', async () => {
-    const response = await fetch('/api/cart');
-    const data = await response.json();
-    
-    expect(response.status).toBe(200);
-    expect(data).toHaveProperty('items');
-    expect(data).toHaveProperty('total_amount');
-    expect(data).toHaveProperty('item_count');
-  });
+### 1.4 デジタルコンテンツ配信API
 
-  it('空のカートも正常に取得できること', async () => {
-    const response = await fetch('/api/cart');
-    const data = await response.json();
-    
-    expect(response.status).toBe(200);
-    expect(data.items).toEqual([]);
-    expect(data.total_amount).toBe(0);
-    expect(data.item_count).toBe(0);
-  });
-});
-```
+**テストケース**: GET /api/contents/[id] - 購入済みコンテンツへアクセスできること
+- **入力**: 購入済みコンテンツID
+- **期待結果**: ステータス200、コンテンツURL情報
 
-#### POST /api/cart/items
-```typescript
-describe('POST /api/cart/items', () => {
-  it('カートに商品を追加できること', async () => {
-    const item = {
-      product_id: 'test-product-id',
-      quantity: 2
-    };
+**テストケース**: GET /api/contents/[id] - 未購入コンテンツはアクセス拒否されること
+- **入力**: 未購入のコンテンツID
+- **期待結果**: ステータス403、アクセス拒否メッセージ
 
-    const response = await fetch('/api/cart/items', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item)
-    });
-    const data = await response.json();
-    
-    expect(response.status).toBe(201);
-    expect(data).toHaveProperty('cart_item_id');
-    expect(data.quantity).toBe(2);
-  });
-
-  it('同じ商品を追加すると数量が増えること', async () => {
-    const item = {
-      product_id: 'test-product-id',
-      quantity: 1
-    };
-
-    // 初回追加
-    await fetch('/api/cart/items', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item)
-    });
-
-    // 2回目追加
-    const response = await fetch('/api/cart/items', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item)
-    });
-    const data = await response.json();
-    
-    expect(response.status).toBe(200);
-    expect(data.quantity).toBe(2);
-  });
-
-  it('在庫を超える数量は追加できないこと', async () => {
-    const item = {
-      product_id: 'limited-product-id',
-      quantity: 100
-    };
-
-    const response = await fetch('/api/cart/items', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item)
-    });
-    
-    expect(response.status).toBe(400);
-    const error = await response.json();
-    expect(error.code).toBe('INSUFFICIENT_INVENTORY');
-  });
-});
-```
-
-### 1.4 決済API
-
-#### POST /api/checkout
-```typescript
-describe('POST /api/checkout', () => {
-  it('チェックアウトセッションを作成できること', async () => {
-    const checkoutData = {
-      shipping_address: {
-        postal_code: '100-0001',
-        prefecture: '東京都',
-        city: '千代田区',
-        address_line1: '千代田1-1',
-        phone: '090-1234-5678'
-      }
-    };
-
-    const response = await fetch('/api/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(checkoutData)
-    });
-    const data = await response.json();
-    
-    expect(response.status).toBe(200);
-    expect(data).toHaveProperty('checkout_url');
-    expect(data).toHaveProperty('session_id');
-    expect(data.checkout_url).toMatch(/^https:\/\/checkout\.stripe\.com/);
-  });
-
-  it('カートが空の場合エラーになること', async () => {
-    const response = await fetch('/api/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
-    });
-    
-    expect(response.status).toBe(400);
-    const error = await response.json();
-    expect(error.code).toBe('EMPTY_CART');
-  });
-
-  it('配送先が必要な商品で住所がない場合エラーになること', async () => {
-    const response = await fetch('/api/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
-    });
-    
-    expect(response.status).toBe(400);
-    const error = await response.json();
-    expect(error.code).toBe('SHIPPING_ADDRESS_REQUIRED');
-  });
-});
-```
-
-### 1.5 ギフトAPI
-
-#### POST /api/posts/{postId}/gift
-```typescript
-describe('POST /api/posts/{postId}/gift', () => {
-  it('光ギフトを送信できること', async () => {
-    const giftData = {
-      amount: 600,
-      message: '素敵な投稿ありがとうございます！'
-    };
-
-    const response = await fetch('/api/posts/test-post-id/gift', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(giftData)
-    });
-    const data = await response.json();
-    
-    expect(response.status).toBe(200);
-    expect(data).toHaveProperty('gift_id');
-    expect(data).toHaveProperty('checkout_url');
-  });
-
-  it('無効な金額の場合エラーになること', async () => {
-    const giftData = { amount: 999 };
-
-    const response = await fetch('/api/posts/test-post-id/gift', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(giftData)
-    });
-    
-    expect(response.status).toBe(400);
-    const error = await response.json();
-    expect(error.message).toContain('300, 600, 1200');
-  });
-});
-```
+**テストケース**: POST /api/contents/[id]/download - ダウンロードログが記録されること
+- **入力**: コンテンツID
+- **期待結果**: ステータス200、ダウンロード情報
 
 ## 2. UIユニットテスト
 
-### 2.1 商品コンポーネント
+### 2.1 商品一覧コンポーネント
 
-#### ProductCard.tsx
-```typescript
-import { render, fireEvent } from '@testing-library/react-native';
-import ProductCard from '@/components/shop/ProductCard';
+**テストケース**: 商品一覧が正しくレンダリングされること
+- **入力**: 商品データ配列
+- **期待結果**: 各商品カードが表示され、商品名、価格、画像が表示される
 
-describe('ProductCard', () => {
-  const mockProduct = {
-    id: '1',
-    name: 'テスト商品',
-    description: 'これはテスト商品です',
-    price: 1500,
-    category: 'PHYSICAL',
-    images: ['https://example.com/image.jpg'],
-    seller: {
-      id: 'seller1',
-      username: 'test_seller',
-      avatar_url: 'https://example.com/avatar.jpg'
-    }
-  };
+**テストケース**: カテゴリフィルターが機能すること
+- **入力**: カテゴリ選択
+- **期待結果**: 選択したカテゴリの商品のみ表示される
 
-  it('商品情報が正しく表示されること', () => {
-    const { getByText, getByTestId } = render(
-      <ProductCard product={mockProduct} />
-    );
-    
-    expect(getByText('テスト商品')).toBeTruthy();
-    expect(getByText('¥1,500')).toBeTruthy();
-    expect(getByText('@test_seller')).toBeTruthy();
-  });
+**テストケース**: 商品検索が機能すること
+- **入力**: 検索キーワード入力
+- **期待結果**: 検索条件に合致する商品のみ表示される
 
-  it('カートに追加ボタンが機能すること', () => {
-    const onAddToCart = jest.fn();
-    const { getByText } = render(
-      <ProductCard product={mockProduct} onAddToCart={onAddToCart} />
-    );
-    
-    fireEvent.press(getByText('カートに追加'));
-    expect(onAddToCart).toHaveBeenCalledWith(mockProduct.id);
-  });
+**テストケース**: 商品が0件の場合の表示
+- **入力**: 空の商品配列
+- **期待結果**: 「商品が見つかりません」メッセージが表示される
 
-  it('音声商品の場合プレイヤーが表示されること', () => {
-    const audioProduct = {
-      ...mockProduct,
-      category: 'AUDIO',
-      audio_url: 'https://example.com/audio.mp3'
-    };
-    
-    const { getByTestId } = render(
-      <ProductCard product={audioProduct} />
-    );
-    
-    expect(getByTestId('audio-player')).toBeTruthy();
-  });
+**テストケース**: 商品カードクリックで詳細画面に遷移すること
+- **入力**: 商品カードクリック
+- **期待結果**: onProductSelect関数が正しい商品IDで呼び出される
 
-  it('在庫切れの場合ボタンが無効化されること', () => {
-    const soldOutProduct = {
-      ...mockProduct,
-      inventory_count: 0
-    };
-    
-    const { getByText } = render(
-      <ProductCard product={soldOutProduct} />
-    );
-    
-    const button = getByText('在庫切れ');
-    expect(button).toBeDisabled();
-  });
-});
-```
+### 2.2 商品詳細コンポーネント
 
-#### CartItem.tsx
-```typescript
-import { render, fireEvent } from '@testing-library/react-native';
-import CartItem from '@/components/shop/CartItem';
+**テストケース**: 商品詳細が正しくレンダリングされること
+- **入力**: 商品詳細データ
+- **期待結果**: 商品名、詳細説明、価格、画像が表示される
 
-describe('CartItem', () => {
-  const mockItem = {
-    id: '1',
-    product: {
-      id: 'prod1',
-      name: 'テスト商品',
-      price: 1500,
-      images: ['https://example.com/image.jpg']
-    },
-    quantity: 2
-  };
+**テストケース**: 数量選択UIが機能すること
+- **入力**: 数量増減ボタンクリック
+- **期待結果**: 表示数量が変化し、最小値（1）未満にはならない
 
-  it('カートアイテムが正しく表示されること', () => {
-    const { getByText, getByTestId } = render(
-      <CartItem item={mockItem} />
-    );
-    
-    expect(getByText('テスト商品')).toBeTruthy();
-    expect(getByText('¥3,000')).toBeTruthy(); // 1500 × 2
-    expect(getByTestId('quantity-display').props.children).toBe('2');
-  });
+**テストケース**: カートに追加ボタンが機能すること
+- **入力**: 「カートに追加」ボタンクリック
+- **期待結果**: onAddToCart関数が商品ID、選択数量で呼び出される
 
-  it('数量を増減できること', () => {
-    const onUpdateQuantity = jest.fn();
-    const { getByTestId } = render(
-      <CartItem item={mockItem} onUpdateQuantity={onUpdateQuantity} />
-    );
-    
-    fireEvent.press(getByTestId('increase-quantity'));
-    expect(onUpdateQuantity).toHaveBeenCalledWith(mockItem.id, 3);
-    
-    fireEvent.press(getByTestId('decrease-quantity'));
-    expect(onUpdateQuantity).toHaveBeenCalledWith(mockItem.id, 1);
-  });
+**テストケース**: バリエーション選択が機能すること
+- **入力**: サイズ/カラー選択
+- **期待結果**: 選択内容が更新され、価格や在庫状態が反映される
 
-  it('数量が1の時に減らすと削除確認が表示されること', () => {
-    const itemWithOne = { ...mockItem, quantity: 1 };
-    const onRemove = jest.fn();
-    const { getByTestId, getByText } = render(
-      <CartItem item={itemWithOne} onRemove={onRemove} />
-    );
-    
-    fireEvent.press(getByTestId('decrease-quantity'));
-    expect(getByText('カートから削除しますか？')).toBeTruthy();
-  });
+**テストケース**: 在庫切れ商品の表示と操作制限
+- **入力**: 在庫切れ商品データ
+- **期待結果**: 「在庫切れ」表示と購入ボタン無効化
 
-  it('削除ボタンが機能すること', () => {
-    const onRemove = jest.fn();
-    const { getByTestId } = render(
-      <CartItem item={mockItem} onRemove={onRemove} />
-    );
-    
-    fireEvent.press(getByTestId('remove-item'));
-    expect(onRemove).toHaveBeenCalledWith(mockItem.id);
-  });
-});
-```
+### 2.3 カートコンポーネント
 
-### 2.2 チェックアウトコンポーネント
+**テストケース**: カート内容が正しくレンダリングされること
+- **入力**: カートアイテム配列
+- **期待結果**: 各商品、数量、小計、合計金額が表示される
 
-#### CheckoutForm.tsx
-```typescript
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import CheckoutForm from '@/components/shop/CheckoutForm';
+**テストケース**: 数量更新が機能すること
+- **入力**: 数量変更
+- **期待結果**: onUpdateQuantity関数が呼び出され、表示が更新される
 
-describe('CheckoutForm', () => {
-  const mockCart = {
-    items: [
-      {
-        id: '1',
-        product: { id: 'p1', name: '商品1', price: 1000, category: 'PHYSICAL' },
-        quantity: 1
-      }
-    ],
-    total_amount: 1500, // 商品 + 送料
-    shipping_fee: 500
-  };
+**テストケース**: 商品削除が機能すること
+- **入力**: 削除ボタンクリック
+- **期待結果**: onRemoveItem関数が呼び出され、表示が更新される
 
-  it('フォームフィールドが正しく表示されること', () => {
-    const { getByPlaceholder } = render(
-      <CheckoutForm cart={mockCart} />
-    );
-    
-    expect(getByPlaceholder('郵便番号')).toBeTruthy();
-    expect(getByPlaceholder('都道府県')).toBeTruthy();
-    expect(getByPlaceholder('市区町村')).toBeTruthy();
-    expect(getByPlaceholder('番地・建物名')).toBeTruthy();
-    expect(getByPlaceholder('電話番号')).toBeTruthy();
-  });
+**テストケース**: 空のカート表示
+- **入力**: 空のカートデータ
+- **期待結果**: 「カートは空です」メッセージとショップへのリンクが表示される
 
-  it('合計金額が正しく表示されること', () => {
-    const { getByText } = render(
-      <CheckoutForm cart={mockCart} />
-    );
-    
-    expect(getByText('小計: ¥1,000')).toBeTruthy();
-    expect(getByText('送料: ¥500')).toBeTruthy();
-    expect(getByText('合計: ¥1,500')).toBeTruthy();
-  });
+**テストケース**: レジに進むボタンが機能すること
+- **入力**: 「レジに進む」ボタンクリック
+- **期待結果**: onCheckout関数が呼び出される
 
-  it('バリデーションエラーが表示されること', async () => {
-    const { getByText, getByPlaceholder } = render(
-      <CheckoutForm cart={mockCart} />
-    );
-    
-    fireEvent.press(getByText('購入手続きへ'));
-    
-    await waitFor(() => {
-      expect(getByText('郵便番号を入力してください')).toBeTruthy();
-    });
-  });
+### 2.4 注文フォームコンポーネント
 
-  it('有効なフォームで送信できること', async () => {
-    const onSubmit = jest.fn();
-    const { getByText, getByPlaceholder } = render(
-      <CheckoutForm cart={mockCart} onSubmit={onSubmit} />
-    );
-    
-    fireEvent.changeText(getByPlaceholder('郵便番号'), '100-0001');
-    fireEvent.changeText(getByPlaceholder('都道府県'), '東京都');
-    fireEvent.changeText(getByPlaceholder('市区町村'), '千代田区');
-    fireEvent.changeText(getByPlaceholder('番地・建物名'), '千代田1-1');
-    fireEvent.changeText(getByPlaceholder('電話番号'), '090-1234-5678');
-    
-    fireEvent.press(getByText('購入手続きへ'));
-    
-    await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalled();
-    });
-  });
-});
-```
+**テストケース**: 配送先情報フォームが正しくレンダリングされること
+- **入力**: 初期表示
+- **期待結果**: 名前、住所、電話番号など必要な入力フィールドが表示される
 
-### 2.3 音声即時出品コンポーネント
+**テストケース**: 必須フィールドのバリデーションが機能すること
+- **入力**: 空のフォーム送信
+- **期待結果**: エラーメッセージが表示され、送信がブロックされる
 
-#### InstantSellModal.tsx
-```typescript
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import InstantSellModal from '@/components/shop/InstantSellModal';
+**テストケース**: 支払い方法選択が機能すること
+- **入力**: 支払い方法選択
+- **期待結果**: 選択に応じたUIが表示される（クレジットカード情報など）
 
-describe('InstantSellModal', () => {
-  const mockPost = {
-    id: 'post1',
-    content: 'テスト音声投稿',
-    audio_url: 'https://example.com/audio.mp3',
-    duration: 180 // 3分
-  };
-
-  it('価格入力フィールドが表示されること', () => {
-    const { getByPlaceholder } = render(
-      <InstantSellModal post={mockPost} visible={true} />
-    );
-    
-    expect(getByPlaceholder('価格を入力')).toBeTruthy();
-  });
-
-  it('推奨価格が表示されること', () => {
-    const { getByText } = render(
-      <InstantSellModal post={mockPost} visible={true} />
-    );
-    
-    expect(getByText('推奨価格: ¥500〜¥2,000')).toBeTruthy();
-  });
-
-  it('AI説明生成中の表示がされること', async () => {
-    const onConfirm = jest.fn();
-    const { getByText, getByPlaceholder } = render(
-      <InstantSellModal 
-        post={mockPost} 
-        visible={true} 
-        onConfirm={onConfirm}
-      />
-    );
-    
-    fireEvent.changeText(getByPlaceholder('価格を入力'), '1500');
-    fireEvent.press(getByText('出品する'));
-    
-    expect(getByText('AI説明を生成中...')).toBeTruthy();
-  });
-
-  it('キャンセルできること', () => {
-    const onCancel = jest.fn();
-    const { getByText } = render(
-      <InstantSellModal 
-        post={mockPost} 
-        visible={true} 
-        onCancel={onCancel}
-      />
-    );
-    
-    fireEvent.press(getByText('キャンセル'));
-    expect(onCancel).toHaveBeenCalled();
-  });
-});
-```
+**テストケース**: フォーム送信が機能すること
+- **入力**: 有効なフォームデータ送信
+- **期待結果**: onSubmit関数がフォームデータで呼び出される
 
 ## 3. 結合テスト
 
-### 3.1 商品購入フロー
-```typescript
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import ShopNavigator from '@/navigation/ShopNavigator';
-import { setupServer } from 'msw/native';
-import { rest } from 'msw';
+### 3.1 ショッピングフロー
 
-const server = setupServer(
-  rest.get('/api/products', (req, res, ctx) => {
-    return res(ctx.json({
-      products: [
-        {
-          id: '1',
-          name: 'テスト商品',
-          price: 1500,
-          category: 'PHYSICAL'
-        }
-      ]
-    }));
-  }),
-  rest.post('/api/cart/items', (req, res, ctx) => {
-    return res(ctx.json({ cart_item_id: '1' }));
-  }),
-  rest.post('/api/checkout', (req, res, ctx) => {
-    return res(ctx.json({
-      checkout_url: 'https://checkout.stripe.com/test',
-      session_id: 'cs_test_123'
-    }));
-  })
-);
+**テストケース**: 商品検索から購入完了までの一連のフロー
+- **手順**:
+  1. 商品一覧表示
+  2. 検索/フィルタリング
+  3. 商品詳細表示
+  4. カートに追加
+  5. カート確認
+  6. 注文情報入力
+  7. 支払い処理
+  8. 注文完了
+- **期待結果**: エンドツーエンドで購入フローが完了する
 
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+**テストケース**: カート更新と注文金額の整合性
+- **手順**:
+  1. 複数商品をカートに追加
+  2. 数量変更
+  3. 一部商品を削除
+  4. 合計金額確認
+- **期待結果**: カート操作が反映され、金額計算が正確
 
-describe('商品購入フロー結合テスト', () => {
-  it('商品一覧から購入完了まで遷移できること', async () => {
-    const { getByText, getByPlaceholder } = render(
-      <NavigationContainer>
-        <ShopNavigator />
-      </NavigationContainer>
-    );
-    
-    // 商品一覧が表示される
-    await waitFor(() => {
-      expect(getByText('テスト商品')).toBeTruthy();
-    });
-    
-    // カートに追加
-    fireEvent.press(getByText('カートに追加'));
-    
-    // カート画面へ遷移
-    fireEvent.press(getByTestId('cart-icon'));
-    
-    await waitFor(() => {
-      expect(getByText('カート')).toBeTruthy();
-      expect(getByText('テスト商品')).toBeTruthy();
-    });
-    
-    // チェックアウトへ
-    fireEvent.press(getByText('購入手続きへ'));
-    
-    // 配送先入力
-    fireEvent.changeText(getByPlaceholder('郵便番号'), '100-0001');
-    fireEvent.changeText(getByPlaceholder('都道府県'), '東京都');
-    fireEvent.changeText(getByPlaceholder('市区町村'), '千代田区');
-    fireEvent.changeText(getByPlaceholder('番地・建物名'), '千代田1-1');
-    fireEvent.changeText(getByPlaceholder('電話番号'), '090-1234-5678');
-    
-    // 決済へ
-    fireEvent.press(getByText('決済へ進む'));
-    
-    // Stripe決済画面への遷移を確認
-    await waitFor(() => {
-      expect(mockLinking.openURL).toHaveBeenCalledWith(
-        'https://checkout.stripe.com/test'
-      );
-    });
-  });
-});
-```
+### 3.2 決済処理
 
-### 3.2 音声即時出品フロー
-```typescript
-describe('音声即時出品フロー結合テスト', () => {
-  it('音声投稿から商品出品まで完了できること', async () => {
-    const { getByText, getByPlaceholder, getByTestId } = render(
-      <NavigationContainer>
-        <AppNavigator />
-      </NavigationContainer>
-    );
-    
-    // 音声投稿画面へ
-    fireEvent.press(getByTestId('create-post-button'));
-    fireEvent.press(getByText('音声'));
-    
-    // 録音
-    fireEvent.press(getByTestId('record-button'));
-    await new Promise(resolve => setTimeout(resolve, 3000)); // 3秒録音
-    fireEvent.press(getByTestId('stop-button'));
-    
-    // 投稿
-    fireEvent.changeText(getByPlaceholder('何を話しましたか？'), 'テスト音声');
-    fireEvent.press(getByText('投稿'));
-    
-    // 投稿詳細画面で「販売する」ボタンを押す
-    await waitFor(() => {
-      expect(getByText('販売する')).toBeTruthy();
-    });
-    fireEvent.press(getByText('販売する'));
-    
-    // 価格設定モーダル
-    fireEvent.changeText(getByPlaceholder('価格を入力'), '1500');
-    fireEvent.press(getByText('出品する'));
-    
-    // AI説明生成待機
-    await waitFor(() => {
-      expect(getByText('出品が完了しました')).toBeTruthy();
-    }, { timeout: 10000 });
-    
-    // 商品ページへ遷移
-    fireEvent.press(getByText('商品ページを見る'));
-    
-    // 商品詳細が表示される
-    expect(getByText('テスト音声')).toBeTruthy();
-    expect(getByText('¥1,500')).toBeTruthy();
-    expect(getByTestId('ai-description')).toBeTruthy();
-  });
-});
-```
+**テストケース**: クレジットカード決済フロー
+- **手順**:
+  1. カート確認
+  2. 決済情報入力
+  3. Stripeトークン化
+  4. 決済実行
+  5. 注文確定
+- **期待結果**: Stripe連携が正しく機能し、注文が確定する
 
-### 3.3 ギフト送信フロー
-```typescript
-describe('光ギフト送信フロー結合テスト', () => {
-  it('投稿にギフトを送信できること', async () => {
-    const { getByText, getByTestId } = render(
-      <NavigationContainer>
-        <AppNavigator />
-      </NavigationContainer>
-    );
-    
-    // タイムラインで投稿を表示
-    await waitFor(() => {
-      expect(getByText('素晴らしい投稿')).toBeTruthy();
-    });
-    
-    // ギフトボタンを押す
-    fireEvent.press(getByTestId('gift-button-post1'));
-    
-    // ギフト金額選択
-    fireEvent.press(getByText('¥600'));
-    
-    // メッセージ入力（オプション）
-    fireEvent.changeText(
-      getByPlaceholder('メッセージ（任意）'),
-      'ありがとうございます！'
-    );
-    
-    // 送信
-    fireEvent.press(getByText('ギフトを送る'));
-    
-    // 決済画面へ遷移
-    await waitFor(() => {
-      expect(mockLinking.openURL).toHaveBeenCalled();
-    });
-  });
-});
-```
+**テストケース**: 決済エラーハンドリング
+- **手順**:
+  1. 無効なカード情報入力
+  2. エラー表示確認
+  3. 正しい情報で再試行
+- **期待結果**: エラーが適切に処理され、ユーザーが回復できる
+
+### 3.3 デジタルコンテンツ配信
+
+**テストケース**: デジタル商品購入と配信フロー
+- **手順**:
+  1. デジタル商品をカートに追加
+  2. 購入処理完了
+  3. 購入済みコンテンツアクセス
+  4. ダウンロード実行
+- **期待結果**: デジタルコンテンツが正しく配信される
 
 ## 4. E2Eテスト
 
-### 4.1 商品購入シナリオ
-```typescript
-// Detoxを使用したE2Eテスト
-describe('商品購入E2Eテスト', () => {
-  beforeAll(async () => {
-    await device.launchApp({ newInstance: true });
-    await device.reloadReactNative();
-  });
+### 4.1 フルショッピングジャーニー
 
-  it('新規ユーザーが商品を購入できること', async () => {
-    // ログイン
-    await element(by.id('email-input')).typeText('test@example.com');
-    await element(by.id('password-input')).typeText('password123');
-    await element(by.id('login-button')).tap();
-    
-    // ショップタブへ
-    await element(by.id('shop-tab')).tap();
-    
-    // 商品を探す
-    await element(by.id('search-input')).typeText('クリスタル');
-    await element(by.id('search-button')).tap();
-    
-    // 商品詳細へ
-    await element(by.text('ヒーリングクリスタル')).tap();
-    
-    // カートに追加
-    await element(by.id('add-to-cart-button')).tap();
-    
-    // カートへ移動
-    await element(by.id('cart-icon')).tap();
-    
-    // チェックアウト
-    await element(by.id('checkout-button')).tap();
-    
-    // 配送先入力
-    await element(by.id('postal-code-input')).typeText('100-0001');
-    await element(by.id('prefecture-input')).typeText('東京都');
-    await element(by.id('city-input')).typeText('千代田区');
-    await element(by.id('address-input')).typeText('千代田1-1');
-    await element(by.id('phone-input')).typeText('090-1234-5678');
-    
-    // 決済へ
-    await element(by.id('proceed-to-payment')).tap();
-    
-    // Stripe決済（WebViewで処理）
-    await element(by.id('card-number')).typeText('4242424242424242');
-    await element(by.id('card-expiry')).typeText('12/25');
-    await element(by.id('card-cvc')).typeText('123');
-    await element(by.id('pay-button')).tap();
-    
-    // 注文完了画面
-    await expect(element(by.text('注文が完了しました'))).toBeVisible();
-    await expect(element(by.id('order-number'))).toBeVisible();
-  });
-});
-```
+**テストケース**: 新規ユーザーの商品購入フロー
+- **手順**:
+  1. ユーザー登録/ログイン
+  2. 商品ブラウジング
+  3. 商品詳細確認
+  4. カートに追加
+  5. 配送情報入力
+  6. 支払い処理
+  7. 注文確認メール受信
+  8. マイページでの注文履歴確認
+- **期待結果**: 完全なショッピングジャーニーが正常に完了する
 
-### 4.2 出品者シナリオ
-```typescript
-describe('出品者フローE2Eテスト', () => {
-  it('音声を録音して即時出品し、売上を確認できること', async () => {
-    // ログイン
-    await element(by.id('email-input')).typeText('seller@example.com');
-    await element(by.id('password-input')).typeText('password123');
-    await element(by.id('login-button')).tap();
-    
-    // 音声投稿作成
-    await element(by.id('create-post-fab')).tap();
-    await element(by.text('音声')).tap();
-    
-    // 録音開始
-    await element(by.id('record-button')).tap();
-    await waitFor(element(by.id('recording-timer')))
-      .toHaveText('0:05')
-      .withTimeout(6000);
-    
-    // 録音停止
-    await element(by.id('stop-button')).tap();
-    
-    // 投稿内容入力
-    await element(by.id('post-content-input'))
-      .typeText('瞑想ガイダンス音声です');
-    await element(by.id('hashtag-input')).typeText('#瞑想');
-    
-    // 投稿
-    await element(by.id('post-button')).tap();
-    
-    // 投稿完了後、販売ボタンを押す
-    await waitFor(element(by.id('sell-button')))
-      .toBeVisible()
-      .withTimeout(3000);
-    await element(by.id('sell-button')).tap();
-    
-    // 価格設定
-    await element(by.id('price-input')).clearText();
-    await element(by.id('price-input')).typeText('2000');
-    await element(by.id('confirm-sell-button')).tap();
-    
-    // AI説明生成待機
-    await waitFor(element(by.text('出品が完了しました')))
-      .toBeVisible()
-      .withTimeout(15000);
-    
-    // プロフィールへ移動
-    await element(by.id('profile-tab')).tap();
-    
-    // 売上ダッシュボード
-    await element(by.id('sales-dashboard-button')).tap();
-    
-    // 商品が表示される
-    await expect(element(by.text('瞑想ガイダンス音声です'))).toBeVisible();
-    await expect(element(by.text('¥2,000'))).toBeVisible();
-    await expect(element(by.text('販売中'))).toBeVisible();
-  });
-});
-```
+### 4.2 エラーリカバリーシナリオ
 
-### 4.3 複数商品購入シナリオ
-```typescript
-describe('複数商品購入E2Eテスト', () => {
-  it('異なるカテゴリの商品をまとめて購入できること', async () => {
-    // ログイン済みとする
-    
-    // 物理商品を追加
-    await element(by.id('shop-tab')).tap();
-    await element(by.text('ヒーリンググッズ')).tap();
-    await element(by.text('クリスタルセット')).tap();
-    await element(by.id('add-to-cart-button')).tap();
-    await element(by.id('back-button')).tap();
-    
-    // オンラインセッションを追加
-    await element(by.text('セッション')).tap();
-    await element(by.text('個人カウンセリング60分')).tap();
-    await element(by.id('add-to-cart-button')).tap();
-    await element(by.id('back-button')).tap();
-    
-    // 音声商品を追加
-    await element(by.text('音声コンテンツ')).tap();
-    await element(by.text('誘導瞑想シリーズ')).tap();
-    await element(by.id('add-to-cart-button')).tap();
-    
-    // カートを確認
-    await element(by.id('cart-icon')).tap();
-    await expect(element(by.text('クリスタルセット'))).toBeVisible();
-    await expect(element(by.text('個人カウンセリング60分'))).toBeVisible();
-    await expect(element(by.text('誘導瞑想シリーズ'))).toBeVisible();
-    
-    // 数量変更
-    await element(by.id('quantity-increase-crystal')).tap();
-    
-    // チェックアウト
-    await element(by.id('checkout-button')).tap();
-    
-    // 配送先（物理商品があるため必須）
-    await element(by.id('postal-code-input')).typeText('100-0001');
-    await element(by.id('prefecture-input')).typeText('東京都');
-    await element(by.id('city-input')).typeText('千代田区');
-    await element(by.id('address-input')).typeText('千代田1-1');
-    await element(by.id('phone-input')).typeText('090-1234-5678');
-    
-    // 決済
-    await element(by.id('proceed-to-payment')).tap();
-    
-    // 注文完了
-    await waitFor(element(by.text('注文が完了しました')))
-      .toBeVisible()
-      .withTimeout(30000);
-      
-    // 注文詳細確認
-    await element(by.id('view-order-details')).tap();
-    await expect(element(by.text('クリスタルセット × 2'))).toBeVisible();
-    await expect(element(by.text('配送予定'))).toBeVisible();
-    await expect(element(by.text('セッション予約URL'))).toBeVisible();
-    await expect(element(by.text('音声ダウンロード'))).toBeVisible();
-  });
-});
-```
+**テストケース**: 在庫切れ発生時のユーザーフロー
+- **手順**:
+  1. 商品をカートに追加
+  2. 購入処理中に在庫切れ発生
+  3. 適切なエラーメッセージ表示
+  4. 代替商品提案
+- **期待結果**: ユーザーがエラーから回復できる経路が提供される
 
-## テスト実行設定
+**テストケース**: 接続エラーからの回復
+- **手順**:
+  1. 購入プロセス中にネットワーク切断
+  2. エラー表示
+  3. 接続復旧後の処理再開
+- **期待結果**: 処理状態が保持され、回復可能
 
-### package.json
-```json
-{
-  "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:e2e": "detox test --configuration ios.sim.debug",
-    "test:e2e:build": "detox build --configuration ios.sim.debug"
-  }
-}
-```
+## テスト実行計画
+
+### CI/CD統合
+- Pull Request時にAPIおよびUIユニットテスト自動実行
+- リリース前に結合テストとE2Eテスト実行
+- 本番デプロイ前の全テスト実行
 
 ### テストカバレッジ目標
-- APIユニットテスト: 90%以上
-- UIユニットテスト: 80%以上
+- ユニットテスト: 90%以上
 - 結合テスト: 主要フローの100%
-- E2Eテスト: クリティカルパスの100%
-
-## 注意事項
-
-1. **最小限のモック使用**
-   - 外部API（Stripe、Gemini）のみモック化
-   - データベースアクセスは実際のテストDBを使用
-   - UIコンポーネントは実際のレンダリングをテスト
-
-2. **テストデータ管理**
-   - 各テストケースで独立したデータを使用
-   - テスト後は必ずクリーンアップ
-   - シードデータは最小限に
-
-3. **非同期処理**
-   - `waitFor`を適切に使用
-   - タイムアウト値は環境に応じて調整
-   - ネットワークエラーのリトライ処理をテスト
-
-4. **パフォーマンステスト**
-   - 大量データでの動作確認
-   - メモリリークの検出
-   - レンダリング速度の計測
-
-このテスト仕様書に基づいてTDDでの実装を進めることで、品質の高いショップ・EC機能を構築できます。
+- E2Eテスト: 主要ユーザーストーリーの100%

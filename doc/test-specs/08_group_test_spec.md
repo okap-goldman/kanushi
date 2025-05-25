@@ -1,941 +1,209 @@
 # グループ機能テスト仕様書
 
 ## 概要
-本書はグループ機能のTDD実装のための詳細なテスト仕様書です。
-以下のテストライブラリを使用することを前提としています：
-
-- jest-expo@~53.0.0
-- @testing-library/react-native@^13
-- @testing-library/jest-native@^6
-- react-native-reanimated/mock
-- モック使用は最小限に留める
+本ドキュメントは、グループ機能の設計およびTDD（テスト駆動開発）での実装のためのテスト仕様書です。
+API、UI、統合テスト、E2Eテストの各レベルでのテスト要件を定義します。
 
 ## 1. API単体テスト
 
 ### 1.1 グループ作成API (`POST /groups`)
 
 #### 1.1.1 正常系テスト
+**テストケース**: 基本的なグループ作成
+- **入力**: グループ名、説明、公開設定
+- **期待結果**: ステータス201、グループID、作成者情報を含むレスポンス
 
-```typescript
-describe('POST /groups', () => {
-  it('無料グループを正常に作成できること', async () => {
-    const groupData = {
-      name: '目醒めの会',
-      description: 'スピリチュアルな交流グループ',
-      type: 'free',
-      is_public: true,
-      member_limit: 50
-    };
+**テストケース**: プライベートグループ作成
+- **入力**: 公開設定=false、招待ユーザーリスト
+- **期待結果**: ステータス201、プライベート設定とメンバー情報を含むレスポンス
 
-    const response = await request(app)
-      .post('/groups')
-      .set('Authorization', 'Bearer <valid-token>')
-      .send(groupData);
-
-    expect(response.status).toBe(201);
-    expect(response.body).toMatchObject({
-      id: expect.any(String),
-      name: groupData.name,
-      type: 'free',
-      owner_id: expect.any(String),
-      member_count: 1,
-      created_at: expect.any(String)
-    });
-  });
-
-  it('有料グループを正常に作成できること', async () => {
-    const groupData = {
-      name: '高次元チャネリング講座',
-      description: '月額制のチャネリング学習グループ',
-      type: 'subscription',
-      subscription_price: 3000,
-      is_public: false,
-      member_limit: 30
-    };
-
-    const response = await request(app)
-      .post('/groups')
-      .set('Authorization', 'Bearer <valid-token>')
-      .send(groupData);
-
-    expect(response.status).toBe(201);
-    expect(response.body).toMatchObject({
-      id: expect.any(String),
-      name: groupData.name,
-      type: 'subscription',
-      subscription_price: 3000,
-      payment_url: expect.stringContaining('stores.jp'),
-      owner_id: expect.any(String)
-    });
-  });
-});
-```
+**テストケース**: グループアイコン付き作成
+- **入力**: 基本情報、アイコン画像
+- **期待結果**: ステータス201、画像URL情報を含むレスポンス
 
 #### 1.1.2 異常系テスト
+**テストケース**: 認証なしでアクセス
+- **入力**: 認証トークンなし
+- **期待結果**: ステータス401、認証エラーメッセージ
 
-```typescript
-describe('POST /groups - エラーケース', () => {
-  it('認証なしの場合401エラーを返すこと', async () => {
-    const response = await request(app)
-      .post('/groups')
-      .send({ name: 'テストグループ' });
+**テストケース**: バリデーションエラー
+- **入力**: グループ名なし、または制限文字数超過
+- **期待結果**: ステータス400、バリデーションエラーメッセージ
 
-    expect(response.status).toBe(401);
-    expect(response.body.error).toBe('Unauthorized');
-  });
+### 1.2 グループ参加API
 
-  it('必須フィールドが不足している場合400エラーを返すこと', async () => {
-    const response = await request(app)
-      .post('/groups')
-      .set('Authorization', 'Bearer <valid-token>')
-      .send({ description: '説明のみ' });
+**テストケース**: 公開グループへの参加
+- **入力**: 公開グループID
+- **期待結果**: ステータス200、参加確認情報
 
-    expect(response.status).toBe(400);
-    expect(response.body.error).toContain('name is required');
-  });
+**テストケース**: 招待コードによる参加
+- **入力**: 招待コード
+- **期待結果**: ステータス200、グループ情報と参加確認
 
-  it('有料グループで価格が未設定の場合400エラーを返すこと', async () => {
-    const response = await request(app)
-      .post('/groups')
-      .set('Authorization', 'Bearer <valid-token>')
-      .send({
-        name: '有料グループ',
-        type: 'subscription'
-      });
+**テストケース**: 既に参加済みの場合
+- **入力**: 参加済みグループID
+- **期待結果**: ステータス400、「既に参加しています」メッセージ
 
-    expect(response.status).toBe(400);
-    expect(response.body.error).toContain('subscription_price is required');
-  });
+**テストケース**: プライベートグループへの不正アクセス
+- **入力**: 招待なしのプライベートグループID
+- **期待結果**: ステータス403、アクセス拒否メッセージ
 
-  it('メンバー上限が100を超える場合400エラーを返すこと', async () => {
-    const response = await request(app)
-      .post('/groups')
-      .set('Authorization', 'Bearer <valid-token>')
-      .send({
-        name: 'テストグループ',
-        member_limit: 101
-      });
+### 1.3 グループ管理API
 
-    expect(response.status).toBe(400);
-    expect(response.body.error).toContain('member_limit cannot exceed 100');
-  });
-});
-```
+**テストケース**: グループ情報更新
+- **入力**: グループID、更新情報
+- **期待結果**: ステータス200、更新された情報
 
-### 1.2 グループ参加API (`POST /groups/{groupId}/join`)
+**テストケース**: メンバー招待
+- **入力**: グループID、招待ユーザーリスト
+- **期待結果**: ステータス200、招待結果情報
 
-#### 1.2.1 正常系テスト
+**テストケース**: メンバー削除
+- **入力**: グループID、削除するユーザーID
+- **期待結果**: ステータス200、メンバー削除確認
 
-```typescript
-describe('POST /groups/{groupId}/join', () => {
-  it('無料グループに正常に参加できること', async () => {
-    const groupId = 'test-group-id';
-    
-    const response = await request(app)
-      .post(`/groups/${groupId}/join`)
-      .set('Authorization', 'Bearer <valid-token>');
+**テストケース**: 管理者権限変更
+- **入力**: グループID、ユーザーID、権限レベル
+- **期待結果**: ステータス200、権限更新確認
 
-    expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({
-      group_id: groupId,
-      user_id: expect.any(String),
-      role: 'member',
-      status: 'active',
-      joined_at: expect.any(String)
-    });
-  });
+**テストケース**: グループ削除
+- **入力**: グループID
+- **期待結果**: ステータス200、削除確認メッセージ
 
-  it('有料グループの参加で支払いURLを返すこと', async () => {
-    const groupId = 'paid-group-id';
-    
-    const response = await request(app)
-      .post(`/groups/${groupId}/join`)
-      .set('Authorization', 'Bearer <valid-token>');
+### 1.4 グループコンテンツAPI
 
-    expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({
-      requires_payment: true,
-      payment_url: expect.stringContaining('stores.jp'),
-      group_id: groupId
-    });
-  });
-});
-```
+**テストケース**: グループ投稿一覧取得
+- **入力**: グループID、ページネーションパラメータ
+- **期待結果**: ステータス200、投稿リスト、ページネーション情報
 
-#### 1.2.2 異常系テスト
+**テストケース**: グループ内投稿作成
+- **入力**: グループID、投稿内容、添付ファイル
+- **期待結果**: ステータス201、作成された投稿情報
 
-```typescript
-describe('POST /groups/{groupId}/join - エラーケース', () => {
-  it('既に参加している場合409エラーを返すこと', async () => {
-    const groupId = 'already-member-group';
-    
-    const response = await request(app)
-      .post(`/groups/${groupId}/join`)
-      .set('Authorization', 'Bearer <valid-token>');
-
-    expect(response.status).toBe(409);
-    expect(response.body.error).toBe('Already a member');
-  });
-
-  it('グループが満員の場合403エラーを返すこと', async () => {
-    const groupId = 'full-group-id';
-    
-    const response = await request(app)
-      .post(`/groups/${groupId}/join`)
-      .set('Authorization', 'Bearer <valid-token>');
-
-    expect(response.status).toBe(403);
-    expect(response.body.error).toBe('Group is full');
-  });
-
-  it('存在しないグループの場合404エラーを返すこと', async () => {
-    const response = await request(app)
-      .post('/groups/non-existent-id/join')
-      .set('Authorization', 'Bearer <valid-token>');
-
-    expect(response.status).toBe(404);
-    expect(response.body.error).toBe('Group not found');
-  });
-
-  it('非公開グループへの直接参加は403エラーを返すこと', async () => {
-    const groupId = 'private-group-id';
-    
-    const response = await request(app)
-      .post(`/groups/${groupId}/join`)
-      .set('Authorization', 'Bearer <valid-token>');
-
-    expect(response.status).toBe(403);
-    expect(response.body.error).toBe('This is a private group');
-  });
-});
-```
-
-### 1.3 グループチャットAPI (`POST /groups/{groupId}/messages`)
-
-#### 1.3.1 正常系テスト
-
-```typescript
-describe('POST /groups/{groupId}/messages', () => {
-  it('テキストメッセージを正常に送信できること', async () => {
-    const groupId = 'test-group-id';
-    const messageData = {
-      content: '今日も良い一日を！',
-      type: 'text'
-    };
-
-    const response = await request(app)
-      .post(`/groups/${groupId}/messages`)
-      .set('Authorization', 'Bearer <valid-token>')
-      .send(messageData);
-
-    expect(response.status).toBe(201);
-    expect(response.body).toMatchObject({
-      id: expect.any(String),
-      group_id: groupId,
-      sender_id: expect.any(String),
-      content: messageData.content,
-      type: 'text',
-      created_at: expect.any(String)
-    });
-  });
-
-  it('画像メッセージを正常に送信できること', async () => {
-    const groupId = 'test-group-id';
-    
-    const response = await request(app)
-      .post(`/groups/${groupId}/messages`)
-      .set('Authorization', 'Bearer <valid-token>')
-      .attach('media', 'test/fixtures/test-image.jpg')
-      .field('type', 'image')
-      .field('content', 'エネルギーワークの様子');
-
-    expect(response.status).toBe(201);
-    expect(response.body).toMatchObject({
-      type: 'image',
-      media_url: expect.stringContaining('b2.backblazeb2.com'),
-      content: 'エネルギーワークの様子'
-    });
-  });
-
-  it('音声メッセージを正常に送信できること', async () => {
-    const groupId = 'test-group-id';
-    
-    const response = await request(app)
-      .post(`/groups/${groupId}/messages`)
-      .set('Authorization', 'Bearer <valid-token>')
-      .attach('media', 'test/fixtures/test-audio.m4a')
-      .field('type', 'audio')
-      .field('duration', '45');
-
-    expect(response.status).toBe(201);
-    expect(response.body).toMatchObject({
-      type: 'audio',
-      media_url: expect.stringContaining('b2.backblazeb2.com'),
-      duration: 45
-    });
-  });
-});
-```
-
-### 1.4 メンバー管理API (`DELETE /groups/{groupId}/members/{memberId}`)
-
-#### 1.4.1 正常系テスト
-
-```typescript
-describe('DELETE /groups/{groupId}/members/{memberId}', () => {
-  it('オーナーがメンバーを正常に削除できること', async () => {
-    const groupId = 'test-group-id';
-    const memberId = 'member-to-remove';
-
-    const response = await request(app)
-      .delete(`/groups/${groupId}/members/${memberId}`)
-      .set('Authorization', 'Bearer <owner-token>');
-
-    expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({
-      message: 'Member removed successfully',
-      removed_member_id: memberId
-    });
-  });
-});
-```
-
-#### 1.4.2 異常系テスト
-
-```typescript
-describe('DELETE /groups/{groupId}/members/{memberId} - エラーケース', () => {
-  it('非オーナーがメンバー削除を試みた場合403エラーを返すこと', async () => {
-    const response = await request(app)
-      .delete('/groups/test-group/members/some-member')
-      .set('Authorization', 'Bearer <member-token>');
-
-    expect(response.status).toBe(403);
-    expect(response.body.error).toBe('Only group owner can remove members');
-  });
-
-  it('オーナー自身を削除しようとした場合400エラーを返すこと', async () => {
-    const response = await request(app)
-      .delete('/groups/test-group/members/owner-id')
-      .set('Authorization', 'Bearer <owner-token>');
-
-    expect(response.status).toBe(400);
-    expect(response.body.error).toBe('Cannot remove group owner');
-  });
-});
-```
+**テストケース**: イベント作成
+- **入力**: グループID、イベント情報
+- **期待結果**: ステータス201、イベント詳細情報
 
 ## 2. UI単体テスト
 
-### 2.1 グループ作成画面
+### 2.1 グループ一覧コンポーネント
 
-```typescript
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { CreateGroupScreen } from '@/screens/CreateGroupScreen';
+**テストケース**: グループ一覧表示
+- **入力**: グループデータ配列
+- **期待結果**: 各グループのカードが表示され、名前、メンバー数などが表示される
 
-describe('CreateGroupScreen', () => {
-  it('グループ作成フォームが正しく表示されること', () => {
-    const { getByPlaceholderText, getByText } = render(<CreateGroupScreen />);
+**テストケース**: グループ作成ボタン表示
+- **入力**: 認証済みユーザー
+- **期待結果**: グループ作成ボタンが表示され、クリックでモーダル表示
 
-    expect(getByPlaceholderText('グループ名')).toBeDefined();
-    expect(getByPlaceholderText('グループの説明')).toBeDefined();
-    expect(getByText('無料グループ')).toBeDefined();
-    expect(getByText('有料グループ')).toBeDefined();
-    expect(getByText('作成')).toBeDefined();
-  });
+**テストケース**: グループ検索機能
+- **入力**: 検索キーワード
+- **期待結果**: キーワードに一致するグループのみフィルタリング表示
 
-  it('無料グループを作成できること', async () => {
-    const mockNavigation = { navigate: jest.fn() };
-    const { getByPlaceholderText, getByText } = render(
-      <CreateGroupScreen navigation={mockNavigation} />
-    );
+**テストケース**: タブ切り替え（参加中/おすすめ/管理中）
+- **入力**: タブ選択
+- **期待結果**: 選択したタブに応じたグループリストが表示される
 
-    fireEvent.changeText(getByPlaceholderText('グループ名'), '瞑想サークル');
-    fireEvent.changeText(getByPlaceholderText('グループの説明'), '毎日瞑想を実践する仲間');
-    fireEvent.press(getByText('無料グループ'));
-    fireEvent.press(getByText('作成'));
+### 2.2 グループ詳細コンポーネント
 
-    await waitFor(() => {
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('GroupDetail', {
-        groupId: expect.any(String)
-      });
-    });
-  });
+**テストケース**: グループ情報表示
+- **入力**: グループID
+- **期待結果**: グループ名、説明、メンバー数、公開設定などが表示される
 
-  it('有料グループ選択時に価格入力フィールドが表示されること', () => {
-    const { getByText, queryByPlaceholderText } = render(<CreateGroupScreen />);
+**テストケース**: メンバー一覧表示
+- **入力**: グループID、メンバーデータ
+- **期待結果**: メンバーリストが表示され、管理者が識別できる
 
-    expect(queryByPlaceholderText('月額料金（円）')).toBeNull();
+**テストケース**: 参加ボタン状態
+- **入力**: 未参加グループ
+- **期待結果**: 参加ボタンが表示され、クリックで参加APIが呼ばれる
 
-    fireEvent.press(getByText('有料グループ'));
+**テストケース**: 管理メニュー表示（管理者向け）
+- **入力**: 管理者権限でログイン
+- **期待結果**: 設定メニューが表示され、各管理機能にアクセス可能
 
-    expect(queryByPlaceholderText('月額料金（円）')).toBeDefined();
-  });
+### 2.3 グループ投稿コンポーネント
 
-  it('必須項目が未入力の場合エラーが表示されること', async () => {
-    const { getByText } = render(<CreateGroupScreen />);
+**テストケース**: 投稿フォーム表示
+- **入力**: グループID、認証済みユーザー
+- **期待結果**: 投稿フォームが表示され、テキスト入力と添付機能が利用可能
 
-    fireEvent.press(getByText('作成'));
+**テストケース**: 投稿リスト表示
+- **入力**: グループID、投稿データ配列
+- **期待結果**: 投稿が新しい順に表示され、各投稿の内容、作成者、タイムスタンプが表示される
 
-    await waitFor(() => {
-      expect(getByText('グループ名は必須です')).toBeDefined();
-    });
-  });
-});
-```
+**テストケース**: 投稿インタラクション
+- **入力**: いいね/コメントボタンクリック
+- **期待結果**: 対応するアクションが実行され、UI状態が更新される
 
-### 2.2 グループ詳細画面
-
-```typescript
-describe('GroupDetailScreen', () => {
-  const mockGroup = {
-    id: 'test-group-1',
-    name: 'スピリチュアル交流会',
-    description: '精神世界について語り合うグループ',
-    type: 'free',
-    member_count: 25,
-    member_limit: 100,
-    is_member: false
-  };
-
-  it('グループ情報が正しく表示されること', () => {
-    const { getByText } = render(
-      <GroupDetailScreen route={{ params: { groupId: mockGroup.id } }} />
-    );
-
-    expect(getByText(mockGroup.name)).toBeDefined();
-    expect(getByText(mockGroup.description)).toBeDefined();
-    expect(getByText(`${mockGroup.member_count}/${mockGroup.member_limit} メンバー`)).toBeDefined();
-  });
-
-  it('未参加の場合参加ボタンが表示されること', () => {
-    const { getByText } = render(
-      <GroupDetailScreen route={{ params: { groupId: mockGroup.id } }} />
-    );
-
-    expect(getByText('参加する')).toBeDefined();
-  });
-
-  it('参加済みの場合チャット画面へのボタンが表示されること', () => {
-    const memberGroup = { ...mockGroup, is_member: true };
-    
-    const { getByText, queryByText } = render(
-      <GroupDetailScreen route={{ params: { groupId: memberGroup.id } }} />
-    );
-
-    expect(queryByText('参加する')).toBeNull();
-    expect(getByText('チャット')).toBeDefined();
-    expect(getByText('退出')).toBeDefined();
-  });
-});
-```
-
-### 2.3 グループチャット画面
-
-```typescript
-describe('GroupChatScreen', () => {
-  it('メッセージ入力フィールドが表示されること', () => {
-    const { getByPlaceholderText, getByTestId } = render(
-      <GroupChatScreen route={{ params: { groupId: 'test-group' } }} />
-    );
-
-    expect(getByPlaceholderText('メッセージを入力...')).toBeDefined();
-    expect(getByTestId('send-button')).toBeDefined();
-    expect(getByTestId('image-button')).toBeDefined();
-    expect(getByTestId('audio-button')).toBeDefined();
-  });
-
-  it('テキストメッセージを送信できること', async () => {
-    const { getByPlaceholderText, getByTestId } = render(
-      <GroupChatScreen route={{ params: { groupId: 'test-group' } }} />
-    );
-
-    const input = getByPlaceholderText('メッセージを入力...');
-    const sendButton = getByTestId('send-button');
-
-    fireEvent.changeText(input, 'こんにちは！');
-    fireEvent.press(sendButton);
-
-    await waitFor(() => {
-      expect(input.props.value).toBe('');
-    });
-  });
-
-  it('画像選択モーダルが開くこと', () => {
-    const { getByTestId, getByText } = render(
-      <GroupChatScreen route={{ params: { groupId: 'test-group' } }} />
-    );
-
-    fireEvent.press(getByTestId('image-button'));
-
-    expect(getByText('カメラで撮影')).toBeDefined();
-    expect(getByText('ギャラリーから選択')).toBeDefined();
-  });
-
-  it('メッセージリストが正しく表示されること', async () => {
-    const mockMessages = [
-      { id: '1', content: 'おはようございます', sender: { name: 'ユーザーA' } },
-      { id: '2', content: '今日も良い一日を！', sender: { name: 'ユーザーB' } }
-    ];
-
-    const { getByText } = render(
-      <GroupChatScreen route={{ params: { groupId: 'test-group' } }} />
-    );
-
-    await waitFor(() => {
-      expect(getByText('おはようございます')).toBeDefined();
-      expect(getByText('今日も良い一日を！')).toBeDefined();
-      expect(getByText('ユーザーA')).toBeDefined();
-      expect(getByText('ユーザーB')).toBeDefined();
-    });
-  });
-});
-```
-
-### 2.4 メンバー管理画面
-
-```typescript
-describe('GroupMembersScreen', () => {
-  it('メンバーリストが表示されること', async () => {
-    const mockMembers = [
-      { id: '1', name: '山田太郎', role: 'owner' },
-      { id: '2', name: '佐藤花子', role: 'member' }
-    ];
-
-    const { getByText } = render(
-      <GroupMembersScreen route={{ params: { groupId: 'test-group' } }} />
-    );
-
-    await waitFor(() => {
-      expect(getByText('山田太郎')).toBeDefined();
-      expect(getByText('オーナー')).toBeDefined();
-      expect(getByText('佐藤花子')).toBeDefined();
-    });
-  });
-
-  it('オーナーの場合メンバー削除ボタンが表示されること', async () => {
-    const { getAllByTestId } = render(
-      <GroupMembersScreen 
-        route={{ params: { groupId: 'test-group', isOwner: true } }} 
-      />
-    );
-
-    await waitFor(() => {
-      const removeButtons = getAllByTestId('remove-member-button');
-      expect(removeButtons.length).toBeGreaterThan(0);
-    });
-  });
-
-  it('メンバー削除確認ダイアログが表示されること', async () => {
-    const { getByTestId, getByText } = render(
-      <GroupMembersScreen 
-        route={{ params: { groupId: 'test-group', isOwner: true } }} 
-      />
-    );
-
-    await waitFor(() => {
-      const removeButton = getByTestId('remove-member-button');
-      fireEvent.press(removeButton);
-    });
-
-    expect(getByText('メンバーを削除しますか？')).toBeDefined();
-    expect(getByText('この操作は取り消せません')).toBeDefined();
-  });
-});
-```
+**テストケース**: 投稿フィルタリング
+- **入力**: フィルターオプション選択（すべて/イベント/メディア）
+- **期待結果**: 選択したフィルターに一致する投稿のみ表示される
 
 ## 3. 統合テスト
 
-### 3.1 グループ作成から参加までのフロー
+### 3.1 グループ作成と参加フロー
 
-```typescript
-describe('グループ作成・参加フロー統合テスト', () => {
-  it('無料グループの作成から参加までの完全なフローが動作すること', async () => {
-    // 1. グループ作成
-    const createResponse = await request(app)
-      .post('/groups')
-      .set('Authorization', 'Bearer <creator-token>')
-      .send({
-        name: '統合テストグループ',
-        description: 'テスト用グループ',
-        type: 'free'
-      });
+**テストケース**: グループ作成から参加までの一連のフロー
+- **手順**:
+  1. グループ作成画面表示
+  2. グループ情報入力
+  3. 作成API呼び出し
+  4. グループ詳細表示
+  5. 招待リンク生成
+  6. 別ユーザーでの参加
+- **期待結果**: 一連のフローがエラーなく完了する
 
-    expect(createResponse.status).toBe(201);
-    const groupId = createResponse.body.id;
+**テストケース**: 招待プロセス
+- **手順**:
+  1. 管理者がメンバー招待
+  2. 招待通知送信確認
+  3. 招待されたユーザーの参加フロー
+- **期待結果**: 招待と参加プロセスが正常に機能する
 
-    // 2. 作成者がオーナーとして登録されていることを確認
-    const membersResponse = await request(app)
-      .get(`/groups/${groupId}/members`)
-      .set('Authorization', 'Bearer <creator-token>');
+### 3.2 グループコンテンツフロー
 
-    expect(membersResponse.body.members).toContainEqual(
-      expect.objectContaining({
-        role: 'owner',
-        status: 'active'
-      })
-    );
+**テストケース**: グループ内投稿とインタラクション
+- **手順**:
+  1. グループ内で投稿作成
+  2. 投稿へのコメント
+  3. いいね・共有アクション
+  4. 通知配信
+- **期待結果**: コンテンツと反応の流れが正常に機能する
 
-    // 3. 別のユーザーがグループに参加
-    const joinResponse = await request(app)
-      .post(`/groups/${groupId}/join`)
-      .set('Authorization', 'Bearer <member-token>');
-
-    expect(joinResponse.status).toBe(200);
-
-    // 4. メンバー数が増えていることを確認
-    const groupResponse = await request(app)
-      .get(`/groups/${groupId}`)
-      .set('Authorization', 'Bearer <member-token>');
-
-    expect(groupResponse.body.member_count).toBe(2);
-  });
-
-  it('有料グループの作成から決済完了までのフローが動作すること', async () => {
-    // 1. 有料グループ作成
-    const createResponse = await request(app)
-      .post('/groups')
-      .set('Authorization', 'Bearer <creator-token>')
-      .send({
-        name: '有料テストグループ',
-        type: 'subscription',
-        subscription_price: 1000
-      });
-
-    const groupId = createResponse.body.id;
-    const paymentUrl = createResponse.body.payment_url;
-
-    // 2. 参加リクエスト
-    const joinResponse = await request(app)
-      .post(`/groups/${groupId}/join`)
-      .set('Authorization', 'Bearer <member-token>');
-
-    expect(joinResponse.body.requires_payment).toBe(true);
-    expect(joinResponse.body.payment_url).toBeDefined();
-
-    // 3. 決済Webhookシミュレーション
-    const webhookResponse = await request(app)
-      .post('/webhooks/stores-payment')
-      .send({
-        event: 'payment.completed',
-        order_id: 'test-order-123',
-        user_id: 'member-user-id',
-        group_id: groupId
-      });
-
-    expect(webhookResponse.status).toBe(200);
-
-    // 4. メンバーとして登録されていることを確認
-    const memberCheckResponse = await request(app)
-      .get(`/groups/${groupId}/members`)
-      .set('Authorization', 'Bearer <member-token>');
-
-    expect(memberCheckResponse.body.members).toContainEqual(
-      expect.objectContaining({
-        user_id: 'member-user-id',
-        status: 'active'
-      })
-    );
-  });
-});
-```
-
-### 3.2 グループチャット統合テスト
-
-```typescript
-describe('グループチャット統合テスト', () => {
-  it('メッセージ送信から通知までの完全なフローが動作すること', async () => {
-    const groupId = 'chat-test-group';
-    
-    // 1. メッセージ送信
-    const messageResponse = await request(app)
-      .post(`/groups/${groupId}/messages`)
-      .set('Authorization', 'Bearer <sender-token>')
-      .send({
-        content: '統合テストメッセージ',
-        type: 'text'
-      });
-
-    expect(messageResponse.status).toBe(201);
-    const messageId = messageResponse.body.id;
-
-    // 2. メッセージ一覧で確認
-    const messagesResponse = await request(app)
-      .get(`/groups/${groupId}/messages`)
-      .set('Authorization', 'Bearer <member-token>');
-
-    expect(messagesResponse.body.messages).toContainEqual(
-      expect.objectContaining({
-        id: messageId,
-        content: '統合テストメッセージ'
-      })
-    );
-
-    // 3. 通知が作成されていることを確認
-    const notificationsResponse = await request(app)
-      .get('/notifications')
-      .set('Authorization', 'Bearer <member-token>');
-
-    expect(notificationsResponse.body.notifications).toContainEqual(
-      expect.objectContaining({
-        type: 'group_message',
-        group_id: groupId,
-        message_id: messageId
-      })
-    );
-  });
-
-  it('画像アップロードを含むメッセージ送信が動作すること', async () => {
-    const groupId = 'chat-test-group';
-    
-    // 1. 画像付きメッセージ送信
-    const messageResponse = await request(app)
-      .post(`/groups/${groupId}/messages`)
-      .set('Authorization', 'Bearer <sender-token>')
-      .attach('media', 'test/fixtures/test-image.jpg')
-      .field('type', 'image')
-      .field('content', '画像のキャプション');
-
-    expect(messageResponse.status).toBe(201);
-    expect(messageResponse.body.media_url).toContain('b2.backblazeb2.com');
-
-    // 2. 画像URLが有効であることを確認
-    const imageResponse = await fetch(messageResponse.body.media_url);
-    expect(imageResponse.status).toBe(200);
-  });
-});
-```
-
-### 3.3 メンバー管理統合テスト
-
-```typescript
-describe('メンバー管理統合テスト', () => {
-  it('メンバー削除から退出通知までのフローが動作すること', async () => {
-    const groupId = 'member-test-group';
-    const targetMemberId = 'member-to-remove';
-
-    // 1. メンバー削除
-    const removeResponse = await request(app)
-      .delete(`/groups/${groupId}/members/${targetMemberId}`)
-      .set('Authorization', 'Bearer <owner-token>');
-
-    expect(removeResponse.status).toBe(200);
-
-    // 2. メンバーステータスが変更されていることを確認
-    const membersResponse = await request(app)
-      .get(`/groups/${groupId}/members`)
-      .set('Authorization', 'Bearer <owner-token>');
-
-    const removedMember = membersResponse.body.members.find(
-      m => m.user_id === targetMemberId
-    );
-    expect(removedMember.status).toBe('removed');
-
-    // 3. 削除されたメンバーがアクセスできないことを確認
-    const accessResponse = await request(app)
-      .get(`/groups/${groupId}/messages`)
-      .set('Authorization', 'Bearer <removed-member-token>');
-
-    expect(accessResponse.status).toBe(403);
-
-    // 4. 通知が送信されていることを確認
-    const notificationResponse = await request(app)
-      .get('/notifications')
-      .set('Authorization', 'Bearer <removed-member-token>');
-
-    expect(notificationResponse.body.notifications).toContainEqual(
-      expect.objectContaining({
-        type: 'group_removed',
-        group_id: groupId
-      })
-    );
-  });
-});
-```
+**テストケース**: グループイベント作成と参加
+- **手順**:
+  1. グループ内でイベント作成
+  2. メンバーへの通知
+  3. イベント参加登録
+  4. イベント詳細確認
+- **期待結果**: イベント関連フローが正常に動作する
 
 ## 4. E2Eテスト
 
 ### 4.1 グループ作成から投稿までの完全なユーザージャーニー
 
-```typescript
-describe('グループ機能E2Eテスト', () => {
-  it('ユーザーがグループを作成し、メンバーが参加してチャットするまでの完全なフロー', async () => {
-    // 1. アプリ起動とログイン
-    await device.launchApp();
-    await element(by.id('email-input')).typeText('creator@example.com');
-    await element(by.id('password-input')).typeText('password');
-    await element(by.id('login-button')).tap();
-
-    // 2. グループ作成画面への遷移
-    await element(by.id('bottom-tab-groups')).tap();
-    await element(by.id('create-group-button')).tap();
-
-    // 3. グループ情報入力
-    await element(by.id('group-name-input')).typeText('E2Eテストグループ');
-    await element(by.id('group-description-input')).typeText('自動テスト用のグループです');
-    await element(by.id('group-type-free')).tap();
-    await element(by.id('member-limit-slider')).swipeTo(50);
-
-    // 4. グループ作成
-    await element(by.id('create-button')).tap();
-    await waitFor(element(by.id('group-detail-screen'))).toBeVisible().withTimeout(5000);
-
-    // 5. グループIDを取得（実際のE2Eではスキップ可能）
-    const groupNameElement = element(by.id('group-name-text'));
-    await expect(groupNameElement).toHaveText('E2Eテストグループ');
-
-    // 6. 別のユーザーでログインして参加
-    await device.launchApp({ delete: true });
-    await element(by.id('email-input')).typeText('member@example.com');
-    await element(by.id('password-input')).typeText('password');
-    await element(by.id('login-button')).tap();
-
-    // 7. グループ検索と参加
-    await element(by.id('bottom-tab-groups')).tap();
-    await element(by.id('search-groups-input')).typeText('E2Eテストグループ');
-    await element(by.id('group-item-0')).tap();
-    await element(by.id('join-group-button')).tap();
-
-    // 8. チャット画面でメッセージ送信
-    await element(by.id('group-chat-button')).tap();
-    await element(by.id('message-input')).typeText('E2Eテストから送信');
-    await element(by.id('send-button')).tap();
-
-    // 9. メッセージが表示されることを確認
-    await waitFor(element(by.text('E2Eテストから送信')))
-      .toBeVisible()
-      .withTimeout(3000);
-  });
-
-  it('有料グループの決済フローが正しく動作すること', async () => {
-    // 1. 有料グループ作成
-    await device.launchApp();
-    await element(by.id('email-input')).typeText('creator@example.com');
-    await element(by.id('password-input')).typeText('password');
-    await element(by.id('login-button')).tap();
-
-    await element(by.id('bottom-tab-groups')).tap();
-    await element(by.id('create-group-button')).tap();
-
-    await element(by.id('group-name-input')).typeText('有料E2Eグループ');
-    await element(by.id('group-type-subscription')).tap();
-    await element(by.id('subscription-price-input')).typeText('1500');
-    await element(by.id('create-button')).tap();
-
-    // 2. 別ユーザーで参加試行
-    await device.launchApp({ delete: true });
-    await element(by.id('email-input')).typeText('member@example.com');
-    await element(by.id('password-input')).typeText('password');
-    await element(by.id('login-button')).tap();
-
-    await element(by.id('bottom-tab-groups')).tap();
-    await element(by.id('search-groups-input')).typeText('有料E2Eグループ');
-    await element(by.id('group-item-0')).tap();
-    await element(by.id('join-group-button')).tap();
-
-    // 3. 決済画面が表示されることを確認
-    await waitFor(element(by.id('payment-webview')))
-      .toBeVisible()
-      .withTimeout(5000);
-    
-    await expect(element(by.text('月額 ¥1,500'))).toBeVisible();
-  });
-});
-```
+**テストケース**: 新規ユーザーのグループ体験
+- **手順**:
+  1. ユーザー登録/ログイン
+  2. グループ探索
+  3. グループ作成
+  4. メンバー招待
+  5. 投稿作成
+  6. コメントやいいねのインタラクション
+  7. 通知受信確認
+- **期待結果**: 一連のユーザージャーニーが正常に完了する
 
 ### 4.2 グループメンバー管理E2Eテスト
 
-```typescript
-describe('グループメンバー管理E2Eテスト', () => {
-  it('オーナーがメンバーを削除できること', async () => {
-    // 1. オーナーとしてログイン
-    await device.launchApp();
-    await element(by.id('email-input')).typeText('owner@example.com');
-    await element(by.id('password-input')).typeText('password');
-    await element(by.id('login-button')).tap();
-
-    // 2. グループ詳細画面へ
-    await element(by.id('bottom-tab-groups')).tap();
-    await element(by.id('my-groups-tab')).tap();
-    await element(by.id('group-item-0')).tap();
-
-    // 3. メンバー管理画面へ
-    await element(by.id('members-button')).tap();
-
-    // 4. メンバーを削除
-    await element(by.id('member-item-1')).swipe('left');
-    await element(by.id('remove-button')).tap();
-    await element(by.id('confirm-remove-button')).tap();
-
-    // 5. メンバーが削除されたことを確認
-    await expect(element(by.id('member-item-1'))).not.toBeVisible();
-  });
-});
-```
-
-## テスト実行設定
-
-### Jest設定 (jest.config.js)
-
-```javascript
-module.exports = {
-  preset: 'jest-expo',
-  setupFilesAfterEnv: [
-    '@testing-library/jest-native/extend-expect',
-    './jest.setup.js'
-  ],
-  transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)'
-  ],
-  moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1'
-  },
-  testEnvironment: 'node',
-  collectCoverageFrom: [
-    'src/**/*.{ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/index.ts'
-  ],
-  coverageThreshold: {
-    global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80
-    }
-  }
-};
-```
-
-### テストセットアップ (jest.setup.js)
-
-```javascript
-// React Native Reanimatedのモック
-jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock');
-  Reanimated.default.call = () => {};
-  return Reanimated;
-});
-
-// React Native Gesture Handlerのモック
-jest.mock('react-native-gesture-handler', () => ({
-  Swipeable: jest.fn().mockImplementation(({ children }) => children),
-  State: {},
-  PanGestureHandler: jest.fn().mockImplementation(({ children }) => children),
-  BaseButton: jest.fn().mockImplementation(({ children }) => children),
-  RectButton: jest.fn().mockImplementation(({ children }) => children),
-}));
-
-// AsyncStorageのモック
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
-);
-
-// グローバルなfetchのモック
-global.fetch = jest.fn();
-
-// タイマーのモック
-jest.useFakeTimers();
-```
+**テストケース**: 管理者によるメンバー管理
+- **手順**:
+  1. 管理者としてログイン
+  2. メンバー招待
+  3. 権限変更
+  4. メンバー削除
+  5. グループ設定変更
+- **期待結果**: 管理機能が正常に動作し、変更が反映される
 
 ## まとめ
 
@@ -953,12 +221,3 @@ jest.useFakeTimers();
 - 単体テスト: 90%以上
 - 統合テスト: 80%以上
 - E2Eテスト: 主要なユーザーフローを網羅
-
-### 実装時の注意点
-
-1. モックは最小限に留め、実際のAPIやデータベースとの連携を重視
-2. 非同期処理は必ず`waitFor`を使用して適切に待機
-3. エラーケースは全て網羅し、適切なエラーメッセージを検証
-4. テストデータは現実的な値を使用し、境界値テストも含める
-
-これらのテストを実装することで、グループ機能の品質を保証し、安定したリリースを実現できます。

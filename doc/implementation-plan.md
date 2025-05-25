@@ -4,7 +4,7 @@
 本ドキュメントは「目醒め人のためのSNS」の機能実装計画を定義します。
 要件定義書に基づき、優先度と依存関係を考慮した段階的な実装アプローチを採用します。
 
-更新日: 2025-05-25（Phase 1実装状況反映）
+更新日: 2025-05-25
 
 ## 実装フェーズ概要
 
@@ -35,10 +35,20 @@
 ### テスト仕様書
 - [x] 01_auth-account-test-spec.md - 認証・アカウント管理機能テスト仕様（2025-05-25作成）
 - [x] 02_timeline-post-test-spec.md - タイムライン・投稿機能テスト仕様（2025-05-25作成）
+- [x] 03_follow-function-test-spec.md - フォロー機能テスト仕様（2025-05-25作成）
 - [x] 04_liveroom_test_specification.md - ライブルーム機能テスト仕様（2025-05-25作成）
+- [x] 05_test_specification_dm.md - ダイレクトメッセージ機能テスト仕様（2025-05-25作成）
+- [x] 06_test-specification-event.md - イベント機能テスト仕様（2025-05-25作成）
+- [x] 07_test_specification_shop_ec.md - ショップ・EC機能テスト仕様（2025-05-25作成）
+- [x] 08_group_test_spec.md - グループ機能テスト仕様（2025-05-25作成）
+- [x] 09_test_specification_ai_search.md - AIチャット・検索機能テスト仕様（2025-05-25作成）
 - [x] 10_stories_test_spec.md - ストーリーズ機能テスト仕様（2025-05-25作成）
-- [x] test_specification_shop_ec.md - ショップ・EC機能テスト仕様（2025-05-25作成）
-- [x] test_specification_ai_search.md - AIチャット・検索機能テスト仕様（2025-05-25作成）
+
+### テスト実装状況
+- [x] テストディレクトリ構造の作成完了（test/ui, test/api, test/integration, test/e2e）
+- [x] テストコードの整理完了
+- [x] テスト仕様書の非エンジニア向け修正完了
+- [x] 今後のテスト実装方針（TDD推奨、カバレッジ目標80%以上）
 
 ## Phase 1: 基盤構築（1-2ヶ月）
 
