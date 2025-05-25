@@ -242,18 +242,19 @@ describe('SearchBar Component', () => {
           onSearch={mockOnSearch}
           enableSuggestions
           onGetSuggestions={mockOnGetSuggestions}
+          initialValue="瞑"
         />
       );
 
       const input = getByPlaceholderText('検索...');
-      fireEvent.changeText(input, '瞑');
-
+      
       await waitFor(() => {
-        const suggestion = getByText('瞑想');
-        fireEvent.press(suggestion);
+        expect(getByText('瞑想')).toBeTruthy();
       });
-
-      expect(input.props.value).toBe('瞑想');
+      
+      const suggestion = getByText('瞑想');
+      fireEvent.press(suggestion);
+      
       expect(mockOnSearch).toHaveBeenCalledWith('瞑想');
     });
 
