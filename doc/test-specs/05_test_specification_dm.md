@@ -20,1481 +20,287 @@ APIユニットテスト、UIユニットテスト、結合テスト、E2Eテス
 
 ### 1.1 DM会話開始API
 
-#### Test: POST /dm/threads/{userId} - 新規スレッド作成
+**テストケース**: 新規DMスレッドを作成できる
+- **入力**: 受信者ユーザーID
+- **期待結果**: ステータスコード201、スレッドID、参加者情報、作成日時を含むレスポンス
 
-```typescript
-describe('POST /dm/threads/{userId}', () => {
-  it('新規DMスレッドを作成できる', async () => {
-    // Arrange
-    const recipientUserId = 'user-456';
-    
-    // Act
-    const response = await dmAPI.createThread(recipientUserId);
-    
-    // Assert
-    expect(response.status).toBe(201);
-    expect(response.data.id).toBeDefined();
-    expect(response.data.user1.id).toBe(currentUser.id);
-    expect(response.data.user2.id).toBe(recipientUserId);
-    expect(response.data.createdAt).toBeDefined();
-  });
+**テストケース**: 既存スレッドが存在する場合は既存スレッドを返す
+- **入力**: 既存スレッドがある受信者ユーザーID
+- **期待結果**: 既存スレッドの情報を含むレスポンス
 
-  it('既存スレッドが存在する場合は既存スレッドを返す', async () => {
-    // Arrange
-    const recipientUserId = 'user-456';
-    await dmAPI.createThread(recipientUserId);
-    
-    // Act
-    const response = await dmAPI.createThread(recipientUserId);
-    
-    // Assert
-    expect(response.status).toBe(200);
-    expect(response.data.id).toBeDefined();
-  });
+**テストケース**: 自分自身とのスレッド作成でエラー
+- **入力**: 自分自身のユーザーID
+- **期待結果**: 適切なエラーメッセージ「自分自身にDMを送ることはできません」
 
-  it('存在しないユーザーIDで404エラーが返る', async () => {
-    // Arrange
-    const invalidUserId = 'invalid-user-id';
-    
-    // Act & Assert
-    await expect(dmAPI.createThread(invalidUserId))
-      .rejects.toMatchObject({
-        response: { status: 404 }
-      });
-  });
-
-  it('認証されていない場合401エラーが返る', async () => {
-    // Arrange
-    const recipientUserId = 'user-456';
-    dmAPI.setAuthToken(null);
-    
-    // Act & Assert
-    await expect(dmAPI.createThread(recipientUserId))
-      .rejects.toMatchObject({
-        response: { status: 401 }
-      });
-  });
-});
-```
-
-#### Test: GET /dm/threads - スレッド一覧取得
-
-```typescript
-describe('GET /dm/threads', () => {
-  it('DMスレッド一覧を取得できる', async () => {
-    // Arrange
-    await dmAPI.createThread('user-456');
-    await dmAPI.createThread('user-789');
-    
-    // Act
-    const response = await dmAPI.getThreads();
-    
-    // Assert
-    expect(response.status).toBe(200);
-    expect(response.data.items).toHaveLength(2);
-    expect(response.data.items[0]).toMatchObject({
-      id: expect.any(String),
-      user1: expect.objectContaining({ id: expect.any(String) }),
-      user2: expect.objectContaining({ id: expect.any(String) }),
-      createdAt: expect.any(String)
-    });
-  });
-
-  it('未読数が正しく表示される', async () => {
-    // Arrange
-    const threadId = await dmAPI.createThread('user-456');
-    await dmAPI.sendMessage(threadId.data.id, {
-      messageType: 'text',
-      textContent: 'Test message'
-    });
-    
-    // Act (別ユーザーでスレッド取得)
-    const response = await dmAPI.getThreads();
-    
-    // Assert
-    expect(response.data.items[0].unreadCount).toBe(1);
-  });
-
-  it('ページネーションが正しく動作する', async () => {
-    // Arrange
-    for (let i = 0; i < 25; i++) {
-      await dmAPI.createThread(`user-${i}`);
-    }
-    
-    // Act
-    const firstPage = await dmAPI.getThreads();
-    const secondPage = await dmAPI.getThreads({ cursor: firstPage.data.nextCursor });
-    
-    // Assert
-    expect(firstPage.data.items).toHaveLength(20);
-    expect(secondPage.data.items).toHaveLength(5);
-    expect(firstPage.data.nextCursor).toBeDefined();
-    expect(secondPage.data.nextCursor).toBeNull();
-  });
-});
-```
+**テストケース**: 存在しないユーザーへのスレッド作成でエラー
+- **入力**: 存在しないユーザーID
+- **期待結果**: ユーザーが存在しないエラーメッセージ
 
 ### 1.2 メッセージ送信API
 
-#### Test: POST /dm/threads/{threadId}/messages - テキストメッセージ送信
+**テストケース**: テキストメッセージの送信
+- **入力**: スレッドID、メッセージ内容
+- **期待結果**: メッセージID、送信者情報、内容、タイムスタンプを含むレスポンス
 
-```typescript
-describe('POST /dm/threads/{threadId}/messages', () => {
-  let threadId: string;
-  
-  beforeEach(async () => {
-    const thread = await dmAPI.createThread('user-456');
-    threadId = thread.data.id;
-  });
+**テストケース**: 画像添付メッセージの送信
+- **入力**: スレッドID、メッセージ内容、画像ファイル
+- **期待結果**: 画像URLを含むメッセージ情報
 
-  it('テキストメッセージを送信できる', async () => {
-    // Arrange
-    const messageData = {
-      messageType: 'text',
-      textContent: 'Hello, World!'
-    };
-    
-    // Act
-    const response = await dmAPI.sendMessage(threadId, messageData);
-    
-    // Assert
-    expect(response.status).toBe(201);
-    expect(response.data.messageType).toBe('text');
-    expect(response.data.textContent).toBe('Hello, World!');
-    expect(response.data.isRead).toBe(false);
-    expect(response.data.createdAt).toBeDefined();
-  });
+**テストケース**: E2E暗号化メッセージの送信
+- **入力**: スレッドID、暗号化されたメッセージ内容
+- **期待結果**: 暗号化されたメッセージが保存される
 
-  it('画像メッセージを送信できる', async () => {
-    // Arrange
-    const imageFile = new FormData();
-    imageFile.append('file', {
-      uri: 'test-image.jpg',
-      type: 'image/jpeg',
-      name: 'test.jpg'
-    } as any);
-    
-    const messageData = {
-      messageType: 'image',
-      file: imageFile
-    };
-    
-    // Act
-    const response = await dmAPI.sendMessage(threadId, messageData);
-    
-    // Assert
-    expect(response.status).toBe(201);
-    expect(response.data.messageType).toBe('image');
-    expect(response.data.mediaUrl).toBeDefined();
-    expect(response.data.mediaUrl).toMatch(/^https:\/\//);
-  });
+**テストケース**: 空のメッセージ送信でエラー
+- **入力**: スレッドID、空の内容
+- **期待結果**: バリデーションエラー「メッセージ内容は必須です」
 
-  it('音声メッセージを送信できる', async () => {
-    // Arrange
-    const audioFile = new FormData();
-    audioFile.append('file', {
-      uri: 'test-audio.m4a',
-      type: 'audio/m4a',
-      name: 'test.m4a'
-    } as any);
-    
-    const messageData = {
-      messageType: 'audio',
-      file: audioFile
-    };
-    
-    // Act
-    const response = await dmAPI.sendMessage(threadId, messageData);
-    
-    // Assert
-    expect(response.status).toBe(201);
-    expect(response.data.messageType).toBe('audio');
-    expect(response.data.mediaUrl).toBeDefined();
-  });
+### 1.3 メッセージ履歴取得API
 
-  it('空のテキストでバリデーションエラーが返る', async () => {
-    // Arrange
-    const messageData = {
-      messageType: 'text',
-      textContent: ''
-    };
-    
-    // Act & Assert
-    await expect(dmAPI.sendMessage(threadId, messageData))
-      .rejects.toMatchObject({
-        response: { status: 400 }
-      });
-  });
+**テストケース**: スレッドのメッセージ履歴取得
+- **入力**: スレッドID、オプションのページネーションパラメータ
+- **期待結果**: タイムスタンプ順のメッセージリスト
 
-  it('10000文字を超えるテキストでバリデーションエラーが返る', async () => {
-    // Arrange
-    const longText = 'a'.repeat(10001);
-    const messageData = {
-      messageType: 'text',
-      textContent: longText
-    };
-    
-    // Act & Assert
-    await expect(dmAPI.sendMessage(threadId, messageData))
-      .rejects.toMatchObject({
-        response: { status: 400 }
-      });
-  });
+**テストケース**: ページネーションを使った履歴取得
+- **入力**: スレッドID、ページサイズ=20、ページ番号=2
+- **期待結果**: 指定ページのメッセージリスト、総件数情報
 
-  it('存在しないスレッドIDで404エラーが返る', async () => {
-    // Arrange
-    const invalidThreadId = 'invalid-thread-id';
-    const messageData = {
-      messageType: 'text',
-      textContent: 'Hello'
-    };
-    
-    // Act & Assert
-    await expect(dmAPI.sendMessage(invalidThreadId, messageData))
-      .rejects.toMatchObject({
-        response: { status: 404 }
-      });
-  });
-});
-```
+**テストケース**: 特定日付以降のメッセージのみ取得
+- **入力**: スレッドID、開始日時
+- **期待結果**: 指定日時以降のメッセージのみ
 
-### 1.3 既読処理API
+**テストケース**: 存在しないスレッドでエラー
+- **入力**: 存在しないスレッドID
+- **期待結果**: スレッドが見つからないエラー
 
-#### Test: PUT /dm/messages/{messageId}/read - 既読状態更新
+### 1.4 既読状態管理API
 
-```typescript
-describe('PUT /dm/messages/{messageId}/read', () => {
-  let threadId: string;
-  let messageId: string;
-  
-  beforeEach(async () => {
-    const thread = await dmAPI.createThread('user-456');
-    threadId = thread.data.id;
-    
-    const message = await dmAPI.sendMessage(threadId, {
-      messageType: 'text',
-      textContent: 'Test message'
-    });
-    messageId = message.data.id;
-  });
+**テストケース**: メッセージの既読状態更新
+- **入力**: スレッドID
+- **期待結果**: 未読メッセージが既読にマークされる
 
-  it('メッセージを既読にできる', async () => {
-    // Act
-    const response = await dmAPI.markAsRead(messageId);
-    
-    // Assert
-    expect(response.status).toBe(200);
-    
-    // メッセージの既読状態を確認
-    const messages = await dmAPI.getMessages(threadId);
-    const message = messages.data.items.find(m => m.id === messageId);
-    expect(message.isRead).toBe(true);
-  });
+**テストケース**: 既読ステータスの一括更新
+- **入力**: スレッドID
+- **期待結果**: すべての未読メッセージが更新され、更新件数が返される
 
-  it('既に既読のメッセージは正常処理される', async () => {
-    // Arrange
-    await dmAPI.markAsRead(messageId);
-    
-    // Act
-    const response = await dmAPI.markAsRead(messageId);
-    
-    // Assert
-    expect(response.status).toBe(200);
-  });
+**テストケース**: 最終既読位置の更新
+- **入力**: スレッドID、最終既読メッセージID
+- **期待結果**: 最終既読位置が更新される
 
-  it('存在しないメッセージIDで404エラーが返る', async () => {
-    // Arrange
-    const invalidMessageId = 'invalid-message-id';
-    
-    // Act & Assert
-    await expect(dmAPI.markAsRead(invalidMessageId))
-      .rejects.toMatchObject({
-        response: { status: 404 }
-      });
-  });
-
-  it('他人のメッセージを既読にしようとすると403エラーが返る', async () => {
-    // Arrange (他のユーザーでログイン)
-    dmAPI.setAuthToken('other-user-token');
-    
-    // Act & Assert
-    await expect(dmAPI.markAsRead(messageId))
-      .rejects.toMatchObject({
-        response: { status: 403 }
-      });
-  });
-});
-```
-
-### 1.4 メッセージ履歴取得API
-
-#### Test: GET /dm/threads/{threadId}/messages - メッセージ履歴取得
-
-```typescript
-describe('GET /dm/threads/{threadId}/messages', () => {
-  let threadId: string;
-  
-  beforeEach(async () => {
-    const thread = await dmAPI.createThread('user-456');
-    threadId = thread.data.id;
-  });
-
-  it('メッセージ履歴を取得できる', async () => {
-    // Arrange
-    await dmAPI.sendMessage(threadId, {
-      messageType: 'text',
-      textContent: 'Message 1'
-    });
-    await dmAPI.sendMessage(threadId, {
-      messageType: 'text',
-      textContent: 'Message 2'
-    });
-    
-    // Act
-    const response = await dmAPI.getMessages(threadId);
-    
-    // Assert
-    expect(response.status).toBe(200);
-    expect(response.data.items).toHaveLength(2);
-    expect(response.data.items[0].textContent).toBe('Message 2'); // 新しい順
-    expect(response.data.items[1].textContent).toBe('Message 1');
-  });
-
-  it('暗号化されたメッセージが復号化される', async () => {
-    // Arrange
-    await dmAPI.sendMessage(threadId, {
-      messageType: 'text',
-      textContent: 'Encrypted message'
-    });
-    
-    // Act
-    const response = await dmAPI.getMessages(threadId);
-    
-    // Assert
-    expect(response.data.items[0].textContent).toBe('Encrypted message');
-    // 実際の実装では暗号化されたデータがクライアントで復号化される
-  });
-
-  it('ページネーションが正しく動作する', async () => {
-    // Arrange
-    for (let i = 0; i < 25; i++) {
-      await dmAPI.sendMessage(threadId, {
-        messageType: 'text',
-        textContent: `Message ${i}`
-      });
-    }
-    
-    // Act
-    const firstPage = await dmAPI.getMessages(threadId);
-    const secondPage = await dmAPI.getMessages(threadId, { 
-      cursor: firstPage.data.nextCursor 
-    });
-    
-    // Assert
-    expect(firstPage.data.items).toHaveLength(20);
-    expect(secondPage.data.items).toHaveLength(5);
-  });
-});
-```
+**テストケース**: 存在しないスレッドでエラー
+- **入力**: 存在しないスレッドID
+- **期待結果**: スレッドが見つからないエラー
 
 ## 2. UIユニットテスト
 
-### 2.1 DMスレッド一覧コンポーネント
+### 2.1 メッセージリストコンポーネント
 
-#### Test: MessageList Component
+**テストケース**: スレッド一覧の表示
+- **入力**: onThreadSelect コールバック
+- **期待結果**: スレッド一覧が表示され、各スレッドに最新メッセージと日時が表示される
 
-```typescript
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { MessageList } from '../components/MessageList';
-import { DMProvider } from '../context/DMContext';
+**テストケース**: スレッド選択
+- **入力**: スレッドアイテムのタップ
+- **期待結果**: onThreadSelect コールバックが選択されたスレッド情報で呼ばれる
 
-describe('MessageList Component', () => {
-  const mockThreads = [
-    {
-      id: 'thread-1',
-      user1: { id: 'user-1', displayName: 'Alice' },
-      user2: { id: 'user-2', displayName: 'Bob' },
-      lastMessage: {
-        textContent: 'Hello',
-        createdAt: '2024-01-01T10:00:00Z'
-      },
-      unreadCount: 2
-    },
-    {
-      id: 'thread-2',
-      user1: { id: 'user-1', displayName: 'Alice' },
-      user2: { id: 'user-3', displayName: 'Charlie' },
-      lastMessage: {
-        textContent: 'Hi there',
-        createdAt: '2024-01-01T09:00:00Z'
-      },
-      unreadCount: 0
-    }
-  ];
+**テストケース**: スレッド検索
+- **入力**: 検索キーワード入力
+- **期待結果**: 検索結果に一致するスレッドのみ表示される
 
-  it('DMスレッド一覧を表示できる', () => {
-    // Act
-    render(
-      <DMProvider>
-        <MessageList threads={mockThreads} />
-      </DMProvider>
-    );
-    
-    // Assert
-    expect(screen.getByText('Bob')).toBeTruthy();
-    expect(screen.getByText('Charlie')).toBeTruthy();
-    expect(screen.getByText('Hello')).toBeTruthy();
-    expect(screen.getByText('Hi there')).toBeTruthy();
-  });
+**テストケース**: 新規DM作成ボタン
+- **入力**: 新規DMボタンタップ
+- **期待結果**: onNewDM コールバックが呼ばれる
 
-  it('未読バッジが正しく表示される', () => {
-    // Act
-    render(
-      <DMProvider>
-        <MessageList threads={mockThreads} />
-      </DMProvider>
-    );
-    
-    // Assert
-    expect(screen.getByText('2')).toBeTruthy(); // 未読バッジ
-    expect(screen.queryByText('0')).toBeNull(); // 未読0は非表示
-  });
+**テストケース**: スレッドのプルダウンリフレッシュ
+- **入力**: プルダウン操作
+- **期待結果**: スレッド一覧が再読み込みされる
 
-  it('スレッドタップで詳細画面に遷移する', () => {
-    // Arrange
-    const mockNavigation = { navigate: jest.fn() };
-    
-    // Act
-    render(
-      <DMProvider>
-        <MessageList 
-          threads={mockThreads} 
-          navigation={mockNavigation}
-        />
-      </DMProvider>
-    );
-    
-    fireEvent.press(screen.getByText('Bob'));
-    
-    // Assert
-    expect(mockNavigation.navigate).toHaveBeenCalledWith('MessageDetail', {
-      threadId: 'thread-1'
-    });
-  });
-
-  it('プルツーリフレッシュが動作する', async () => {
-    // Arrange
-    const mockRefresh = jest.fn();
-    
-    // Act
-    render(
-      <DMProvider>
-        <MessageList 
-          threads={mockThreads}
-          onRefresh={mockRefresh}
-        />
-      </DMProvider>
-    );
-    
-    const scrollView = screen.getByTestId('message-list-scroll');
-    fireEvent(scrollView, 'refresh');
-    
-    // Assert
-    await waitFor(() => {
-      expect(mockRefresh).toHaveBeenCalled();
-    });
-  });
-
-  it('空の状態が表示される', () => {
-    // Act
-    render(
-      <DMProvider>
-        <MessageList threads={[]} />
-      </DMProvider>
-    );
-    
-    // Assert
-    expect(screen.getByText('まだメッセージがありません')).toBeTruthy();
-    expect(screen.getByText('新しいメッセージを開始')).toBeTruthy();
-  });
-
-  it('ロード中状態が表示される', () => {
-    // Act
-    render(
-      <DMProvider>
-        <MessageList threads={[]} loading={true} />
-      </DMProvider>
-    );
-    
-    // Assert
-    expect(screen.getByTestId('loading-indicator')).toBeTruthy();
-  });
-});
-```
+**テストケース**: エラー状態の表示
+- **入力**: API読み込みエラー
+- **期待結果**: エラーメッセージと再試行ボタンが表示される
 
 ### 2.2 メッセージ詳細コンポーネント
 
-#### Test: MessageDetail Component
+**テストケース**: メッセージ履歴の表示
+- **入力**: スレッド情報
+- **期待結果**: 相手ユーザー情報とメッセージ履歴が表示される
 
-```typescript
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { MessageDetail } from '../components/MessageDetail';
-import { DMProvider } from '../context/DMContext';
+**テストケース**: バックボタン処理
+- **入力**: バックボタンタップ
+- **期待結果**: onBackPress コールバックが呼ばれる
 
-describe('MessageDetail Component', () => {
-  const mockMessages = [
-    {
-      id: 'msg-1',
-      sender: { id: 'user-2', displayName: 'Bob' },
-      messageType: 'text',
-      textContent: 'Hello Alice!',
-      isRead: true,
-      createdAt: '2024-01-01T10:00:00Z'
-    },
-    {
-      id: 'msg-2',
-      sender: { id: 'user-1', displayName: 'Alice' },
-      messageType: 'text',
-      textContent: 'Hi Bob!',
-      isRead: false,
-      createdAt: '2024-01-01T10:01:00Z'
-    }
-  ];
+**テストケース**: メッセージの送信UI
+- **入力**: メッセージ入力と送信ボタンタップ
+- **期待結果**: onSendMessage コールバックが呼ばれ、入力フィールドがクリアされる
 
-  const mockThread = {
-    id: 'thread-1',
-    user1: { id: 'user-1', displayName: 'Alice' },
-    user2: { id: 'user-2', displayName: 'Bob' }
-  };
+**テストケース**: 画像添付機能
+- **入力**: 画像添付ボタンタップ、画像選択
+- **期待結果**: 選択した画像がプレビュー表示され、送信時に画像情報が含まれる
 
-  it('メッセージ履歴を表示できる', () => {
-    // Act
-    render(
-      <DMProvider>
-        <MessageDetail 
-          thread={mockThread}
-          messages={mockMessages}
-        />
-      </DMProvider>
-    );
-    
-    // Assert
-    expect(screen.getByText('Hello Alice!')).toBeTruthy();
-    expect(screen.getByText('Hi Bob!')).toBeTruthy();
-  });
+**テストケース**: 日付セパレータ表示
+- **入力**: 異なる日付のメッセージを含む履歴
+- **期待結果**: 日付が変わる部分にセパレータが表示される
 
-  it('送信者によってメッセージの配置が変わる', () => {
-    // Act
-    render(
-      <DMProvider>
-        <MessageDetail 
-          thread={mockThread}
-          messages={mockMessages}
-          currentUserId="user-1"
-        />
-      </DMProvider>
-    );
-    
-    // Assert
-    const bobMessage = screen.getByTestId('message-msg-1');
-    const aliceMessage = screen.getByTestId('message-msg-2');
-    
-    expect(bobMessage).toHaveStyle({ alignSelf: 'flex-start' }); // 左寄せ
-    expect(aliceMessage).toHaveStyle({ alignSelf: 'flex-end' }); // 右寄せ
-  });
-
-  it('既読マークが表示される', () => {
-    // Act
-    render(
-      <DMProvider>
-        <MessageDetail 
-          thread={mockThread}
-          messages={mockMessages}
-          currentUserId="user-1"
-        />
-      </DMProvider>
-    );
-    
-    // Assert
-    const readMessage = screen.getByTestId('message-msg-1');
-    expect(readMessage).toContainElement(screen.getByText('✓✓'));
-  });
-
-  it('メッセージ送信ができる', async () => {
-    // Arrange
-    const mockSendMessage = jest.fn();
-    
-    // Act
-    render(
-      <DMProvider>
-        <MessageDetail 
-          thread={mockThread}
-          messages={mockMessages}
-          onSendMessage={mockSendMessage}
-        />
-      </DMProvider>
-    );
-    
-    const input = screen.getByPlaceholderText('メッセージを入力...');
-    const sendButton = screen.getByTestId('send-button');
-    
-    fireEvent.changeText(input, 'New message');
-    fireEvent.press(sendButton);
-    
-    // Assert
-    await waitFor(() => {
-      expect(mockSendMessage).toHaveBeenCalledWith({
-        messageType: 'text',
-        textContent: 'New message'
-      });
-    });
-    
-    expect(input.props.value).toBe(''); // 送信後にクリア
-  });
-
-  it('空のメッセージは送信できない', () => {
-    // Arrange
-    const mockSendMessage = jest.fn();
-    
-    // Act
-    render(
-      <DMProvider>
-        <MessageDetail 
-          thread={mockThread}
-          messages={mockMessages}
-          onSendMessage={mockSendMessage}
-        />
-      </DMProvider>
-    );
-    
-    const sendButton = screen.getByTestId('send-button');
-    fireEvent.press(sendButton);
-    
-    // Assert
-    expect(mockSendMessage).not.toHaveBeenCalled();
-    expect(sendButton).toBeDisabled();
-  });
-});
-```
+**テストケース**: エラー状態の表示と再試行
+- **入力**: メッセージ読み込みエラー
+- **期待結果**: エラーメッセージと再試行ボタンが表示される
 
 ### 2.3 メッセージ入力コンポーネント
 
-#### Test: MessageInput Component
+**テストケース**: メッセージ入力と送信
+- **入力**: テキスト入力と送信ボタンタップ
+- **期待結果**: onSend コールバックが入力内容で呼ばれる
 
-```typescript
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { MessageInput } from '../components/MessageInput';
+**テストケース**: 空のメッセージ送信防止
+- **入力**: 空の状態で送信ボタンタップ
+- **期待結果**: 送信処理が実行されない
 
-describe('MessageInput Component', () => {
-  it('テキスト入力ができる', () => {
-    // Arrange
-    const mockOnSend = jest.fn();
-    
-    // Act
-    render(<MessageInput onSend={mockOnSend} />);
-    
-    const input = screen.getByPlaceholderText('メッセージを入力...');
-    fireEvent.changeText(input, 'Hello World');
-    
-    // Assert
-    expect(input.props.value).toBe('Hello World');
-  });
+**テストケース**: 無効状態の表示
+- **入力**: disabled=true
+- **期待結果**: 入力フィールドと送信ボタンが無効化される
 
-  it('画像選択ボタンが動作する', async () => {
-    // Arrange
-    const mockOnSend = jest.fn();
-    const mockImagePicker = jest.fn().mockResolvedValue({
-      uri: 'test-image.jpg',
-      type: 'image/jpeg'
-    });
-    
-    // Act
-    render(
-      <MessageInput 
-        onSend={mockOnSend}
-        imagePicker={mockImagePicker}
-      />
-    );
-    
-    const imageButton = screen.getByTestId('image-picker-button');
-    fireEvent.press(imageButton);
-    
-    // Assert
-    await waitFor(() => {
-      expect(mockImagePicker).toHaveBeenCalled();
-    });
-  });
+**テストケース**: 画像選択と表示
+- **入力**: 画像添付ボタンタップと画像選択
+- **期待結果**: 選択した画像がプレビュー表示され、送信時に画像情報が含まれる
 
-  it('音声録音ボタンが動作する', async () => {
-    // Arrange
-    const mockOnSend = jest.fn();
-    const mockAudioRecorder = {
-      startRecording: jest.fn(),
-      stopRecording: jest.fn().mockResolvedValue('audio-file.m4a')
-    };
-    
-    // Act
-    render(
-      <MessageInput 
-        onSend={mockOnSend}
-        audioRecorder={mockAudioRecorder}
-      />
-    );
-    
-    const recordButton = screen.getByTestId('audio-record-button');
-    
-    // 録音開始
-    fireEvent.press(recordButton);
-    expect(mockAudioRecorder.startRecording).toHaveBeenCalled();
-    
-    // 録音停止
-    fireEvent.press(recordButton);
-    
-    // Assert
-    await waitFor(() => {
-      expect(mockAudioRecorder.stopRecording).toHaveBeenCalled();
-    });
-  });
+**テストケース**: 画像選択のキャンセル
+- **入力**: 画像選択のキャンセル
+- **期待結果**: 画像選択状態がリセットされる
 
-  it('文字数制限が表示される', () => {
-    // Arrange
-    const mockOnSend = jest.fn();
-    
-    // Act
-    render(<MessageInput onSend={mockOnSend} maxLength={10000} />);
-    
-    const input = screen.getByPlaceholderText('メッセージを入力...');
-    fireEvent.changeText(input, 'Hello');
-    
-    // Assert
-    expect(screen.getByText('5/10000')).toBeTruthy();
-  });
+**テストケース**: 選択済み画像のキャンセル
+- **入力**: 画像選択後のキャンセルボタンタップ
+- **期待結果**: 画像選択状態がリセットされる
 
-  it('文字数制限を超えると警告が表示される', () => {
-    // Arrange
-    const mockOnSend = jest.fn();
-    const longText = 'a'.repeat(10001);
-    
-    // Act
-    render(<MessageInput onSend={mockOnSend} maxLength={10000} />);
-    
-    const input = screen.getByPlaceholderText('メッセージを入力...');
-    fireEvent.changeText(input, longText);
-    
-    // Assert
-    expect(screen.getByText('文字数制限を超えています')).toBeTruthy();
-    expect(screen.getByTestId('send-button')).toBeDisabled();
-  });
-});
-```
+**テストケース**: 送信中の状態表示
+- **入力**: 送信処理中
+- **期待結果**: ローディングインジケータが表示され、入力が無効化される
+
+**テストケース**: テキスト入力サイズの自動調整
+- **入力**: 複数行のテキスト入力
+- **期待結果**: 入力フィールドの高さが自動調整される
 
 ## 3. 結合テスト
 
-### 3.1 DM機能全体の統合テスト
+### 3.1 DMフロー
 
-#### Test: DM Flow Integration
+**テストケース**: DM全体フロー - スレッド作成から会話まで
+- **手順**:
+  1. DMリスト画面表示
+  2. 新規DM作成
+  3. ユーザー選択
+  4. スレッド作成API呼び出し
+  5. メッセージ詳細画面表示
+  6. メッセージ送信
+  7. リアルタイム更新
+- **期待結果**: 一連のフローが正常に動作する
 
-```typescript
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { DMNavigator } from '../navigation/DMNavigator';
-import { DMProvider } from '../context/DMContext';
-import { setupTestServer } from '../__tests__/utils/testServer';
+### 3.2 E2E暗号化
 
-describe('DM機能統合テスト', () => {
-  let testServer: any;
-  
-  beforeAll(() => {
-    testServer = setupTestServer();
-  });
-  
-  afterAll(() => {
-    testServer.close();
-  });
+**テストケース**: エンドツーエンド暗号化のメッセージ送受信
+- **手順**:
+  1. 送信者がメッセージを作成
+  2. 受信者の公開鍵で暗号化
+  3. 暗号化されたメッセージをサーバーに送信
+  4. 受信者がメッセージを取得
+  5. 受信者の秘密鍵で復号
+- **期待結果**: メッセージが正常に暗号化・復号される
 
-  it('DM会話開始から送信まで一連の流れが動作する', async () => {
-    // Arrange
-    render(
-      <NavigationContainer>
-        <DMProvider>
-          <DMNavigator />
-        </DMProvider>
-      </NavigationContainer>
-    );
-    
-    // Act 1: 新規メッセージ画面へ遷移
-    const newMessageButton = screen.getByTestId('new-message-button');
-    fireEvent.press(newMessageButton);
-    
-    await waitFor(() => {
-      expect(screen.getByText('新しいメッセージ')).toBeTruthy();
-    });
-    
-    // Act 2: ユーザー選択
-    const userSearchInput = screen.getByPlaceholderText('ユーザーを検索...');
-    fireEvent.changeText(userSearchInput, 'Bob');
-    
-    await waitFor(() => {
-      expect(screen.getByText('Bob')).toBeTruthy();
-    });
-    
-    fireEvent.press(screen.getByText('Bob'));
-    
-    // Act 3: メッセージ送信
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('メッセージを入力...')).toBeTruthy();
-    });
-    
-    const messageInput = screen.getByPlaceholderText('メッセージを入力...');
-    fireEvent.changeText(messageInput, 'Hello Bob!');
-    
-    const sendButton = screen.getByTestId('send-button');
-    fireEvent.press(sendButton);
-    
-    // Assert
-    await waitFor(() => {
-      expect(screen.getByText('Hello Bob!')).toBeTruthy();
-    });
-  });
+**テストケース**: 暗号化・復号プロセスの完全性検証
+- **手順**:
+  1. 平文メッセージを作成
+  2. 公開鍵で暗号化
+  3. 暗号化メッセージを検証
+  4. 秘密鍵で復号
+  5. 復号されたメッセージが元の平文と一致するか確認
+- **期待結果**: 復号されたメッセージが元の平文と完全に一致する
 
-  it('画像メッセージ送信が動作する', async () => {
-    // Arrange
-    const mockImagePicker = jest.fn().mockResolvedValue({
-      uri: 'test-image.jpg',
-      type: 'image/jpeg',
-      fileName: 'test.jpg'
-    });
-    
-    render(
-      <NavigationContainer>
-        <DMProvider imagePicker={mockImagePicker}>
-          <DMNavigator initialRouteName="MessageDetail" 
-                      initialParams={{ threadId: 'test-thread' }} />
-        </DMProvider>
-      </NavigationContainer>
-    );
-    
-    // Act
-    const imageButton = screen.getByTestId('image-picker-button');
-    fireEvent.press(imageButton);
-    
-    await waitFor(() => {
-      expect(mockImagePicker).toHaveBeenCalled();
-    });
-    
-    // 画像選択後の送信確認ダイアログ
-    await waitFor(() => {
-      expect(screen.getByText('画像を送信しますか？')).toBeTruthy();
-    });
-    
-    const confirmButton = screen.getByText('送信');
-    fireEvent.press(confirmButton);
-    
-    // Assert
-    await waitFor(() => {
-      expect(screen.getByTestId('image-message')).toBeTruthy();
-    });
-  });
+**テストケース**: 前方秘匿性を保証する鍵のローテーション
+- **手順**:
+  1. 初期鍵ペアを生成
+  2. 初期鍵でメッセージを暗号化
+  3. 新しい鍵ペアを生成
+  4. 新しい鍵でメッセージを暗号化
+  5. 両方のメッセージを復号
+- **期待結果**: 鍵の更新後も以前のメッセージが復号可能
 
-  it('既読処理がリアルタイムで反映される', async () => {
-    // Arrange
-    render(
-      <NavigationContainer>
-        <DMProvider>
-          <DMNavigator initialRouteName="MessageDetail" 
-                      initialParams={{ threadId: 'test-thread' }} />
-        </DMProvider>
-      </NavigationContainer>
-    );
-    
-    // 未読メッセージがある状態
-    await waitFor(() => {
-      expect(screen.getByText('未読のメッセージ')).toBeTruthy();
-    });
-    
-    // Act: 画面を表示することで既読処理が実行される
-    await waitFor(() => {
-      expect(screen.getByText('✓✓')).toBeTruthy(); // 既読マーク
-    });
-  });
-});
-```
+### 3.3 WebSocketリアルタイム
 
-### 3.2 E2E暗号化統合テスト
+**テストケース**: WebSocketによるリアルタイムメッセージ受信
+- **手順**:
+  1. WebSocket接続を確立
+  2. DMスレッドのチャンネルを購読
+  3. 新しいメッセージをシミュレート
+  4. メッセージリストの更新を確認
+- **期待結果**: リアルタイムでメッセージが表示される
 
-#### Test: E2E Encryption Integration
+**テストケース**: WebSocketによるリアルタイム接続と購読
+- **手順**:
+  1. WebSocket接続を確立
+  2. 接続状態の変化を確認
+  3. チャンネル購読
+  4. 切断処理
+- **期待結果**: WebSocket接続のライフサイクルが正常に動作する
 
-```typescript
-import { CryptoService } from '../services/CryptoService';
-import { DMService } from '../services/DMService';
+**テストケース**: 複数チャンネルの購読と解除
+- **手順**:
+  1. 複数のDMスレッドチャンネルを購読
+  2. 各チャンネルにメッセージを受信
+  3. 一部のチャンネルの購読を解除
+  4. 購読状態を確認
+- **期待結果**: チャンネルの購読と解除が正常に動作する
 
-describe('E2E暗号化統合テスト', () => {
-  let cryptoService: CryptoService;
-  let dmService: DMService;
-  
-  beforeEach(() => {
-    cryptoService = new CryptoService();
-    dmService = new DMService(cryptoService);
-  });
-
-  it('メッセージのE2E暗号化・復号化が正しく動作する', async () => {
-    // Arrange
-    const originalMessage = 'Secret message';
-    const senderKeyPair = await cryptoService.generateKeyPair();
-    const recipientKeyPair = await cryptoService.generateKeyPair();
-    
-    // Act 1: 送信時の暗号化
-    const encryptedData = await dmService.encryptMessage(
-      originalMessage,
-      recipientKeyPair.publicKey
-    );
-    
-    expect(encryptedData.encryptedContent).not.toBe(originalMessage);
-    expect(encryptedData.encryptedKey).toBeDefined();
-    
-    // Act 2: 受信時の復号化
-    const decryptedMessage = await dmService.decryptMessage(
-      encryptedData,
-      recipientKeyPair.privateKey
-    );
-    
-    // Assert
-    expect(decryptedMessage).toBe(originalMessage);
-  });
-
-  it('画像ファイルのE2E暗号化が動作する', async () => {
-    // Arrange
-    const imageData = 'base64-encoded-image-data';
-    const recipientKeyPair = await cryptoService.generateKeyPair();
-    
-    // Act 1: 画像暗号化
-    const encryptedImage = await dmService.encryptMedia(
-      imageData,
-      'image/jpeg',
-      recipientKeyPair.publicKey
-    );
-    
-    expect(encryptedImage.encryptedContent).not.toBe(imageData);
-    
-    // Act 2: 画像復号化
-    const decryptedImage = await dmService.decryptMedia(
-      encryptedImage,
-      recipientKeyPair.privateKey
-    );
-    
-    // Assert
-    expect(decryptedImage).toBe(imageData);
-  });
-
-  it('鍵の交換が正しく動作する', async () => {
-    // Arrange
-    const user1 = { id: 'user-1' };
-    const user2 = { id: 'user-2' };
-    
-    // Act 1: 両ユーザーの鍵ペア生成
-    const user1Keys = await cryptoService.generateKeyPair();
-    const user2Keys = await cryptoService.generateKeyPair();
-    
-    // 公開鍵をサーバーに保存
-    await dmService.savePublicKey(user1.id, user1Keys.publicKey);
-    await dmService.savePublicKey(user2.id, user2Keys.publicKey);
-    
-    // Act 2: 鍵取得と検証
-    const retrievedUser2PublicKey = await dmService.getPublicKey(user2.id);
-    
-    // Assert
-    expect(retrievedUser2PublicKey).toBe(user2Keys.publicKey);
-  });
-});
-```
-
-### 3.3 WebSocketリアルタイム通信統合テスト
-
-#### Test: WebSocket Real-time Integration
-
-```typescript
-import { WebSocketService } from '../services/WebSocketService';
-import { DMService } from '../services/DMService';
-
-describe('WebSocketリアルタイム通信統合テスト', () => {
-  let wsService: WebSocketService;
-  let dmService: DMService;
-  
-  beforeEach(() => {
-    wsService = new WebSocketService();
-    dmService = new DMService();
-  });
-  
-  afterEach(() => {
-    wsService.disconnect();
-  });
-
-  it('メッセージ送信がリアルタイムで通知される', async () => {
-    // Arrange
-    const threadId = 'test-thread';
-    const messageListener = jest.fn();
-    
-    await wsService.connect();
-    wsService.subscribeToThread(threadId, messageListener);
-    
-    // Act
-    await dmService.sendMessage(threadId, {
-      messageType: 'text',
-      textContent: 'Real-time message'
-    });
-    
-    // Assert
-    await waitFor(() => {
-      expect(messageListener).toHaveBeenCalledWith({
-        type: 'new_message',
-        threadId,
-        message: expect.objectContaining({
-          textContent: 'Real-time message'
-        })
-      });
-    });
-  });
-
-  it('既読状態がリアルタイムで通知される', async () => {
-    // Arrange
-    const threadId = 'test-thread';
-    const readStatusListener = jest.fn();
-    
-    await wsService.connect();
-    wsService.subscribeToThread(threadId, readStatusListener);
-    
-    // メッセージ送信
-    const message = await dmService.sendMessage(threadId, {
-      messageType: 'text',
-      textContent: 'Test message'
-    });
-    
-    // Act: 既読処理
-    await dmService.markAsRead(message.id);
-    
-    // Assert
-    await waitFor(() => {
-      expect(readStatusListener).toHaveBeenCalledWith({
-        type: 'message_read',
-        threadId,
-        messageId: message.id
-      });
-    });
-  });
-
-  it('WebSocket接続が切断された場合の再接続が動作する', async () => {
-    // Arrange
-    const connectionListener = jest.fn();
-    wsService.onConnectionChange(connectionListener);
-    
-    await wsService.connect();
-    expect(connectionListener).toHaveBeenCalledWith('connected');
-    
-    // Act: 接続切断をシミュレート
-    wsService.simulateDisconnection();
-    
-    // Assert: 自動再接続
-    await waitFor(() => {
-      expect(connectionListener).toHaveBeenCalledWith('disconnected');
-    });
-    
-    await waitFor(() => {
-      expect(connectionListener).toHaveBeenCalledWith('reconnecting');
-    }, { timeout: 5000 });
-    
-    await waitFor(() => {
-      expect(connectionListener).toHaveBeenCalledWith('connected');
-    }, { timeout: 10000 });
-  });
-});
-```
+**テストケース**: WebSocket再接続の自動ハンドリング
+- **手順**:
+  1. 初期接続を確立
+  2. 接続切断をシミュレート
+  3. 自動再接続の動作を確認
+  4. 再接続後のメッセージ受信を検証
+- **期待結果**: 接続が切れた場合に自動的に再接続される
 
 ## 4. E2Eテスト
 
-### 4.1 完全なユーザーフロー
+### 4.1 DMユーザーフロー
 
-#### Test: Complete DM User Flow
+**テストケース**: DM基本フロー - スレッド作成からメッセージ送信まで
+- **手順**:
+  1. アプリにログイン
+  2. DMタブに移動
+  3. 新規メッセージボタンをタップ
+  4. ユーザーを選択
+  5. メッセージを入力して送信
+  6. 送信したメッセージが表示されることを確認
+  7. スレッド一覧に戻り、新しいスレッドが表示されることを確認
+- **期待結果**: エンドツーエンドで基本的なDMフローが正常に動作する
 
-```typescript
-import { device, element, by, expect as detoxExpect } from 'detox';
+**テストケース**: 画像送信と表示
+- **手順**:
+  1. 既存のDMスレッドを開く
+  2. 画像添付ボタンをタップ
+  3. 画像を選択
+  4. キャプションを追加して送信
+  5. 画像が表示されることを確認
+  6. 画像をタップして拡大表示
+- **期待結果**: 画像の送信、表示、拡大表示が正常に動作する
 
-describe('DM機能E2Eテスト', () => {
-  beforeAll(async () => {
-    await device.launchApp();
-    await element(by.id('login-button')).tap();
-    // テストユーザーでログイン
-    await element(by.id('email-input')).typeText('testuser@example.com');
-    await element(by.id('password-input')).typeText('password123');
-    await element(by.id('submit-login')).tap();
-  });
+**テストケース**: 長時間の会話履歴とスクロール
+- **手順**:
+  1. 多数のメッセージがあるスレッドを開く
+  2. 過去のメッセージを表示するためにスクロールアップ
+  3. 「最新へ」ボタンをタップ
+- **期待結果**: 長い会話履歴のナビゲーションが正常に動作する
 
-  afterAll(async () => {
-    await device.terminateApp();
-  });
+**テストケース**: スレッド検索と管理
+- **手順**:
+  1. DMリスト画面で検索を実行
+  2. スレッドをロングプレスしてアクションメニューを表示
+  3. アーカイブ操作を実行
+  4. アーカイブ済みスレッドの表示と復元
+- **期待結果**: スレッドの検索、管理機能が正常に動作する
 
-  it('新規DM会話を開始してメッセージを送信できる', async () => {
-    // Act 1: メッセージ画面へ遷移
-    await element(by.id('messages-tab')).tap();
-    await detoxExpect(element(by.text('メッセージ'))).toBeVisible();
-    
-    // Act 2: 新規メッセージ作成
-    await element(by.id('new-message-button')).tap();
-    await detoxExpect(element(by.text('新しいメッセージ'))).toBeVisible();
-    
-    // Act 3: ユーザー検索・選択
-    await element(by.id('user-search-input')).typeText('TestUser2');
-    await element(by.text('TestUser2')).tap();
-    
-    // Act 4: メッセージ送信
-    await detoxExpect(element(by.id('message-input'))).toBeVisible();
-    await element(by.id('message-input')).typeText('Hello from E2E test!');
-    await element(by.id('send-button')).tap();
-    
-    // Assert: メッセージが表示される
-    await detoxExpect(element(by.text('Hello from E2E test!'))).toBeVisible();
-    await detoxExpect(element(by.id('message-sent-indicator'))).toBeVisible();
-  });
-
-  it('画像メッセージを送信できる', async () => {
-    // Arrange: DM画面にいる状態
-    await element(by.id('messages-tab')).tap();
-    await element(by.text('TestUser2')).tap();
-    
-    // Act 1: 画像選択ボタンをタップ
-    await element(by.id('image-picker-button')).tap();
-    
-    // Act 2: ギャラリーから画像選択
-    await element(by.text('ギャラリーから選択')).tap();
-    // テスト用画像を選択（実際の実装では写真ライブラリのモック）
-    await element(by.id('test-image-1')).tap();
-    
-    // Act 3: 送信確認
-    await element(by.text('送信')).tap();
-    
-    // Assert: 画像メッセージが表示される
-    await detoxExpect(element(by.id('image-message'))).toBeVisible();
-  });
-
-  it('音声メッセージを録音・送信できる', async () => {
-    // Arrange: DM画面にいる状態
-    await element(by.id('messages-tab')).tap();
-    await element(by.text('TestUser2')).tap();
-    
-    // Act 1: 音声録音ボタンを長押し
-    await element(by.id('audio-record-button')).longPress();
-    
-    // Act 2: 録音中の表示確認
-    await detoxExpect(element(by.text('録音中...'))).toBeVisible();
-    
-    // Act 3: 録音停止
-    await element(by.id('audio-record-button')).tap();
-    
-    // Act 4: 音声送信
-    await element(by.id('send-audio-button')).tap();
-    
-    // Assert: 音声メッセージが表示される
-    await detoxExpect(element(by.id('audio-message'))).toBeVisible();
-    await detoxExpect(element(by.id('audio-waveform'))).toBeVisible();
-  });
-
-  it('既読状態が正しく表示される', async () => {
-    // Arrange: 相手からメッセージが来ている状態をシミュレート
-    // （実際の実装では、テスト用の別ユーザーからメッセージを送信）
-    
-    // Act: DM画面を開く
-    await element(by.id('messages-tab')).tap();
-    await element(by.text('TestUser2')).tap();
-    
-    // Assert: 未読メッセージがある
-    await detoxExpect(element(by.id('unread-message'))).toBeVisible();
-    
-    // Act: メッセージを表示（既読処理実行）
-    await device.reloadReactNative(); // 画面リロードで既読状態更新
-    
-    // Assert: 既読マークが表示される
-    await detoxExpect(element(by.id('read-status-check'))).toBeVisible();
-  });
-
-  it('DM一覧での未読バッジが動作する', async () => {
-    // Act: メッセージ一覧画面
-    await element(by.id('messages-tab')).tap();
-    
-    // Assert: 未読バッジが表示される
-    await detoxExpect(element(by.id('unread-badge'))).toBeVisible();
-    await detoxExpect(element(by.text('3'))).toBeVisible(); // 未読数
-    
-    // Act: メッセージを読む
-    await element(by.text('TestUser2')).tap();
-    await element(by.id('back-button')).tap();
-    
-    // Assert: 未読バッジが更新される
-    await detoxExpect(element(by.text('0'))).toBeVisible();
-  });
-
-  it('リアルタイムメッセージ受信が動作する', async () => {
-    // Arrange: DM画面を開いている状態
-    await element(by.id('messages-tab')).tap();
-    await element(by.text('TestUser2')).tap();
-    
-    // Act: 外部からリアルタイムメッセージをシミュレート
-    // （実際の実装では、テストサーバーからWebSocket経由でメッセージ送信）
-    await device.sendUserNotification({
-      payload: {
-        type: 'new_dm_message',
-        threadId: 'test-thread',
-        message: 'Real-time message!'
-      }
-    });
-    
-    // Assert: 新しいメッセージが即座に表示される
-    await detoxExpect(element(by.text('Real-time message!'))).toBeVisible();
-  });
-});
-```
-
-### 4.2 エラーハンドリングE2E
-
-#### Test: Error Handling E2E
-
-```typescript
-describe('DMエラーハンドリングE2E', () => {
-  it('ネットワークエラー時のオフライン対応', async () => {
-    // Arrange: オフライン状態をシミュレート
-    await device.setNetworkConnection('airplane');
-    
-    // Act: メッセージ送信を試行
-    await element(by.id('messages-tab')).tap();
-    await element(by.text('TestUser2')).tap();
-    await element(by.id('message-input')).typeText('Offline message');
-    await element(by.id('send-button')).tap();
-    
-    // Assert: オフライン送信表示
-    await detoxExpect(element(by.text('Offline message'))).toBeVisible();
-    await detoxExpect(element(by.id('message-pending-indicator'))).toBeVisible();
-    
-    // Act: ネットワーク復帰
-    await device.setNetworkConnection('wifi');
-    
-    // Assert: メッセージが正常送信される
-    await detoxExpect(element(by.id('message-sent-indicator'))).toBeVisible();
-  });
-
-  it('ファイルアップロードエラーのハンドリング', async () => {
-    // Arrange: 大きすぎるファイルを準備
-    await element(by.id('messages-tab')).tap();
-    await element(by.text('TestUser2')).tap();
-    
-    // Act: 大きすぎる画像を選択
-    await element(by.id('image-picker-button')).tap();
-    await element(by.text('ギャラリーから選択')).tap();
-    await element(by.id('large-test-image')).tap(); // 10MB超のテスト画像
-    
-    // Assert: エラーメッセージが表示される
-    await detoxExpect(element(by.text('ファイルサイズが大きすぎます'))).toBeVisible();
-    await detoxExpect(element(by.text('最大5MBまでです'))).toBeVisible();
-  });
-
-  it('認証エラー時の再ログイン促進', async () => {
-    // Arrange: 認証トークンを無効化
-    await device.sendUserActivity({
-      type: 'invalidate_auth_token'
-    });
-    
-    // Act: メッセージ送信を試行
-    await element(by.id('messages-tab')).tap();
-    await element(by.text('TestUser2')).tap();
-    await element(by.id('message-input')).typeText('Test message');
-    await element(by.id('send-button')).tap();
-    
-    // Assert: 再ログイン画面に遷移
-    await detoxExpect(element(by.text('セッションが期限切れです'))).toBeVisible();
-    await detoxExpect(element(by.text('再ログイン'))).toBeVisible();
-  });
-});
-```
-
-## テスト実行設定
-
-### Jest設定（jest.config.js）
-
-```javascript
-module.exports = {
-  preset: 'jest-expo',
-  testEnvironment: 'jsdom',
-  setupFilesAfterEnv: [
-    '@testing-library/jest-native/extend-expect',
-    '<rootDir>/jest.setup.js'
-  ],
-  transformIgnorePatterns: [
-    'node_modules/(?!(jest-)?react-native|@react-native|expo(nent)?|@expo(nent)?/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)'
-  ],
-  collectCoverageFrom: [
-    'src/**/*.{ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/*.test.{ts,tsx}',
-    '!src/**/__tests__/**'
-  ],
-  coverageThreshold: {
-    global: {
-      branches: 90,
-      functions: 90,
-      lines: 90,
-      statements: 90
-    }
-  },
-  testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.test.{ts,tsx}',
-    '<rootDir>/src/**/*.test.{ts,tsx}'
-  ]
-};
-```
-
-### セットアップファイル（jest.setup.js）
-
-```javascript
-import 'react-native-gesture-handler/jestSetup';
-import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
-
-// AsyncStorage Mock
-jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
-
-// React Native Reanimated Mock
-jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock');
-  Reanimated.default.call = () => {};
-  return Reanimated;
-});
-
-// Expo ImagePicker Mock
-jest.mock('expo-image-picker', () => ({
-  requestMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }),
-  launchImageLibraryAsync: jest.fn().mockResolvedValue({
-    cancelled: false,
-    assets: [{
-      uri: 'mock-image-uri',
-      type: 'image',
-      fileName: 'test.jpg'
-    }]
-  })
-}));
-
-// Expo AV Mock
-jest.mock('expo-av', () => ({
-  Audio: {
-    requestPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }),
-    Recording: jest.fn().mockImplementation(() => ({
-      prepareToRecordAsync: jest.fn(),
-      startAsync: jest.fn(),
-      stopAndUnloadAsync: jest.fn(),
-      getURI: jest.fn().mockReturnValue('mock-audio-uri')
-    }))
-  }
-}));
-
-// WebSocket Mock
-global.WebSocket = jest.fn().mockImplementation(() => ({
-  addEventListener: jest.fn(),
-  removeEventListener: jest.fn(),
-  send: jest.fn(),
-  close: jest.fn(),
-  readyState: 1
-}));
-
-// Crypto Mock for E2E encryption tests
-Object.defineProperty(global, 'crypto', {
-  value: {
-    getRandomValues: (arr) => arr.map(() => Math.floor(Math.random() * 256))
-  }
-});
-```
-
-### Detox設定（.detoxrc.js）
-
-```javascript
-module.exports = {
-  testRunner: 'jest',
-  runnerConfig: 'e2e/jest.config.js',
-  configurations: {
-    'ios.sim.debug': {
-      device: 'simulator',
-      app: 'ios.debug'
-    },
-    'android.emu.debug': {
-      device: 'emulator',
-      app: 'android.debug'
-    }
-  },
-  apps: {
-    'ios.debug': {
-      type: 'ios.app',
-      binaryPath: 'ios/build/Build/Products/Debug-iphonesimulator/YourApp.app',
-      build: 'xcodebuild -workspace ios/YourApp.xcworkspace -scheme YourApp -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build'
-    },
-    'android.debug': {
-      type: 'android.apk',
-      binaryPath: 'android/app/build/outputs/apk/debug/app-debug.apk',
-      build: 'cd android && ./gradlew assembleDebug assembleAndroidTest -DtestBuildType=debug'
-    }
-  },
-  devices: {
-    simulator: {
-      type: 'ios.simulator',
-      device: {
-        type: 'iPhone 14 Pro'
-      }
-    },
-    emulator: {
-      type: 'android.emulator',
-      device: {
-        avdName: 'Pixel_4_API_30'
-      }
-    }
-  }
-};
-```
-
-## テスト実行コマンド
-
-```bash
-# 全テスト実行
-npm test
-
-# ユニットテストのみ
-npm run test:unit
-
-# 結合テストのみ
-npm run test:integration
-
-# E2Eテスト
-npm run test:e2e
-
-# カバレッジ付き実行
-npm run test:coverage
-
-# ウォッチモード
-npm run test:watch
-```
-
-## 品質基準
-
-### カバレッジ目標
-- Line Coverage: ≥90%
-- Function Coverage: ≥90%
-- Branch Coverage: ≥90%
-- Statement Coverage: ≥90%
-
-### テスト実行時間目標
-- ユニットテスト: <30秒
-- 結合テスト: <2分
-- E2Eテスト: <10分
-
-### 必須テストケース
-- 正常系：各機能の基本動作
-- 異常系：エラーハンドリング
-- 境界値：文字数制限、ファイルサイズ制限
-- セキュリティ：暗号化、認証
-- パフォーマンス：大量データ、ネットワーク遅延
+**テストケース**: 通知とリアルタイムメッセージ受信
+- **手順**:
+  1. 2台のデバイスでそれぞれ異なるユーザーとしてログイン
+  2. デバイス2からデバイス1のユーザーにメッセージを送信
+  3. デバイス1で通知を確認し、タップして会話を開く
+  4. デバイス1から返信を送信
+  5. デバイス2でリアルタイムにメッセージが表示されることを確認
+- **期待結果**: 通知とリアルタイム更新が正常に動作する
