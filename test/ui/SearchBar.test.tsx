@@ -262,7 +262,7 @@ describe('SearchBar Component', () => {
       const mockSuggestions = ['瞑想'];
       const mockOnGetSuggestions = vi.fn().mockResolvedValue(mockSuggestions);
 
-      const { getByPlaceholderText, getByText, queryByText } = render(
+      const { getByPlaceholderText, getByText, queryByText, rerender } = render(
         <AISearchBar
           onSearch={mockOnSearch}
           enableSuggestions
@@ -273,10 +273,21 @@ describe('SearchBar Component', () => {
       const input = getByPlaceholderText('検索...');
       fireEvent.changeText(input, '瞑');
 
+      // Wait for suggestions to appear
       await waitFor(() => {
-        const suggestion = getByText('瞑想');
-        fireEvent.press(suggestion);
+        expect(getByText('瞑想')).toBeTruthy();
       });
+
+      const suggestion = getByText('瞑想');
+      fireEvent.press(suggestion);
+
+      rerender(
+        <AISearchBar
+          onSearch={mockOnSearch}
+          enableSuggestions
+          onGetSuggestions={mockOnGetSuggestions}
+        />
+      );
 
       expect(queryByText('瞑想')).toBeNull();
     });

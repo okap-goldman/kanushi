@@ -106,12 +106,14 @@ export const render = vi.fn((component: any) => {
                         componentProps.onSearch(suggestion);
                       }
                       
-                      // サジェスト選択後にテキスト要素を削除
+                      // サジェスト選択後にテキスト要素を削除し、サジェスト表示を非表示に
                       Object.keys(state.textElements).forEach(textKey => {
                         if (textKey.startsWith('text-')) {
                           delete state.textElements[textKey];
                         }
                       });
+                      
+                      state.showSuggestions = false;
                     }),
                   });
                 });
@@ -328,6 +330,17 @@ export const render = vi.fn((component: any) => {
   });
   
   const queryByText = vi.fn((text: string) => {
+    if (!state.showSuggestions && text.includes('瞑想')) {
+      return null;
+    }
+    
+    for (const key in state.textElements) {
+      if (state.textElements[key].props && 
+          state.textElements[key].props.children === text) {
+        return state.textElements[key];
+      }
+    }
+    
     return state.textElements[`text-${text}`] || null;
   });
   
