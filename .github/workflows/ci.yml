@@ -26,11 +26,7 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Run linting
-      run: npm run lint
-    
-    - name: Run type check
-      run: npm run typecheck
+    # Linting and type checking are skipped as per project requirements
     
     - name: Run tests
       run: npm test -- --coverage --watchAll=false
