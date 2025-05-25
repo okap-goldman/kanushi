@@ -1,30 +1,30 @@
-import React from 'react';
-import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { NavigationContainer, type NavigationContainerRef } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React from 'react';
 import { Linking } from 'react-native';
 
 // Auth Screens
 import Login from '../screens/Login';
 import Register from '../screens/Register';
 
+import { useAuth } from '../context/AuthContext';
+import Discover from '../screens/Discover';
+import EventDetailScreen from '../screens/EventDetail';
+import EventsScreen from '../screens/Events';
 // Main Screens
 import Home from '../screens/Home';
-import Search from '../screens/Search';
-import Discover from '../screens/Discover';
+import MessageDetail from '../screens/MessageDetail';
 import Messages from '../screens/Messages';
+import NewMessage from '../screens/NewMessage';
+import OrderDetail from '../screens/OrderDetail';
+import Orders from '../screens/Orders';
+import ProductDetail from '../screens/ProductDetail';
 import Profile from '../screens/Profile';
 import ProfileEdit from '../screens/ProfileEdit';
-import EventsScreen from '../screens/Events';
-import EventDetailScreen from '../screens/EventDetail';
-import MessageDetail from '../screens/MessageDetail';
-import NewMessage from '../screens/NewMessage';
+import Search from '../screens/Search';
 import Shop from '../screens/Shop';
-import ProductDetail from '../screens/ProductDetail';
-import Orders from '../screens/Orders';
-import OrderDetail from '../screens/OrderDetail';
-import { useAuth } from '../context/AuthContext';
 
 // LiveRoom Screens
 import { LiveRoomScreen } from '../components/liveroom/LiveRoomScreen';
@@ -53,39 +53,33 @@ function HomeTabs() {
         },
       }}
     >
-      <Tab.Screen 
-        name="HomeTab" 
-        component={Home} 
+      <Tab.Screen
+        name="HomeTab"
+        component={Home}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="home" color={color} size={size} />
-          ),
+          tabBarIcon: ({ color, size }) => <Feather name="home" color={color} size={size} />,
         }}
       />
-      <Tab.Screen 
-        name="SearchTab" 
-        component={Search} 
+      <Tab.Screen
+        name="SearchTab"
+        component={Search}
         options={{
           tabBarLabel: 'Search',
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="search" color={color} size={size} />
-          ),
+          tabBarIcon: ({ color, size }) => <Feather name="search" color={color} size={size} />,
         }}
       />
-      <Tab.Screen 
-        name="LiveRoomsTab" 
-        component={LiveRooms} 
+      <Tab.Screen
+        name="LiveRoomsTab"
+        component={LiveRooms}
         options={{
           tabBarLabel: 'Live',
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="radio" color={color} size={size} />
-          ),
+          tabBarIcon: ({ color, size }) => <Feather name="radio" color={color} size={size} />,
         }}
       />
-      <Tab.Screen 
-        name="MessagesTab" 
-        component={Messages} 
+      <Tab.Screen
+        name="MessagesTab"
+        component={Messages}
         options={{
           tabBarLabel: 'Messages',
           tabBarIcon: ({ color, size }) => (
@@ -93,14 +87,12 @@ function HomeTabs() {
           ),
         }}
       />
-      <Tab.Screen 
-        name="ProfileTab" 
-        component={Profile} 
+      <Tab.Screen
+        name="ProfileTab"
+        component={Profile}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="user" color={color} size={size} />
-          ),
+          tabBarIcon: ({ color, size }) => <Feather name="user" color={color} size={size} />,
         }}
       />
     </Tab.Navigator>
@@ -137,7 +129,7 @@ export default function Navigation() {
   }
 
   return (
-    <NavigationContainer 
+    <NavigationContainer
       ref={navigationRef}
       linking={linking}
       onReady={() => {
@@ -149,8 +141,8 @@ export default function Navigation() {
         });
       }}
     >
-      <Stack.Navigator 
-        screenOptions={{ 
+      <Stack.Navigator
+        screenOptions={{
           headerShown: false,
           animation: 'slide_from_bottom',
         }}
@@ -165,30 +157,30 @@ export default function Navigation() {
           // Main App Screens
           <>
             <Stack.Screen name="Home" component={HomeTabs} />
-            
+
             {/* Profile Stack */}
             <Stack.Screen name="Profile" component={Profile} />
             <Stack.Screen name="ProfileEdit" component={ProfileEdit} />
-            
+
             {/* Messages Stack */}
             <Stack.Screen name="Messages" component={Messages} />
             <Stack.Screen name="MessageDetail" component={MessageDetail} />
             <Stack.Screen name="NewMessage" component={NewMessage} />
-            
+
             {/* Events Stack */}
             <Stack.Screen name="Events" component={EventsScreen} />
             <Stack.Screen name="EventDetail" component={EventDetailScreen} />
-            
+
             {/* Shop Stack */}
             <Stack.Screen name="Shop" component={Shop} />
             <Stack.Screen name="ProductDetail" component={ProductDetail} />
             <Stack.Screen name="Orders" component={Orders} />
             <Stack.Screen name="OrderDetail" component={OrderDetail} />
-            
+
             {/* LiveRoom Stack */}
             <Stack.Screen name="LiveRooms" component={LiveRooms} />
-            <Stack.Screen 
-              name="LiveRoom" 
+            <Stack.Screen
+              name="LiveRoom"
               component={LiveRoomScreen}
               options={{
                 presentation: 'modal',

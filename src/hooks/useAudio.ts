@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
 import { Audio } from 'expo-av';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseAudioReturn {
   audio: Audio.Sound | null;
@@ -22,7 +22,7 @@ export function useAudio(audioUrl: string | null): UseAudioReturn {
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  
+
   const positionUpdateInterval = useRef<NodeJS.Timeout | null>(null);
 
   const loadAudio = useCallback(async () => {
@@ -57,7 +57,7 @@ export function useAudio(audioUrl: string | null): UseAudioReturn {
       setDuration(status.durationMillis || 0);
       setPosition(status.positionMillis || 0);
       setIsPlaying(status.isPlaying || false);
-      
+
       if (status.didJustFinish) {
         setIsPlaying(false);
         setPosition(0);
@@ -104,28 +104,34 @@ export function useAudio(audioUrl: string | null): UseAudioReturn {
     }
   }, [audio]);
 
-  const seek = useCallback(async (positionMillis: number) => {
-    if (!audio) return;
+  const seek = useCallback(
+    async (positionMillis: number) => {
+      if (!audio) return;
 
-    try {
-      await audio.setPositionAsync(positionMillis);
-      setPosition(positionMillis);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to seek audio');
-      console.error('Error seeking audio:', err);
-    }
-  }, [audio]);
+      try {
+        await audio.setPositionAsync(positionMillis);
+        setPosition(positionMillis);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to seek audio');
+        console.error('Error seeking audio:', err);
+      }
+    },
+    [audio]
+  );
 
-  const setRate = useCallback(async (rate: number) => {
-    if (!audio) return;
+  const setRate = useCallback(
+    async (rate: number) => {
+      if (!audio) return;
 
-    try {
-      await audio.setRateAsync(rate, true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to set playback rate');
-      console.error('Error setting playback rate:', err);
-    }
-  }, [audio]);
+      try {
+        await audio.setRateAsync(rate, true);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to set playback rate');
+        console.error('Error setting playback rate:', err);
+      }
+    },
+    [audio]
+  );
 
   // Load audio when URL changes
   useEffect(() => {
@@ -181,6 +187,6 @@ export function useAudio(audioUrl: string | null): UseAudioReturn {
     pause,
     stop,
     seek,
-    setRate
+    setRate,
   };
 }

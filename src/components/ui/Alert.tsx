@@ -1,11 +1,5 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ViewStyle,
-  TextStyle,
-} from 'react-native';
+import type React from 'react';
+import { StyleSheet, Text, type TextStyle, View, type ViewStyle } from 'react-native';
 
 type AlertVariant = 'default' | 'destructive';
 
@@ -26,48 +20,26 @@ interface AlertDescriptionProps {
   style?: TextStyle;
 }
 
-export function Alert({ 
-  children, 
-  variant = 'default',
-  style,
-  icon,
-}: AlertProps) {
+export function Alert({ children, variant = 'default', style, icon }: AlertProps) {
   const variantStyles = {
     default: styles.variantDefault,
     destructive: styles.variantDestructive,
   };
 
   return (
-    <View 
-      style={[styles.alert, variantStyles[variant], style]}
-      accessibilityRole="alert"
-    >
-      {icon && (
-        <View style={styles.iconContainer}>
-          {icon}
-        </View>
-      )}
-      <View style={[styles.contentContainer, icon && styles.contentWithIcon]}>
-        {children}
-      </View>
+    <View style={[styles.alert, variantStyles[variant], style]} accessibilityRole="alert">
+      {icon && <View style={styles.iconContainer}>{icon}</View>}
+      <View style={[styles.contentContainer, icon && styles.contentWithIcon]}>{children}</View>
     </View>
   );
 }
 
 export function AlertTitle({ children, style }: AlertTitleProps) {
-  return (
-    <Text style={[styles.title, style]}>
-      {children}
-    </Text>
-  );
+  return <Text style={[styles.title, style]}>{children}</Text>;
 }
 
 export function AlertDescription({ children, style }: AlertDescriptionProps) {
-  return (
-    <Text style={[styles.description, style]}>
-      {children}
-    </Text>
-  );
+  return <Text style={[styles.description, style]}>{children}</Text>;
 }
 
 const styles = StyleSheet.create({

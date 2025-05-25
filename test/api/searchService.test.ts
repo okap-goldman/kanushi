@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SearchService } from '../../src/lib/searchService';
 import { supabase } from '../../src/lib/supabase';
 
@@ -19,15 +19,9 @@ describe('SearchService', () => {
 
   describe('search', () => {
     it('should search by keyword across users, posts, and hashtags', async () => {
-      const mockUsers = [
-        { id: '1', name: 'テストユーザー', username: 'testuser' },
-      ];
-      const mockPosts = [
-        { id: '1', content: 'テスト投稿', author_id: '1' },
-      ];
-      const mockHashtags = [
-        { tag: 'テスト', count: 5 },
-      ];
+      const mockUsers = [{ id: '1', name: 'テストユーザー', username: 'testuser' }];
+      const mockPosts = [{ id: '1', content: 'テスト投稿', author_id: '1' }];
+      const mockHashtags = [{ tag: 'テスト', count: 5 }];
 
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'profiles') {
@@ -49,9 +43,9 @@ describe('SearchService', () => {
         return {} as any;
       });
 
-      vi.mocked(supabase.rpc).mockResolvedValue({ 
-        data: mockHashtags, 
-        error: null 
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: mockHashtags,
+        error: null,
       });
 
       const result = await searchService.search('テスト');
@@ -64,17 +58,20 @@ describe('SearchService', () => {
     });
 
     it('should return empty results when no matches found', async () => {
-      vi.mocked(supabase.from).mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        or: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-      } as any));
+      vi.mocked(supabase.from).mockImplementation(
+        () =>
+          ({
+            select: vi.fn().mockReturnThis(),
+            or: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }) as any
+      );
 
-      vi.mocked(supabase.rpc).mockResolvedValue({ 
-        data: [], 
-        error: null 
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: [],
+        error: null,
       });
 
       const result = await searchService.search('存在しないキーワード');
@@ -89,9 +86,7 @@ describe('SearchService', () => {
 
   describe('searchByCategory', () => {
     it('should search within a specific category', async () => {
-      const mockUsers = [
-        { id: '1', name: '詳細検索ユーザー', username: 'detailuser' },
-      ];
+      const mockUsers = [{ id: '1', name: '詳細検索ユーザー', username: 'detailuser' }];
 
       vi.mocked(supabase.from).mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -110,9 +105,7 @@ describe('SearchService', () => {
 
   describe('searchWithFilters', () => {
     it('should search with date range filter', async () => {
-      const mockPosts = [
-        { id: '1', content: 'フィルタ済み投稿', created_at: '2025-01-01' },
-      ];
+      const mockPosts = [{ id: '1', content: 'フィルタ済み投稿', created_at: '2025-01-01' }];
 
       vi.mocked(supabase.from).mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -152,8 +145,8 @@ describe('SearchService', () => {
             return {
               select: vi.fn().mockReturnThis(),
               or: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockResolvedValue({ 
-                data: null, 
+              eq: vi.fn().mockResolvedValue({
+                data: null,
                 error: null,
                 count: 100,
               }),
@@ -165,8 +158,8 @@ describe('SearchService', () => {
               or: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
               order: vi.fn().mockReturnThis(),
-              range: vi.fn().mockResolvedValue({ 
-                data: mockData.posts, 
+              range: vi.fn().mockResolvedValue({
+                data: mockData.posts,
                 error: null,
               }),
             } as any;
@@ -179,9 +172,9 @@ describe('SearchService', () => {
         } as any;
       });
 
-      vi.mocked(supabase.rpc).mockResolvedValue({ 
-        data: [], 
-        error: null 
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: [],
+        error: null,
       });
 
       const result = await searchService.searchWithPagination('ページ', 1, 10);
@@ -198,7 +191,7 @@ describe('SearchService', () => {
   describe('error handling', () => {
     it('should handle network errors gracefully', async () => {
       const networkError = new Error('Network error');
-      
+
       vi.mocked(supabase.from).mockReturnValue({
         select: vi.fn().mockReturnThis(),
         or: vi.fn().mockReturnThis(),

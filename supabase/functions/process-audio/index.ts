@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 
 // 音声処理のための型定義
 interface ProcessAudioRequest {
@@ -29,12 +29,12 @@ async function generateWaveform(audioData: ArrayBuffer): Promise<number[]> {
   // ここでは簡易的なサンプリングデータを生成
   const samples = 100;
   const waveform: number[] = [];
-  
+
   for (let i = 0; i < samples; i++) {
     // ランダムな波形データを生成（実際は音声データから抽出）
     waveform.push(Math.random());
   }
-  
+
   return waveform;
 }
 
@@ -60,44 +60,45 @@ async function uploadToB2(
   fileName: string,
   contentType: string
 ): Promise<string> {
-  const uploadUrl = Deno.env.get("SUPABASE_URL") + "/functions/v1/upload-to-b2";
-  const authToken = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  
+  const uploadUrl = Deno.env.get('SUPABASE_URL') + '/functions/v1/upload-to-b2';
+  const authToken = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
   // データをBlobに変換
-  const blob = typeof data === "string" 
-    ? new Blob([data], { type: contentType })
-    : new Blob([data], { type: contentType });
-  
+  const blob =
+    typeof data === 'string'
+      ? new Blob([data], { type: contentType })
+      : new Blob([data], { type: contentType });
+
   // FormDataを作成
   const formData = new FormData();
-  formData.append("file", blob, fileName);
-  formData.append("path", "audio");
-  
+  formData.append('file', blob, fileName);
+  formData.append('path', 'audio');
+
   const response = await fetch(uploadUrl, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Authorization": `Bearer ${authToken}`,
+      Authorization: `Bearer ${authToken}`,
     },
     body: formData,
   });
-  
+
   if (!response.ok) {
     throw new Error(`Upload failed: ${response.statusText}`);
   }
-  
+
   const result = await response.json();
   return result.url;
 }
 
 Deno.serve(async (req: Request) => {
   // CORS対応
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
       headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
       },
     });
   }
@@ -105,9 +106,9 @@ Deno.serve(async (req: Request) => {
   try {
     // リクエストボディを解析
     const { audioUrl, outputPath }: ProcessAudioRequest = await req.json();
-    
+
     if (!audioUrl) {
-      throw new Error("audioUrl is required");
+      throw new Error('audioUrl is required');
     }
 
     // 音声ファイルをダウンロード
@@ -115,9 +116,9 @@ Deno.serve(async (req: Request) => {
     if (!audioResponse.ok) {
       throw new Error(`Failed to fetch audio: ${audioResponse.statusText}`);
     }
-    
+
     const audioData = await audioResponse.arrayBuffer();
-    
+
     // 音声処理を実行
     const [duration, waveform, preview, enhanced] = await Promise.all([
       getAudioDuration(audioData),
@@ -125,32 +126,32 @@ Deno.serve(async (req: Request) => {
       generatePreview(audioData),
       enhanceAudioQuality(audioData),
     ]);
-    
+
     // 処理結果をB2にアップロード
     const timestamp = Date.now();
     const baseName = audioUrl.split('/').pop()?.split('.')[0] || 'audio';
-    
+
     const [processedUrl, waveformUrl, previewUrl] = await Promise.all([
       // 音質向上済みファイル
       uploadToB2(
         enhanced,
         `${outputPath || 'processed'}/${baseName}-enhanced-${timestamp}.mp3`,
-        "audio/mpeg"
+        'audio/mpeg'
       ),
       // 波形データ（JSON）
       uploadToB2(
         JSON.stringify({ waveform, duration }),
         `${outputPath || 'waveforms'}/${baseName}-waveform-${timestamp}.json`,
-        "application/json"
+        'application/json'
       ),
       // プレビューファイル
       uploadToB2(
         preview,
         `${outputPath || 'previews'}/${baseName}-preview-${timestamp}.mp3`,
-        "audio/mpeg"
+        'audio/mpeg'
       ),
     ]);
-    
+
     // レスポンスを返す
     const response: ProcessAudioResponse = {
       success: true,
@@ -160,16 +161,16 @@ Deno.serve(async (req: Request) => {
       previewUrl,
       durationSeconds: duration,
     };
-    
+
     return new Response(JSON.stringify(response), {
       status: 200,
       headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
       },
     });
   } catch (error) {
-    console.error("Audio processing error:", error);
+    console.error('Audio processing error:', error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -179,8 +180,8 @@ Deno.serve(async (req: Request) => {
       {
         status: 500,
         headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
         },
       }
     );

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
-import { PostHeader } from './PostHeader';
-import { PostContent } from './PostContent';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { supabase } from '../../lib/supabase';
+import { Card } from '../ui/Card';
 import { PostActions } from './PostActions';
 import { PostComments } from './PostComments';
-import { Card } from '../ui/Card';
-import { supabase } from '../../lib/supabase';
+import { PostContent } from './PostContent';
+import { PostHeader } from './PostHeader';
 
 interface PostProps {
   author: {
@@ -29,7 +29,7 @@ export function Post({ author, content, caption, mediaType, postId, tags = [] }:
 
   const fetchComments = async () => {
     if (!showComments) return;
-    
+
     setIsLoadingComments(true);
     try {
       const { data, error } = await supabase
@@ -40,7 +40,7 @@ export function Post({ author, content, caption, mediaType, postId, tags = [] }:
         `)
         .eq('post_id', postId)
         .order('created_at', { ascending: true });
-        
+
       if (error) throw error;
       if (data) {
         setComments(data);
@@ -61,10 +61,10 @@ export function Post({ author, content, caption, mediaType, postId, tags = [] }:
   return (
     <Card style={styles.card}>
       <PostHeader author={author} />
-      
+
       <TouchableOpacity
-        onPress={() => mediaType !== "text" && mediaType !== "audio" && setShowFullPost(true)}
-        disabled={mediaType === "text" || mediaType === "audio"}
+        onPress={() => mediaType !== 'text' && mediaType !== 'audio' && setShowFullPost(true)}
+        disabled={mediaType === 'text' || mediaType === 'audio'}
       >
         <PostContent
           content={content}
@@ -74,24 +74,18 @@ export function Post({ author, content, caption, mediaType, postId, tags = [] }:
           setIsExpanded={setIsExpanded}
         />
       </TouchableOpacity>
-      
+
       {tags.length > 0 && (
         <View style={styles.tagsContainer}>
-          {tags.map(tag => (
-            <Text 
-              key={tag.id}
-              style={styles.tag}
-            >
+          {tags.map((tag) => (
+            <Text key={tag.id} style={styles.tag}>
               #{tag.name}
             </Text>
           ))}
         </View>
       )}
 
-      <PostActions
-        postId={postId}
-        onComment={() => setShowComments(true)}
-      />
+      <PostActions postId={postId} onComment={() => setShowComments(true)} />
 
       <Modal
         visible={showComments}
@@ -120,13 +114,10 @@ export function Post({ author, content, caption, mediaType, postId, tags = [] }:
         onRequestClose={() => setShowFullPost(false)}
       >
         <View style={styles.fullPostContainer}>
-          <TouchableOpacity 
-            style={styles.closeButton} 
-            onPress={() => setShowFullPost(false)}
-          >
+          <TouchableOpacity style={styles.closeButton} onPress={() => setShowFullPost(false)}>
             <Text style={styles.closeButtonText}>×</Text>
           </TouchableOpacity>
-          
+
           <View style={styles.fullPostContent}>
             <PostContent
               content={content}
@@ -134,27 +125,22 @@ export function Post({ author, content, caption, mediaType, postId, tags = [] }:
               isExpanded={true}
               setIsExpanded={setIsExpanded}
             />
-            
+
             <View style={styles.fullPostDetails}>
               <PostHeader author={author} />
-              
-              {caption && (
-                <Text style={styles.caption}>{caption}</Text>
-              )}
-              
+
+              {caption && <Text style={styles.caption}>{caption}</Text>}
+
               {tags.length > 0 && (
                 <View style={styles.tagsContainer}>
-                  {tags.map(tag => (
-                    <Text 
-                      key={tag.id}
-                      style={styles.tag}
-                    >
+                  {tags.map((tag) => (
+                    <Text key={tag.id} style={styles.tag}>
                       #{tag.name}
                     </Text>
                   ))}
                 </View>
               )}
-              
+
               <PostActions
                 postId={postId}
                 onComment={() => {

@@ -143,11 +143,11 @@ describe('Onboarding Screens', () => {
     it('録音時間が5分を超える場合警告が表示される', async () => {
       // Given
       render(<ProfileSetup step="introAudio" />);
-      
+
       // When
       // 5分超過の音声録音をシミュレート
       fireEvent(screen.getByTestId('record-button'), 'onRecordingComplete', {
-        duration: 301000 // 5分1秒
+        duration: 301000, // 5分1秒
       });
 
       // Then

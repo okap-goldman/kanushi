@@ -1,7 +1,7 @@
-import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
 import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
+import { fireEvent, render } from '@testing-library/react-native';
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // モックの設定
 vi.mock('@expo/vector-icons', () => ({

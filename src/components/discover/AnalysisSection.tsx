@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { BarChart, LightbulbIcon, Users } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AnalysisDetailView } from './AnalysisDetailView';
 
 export function AnalysisSection() {
@@ -9,7 +9,14 @@ export function AnalysisSection() {
   return (
     <ScrollView style={{ flex: 1 }}>
       <View style={{ padding: 16 }}>
-        <View style={{ backgroundColor: 'rgba(252, 231, 243, 0.5)', padding: 24, borderRadius: 8, marginBottom: 32 }}>
+        <View
+          style={{
+            backgroundColor: 'rgba(252, 231, 243, 0.5)',
+            padding: 24,
+            borderRadius: 8,
+            marginBottom: 32,
+          }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <BarChart size={20} color="#ec4899" />
             <Text style={{ fontSize: 18, fontWeight: '600' }}>あなたのクローズアップ</Text>
@@ -30,16 +37,22 @@ export function AnalysisSection() {
 
             <View>
               <Text style={{ fontWeight: '500', marginBottom: 8 }}>目醒めの提案</Text>
-              <Text style={{ color: '#4B5563', marginBottom: 12 }}>こんなチャレンジはいかがでしょう？</Text>
+              <Text style={{ color: '#4B5563', marginBottom: 12 }}>
+                こんなチャレンジはいかがでしょう？
+              </Text>
               <View style={{ gap: 12 }}>
                 <View style={{ padding: 16, backgroundColor: '#FCE7F3', borderRadius: 8 }}>
-                  <Text style={{ fontWeight: '500', color: '#DB2777' }}>苦手な親戚に手紙を書いてみる</Text>
+                  <Text style={{ fontWeight: '500', color: '#DB2777' }}>
+                    苦手な親戚に手紙を書いてみる
+                  </Text>
                   <Text style={{ fontSize: 14, color: 'rgba(219, 39, 119, 0.8)', marginTop: 4 }}>
                     直接の対話が難しい場合、手紙から始めるのもよい方法です
                   </Text>
                 </View>
                 <View style={{ padding: 16, backgroundColor: '#F3E8FF', borderRadius: 8 }}>
-                  <Text style={{ fontWeight: '500', color: '#9333EA' }}>家族との食事時間を設定する</Text>
+                  <Text style={{ fontWeight: '500', color: '#9333EA' }}>
+                    家族との食事時間を設定する
+                  </Text>
                   <Text style={{ fontSize: 14, color: 'rgba(147, 51, 234, 0.8)', marginTop: 4 }}>
                     週に1回でも、ゆっくりと話せる時間を作ってみましょう
                   </Text>
@@ -57,26 +70,44 @@ export function AnalysisSection() {
 
           <View style={{ gap: 16 }}>
             <Text style={{ fontWeight: '500' }}>みんなの気づきのトレンド</Text>
-            <Text style={{ color: '#4B5563' }}>
-              多くの人が以下のような点に気づき始めています：
-            </Text>
-            
+            <Text style={{ color: '#4B5563' }}>多くの人が以下のような点に気づき始めています：</Text>
+
             <View style={{ gap: 12 }}>
-              <View style={{ padding: 16, backgroundColor: 'rgba(219, 234, 254, 0.5)', borderRadius: 8 }}>
+              <View
+                style={{
+                  padding: 16,
+                  backgroundColor: 'rgba(219, 234, 254, 0.5)',
+                  borderRadius: 8,
+                }}
+              >
                 <Text style={{ fontWeight: '500', color: '#1E3A8A' }}>家族との関係</Text>
                 <Text style={{ fontSize: 14, color: 'rgba(30, 58, 138, 0.8)', marginTop: 4 }}>
                   コミュニケーションの質を高めることに注目が集まっています
                 </Text>
               </View>
-              
-              <View style={{ padding: 16, backgroundColor: 'rgba(224, 231, 255, 0.5)', borderRadius: 8 }}>
-                <Text style={{ fontWeight: '500', color: '#312E81' }}>苦手なことへの向き合い方</Text>
+
+              <View
+                style={{
+                  padding: 16,
+                  backgroundColor: 'rgba(224, 231, 255, 0.5)',
+                  borderRadius: 8,
+                }}
+              >
+                <Text style={{ fontWeight: '500', color: '#312E81' }}>
+                  苦手なことへの向き合い方
+                </Text>
                 <Text style={{ fontSize: 14, color: 'rgba(49, 46, 129, 0.8)', marginTop: 4 }}>
                   小さなステップから始める方法が支持されています
                 </Text>
               </View>
-              
-              <View style={{ padding: 16, backgroundColor: 'rgba(237, 233, 254, 0.5)', borderRadius: 8 }}>
+
+              <View
+                style={{
+                  padding: 16,
+                  backgroundColor: 'rgba(237, 233, 254, 0.5)',
+                  borderRadius: 8,
+                }}
+              >
                 <Text style={{ fontWeight: '500', color: '#4C1D95' }}>自己理解の深化</Text>
                 <Text style={{ fontSize: 14, color: 'rgba(76, 29, 149, 0.8)', marginTop: 4 }}>
                   感情の変化を観察し、理解を深める取り組みが増えています
@@ -86,10 +117,7 @@ export function AnalysisSection() {
           </View>
         </View>
 
-        <AnalysisDetailView 
-          open={showDetailView} 
-          onClose={() => setShowDetailView(false)} 
-        />
+        <AnalysisDetailView open={showDetailView} onClose={() => setShowDetailView(false)} />
       </View>
     </ScrollView>
   );

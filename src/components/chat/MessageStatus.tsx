@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
 
 export type MessageStatusType = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
 
@@ -10,11 +10,7 @@ interface MessageStatusProps {
   color?: string;
 }
 
-export function MessageStatus({ 
-  status, 
-  size = 16, 
-  color = '#718096' 
-}: MessageStatusProps) {
+export function MessageStatus({ status, size = 16, color = '#718096' }: MessageStatusProps) {
   const getIcon = () => {
     switch (status) {
       case 'sending':

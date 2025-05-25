@@ -1,19 +1,13 @@
 import * as React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ViewStyle,
-  TextStyle,
-} from 'react-native';
-import {
   Controller,
-  ControllerProps,
-  FieldPath,
-  FieldValues,
+  type ControllerProps,
+  type FieldPath,
+  type FieldValues,
   FormProvider,
   useFormContext,
 } from 'react-hook-form';
+import { StyleSheet, Text, type TextStyle, View, type ViewStyle } from 'react-native';
 
 // Form is just FormProvider from react-hook-form
 export const Form = FormProvider;
@@ -21,19 +15,17 @@ export const Form = FormProvider;
 // Context for FormField
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > = {
   name: TName;
 };
 
-const FormFieldContext = React.createContext<FormFieldContextValue>(
-  {} as FormFieldContextValue
-);
+const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue);
 
 // FormField component
 export const FormField = <
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({
   ...props
 }: ControllerProps<TFieldValues, TName>) => {
@@ -49,9 +41,7 @@ type FormItemContextValue = {
   id: string;
 };
 
-const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue
-);
+const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
 
 // Hook to use form field
 export const useFormField = () => {
@@ -102,11 +92,7 @@ interface FormLabelProps {
 export const FormLabel = ({ children, style }: FormLabelProps) => {
   const { error } = useFormField();
 
-  return (
-    <Text style={[styles.label, error && styles.labelError, style]}>
-      {children}
-    </Text>
-  );
+  return <Text style={[styles.label, error && styles.labelError, style]}>{children}</Text>;
 };
 
 // FormControl component - wrapper for form inputs
@@ -119,9 +105,7 @@ export const FormControl = ({ children }: FormControlProps) => {
 
   return React.cloneElement(children, {
     accessibilityLabel: formItemId,
-    accessibilityHint: !error
-      ? formDescriptionId
-      : `${formDescriptionId} ${formMessageId}`,
+    accessibilityHint: !error ? formDescriptionId : `${formDescriptionId} ${formMessageId}`,
     accessibilityState: { disabled: !!error },
   });
 };
@@ -136,11 +120,7 @@ export const FormDescription = ({ children, style }: FormDescriptionProps) => {
   const { formDescriptionId } = useFormField();
 
   return (
-    <Text
-      id={formDescriptionId}
-      style={[styles.description, style]}
-      accessibilityRole="text"
-    >
+    <Text id={formDescriptionId} style={[styles.description, style]} accessibilityRole="text">
       {children}
     </Text>
   );
@@ -161,11 +141,7 @@ export const FormMessage = ({ children, style }: FormMessageProps) => {
   }
 
   return (
-    <Text
-      id={formMessageId}
-      style={[styles.errorMessage, style]}
-      accessibilityRole="alert"
-    >
+    <Text id={formMessageId} style={[styles.errorMessage, style]} accessibilityRole="alert">
       {body}
     </Text>
   );

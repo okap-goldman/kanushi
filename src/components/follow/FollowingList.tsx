@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  TouchableOpacity, 
-  Image, 
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet 
-} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { FileText, Image as ImageIcon, Mic, Video } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { followService } from '../../lib/followService';
 import { Badge } from '../ui/badge';
-import { FileText, Image as ImageIcon, Mic, Video } from 'lucide-react-native';
 
 interface FollowingListProps {
   userId: string;
@@ -65,11 +65,11 @@ export function FollowingList({ userId }: FollowingListProps) {
       const result = await followService.getFollowing({
         userId,
         type: filter === 'all' ? undefined : filter,
-        cursor
+        cursor,
       });
 
       if (cursor) {
-        setFollowing(prev => [...prev, ...result.following]);
+        setFollowing((prev) => [...prev, ...result.following]);
       } else {
         setFollowing(result.following);
       }
@@ -111,12 +111,10 @@ export function FollowingList({ userId }: FollowingListProps) {
         source={{ uri: item.followee.profileImageUrl || 'https://via.placeholder.com/50' }}
         style={styles.profileImage}
       />
-      
+
       <View style={styles.followingInfo}>
         <View style={styles.nameRow}>
-          <Text style={styles.displayName}>
-            {item.followee.displayName}
-          </Text>
+          <Text style={styles.displayName}>{item.followee.displayName}</Text>
           <Badge
             testID={`${item.followType}-badge-${item.id}`}
             variant={item.followType === 'family' ? 'default' : 'secondary'}
@@ -125,26 +123,19 @@ export function FollowingList({ userId }: FollowingListProps) {
             {item.followType === 'family' ? 'ファミリー' : 'ウォッチ'}
           </Badge>
         </View>
-        
+
         {item.latestPost ? (
           <View style={styles.postPreview}>
-            <View style={styles.iconContainer}>
-              {getContentIcon(item.latestPost.contentType)}
-            </View>
-            <Text 
-              style={styles.postContent}
-              numberOfLines={2}
-            >
-              {item.latestPost.content || 
+            <View style={styles.iconContainer}>{getContentIcon(item.latestPost.contentType)}</View>
+            <Text style={styles.postContent} numberOfLines={2}>
+              {item.latestPost.content ||
                 (item.latestPost.contentType === 'audio' && '音声投稿') ||
                 (item.latestPost.contentType === 'image' && '画像投稿') ||
                 (item.latestPost.contentType === 'video' && '動画投稿')}
             </Text>
           </View>
         ) : (
-          <Text style={styles.noPostText}>
-            まだ投稿がありません
-          </Text>
+          <Text style={styles.noPostText}>まだ投稿がありません</Text>
         )}
       </View>
     </TouchableOpacity>
@@ -152,9 +143,7 @@ export function FollowingList({ userId }: FollowingListProps) {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>
-        まだ誰もフォローしていません
-      </Text>
+      <Text style={styles.emptyText}>まだ誰もフォローしていません</Text>
     </View>
   );
 
@@ -184,28 +173,22 @@ export function FollowingList({ userId }: FollowingListProps) {
   return (
     <View style={styles.container}>
       {/* フィルタータブ */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-      >
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
         <View style={styles.filterRow}>
           <TouchableOpacity
             testID="filter-all"
             onPress={() => setFilter('all')}
             style={[
               styles.filterButton,
-              filter === 'all' 
-                ? styles.filterButtonActive 
-                : styles.filterButtonInactive
+              filter === 'all' ? styles.filterButtonActive : styles.filterButtonInactive,
             ]}
           >
-            <Text style={[
-              styles.filterButtonText,
-              filter === 'all' 
-                ? styles.filterButtonTextActive 
-                : styles.filterButtonTextInactive
-            ]}>
+            <Text
+              style={[
+                styles.filterButtonText,
+                filter === 'all' ? styles.filterButtonTextActive : styles.filterButtonTextInactive,
+              ]}
+            >
               すべて
             </Text>
           </TouchableOpacity>
@@ -215,17 +198,17 @@ export function FollowingList({ userId }: FollowingListProps) {
             onPress={() => setFilter('family')}
             style={[
               styles.filterButton,
-              filter === 'family' 
-                ? styles.filterButtonActive 
-                : styles.filterButtonInactive
+              filter === 'family' ? styles.filterButtonActive : styles.filterButtonInactive,
             ]}
           >
-            <Text style={[
-              styles.filterButtonText,
-              filter === 'family' 
-                ? styles.filterButtonTextActive 
-                : styles.filterButtonTextInactive
-            ]}>
+            <Text
+              style={[
+                styles.filterButtonText,
+                filter === 'family'
+                  ? styles.filterButtonTextActive
+                  : styles.filterButtonTextInactive,
+              ]}
+            >
               ファミリー
             </Text>
           </TouchableOpacity>
@@ -235,18 +218,18 @@ export function FollowingList({ userId }: FollowingListProps) {
             onPress={() => setFilter('watch')}
             style={[
               styles.filterButton,
-              filter === 'watch' 
-                ? styles.filterButtonActive 
-                : styles.filterButtonInactive,
-              { marginRight: 0 }
+              filter === 'watch' ? styles.filterButtonActive : styles.filterButtonInactive,
+              { marginRight: 0 },
             ]}
           >
-            <Text style={[
-              styles.filterButtonText,
-              filter === 'watch' 
-                ? styles.filterButtonTextActive 
-                : styles.filterButtonTextInactive
-            ]}>
+            <Text
+              style={[
+                styles.filterButtonText,
+                filter === 'watch'
+                  ? styles.filterButtonTextActive
+                  : styles.filterButtonTextInactive,
+              ]}
+            >
               ウォッチ
             </Text>
           </TouchableOpacity>

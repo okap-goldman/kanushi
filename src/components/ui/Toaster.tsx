@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, StyleSheet, SafeAreaView } from 'react-native';
-import { Toast, ToastProps } from './Toast';
+import { SafeAreaView, StyleSheet, View } from 'react-native';
 import { useToast } from '../../hooks/use-toast';
+import { Toast, ToastProps } from './Toast';
 
 export function Toaster() {
   const { toasts, dismiss } = useToast();
@@ -10,11 +10,7 @@ export function Toaster() {
     <SafeAreaView style={styles.container} pointerEvents="box-none">
       <View style={styles.toastContainer} pointerEvents="box-none">
         {toasts.map((toast) => (
-          <Toast
-            key={toast.id}
-            {...toast}
-            onDismiss={() => dismiss(toast.id)}
-          />
+          <Toast key={toast.id} {...toast} onDismiss={() => dismiss(toast.id)} />
         ))}
       </View>
     </SafeAreaView>

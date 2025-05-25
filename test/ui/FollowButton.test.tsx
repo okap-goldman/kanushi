@@ -1,6 +1,6 @@
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FollowButton } from '../../src/components/follow/FollowButton';
 import * as followService from '../../src/lib/followService';
 
@@ -11,15 +11,16 @@ vi.mock('../../src/lib/followService');
 vi.mock('../../src/context/AuthContext', () => ({
   AuthContext: {
     Provider: ({ children }: { children: React.ReactNode }) => children,
-    Consumer: ({ children }: { children: (value: any) => React.ReactNode }) => children({ user: { id: 'user1' } })
-  }
+    Consumer: ({ children }: { children: (value: any) => React.ReactNode }) =>
+      children({ user: { id: 'user1' } }),
+  },
 }));
 
 // Mock useToast
 vi.mock('../../src/hooks/use-toast', () => ({
   useToast: () => ({
-    toast: vi.fn()
-  })
+    toast: vi.fn(),
+  }),
 }));
 
 describe('FollowButton Component', () => {
@@ -30,11 +31,7 @@ describe('FollowButton Component', () => {
   describe('フォローボタン表示', () => {
     it('未フォローユーザーに対して「フォロー」ボタンが表示される', () => {
       const { getByText } = render(
-        <FollowButton 
-          userId="user2"
-          followStatus="not_following"
-          onFollowChange={vi.fn()}
-        />
+        <FollowButton userId="user2" followStatus="not_following" onFollowChange={vi.fn()} />
       );
 
       expect(getByText('フォロー')).toBeTruthy();
@@ -42,7 +39,7 @@ describe('FollowButton Component', () => {
 
     it('フォロー済みユーザーに対して「フォロー中」ボタンとファミリーバッジが表示される', () => {
       const { getByText, getByTestId } = render(
-        <FollowButton 
+        <FollowButton
           userId="user2"
           followStatus="following"
           followType="family"
@@ -57,7 +54,7 @@ describe('FollowButton Component', () => {
 
     it('ウォッチフォローの場合、ウォッチバッジが表示される', () => {
       const { getByText, getByTestId } = render(
-        <FollowButton 
+        <FollowButton
           userId="user2"
           followStatus="following"
           followType="watch"
@@ -72,11 +69,7 @@ describe('FollowButton Component', () => {
 
     it('フォロー処理中はローディングスピナーが表示され、ボタンが無効化される', async () => {
       const { rerender, getByText, getByTestId } = render(
-        <FollowButton 
-          userId="user2"
-          followStatus="not_following"
-          onFollowChange={vi.fn()}
-        />
+        <FollowButton userId="user2" followStatus="not_following" onFollowChange={vi.fn()} />
       );
 
       const button = getByText('フォロー');
@@ -97,7 +90,7 @@ describe('FollowButton Component', () => {
 
       // isLoadingがtrueの時の表示を確認
       const { getByTestId: getByTestId2, getByText: getByText2 } = rerender(
-        <FollowButton 
+        <FollowButton
           userId="user2"
           followStatus="not_following"
           isLoading={true}
@@ -115,11 +108,7 @@ describe('FollowButton Component', () => {
   describe('フォローボタンインタラクション', () => {
     it('フォローボタンプレス時にモーダルが表示される', async () => {
       const { getByText, getByTestId } = render(
-        <FollowButton 
-          userId="user2"
-          followStatus="not_following"
-          onFollowChange={vi.fn()}
-        />
+        <FollowButton userId="user2" followStatus="not_following" onFollowChange={vi.fn()} />
       );
 
       const button = getByText('フォロー');
@@ -134,7 +123,7 @@ describe('FollowButton Component', () => {
 
     it('フォロー中ボタン長押し時にアンフォロー確認ダイアログが表示される', async () => {
       const { getByText, getByTestId } = render(
-        <FollowButton 
+        <FollowButton
           userId="user2"
           followStatus="following"
           followType="family"
@@ -154,15 +143,11 @@ describe('FollowButton Component', () => {
 
     it('ファミリーフォロー選択時に理由入力画面が表示される', async () => {
       const { getByText, getByTestId, getByPlaceholderText } = render(
-        <FollowButton 
-          userId="user2"
-          followStatus="not_following"
-          onFollowChange={vi.fn()}
-        />
+        <FollowButton userId="user2" followStatus="not_following" onFollowChange={vi.fn()} />
       );
 
       fireEvent.press(getByText('フォロー'));
-      
+
       await waitFor(() => {
         expect(getByTestId('follow-type-modal')).toBeTruthy();
       });
@@ -187,11 +172,11 @@ describe('FollowButton Component', () => {
         followReason: null,
         createdAt: new Date(),
         unfollowedAt: null,
-        unfollowReason: null
+        unfollowReason: null,
       });
 
       const { getByText, getByTestId } = render(
-        <FollowButton 
+        <FollowButton
           userId="user2"
           followStatus="not_following"
           currentUserId="user1"
@@ -200,7 +185,7 @@ describe('FollowButton Component', () => {
       );
 
       fireEvent.press(getByText('フォロー'));
-      
+
       await waitFor(() => {
         expect(getByTestId('follow-type-modal')).toBeTruthy();
       });
@@ -211,12 +196,12 @@ describe('FollowButton Component', () => {
         expect(followService.createFollow).toHaveBeenCalledWith({
           followerId: 'user1',
           followeeId: 'user2',
-          followType: 'watch'
+          followType: 'watch',
         });
         expect(onFollowChange).toHaveBeenCalledWith({
           followStatus: 'following',
           followType: 'watch',
-          followId: 'new-follow-id'
+          followId: 'new-follow-id',
         });
       });
     });
@@ -232,11 +217,11 @@ describe('FollowButton Component', () => {
         followReason: '素晴らしいコンテンツを共有してくれるから',
         createdAt: new Date(),
         unfollowedAt: null,
-        unfollowReason: null
+        unfollowReason: null,
       });
 
       const { getByText, getByTestId, getByPlaceholderText } = render(
-        <FollowButton 
+        <FollowButton
           userId="user2"
           followStatus="not_following"
           currentUserId="user1"
@@ -246,7 +231,7 @@ describe('FollowButton Component', () => {
 
       // フォローボタンをタップ
       fireEvent.press(getByText('フォロー'));
-      
+
       await waitFor(() => {
         expect(getByTestId('follow-type-modal')).toBeTruthy();
       });
@@ -274,12 +259,12 @@ describe('FollowButton Component', () => {
           followerId: 'user1',
           followeeId: 'user2',
           followType: 'family',
-          followReason: '素晴らしいコンテンツを共有してくれるから'
+          followReason: '素晴らしいコンテンツを共有してくれるから',
         });
         expect(onFollowChange).toHaveBeenCalledWith({
           followStatus: 'following',
           followType: 'family',
-          followId: 'new-follow-id'
+          followId: 'new-follow-id',
         });
       });
     });
@@ -295,11 +280,11 @@ describe('FollowButton Component', () => {
         followReason: '理由',
         createdAt: new Date(),
         unfollowedAt: new Date(),
-        unfollowReason: 'コンテンツの方向性が変わったため'
+        unfollowReason: 'コンテンツの方向性が変わったため',
       });
 
       const { getByText, getByTestId, getByPlaceholderText } = render(
-        <FollowButton 
+        <FollowButton
           userId="user2"
           followStatus="following"
           followType="family"
@@ -328,10 +313,10 @@ describe('FollowButton Component', () => {
         expect(followService.unfollowUser).toHaveBeenCalledWith({
           followId: 'follow-id',
           userId: 'user1',
-          unfollowReason: 'コンテンツの方向性が変わったため'
+          unfollowReason: 'コンテンツの方向性が変わったため',
         });
         expect(onFollowChange).toHaveBeenCalledWith({
-          followStatus: 'not_following'
+          followStatus: 'not_following',
         });
       });
     });
@@ -345,7 +330,7 @@ describe('FollowButton Component', () => {
       );
 
       const { getByText, getByTestId, queryByText } = render(
-        <FollowButton 
+        <FollowButton
           userId="user2"
           followStatus="not_following"
           currentUserId="user1"
@@ -354,7 +339,7 @@ describe('FollowButton Component', () => {
       );
 
       fireEvent.press(getByText('フォロー'));
-      
+
       await waitFor(() => {
         expect(getByTestId('follow-type-modal')).toBeTruthy();
       });

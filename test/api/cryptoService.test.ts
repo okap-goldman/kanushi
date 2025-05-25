@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { CryptoService } from '@/lib/cryptoService';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Web Crypto API for Node.js environment
 if (typeof global !== 'undefined' && !global.crypto) {
@@ -70,9 +70,7 @@ describe('Crypto Service', () => {
       const encrypted = await cryptoService.encryptMessage(message, keyPair1.publicKey);
 
       // Assert
-      await expect(
-        cryptoService.decryptMessage(encrypted, keyPair2.privateKey)
-      ).rejects.toThrow();
+      await expect(cryptoService.decryptMessage(encrypted, keyPair2.privateKey)).rejects.toThrow();
     });
 
     it('同じメッセージでも毎回異なる暗号文になる', async () => {
@@ -141,9 +139,7 @@ describe('Crypto Service', () => {
       const invalidPublicKey = 'invalid-key-data';
 
       // Act & Assert
-      await expect(
-        cryptoService.encryptMessage(message, invalidPublicKey)
-      ).rejects.toThrow();
+      await expect(cryptoService.encryptMessage(message, invalidPublicKey)).rejects.toThrow();
     });
 
     it('不正な暗号化データで復号化しようとするとエラー', async () => {
@@ -151,7 +147,7 @@ describe('Crypto Service', () => {
       const invalidEncrypted = {
         encryptedContent: 'invalid-data',
         encryptedKey: 'invalid-key',
-        iv: 'invalid-iv'
+        iv: 'invalid-iv',
       };
       const keyPair = await cryptoService.generateKeyPair();
 
@@ -170,7 +166,8 @@ describe('Crypto Service', () => {
       // Tamper with the encrypted content
       const tamperedEncrypted = {
         ...encrypted,
-        encryptedContent: encrypted.encryptedContent.substring(0, encrypted.encryptedContent.length - 4) + 'XXXX'
+        encryptedContent:
+          encrypted.encryptedContent.substring(0, encrypted.encryptedContent.length - 4) + 'XXXX',
       };
 
       // Act & Assert

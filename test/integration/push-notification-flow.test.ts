@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import * as Notifications from 'expo-notifications';
-import { 
-  registerForPushNotifications,
-  sendNotification,
+import {
   handleNotificationReceived,
   handleNotificationResponse,
-  updateNotificationSettings
+  registerForPushNotifications,
+  sendNotification,
+  updateNotificationSettings,
 } from '@/lib/notificationService';
 import { supabase } from '@/lib/supabase';
+import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // モックの設定
 vi.mock('expo-notifications', () => ({
@@ -28,50 +28,58 @@ vi.mock('expo-notifications', () => ({
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
-      getUser: vi.fn(() => Promise.resolve({
-        data: { user: { id: 'user-1' } },
-        error: null,
-      })),
+      getUser: vi.fn(() =>
+        Promise.resolve({
+          data: { user: { id: 'user-1' } },
+          error: null,
+        })
+      ),
     },
     from: vi.fn((table: string) => {
       switch (table) {
         case 'push_tokens':
           return {
-            upsert: vi.fn(() => Promise.resolve({
-              data: { user_id: 'user-1', token: 'ExponentPushToken[xxx]' },
-              error: null,
-            })),
+            upsert: vi.fn(() =>
+              Promise.resolve({
+                data: { user_id: 'user-1', token: 'ExponentPushToken[xxx]' },
+                error: null,
+              })
+            ),
             delete: vi.fn(() => ({
               eq: vi.fn(() => Promise.resolve({ error: null })),
             })),
           };
         case 'notifications':
           return {
-            insert: vi.fn(() => Promise.resolve({
-              data: {
-                id: 'notif-1',
-                user_id: 'user-1',
-                type: 'like',
-                title: 'いいねされました',
-                created_at: new Date().toISOString(),
-              },
-              error: null,
-            })),
+            insert: vi.fn(() =>
+              Promise.resolve({
+                data: {
+                  id: 'notif-1',
+                  user_id: 'user-1',
+                  type: 'like',
+                  title: 'いいねされました',
+                  created_at: new Date().toISOString(),
+                },
+                error: null,
+              })
+            ),
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
-                order: vi.fn(() => Promise.resolve({
-                  data: [
-                    {
-                      id: 'notif-1',
-                      type: 'like',
-                      title: 'いいねされました',
-                      body: 'ユーザーがあなたの投稿にいいねしました',
-                      read: false,
-                      created_at: '2024-01-01T10:00:00Z',
-                    },
-                  ],
-                  error: null,
-                })),
+                order: vi.fn(() =>
+                  Promise.resolve({
+                    data: [
+                      {
+                        id: 'notif-1',
+                        type: 'like',
+                        title: 'いいねされました',
+                        body: 'ユーザーがあなたの投稿にいいねしました',
+                        read: false,
+                        created_at: '2024-01-01T10:00:00Z',
+                      },
+                    ],
+                    error: null,
+                  })
+                ),
               })),
             })),
             update: vi.fn(() => ({
@@ -80,25 +88,29 @@ vi.mock('@/lib/supabase', () => ({
           };
         case 'notification_settings':
           return {
-            upsert: vi.fn(() => Promise.resolve({
-              data: {
-                user_id: 'user-1',
-                likes_enabled: true,
-                comments_enabled: true,
-              },
-              error: null,
-            })),
+            upsert: vi.fn(() =>
+              Promise.resolve({
+                data: {
+                  user_id: 'user-1',
+                  likes_enabled: true,
+                  comments_enabled: true,
+                },
+                error: null,
+              })
+            ),
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
-                single: vi.fn(() => Promise.resolve({
-                  data: {
-                    likes_enabled: true,
-                    comments_enabled: true,
-                    highlights_enabled: true,
-                    follows_enabled: true,
-                  },
-                  error: null,
-                })),
+                single: vi.fn(() =>
+                  Promise.resolve({
+                    data: {
+                      likes_enabled: true,
+                      comments_enabled: true,
+                      highlights_enabled: true,
+                      follows_enabled: true,
+                    },
+                    error: null,
+                  })
+                ),
               })),
             })),
           };
@@ -200,7 +212,7 @@ describe('プッシュ通知連携統合テスト', () => {
       });
 
       const result = await registerForPushNotifications();
-      
+
       expect(result.success).toBe(false);
       expect(result.error?.message).toContain('permission denied');
 
@@ -238,7 +250,7 @@ describe('プッシュ通知連携統合テスト', () => {
       };
 
       const result = await sendNotification(notificationData);
-      
+
       // 通知が送信されないことを確認
       expect(result.success).toBe(false);
       expect(result.error?.message).toContain('disabled');
@@ -273,7 +285,7 @@ describe('プッシュ通知連携統合テスト', () => {
 
       // Supabaseの更新を確認
       expect(supabase.from).toHaveBeenCalledWith('notifications');
-      
+
       // バッジ数が更新される
       await updateBadgeCount();
       expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledWith(
@@ -392,9 +404,9 @@ describe('プッシュ通知連携統合テスト', () => {
       );
 
       const result = await registerForPushNotifications();
-      
+
       expect(result.success).toBe(false);
-      
+
       // 古いトークンが削除される
       expect(supabase.from).toHaveBeenCalledWith('push_tokens');
     });
@@ -411,7 +423,7 @@ async function updateBadgeCount() {
     .eq('read', false);
 
   const unreadCount = data?.length || 0;
-  
+
   await Notifications.setNotificationChannelAsync('default', {
     name: 'デフォルト',
     badge: unreadCount,
@@ -419,10 +431,7 @@ async function updateBadgeCount() {
 }
 
 async function markNotificationAsRead(notificationId: string) {
-  await supabase
-    .from('notifications')
-    .update({ read: true })
-    .eq('id', notificationId);
+  await supabase.from('notifications').update({ read: true }).eq('id', notificationId);
 }
 
 async function setupNotificationChannels() {
@@ -469,11 +478,15 @@ async function sendGroupedNotification(type: string, items: any[]) {
   switch (type) {
     case 'like':
       title = `${count}件のいいね`;
-      const userNames = items.slice(0, 2).map(item => `${item.fromUserId}さん`).join('、');
+      const userNames = items
+        .slice(0, 2)
+        .map((item) => `${item.fromUserId}さん`)
+        .join('、');
       const othersCount = count - 2;
-      body = othersCount > 0
-        ? `${userNames}、他${othersCount}名があなたの投稿にいいねしました`
-        : `${userNames}があなたの投稿にいいねしました`;
+      body =
+        othersCount > 0
+          ? `${userNames}、他${othersCount}名があなたの投稿にいいねしました`
+          : `${userNames}があなたの投稿にいいねしました`;
       break;
   }
 

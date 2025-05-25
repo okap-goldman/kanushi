@@ -1,8 +1,8 @@
-import React from 'react';
-import { render, fireEvent, waitFor, within } from '@testing-library/react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import AppNavigator from '@/navigation/AppNavigator';
 import { AuthProvider } from '@/context/AuthContext';
+import AppNavigator from '@/navigation/AppNavigator';
+import { NavigationContainer } from '@react-navigation/native';
+import { fireEvent, render, waitFor, within } from '@testing-library/react-native';
+import React from 'react';
 
 describe('いいね・コメント機能の連携テスト', () => {
   it('いいねとコメントが同期的に更新される', async () => {

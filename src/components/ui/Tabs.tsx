@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
-  ViewStyle,
-  TextStyle,
+  Text,
+  type TextStyle,
+  TouchableOpacity,
+  View,
+  type ViewStyle,
 } from 'react-native';
 
 interface TabsProps {
@@ -81,13 +81,7 @@ export function TabsList({ children, style }: TabsListProps) {
   );
 }
 
-export function TabsTrigger({
-  value,
-  children,
-  disabled,
-  style,
-  textStyle,
-}: TabsTriggerProps) {
+export function TabsTrigger({ value, children, disabled, style, textStyle }: TabsTriggerProps) {
   const { value: activeValue, onValueChange } = React.useContext(TabsContext);
   const isActive = activeValue === value;
 

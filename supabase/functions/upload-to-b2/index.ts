@@ -1,10 +1,10 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createHash } from "https://deno.land/std@0.250.0/crypto/mod.ts";
-import { encode } from "https://deno.land/std@0.250.0/encoding/base64.ts";
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+import { createHash } from 'https://deno.land/std@0.250.0/crypto/mod.ts';
+import { encode } from 'https://deno.land/std@0.250.0/encoding/base64.ts';
 
 // Backblaze B2 API endpoints
-const B2_API_URL = "https://api.backblazeb2.com/b2api/v2";
-const B2_AUTH_URL = "https://api.backblazeb2.com/b2api/v2/b2_authorize_account";
+const B2_API_URL = 'https://api.backblazeb2.com/b2api/v2';
+const B2_AUTH_URL = 'https://api.backblazeb2.com/b2api/v2/b2_authorize_account';
 
 interface B2AuthResponse {
   accountId: string;
@@ -28,11 +28,11 @@ interface B2UploadUrlResponse {
 // Authorize with B2
 async function authorizeB2(keyId: string, applicationKey: string): Promise<B2AuthResponse> {
   const authString = encode(`${keyId}:${applicationKey}`);
-  
+
   const response = await fetch(B2_AUTH_URL, {
-    method: "GET",
+    method: 'GET',
     headers: {
-      "Authorization": `Basic ${authString}`,
+      Authorization: `Basic ${authString}`,
     },
   });
 
@@ -50,10 +50,10 @@ async function getUploadUrl(
   bucketId: string
 ): Promise<B2UploadUrlResponse> {
   const response = await fetch(`${apiUrl}/b2api/v2/b2_get_upload_url`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Authorization": authToken,
-      "Content-Type": "application/json",
+      Authorization: authToken,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({ bucketId }),
   });
@@ -73,19 +73,19 @@ async function uploadToB2(
   fileData: Uint8Array,
   contentType: string
 ): Promise<{ fileId: string; fileName: string }> {
-  const sha1 = await createHash("sha1").update(fileData).digest();
+  const sha1 = await createHash('sha1').update(fileData).digest();
   const sha1Hex = Array.from(new Uint8Array(sha1))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 
   const response = await fetch(uploadUrl, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Authorization": authToken,
-      "Content-Type": contentType,
-      "Content-Length": fileData.length.toString(),
-      "X-Bz-File-Name": encodeURIComponent(fileName),
-      "X-Bz-Content-Sha1": sha1Hex,
+      Authorization: authToken,
+      'Content-Type': contentType,
+      'Content-Length': fileData.length.toString(),
+      'X-Bz-File-Name': encodeURIComponent(fileName),
+      'X-Bz-Content-Sha1': sha1Hex,
     },
     body: fileData,
   });
@@ -100,40 +100,40 @@ async function uploadToB2(
 
 Deno.serve(async (req: Request) => {
   // Handle CORS
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
       headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
       },
     });
   }
 
   try {
     // Get environment variables
-    const B2_KEY_ID = Deno.env.get("B2_KEY_ID");
-    const B2_APPLICATION_KEY = Deno.env.get("B2_APPLICATION_KEY");
-    const B2_BUCKET_ID = Deno.env.get("B2_BUCKET_ID");
+    const B2_KEY_ID = Deno.env.get('B2_KEY_ID');
+    const B2_APPLICATION_KEY = Deno.env.get('B2_APPLICATION_KEY');
+    const B2_BUCKET_ID = Deno.env.get('B2_BUCKET_ID');
 
     if (!B2_KEY_ID || !B2_APPLICATION_KEY || !B2_BUCKET_ID) {
-      throw new Error("Missing required B2 environment variables");
+      throw new Error('Missing required B2 environment variables');
     }
 
     // Parse request body
     const formData = await req.formData();
-    const file = formData.get("file") as File;
-    const path = formData.get("path") as string || "uploads";
+    const file = formData.get('file') as File;
+    const path = (formData.get('path') as string) || 'uploads';
 
     if (!file) {
-      throw new Error("No file provided");
+      throw new Error('No file provided');
     }
 
     // Generate unique filename
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
-    const extension = file.name.split(".").pop() || "";
+    const extension = file.name.split('.').pop() || '';
     const fileName = `${path}/${timestamp}-${randomString}.${extension}`;
 
     // Read file data
@@ -155,12 +155,12 @@ Deno.serve(async (req: Request) => {
       uploadUrlResponse.authorizationToken,
       fileName,
       fileData,
-      file.type || "application/octet-stream"
+      file.type || 'application/octet-stream'
     );
 
     // Construct CDN URL
-    const cdnUrl = Deno.env.get("CLOUDFLARE_CDN_URL") || authResponse.downloadUrl;
-    const fileUrl = `${cdnUrl}/file/${Deno.env.get("B2_BUCKET_NAME")}/${fileName}`;
+    const cdnUrl = Deno.env.get('CLOUDFLARE_CDN_URL') || authResponse.downloadUrl;
+    const fileUrl = `${cdnUrl}/file/${Deno.env.get('B2_BUCKET_NAME')}/${fileName}`;
 
     return new Response(
       JSON.stringify({
@@ -174,13 +174,13 @@ Deno.serve(async (req: Request) => {
       {
         status: 200,
         headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
         },
       }
     );
   } catch (error) {
-    console.error("Upload error:", error);
+    console.error('Upload error:', error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -189,8 +189,8 @@ Deno.serve(async (req: Request) => {
       {
         status: 500,
         headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
         },
       }
     );

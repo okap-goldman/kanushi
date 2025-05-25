@@ -27,12 +27,12 @@ export const db = {
   async query(sql: string, params?: any[]) {
     const { data, error } = await supabase.rpc('execute_sql', {
       query: sql,
-      params: params || []
+      params: params || [],
     });
-    
+
     if (error) throw error;
     return data;
-  }
+  },
 };
 
 // For full Drizzle ORM support in React Native, consider:

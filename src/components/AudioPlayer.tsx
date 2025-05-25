@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
-import { Audio, AVPlaybackStatus } from 'expo-av';
 import { Feather } from '@expo/vector-icons';
+import { type AVPlaybackStatus, Audio } from 'expo-av';
+import React, { useState, useEffect, useRef } from 'react';
+import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Slider } from './ui/Slider';
 
 interface AudioPost {
@@ -98,11 +98,7 @@ export function AudioPlayer({ post, sound: externalSound }: AudioPlayerProps) {
     <View style={styles.container}>
       {/* Waveform Image */}
       {post.waveformUrl && (
-        <Image
-          source={{ uri: post.waveformUrl }}
-          style={styles.waveform}
-          testID="waveform-image"
-        />
+        <Image source={{ uri: post.waveformUrl }} style={styles.waveform} testID="waveform-image" />
       )}
 
       {/* Audio Controls */}
@@ -116,19 +112,13 @@ export function AudioPlayer({ post, sound: externalSound }: AudioPlayerProps) {
           {isLoading ? (
             <Feather name="loader" size={24} color="#FFFFFF" />
           ) : (
-            <Feather
-              name={isPlaying ? 'pause' : 'play'}
-              size={24}
-              color="#FFFFFF"
-            />
+            <Feather name={isPlaying ? 'pause' : 'play'} size={24} color="#FFFFFF" />
           )}
         </TouchableOpacity>
 
         <View style={styles.progressContainer}>
-          <Text style={styles.timeText}>
-            {formatTime(position)}
-          </Text>
-          
+          <Text style={styles.timeText}>{formatTime(position)}</Text>
+
           <Slider
             style={styles.slider}
             minimumValue={0}
@@ -140,7 +130,7 @@ export function AudioPlayer({ post, sound: externalSound }: AudioPlayerProps) {
             thumbStyle={styles.thumb}
             testID="seek-bar"
           />
-          
+
           <Text style={styles.timeText} testID="audio-duration">
             {formatTime(duration)}
           </Text>
@@ -151,9 +141,7 @@ export function AudioPlayer({ post, sound: externalSound }: AudioPlayerProps) {
       {post.aiMetadata?.summary && (
         <View style={styles.summaryContainer}>
           <Feather name="zap" size={16} color="#6366F1" />
-          <Text style={styles.summaryText}>
-            {post.aiMetadata.summary}
-          </Text>
+          <Text style={styles.summaryText}>{post.aiMetadata.summary}</Text>
         </View>
       )}
     </View>

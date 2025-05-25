@@ -1,78 +1,90 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createPost, getTimeline, likePost, deletePost } from '@/lib/postService';
+import { createPost, deletePost, getTimeline, likePost } from '@/lib/postService';
 import { supabase } from '@/lib/supabase';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Supabaseモックの設定
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
-      getUser: vi.fn(() => Promise.resolve({
-        data: { user: { id: 'test-user-id' } },
-        error: null,
-      })),
+      getUser: vi.fn(() =>
+        Promise.resolve({
+          data: { user: { id: 'test-user-id' } },
+          error: null,
+        })
+      ),
     },
     from: vi.fn((table: string) => ({
       insert: vi.fn(() => ({
         select: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({
-            data: {
-              id: 'new-post-id',
-              user_id: 'test-user-id',
-              content_type: 'text',
-              text_content: 'テスト投稿',
-              created_at: new Date().toISOString(),
-            },
-            error: null,
-          })),
+          single: vi.fn(() =>
+            Promise.resolve({
+              data: {
+                id: 'new-post-id',
+                user_id: 'test-user-id',
+                content_type: 'text',
+                text_content: 'テスト投稿',
+                created_at: new Date().toISOString(),
+              },
+              error: null,
+            })
+          ),
         })),
       })),
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           order: vi.fn(() => ({
-            limit: vi.fn(() => Promise.resolve({
-              data: [
-                {
-                  id: 'post-1',
-                  user_id: 'user-1',
-                  content_type: 'text',
-                  text_content: 'テスト投稿1',
-                  likes: 5,
-                  created_at: '2024-01-01T10:00:00Z',
-                },
-                {
-                  id: 'post-2',
-                  user_id: 'user-2',
-                  content_type: 'audio',
-                  media_url: 'https://example.com/audio.mp3',
-                  likes: 10,
-                  created_at: '2024-01-01T09:00:00Z',
-                },
-              ],
-              error: null,
-            })),
+            limit: vi.fn(() =>
+              Promise.resolve({
+                data: [
+                  {
+                    id: 'post-1',
+                    user_id: 'user-1',
+                    content_type: 'text',
+                    text_content: 'テスト投稿1',
+                    likes: 5,
+                    created_at: '2024-01-01T10:00:00Z',
+                  },
+                  {
+                    id: 'post-2',
+                    user_id: 'user-2',
+                    content_type: 'audio',
+                    media_url: 'https://example.com/audio.mp3',
+                    likes: 10,
+                    created_at: '2024-01-01T09:00:00Z',
+                  },
+                ],
+                error: null,
+              })
+            ),
           })),
         })),
       })),
       update: vi.fn(() => ({
         eq: vi.fn(() => ({
-          select: vi.fn(() => Promise.resolve({
-            data: { id: 'post-1', likes: 6 },
-            error: null,
-          })),
+          select: vi.fn(() =>
+            Promise.resolve({
+              data: { id: 'post-1', likes: 6 },
+              error: null,
+            })
+          ),
         })),
       })),
       delete: vi.fn(() => ({
-        eq: vi.fn(() => Promise.resolve({
-          error: null,
-        })),
+        eq: vi.fn(() =>
+          Promise.resolve({
+            error: null,
+          })
+        ),
       })),
     })),
     storage: {
       from: vi.fn(() => ({
-        upload: vi.fn(() => Promise.resolve({
-          data: { path: 'media/test-file.jpg' },
-          error: null,
-        })),
+        upload: vi.fn(() =>
+          Promise.resolve({
+            data: { path: 'media/test-file.jpg' },
+            error: null,
+          })
+        ),
         getPublicUrl: vi.fn(() => ({
           data: { publicUrl: 'https://example.com/test-file.jpg' },
         })),
@@ -95,7 +107,7 @@ describe('投稿フロー統合テスト', () => {
     };
 
     const result = await createPost(postData);
-    
+
     expect(result.success).toBe(true);
     expect(result.data).toMatchObject({
       id: expect.any(String),
@@ -105,7 +117,7 @@ describe('投稿フロー統合テスト', () => {
 
     // 2. タイムラインから投稿を取得
     const timeline = await getTimeline('family');
-    
+
     expect(timeline.success).toBe(true);
     expect(timeline.posts).toHaveLength(2);
     expect(timeline.posts[0]).toMatchObject({
@@ -117,7 +129,7 @@ describe('投稿フロー統合テスト', () => {
   it('音声投稿の録音から投稿、再生まで', async () => {
     // 音声ファイルのアップロードをモック
     const audioFile = new File(['audio content'], 'test.m4a', { type: 'audio/m4a' });
-    
+
     const postData = {
       contentType: 'audio' as const,
       audioFile,
@@ -129,7 +141,7 @@ describe('投稿フロー統合テスト', () => {
     const uploadResult = await supabase.storage
       .from('media')
       .upload(`audio/${Date.now()}.m4a`, audioFile);
-    
+
     expect(uploadResult.error).toBeNull();
 
     // 2. 投稿を作成
@@ -137,13 +149,13 @@ describe('投稿フロー統合テスト', () => {
       ...postData,
       mediaUrl: 'https://example.com/test-file.jpg',
     });
-    
+
     expect(result.success).toBe(true);
 
     // 3. タイムラインで確認
     const timeline = await getTimeline('family');
-    const audioPost = timeline.posts.find(p => p.content_type === 'audio');
-    
+    const audioPost = timeline.posts.find((p) => p.content_type === 'audio');
+
     expect(audioPost).toBeDefined();
     expect(audioPost?.media_url).toBe('https://example.com/audio.mp3');
   });
@@ -151,7 +163,7 @@ describe('投稿フロー統合テスト', () => {
   it('画像投稿のギャラリー選択から投稿まで', async () => {
     // 画像ファイルのアップロードをモック
     const imageFile = new File(['image content'], 'test.jpg', { type: 'image/jpeg' });
-    
+
     const postData = {
       contentType: 'image' as const,
       imageFile,
@@ -162,20 +174,18 @@ describe('投稿フロー統合テスト', () => {
     const uploadResult = await supabase.storage
       .from('media')
       .upload(`images/${Date.now()}.jpg`, imageFile);
-    
+
     expect(uploadResult.error).toBeNull();
 
     // 2. 公開URLを取得
-    const { data: urlData } = supabase.storage
-      .from('media')
-      .getPublicUrl(uploadResult.data!.path);
+    const { data: urlData } = supabase.storage.from('media').getPublicUrl(uploadResult.data!.path);
 
     // 3. 投稿を作成
     const result = await createPost({
       ...postData,
       mediaUrl: urlData.publicUrl,
     });
-    
+
     expect(result.success).toBe(true);
     expect(result.data?.media_url).toBe(urlData.publicUrl);
   });
@@ -185,14 +195,16 @@ describe('投稿フロー統合テスト', () => {
     const mockFrom = vi.fn(() => ({
       insert: vi.fn(() => ({
         select: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({
-            data: null,
-            error: new Error('Database error'),
-          })),
+          single: vi.fn(() =>
+            Promise.resolve({
+              data: null,
+              error: new Error('Database error'),
+            })
+          ),
         })),
       })),
     }));
-    
+
     (supabase.from as any) = mockFrom;
 
     const postData = {
@@ -201,7 +213,7 @@ describe('投稿フロー統合テスト', () => {
     };
 
     const result = await createPost(postData);
-    
+
     expect(result.success).toBe(false);
     expect(result.error).toBeDefined();
   });
@@ -222,8 +234,8 @@ describe('投稿フロー統合テスト', () => {
 
     // 3. タイムラインから削除されたことを確認
     const timeline = await getTimeline('family');
-    const deletedPost = timeline.posts.find(p => p.id === createResult.data!.id);
-    
+    const deletedPost = timeline.posts.find((p) => p.id === createResult.data!.id);
+
     expect(deletedPost).toBeUndefined();
   });
 
@@ -246,9 +258,9 @@ describe('投稿フロー統合テスト', () => {
   it('投稿への権限チェック', async () => {
     // 他人の投稿を削除しようとする
     const otherUserPostId = 'other-user-post';
-    
+
     const deleteResult = await deletePost(otherUserPostId);
-    
+
     // 権限エラーが返されることを期待
     expect(deleteResult.success).toBe(false);
     expect(deleteResult.error?.message).toContain('permission');
@@ -269,7 +281,7 @@ describe('投稿フロー統合テスト', () => {
     };
 
     const result = await createPost(postData);
-    
+
     expect(result.success).toBe(false);
     expect(result.error?.message).toContain('size');
   });
@@ -304,10 +316,7 @@ describe('投稿フロー統合テスト', () => {
 });
 
 // ヘルパー関数（実際のサービスファイルに存在すると仮定）
-async function subscribeToTimeline(
-  type: 'family' | 'watch',
-  callback: (payload: any) => void
-) {
+async function subscribeToTimeline(type: 'family' | 'watch', callback: (payload: any) => void) {
   const subscription = supabase
     .from('posts')
     .on('postgres_changes', { event: '*', schema: 'public' }, callback)

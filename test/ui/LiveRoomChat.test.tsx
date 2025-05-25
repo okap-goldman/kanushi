@@ -1,7 +1,7 @@
-import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { LiveRoomChat } from '@/components/liveroom/LiveRoomChat';
 import { liveRoomService } from '@/lib/liveRoomService';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import React from 'react';
 
 jest.mock('@/lib/liveRoomService');
 

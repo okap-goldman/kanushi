@@ -1,11 +1,19 @@
 import React, { useState, useContext } from 'react';
-import { TouchableOpacity, View, Text, ActivityIndicator, Modal, TextInput, StyleSheet } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
-import { followService } from '../../lib/followService';
 import { useToast } from '../../hooks/use-toast';
+import { followService } from '../../lib/followService';
 import { Badge } from '../ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
@@ -30,7 +38,7 @@ export function FollowButton({
   followId,
   isLoading = false,
   currentUserId,
-  onFollowChange
+  onFollowChange,
 }: FollowButtonProps) {
   const { user } = useContext(AuthContext);
   const { toast } = useToast();
@@ -71,13 +79,13 @@ export function FollowButton({
         followerId: effectiveUserId,
         followeeId: userId,
         followType: type,
-        followReason: reason
+        followReason: reason,
       });
 
       onFollowChange({
         followStatus: 'following',
         followType: type,
-        followId: result.id
+        followId: result.id,
       });
 
       toast({
@@ -88,7 +96,7 @@ export function FollowButton({
       toast({
         title: 'エラー',
         description: error instanceof Error ? error.message : 'フォローに失敗しました',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -105,11 +113,11 @@ export function FollowButton({
       await followService.unfollowUser({
         followId,
         userId: effectiveUserId,
-        unfollowReason: unfollowReason || undefined
+        unfollowReason: unfollowReason || undefined,
       });
 
       onFollowChange({
-        followStatus: 'not_following'
+        followStatus: 'not_following',
       });
 
       toast({
@@ -119,7 +127,7 @@ export function FollowButton({
       toast({
         title: 'エラー',
         description: error instanceof Error ? error.message : 'フォロー解除に失敗しました',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -138,25 +146,27 @@ export function FollowButton({
         disabled={buttonDisabled}
         style={[
           styles.followButton,
-          followStatus === 'following' 
-            ? styles.followButtonFollowing 
-            : styles.followButtonNotFollowing
+          followStatus === 'following'
+            ? styles.followButtonFollowing
+            : styles.followButtonNotFollowing,
         ]}
       >
-        {(loading || isLoading) ? (
+        {loading || isLoading ? (
           <ActivityIndicator testID="loading-spinner" size="small" color="#fff" />
         ) : (
           <>
-            <Text style={[
-              styles.followButtonText,
-              followStatus === 'following' 
-                ? styles.followButtonTextFollowing 
-                : styles.followButtonTextNotFollowing
-            ]}>
+            <Text
+              style={[
+                styles.followButtonText,
+                followStatus === 'following'
+                  ? styles.followButtonTextFollowing
+                  : styles.followButtonTextNotFollowing,
+              ]}
+            >
               {followStatus === 'following' ? 'フォロー中' : 'フォロー'}
             </Text>
             {followStatus === 'following' && followType && (
-              <Badge 
+              <Badge
                 testID={`${followType}-badge`}
                 variant={followType === 'family' ? 'default' : 'secondary'}
                 style={styles.badge}
@@ -178,15 +188,13 @@ export function FollowButton({
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>フォロータイプを選択</Text>
-            
+
             <TouchableOpacity
               onPress={() => handleFollowTypeSelect('family')}
               style={styles.familyFollowButton}
             >
               <Text style={styles.buttonTextWhite}>ファミリーフォロー</Text>
-              <Text style={styles.buttonSubtext}>
-                深い繋がりを築きたい相手に
-              </Text>
+              <Text style={styles.buttonSubtext}>深い繋がりを築きたい相手に</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -194,9 +202,7 @@ export function FollowButton({
               style={styles.watchFollowButton}
             >
               <Text style={styles.buttonTextWhite}>ウォッチフォロー</Text>
-              <Text style={styles.buttonSubtext}>
-                投稿を見たい相手に
-              </Text>
+              <Text style={styles.buttonSubtext}>投稿を見たい相手に</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -219,7 +225,7 @@ export function FollowButton({
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>ファミリーフォローの理由</Text>
-            
+
             <TextInput
               testID="follow-reason-input"
               value={followReason}
@@ -239,9 +245,7 @@ export function FollowButton({
                 }}
                 style={[styles.modalButton, styles.modalButtonSecondary]}
               >
-                <Text style={styles.modalButtonTextSecondary}>
-                  キャンセル
-                </Text>
+                <Text style={styles.modalButtonTextSecondary}>キャンセル</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -252,15 +256,17 @@ export function FollowButton({
                   styles.modalButton,
                   !followReason.trim() || loading
                     ? styles.modalButtonDisabled
-                    : styles.modalButtonPrimary
+                    : styles.modalButtonPrimary,
                 ]}
               >
-                <Text style={[
-                  styles.modalButtonText,
-                  !followReason.trim() || loading
-                    ? styles.modalButtonTextDisabled
-                    : styles.modalButtonTextPrimary
-                ]}>
+                <Text
+                  style={[
+                    styles.modalButtonText,
+                    !followReason.trim() || loading
+                      ? styles.modalButtonTextDisabled
+                      : styles.modalButtonTextPrimary,
+                  ]}
+                >
                   フォロー
                 </Text>
               </TouchableOpacity>
@@ -270,16 +276,11 @@ export function FollowButton({
       </Modal>
 
       {/* アンフォロー確認ダイアログ */}
-      <Modal
-        visible={showUnfollowDialog}
-        transparent
-        animationType="fade"
-        testID="unfollow-dialog"
-      >
+      <Modal visible={showUnfollowDialog} transparent animationType="fade" testID="unfollow-dialog">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>フォローを解除しますか？</Text>
-            
+
             <TextInput
               value={unfollowReason}
               onChangeText={setUnfollowReason}
@@ -298,9 +299,7 @@ export function FollowButton({
                 }}
                 style={[styles.modalButton, styles.modalButtonSecondary]}
               >
-                <Text style={styles.modalButtonTextSecondary}>
-                  キャンセル
-                </Text>
+                <Text style={styles.modalButtonTextSecondary}>キャンセル</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -308,9 +307,7 @@ export function FollowButton({
                 disabled={loading}
                 style={[styles.modalButton, styles.modalButtonDanger]}
               >
-                <Text style={styles.modalButtonTextPrimary}>
-                  アンフォロー
-                </Text>
+                <Text style={styles.modalButtonTextPrimary}>アンフォロー</Text>
               </TouchableOpacity>
             </View>
           </View>

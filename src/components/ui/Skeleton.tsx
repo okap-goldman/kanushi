@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, ViewProps, StyleSheet, Animated } from 'react-native';
+import { Animated, StyleSheet, View, type ViewProps } from 'react-native';
 
 interface SkeletonProps extends ViewProps {
   width?: number | string;
@@ -7,12 +7,12 @@ interface SkeletonProps extends ViewProps {
   borderRadius?: number;
 }
 
-export function Skeleton({ 
-  width = '100%', 
-  height = 20, 
-  borderRadius = 4, 
-  style, 
-  ...props 
+export function Skeleton({
+  width = '100%',
+  height = 20,
+  borderRadius = 4,
+  style,
+  ...props
 }: SkeletonProps) {
   const animatedValue = useRef(new Animated.Value(0)).current;
 

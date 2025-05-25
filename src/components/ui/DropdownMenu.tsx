@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Modal, 
-  TouchableOpacity, 
-  Text, 
-  StyleSheet, 
+import {
+  Modal,
   ScrollView,
-  TouchableWithoutFeedback
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 
 interface DropdownMenuProps {
@@ -40,11 +40,7 @@ export function DropdownMenu({ children }: DropdownMenuProps) {
 export function DropdownMenuTrigger({ children }: { children: React.ReactNode }) {
   const { setOpen } = React.useContext(DropdownMenuContext);
 
-  return (
-    <TouchableOpacity onPress={() => setOpen(true)}>
-      {children}
-    </TouchableOpacity>
-  );
+  return <TouchableOpacity onPress={() => setOpen(true)}>{children}</TouchableOpacity>;
 }
 
 export function DropdownMenuContent({ children }: { children: React.ReactNode }) {
@@ -53,19 +49,12 @@ export function DropdownMenuContent({ children }: { children: React.ReactNode })
   if (!open) return null;
 
   return (
-    <Modal
-      transparent
-      visible={open}
-      animationType="fade"
-      onRequestClose={() => setOpen(false)}
-    >
+    <Modal transparent visible={open} animationType="fade" onRequestClose={() => setOpen(false)}>
       <TouchableWithoutFeedback onPress={() => setOpen(false)}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
             <View style={styles.content}>
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {children}
-              </ScrollView>
+              <ScrollView showsVerticalScrollIndicator={false}>{children}</ScrollView>
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -91,9 +80,7 @@ export function DropdownMenuItem({ children, onPress, disabled }: DropdownMenuIt
       disabled={disabled}
     >
       {typeof children === 'string' ? (
-        <Text style={[styles.itemText, disabled && styles.disabledText]}>
-          {children}
-        </Text>
+        <Text style={[styles.itemText, disabled && styles.disabledText]}>{children}</Text>
       ) : (
         children
       )}
@@ -113,14 +100,14 @@ export function DropdownMenuSeparator() {
   return <View style={styles.separator} />;
 }
 
-export function DropdownMenuCheckboxItem({ 
-  children, 
-  checked, 
-  onCheckedChange, 
-  disabled 
-}: DropdownMenuItemProps & { 
-  checked?: boolean; 
-  onCheckedChange?: (checked: boolean) => void; 
+export function DropdownMenuCheckboxItem({
+  children,
+  checked,
+  onCheckedChange,
+  disabled,
+}: DropdownMenuItemProps & {
+  checked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
 }) {
   const { setOpen } = React.useContext(DropdownMenuContext);
 
@@ -138,12 +125,8 @@ export function DropdownMenuCheckboxItem({
       disabled={disabled}
     >
       <View style={styles.checkboxItem}>
-        <View style={styles.checkbox}>
-          {checked && <Text style={styles.checkmark}>✓</Text>}
-        </View>
-        <Text style={[styles.itemText, disabled && styles.disabledText]}>
-          {children}
-        </Text>
+        <View style={styles.checkbox}>{checked && <Text style={styles.checkmark}>✓</Text>}</View>
+        <Text style={[styles.itemText, disabled && styles.disabledText]}>{children}</Text>
       </View>
     </TouchableOpacity>
   );

@@ -23,7 +23,7 @@ describe('Profile Management Integration', () => {
     // When - 各フィールドを更新
     const displayNameInput = getByTestId('display-name-input');
     const profileTextInput = getByTestId('profile-text-input');
-    
+
     fireEvent.changeText(displayNameInput, '更新されたユーザー名');
     fireEvent.changeText(profileTextInput, '更新された自己紹介文');
 
@@ -51,7 +51,7 @@ describe('Profile Management Integration', () => {
     // When - 画像選択
     const imageButton = getByTestId('profile-image-button');
     fireEvent.press(imageButton);
-    
+
     // Mock画像ピッカーからの戻り値
     fireEvent(imageButton, 'onImageSelected', { uri: mockImageUri });
 

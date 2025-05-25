@@ -1,12 +1,12 @@
-import React from 'react';
-import { View, TouchableOpacity, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import React from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from './ui/Avatar';
 import { Button } from './ui/Button';
 
 export function UserAuthStatus() {
-  const { user, profile, signOut, isLoading } = useAuth();
+  const { user, profile, signOut: _, isLoading } = useAuth(); // Mark signOut as unused
   const navigation = useNavigation();
 
   if (isLoading) {
@@ -21,17 +21,10 @@ export function UserAuthStatus() {
   if (!user) {
     return (
       <View style={styles.authButtons}>
-        <Button
-          variant="outline"
-          size="sm"
-          onPress={() => navigation.navigate('Login' as never)}
-        >
+        <Button variant="outline" size="sm" onPress={() => navigation.navigate('Login' as never)}>
           ログイン
         </Button>
-        <Button
-          size="sm"
-          onPress={() => navigation.navigate('Register' as never)}
-        >
+        <Button size="sm" onPress={() => navigation.navigate('Register' as never)}>
           登録
         </Button>
       </View>

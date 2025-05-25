@@ -1,26 +1,26 @@
+import { Feather } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
+  ActivityIndicator,
   FlatList,
   SafeAreaView,
-  ActivityIndicator,
   SectionList,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import { AISearchBar } from '../components/search/AISearchBar';
 import { AIChat } from '../components/ai/AIChat';
-import { Post } from '../components/post/Post';
 import { EventCard } from '../components/events/EventCard';
+import { Post } from '../components/post/Post';
+import { AISearchBar } from '../components/search/AISearchBar';
 import { ProductCard } from '../components/shop/ProductCard';
-import { SearchResults } from '../lib/aiChatService';
-import { Feather } from '@expo/vector-icons';
+import type { SearchResults } from '../lib/aiChatService';
 
 export const Search = () => {
   const [loading, setLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [showAIChat, setShowAIChat] = useState(false);
-  
+
   const handleSearchResults = (results: SearchResults) => {
     setSearchResults(results);
   };
@@ -33,9 +33,7 @@ export const Search = () => {
     <View style={styles.emptyState}>
       <Feather name="search" size={48} color="#A0AEC0" />
       <Text style={styles.emptyStateTitle}>検索結果がありません</Text>
-      <Text style={styles.emptyStateText}>
-        投稿、ユーザー、ハッシュタグを検索してみてください
-      </Text>
+      <Text style={styles.emptyStateText}>投稿、ユーザー、ハッシュタグを検索してみてください</Text>
     </View>
   );
 
@@ -156,12 +154,9 @@ export const Search = () => {
       <View style={styles.header}>
         <Text style={styles.title}>検索</Text>
       </View>
-      
-      <AISearchBar
-        onSearchResults={handleSearchResults}
-        onAIChatPress={handleAIChatPress}
-      />
-      
+
+      <AISearchBar onSearchResults={handleSearchResults} onAIChatPress={handleAIChatPress} />
+
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0070F3" />
@@ -170,13 +165,10 @@ export const Search = () => {
         renderSearchResults()
       )}
 
-      <AIChat
-        isVisible={showAIChat}
-        onClose={() => setShowAIChat(false)}
-      />
+      <AIChat isVisible={showAIChat} onClose={() => setShowAIChat(false)} />
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {

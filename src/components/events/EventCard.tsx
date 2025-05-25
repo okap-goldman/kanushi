@@ -1,55 +1,57 @@
-import React, { useState } from "react";
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Image,
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { format } from 'date-fns';
+import { ja } from 'date-fns/locale';
+import React, { useState } from 'react';
+import {
   ActivityIndicator,
-  Alert
-} from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { format } from "date-fns";
-import { ja } from "date-fns/locale";
-import { Ionicons } from "@expo/vector-icons";
-import { EventResponse } from "../../lib/eventServiceDrizzle";
-import { useAuth } from "../../context/AuthContext";
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useAuth } from '../../context/AuthContext';
+import type { EventResponse } from '../../lib/eventServiceDrizzle';
 
 interface EventCardProps {
   event: EventResponse;
-  variant?: "default" | "compact";
+  variant?: 'default' | 'compact';
   onParticipationChange?: () => void;
   participantCount?: number;
   isParticipating?: boolean;
 }
 
-export default function EventCard({ 
-  event, 
-  variant = "default",
+export default function EventCard({
+  event,
+  variant = 'default',
   onParticipationChange,
   participantCount = 0,
-  isParticipating = false
+  isParticipating = false,
 }: EventCardProps) {
   const navigation = useNavigation();
   const { user } = useAuth();
   const [isJoining, setIsJoining] = useState(false);
-  
-  const isCompact = variant === "compact";
+
+  const isCompact = variant === 'compact';
   const startDate = new Date(event.startsAt);
   const endDate = new Date(event.endsAt);
   const isSameDay = startDate.toDateString() === endDate.toDateString();
-  
+
   // Format price display
-  const priceDisplay = event.fee && parseFloat(event.fee) > 0 
-    ? `¥${parseInt(event.fee).toLocaleString()}` 
-    : "無料";
+  const priceDisplay =
+    event.fee && Number.parseFloat(event.fee) > 0
+      ? `¥${Number.parseInt(event.fee).toLocaleString()}`
+      : '無料';
 
   // Format location or online details
-  const locationDisplay = event.eventType === 'online' 
-    ? "オンラインイベント" 
-    : event.eventType === 'voice_workshop'
-    ? "音声ワークショップ"
-    : (event.location || "場所未定");
+  const locationDisplay =
+    event.eventType === 'online'
+      ? 'オンラインイベント'
+      : event.eventType === 'voice_workshop'
+        ? '音声ワークショップ'
+        : event.location || '場所未定';
 
   // Handle navigation to event detail
   const handleNavigateToEvent = () => {
@@ -59,22 +61,32 @@ export default function EventCard({
   // Get event type label
   const getEventTypeLabel = () => {
     switch (event.eventType) {
-      case 'online': return 'オンライン';
-      case 'offline': return 'オフライン';
-      case 'hybrid': return 'ハイブリッド';
-      case 'voice_workshop': return '音声ワークショップ';
-      default: return '';
+      case 'online':
+        return 'オンライン';
+      case 'offline':
+        return 'オフライン';
+      case 'hybrid':
+        return 'ハイブリッド';
+      case 'voice_workshop':
+        return '音声ワークショップ';
+      default:
+        return '';
     }
   };
 
   // Get event type icon
   const getEventTypeIcon = () => {
     switch (event.eventType) {
-      case 'online': return 'globe-outline';
-      case 'offline': return 'location-outline';
-      case 'hybrid': return 'git-merge-outline';
-      case 'voice_workshop': return 'mic-outline';
-      default: return 'calendar-outline';
+      case 'online':
+        return 'globe-outline';
+      case 'offline':
+        return 'location-outline';
+      case 'hybrid':
+        return 'git-merge-outline';
+      case 'voice_workshop':
+        return 'mic-outline';
+      default:
+        return 'calendar-outline';
     }
   };
 
@@ -83,24 +95,32 @@ export default function EventCard({
       <View style={[styles.card, isCompact && styles.cardCompact]}>
         <View style={[styles.cardHeader, isCompact && styles.cardHeaderCompact]}>
           <View style={styles.badgeContainer}>
-            <View style={[styles.badge, event.fee && parseFloat(event.fee) > 0 ? styles.badgePrimary : styles.badgeOutline]}>
-              <Text style={[styles.badgeText, event.fee && parseFloat(event.fee) > 0 && styles.badgeTextPrimary]}>
+            <View
+              style={[
+                styles.badge,
+                event.fee && Number.parseFloat(event.fee) > 0
+                  ? styles.badgePrimary
+                  : styles.badgeOutline,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.badgeText,
+                  event.fee && Number.parseFloat(event.fee) > 0 && styles.badgeTextPrimary,
+                ]}
+              >
                 {priceDisplay}
               </Text>
             </View>
-            
+
             <View style={styles.badgeSecondary}>
               <Ionicons name={getEventTypeIcon()} size={12} color="#666" />
-              <Text style={styles.badgeTextSecondary}>
-                {getEventTypeLabel()}
-              </Text>
+              <Text style={styles.badgeTextSecondary}>{getEventTypeLabel()}</Text>
             </View>
-            
+
             {isParticipating && (
               <View style={[styles.badge, styles.badgePrimary]}>
-                <Text style={styles.badgeTextPrimary}>
-                  参加中
-                </Text>
+                <Text style={styles.badgeTextPrimary}>参加中</Text>
               </View>
             )}
 
@@ -113,31 +133,31 @@ export default function EventCard({
               </View>
             )}
           </View>
-          
+
           <Text style={[styles.title, isCompact && styles.titleCompact]} numberOfLines={2}>
             {event.name}
           </Text>
-          
+
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={16} color="#666" />
             <Text style={styles.infoText}>
-              {format(startDate, "PPP", { locale: ja })}
-              {!isSameDay && ` 〜 ${format(endDate, "PPP", { locale: ja })}`}
+              {format(startDate, 'PPP', { locale: ja })}
+              {!isSameDay && ` 〜 ${format(endDate, 'PPP', { locale: ja })}`}
             </Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <Ionicons name="time-outline" size={16} color="#666" />
             <Text style={styles.infoText}>
-              {format(startDate, "p", { locale: ja })} - {format(endDate, "p", { locale: ja })}
+              {format(startDate, 'p', { locale: ja })} - {format(endDate, 'p', { locale: ja })}
             </Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <Ionicons name={getEventTypeIcon()} size={16} color="#666" />
             <Text style={styles.infoText}>{locationDisplay}</Text>
           </View>
-          
+
           {event.workshop && event.workshop.isRecorded && (
             <View style={styles.infoRow}>
               <Ionicons name="recording-outline" size={16} color="#666" />
@@ -145,7 +165,7 @@ export default function EventCard({
             </View>
           )}
         </View>
-        
+
         {!isCompact && event.description && (
           <View style={styles.cardContent}>
             <Text style={styles.description} numberOfLines={3}>
@@ -153,7 +173,7 @@ export default function EventCard({
             </Text>
           </View>
         )}
-        
+
         <View style={[styles.cardFooter, isCompact && styles.cardFooterCompact]}>
           <View style={styles.statsContainer}>
             {participantCount > 0 && (
@@ -163,7 +183,7 @@ export default function EventCard({
               </View>
             )}
           </View>
-          
+
           <View style={styles.actionContainer}>
             <Text style={styles.viewDetailText}>詳細を見る</Text>
             <Ionicons name="chevron-forward" size={16} color="#007AFF" />

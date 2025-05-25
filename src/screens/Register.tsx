@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  SafeAreaView,
-} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
+import React, { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../context/AuthContext';
@@ -21,7 +21,7 @@ export default function Register() {
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const navigation = useNavigation<any>();
   const { signUp } = useAuth();
 
@@ -36,7 +36,7 @@ export default function Register() {
 
     try {
       const { error, user } = await signUp(email, password, username);
-      
+
       if (error) {
         setError(error.message);
       } else if (user) {
@@ -72,7 +72,7 @@ export default function Register() {
 
           <View style={styles.form}>
             {error && <Text style={styles.errorText}>{error}</Text>}
-            
+
             <Input
               label="Username"
               placeholder="Choose a username"
@@ -98,12 +98,7 @@ export default function Register() {
               secureTextEntry
             />
 
-            <Button
-              onPress={handleRegister}
-              disabled={loading}
-              loading={loading}
-              fullWidth
-            >
+            <Button onPress={handleRegister} disabled={loading} loading={loading} fullWidth>
               Sign Up
             </Button>
 

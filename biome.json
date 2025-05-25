@@ -74,12 +74,7 @@
       "quoteStyle": "single",
       "attributePosition": "auto"
     },
-    "globals": [
-      "__DEV__",
-      "global",
-      "window",
-      "document"
-    ]
+    "globals": ["__DEV__", "global", "window", "document"]
   },
   "json": {
     "formatter": {
@@ -108,7 +103,10 @@
       ".expo-shared",
       "assets/adaptive-icon.png",
       "assets/icon.png",
-      "assets/splash.png"
+      "assets/splash.png",
+      "test/**",
+      "**/*.old.tsx",
+      "**/*.old.ts"
     ]
   }
 }
