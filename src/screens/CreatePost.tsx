@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { Audio } from 'expo-av';
 import { Button } from '../components/ui/Button';
 
@@ -24,7 +25,7 @@ export default function CreatePost() {
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [hashtagInput, setHashtagInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [recording, setRecording] = useState<any>(null);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [showHashtagWarning, setShowHashtagWarning] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -146,9 +147,8 @@ export default function CreatePost() {
 
   const selectAudioFile = async () => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All, // This allows audio files too
-        allowsEditing: false,
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'audio/*',
       });
 
       if (!result.canceled && result.assets?.[0]) {

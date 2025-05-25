@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, PanResponder, ViewProps, StyleSheet, Dimensions } from 'react-native';
+import { View, PanResponder, ViewProps, StyleSheet, Dimensions, ViewStyle } from 'react-native';
 
 interface SliderProps extends ViewProps {
   value?: number;
@@ -9,7 +9,7 @@ interface SliderProps extends ViewProps {
   disabled?: boolean;
   minimumTrackTintColor?: string;
   maximumTrackTintColor?: string;
-  thumbStyle?: any;
+  thumbStyle?: ViewStyle;
 }
 
 export function Slider({ 

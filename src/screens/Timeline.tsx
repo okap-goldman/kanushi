@@ -11,13 +11,36 @@ import { Tabs } from '../components/ui/Tabs';
 import PostCard from '../components/PostCard';
 import { useAuth } from '../context/AuthContext';
 
+interface Post {
+  id: string;
+  user: {
+    id: string;
+    displayName: string;
+    profileImageUrl?: string;
+  };
+  contentType: 'text' | 'image' | 'audio' | 'video';
+  textContent?: string;
+  mediaUrl?: string;
+  waveformUrl?: string;
+  durationSeconds?: number;
+  aiMetadata?: {
+    summary?: string;
+  };
+  createdAt: string;
+  likes: number;
+  comments: number;
+  isLiked: boolean;
+  isHighlighted: boolean;
+  isBookmarked: boolean;
+}
+
 interface TimelineProps {
   // Add any props if needed
 }
 
-export default function Timeline({}: TimelineProps) {
+export default function Timeline(_props: TimelineProps) {
   const [activeTab, setActiveTab] = useState<'family' | 'watch'>('family');
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
@@ -73,9 +96,11 @@ export default function Timeline({}: TimelineProps) {
   const loadTimeline = async () => {
     setLoading(true);
     try {
-      // Simulate API call
+      // Simulate API call - here we would use activeTab to filter posts
       setTimeout(() => {
-        setPosts(mockPosts);
+        // Filter posts based on activeTab if needed
+        const filteredPosts = mockPosts; // In real implementation, filter by activeTab
+        setPosts(filteredPosts);
         setLoading(false);
       }, 1000);
     } catch (error) {
@@ -152,7 +177,7 @@ export default function Timeline({}: TimelineProps) {
     setPosts(prev => prev.filter(post => post.id !== postId));
   };
 
-  const renderPost = ({ item }: { item: any }) => (
+  const renderPost = ({ item }: { item: Post }) => (
     <PostCard
       post={item}
       currentUserId={user?.id}

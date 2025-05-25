@@ -16,7 +16,7 @@ interface AudioPost {
 
 interface AudioPlayerProps {
   post: AudioPost;
-  sound?: any;
+  sound?: Audio.Sound;
 }
 
 export function AudioPlayer({ post, sound: externalSound }: AudioPlayerProps) {
