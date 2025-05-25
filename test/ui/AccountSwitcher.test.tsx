@@ -1,4 +1,15 @@
-// src/components/__tests__/AccountSwitcher.test.tsx
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { AccountSwitcher } from '../../src/components/profile/AccountSwitcher';
+import { authService } from '../../src/lib/authService';
+
+jest.mock('../../src/lib/authService', () => ({
+  authService: {
+    getAccounts: jest.fn(),
+    switchAccount: jest.fn()
+  }
+}));
+
 describe('AccountSwitcher Component', () => {
   it('アカウント一覧が正しく表示される', async () => {
     // Given
