@@ -25,7 +25,7 @@ describe('HighlightButton', () => {
   });
 
   it('未ハイライト状態で正しく表示される', () => {
-    vi.mocked(highlightService.checkHighlighted).mockResolvedValue({ data: false, error: null });
+    (highlightService.checkHighlighted as any).mockResolvedValue({ data: false, error: null });
 
     const { getByTestId } = render(
       <HighlightButton postId="post1" initialHighlighted={false} initialCount={0} />
@@ -36,7 +36,7 @@ describe('HighlightButton', () => {
   });
 
   it('ハイライト済み状態で正しく表示される', () => {
-    vi.mocked(highlightService.checkHighlighted).mockResolvedValue({ data: true, error: null });
+    (highlightService.checkHighlighted as any).mockResolvedValue({ data: true, error: null });
 
     const { getByTestId } = render(
       <HighlightButton postId="post1" initialHighlighted={true} initialCount={5} />
@@ -48,7 +48,7 @@ describe('HighlightButton', () => {
   });
 
   it('ボタンクリックでダイアログが表示される', async () => {
-    vi.mocked(highlightService.checkHighlighted).mockResolvedValue({ data: false, error: null });
+    (highlightService.checkHighlighted as any).mockResolvedValue({ data: false, error: null });
 
     const { getByTestId, queryByTestId } = render(
       <HighlightButton postId="post1" />
@@ -64,8 +64,8 @@ describe('HighlightButton', () => {
   });
 
   it('理由を入力してハイライトを作成できる', async () => {
-    vi.mocked(highlightService.checkHighlighted).mockResolvedValue({ data: false, error: null });
-    vi.mocked(highlightService.createHighlight).mockResolvedValue({ 
+    (highlightService.checkHighlighted as any).mockResolvedValue({ data: false, error: null });
+    (highlightService.createHighlight as any).mockResolvedValue({ 
       data: { 
         id: 'highlight1', 
         reason: '素晴らしい投稿です',
@@ -99,8 +99,8 @@ describe('HighlightButton', () => {
   });
 
   it('ハイライト済みの場合、ハイライトを解除できる', async () => {
-    vi.mocked(highlightService.checkHighlighted).mockResolvedValue({ data: true, error: null });
-    vi.mocked(highlightService.removeHighlight).mockResolvedValue({ data: true, error: null });
+    (highlightService.checkHighlighted as any).mockResolvedValue({ data: true, error: null });
+    (highlightService.removeHighlight as any).mockResolvedValue({ data: true, error: null });
     const onHighlightChange = vi.fn();
 
     const { getByTestId } = render(
@@ -123,7 +123,7 @@ describe('HighlightButton', () => {
   });
 
   it('空の理由ではハイライトできない', async () => {
-    vi.mocked(highlightService.checkHighlighted).mockResolvedValue({ data: false, error: null });
+    (highlightService.checkHighlighted as any).mockResolvedValue({ data: false, error: null });
     const onHighlightChange = vi.fn();
 
     const { getByTestId, getByText } = render(
@@ -142,7 +142,7 @@ describe('HighlightButton', () => {
   });
 
   it('短すぎる理由ではハイライトできない', async () => {
-    vi.mocked(highlightService.checkHighlighted).mockResolvedValue({ data: false, error: null });
+    (highlightService.checkHighlighted as any).mockResolvedValue({ data: false, error: null });
     const onHighlightChange = vi.fn();
 
     const { getByTestId, getByPlaceholderText, getByText } = render(
@@ -164,8 +164,8 @@ describe('HighlightButton', () => {
   });
 
   it('ハイライト作成時にエラーが発生した場合、エラーメッセージが表示される', async () => {
-    vi.mocked(highlightService.checkHighlighted).mockResolvedValue({ data: false, error: null });
-    vi.mocked(highlightService.createHighlight).mockResolvedValue({ 
+    (highlightService.checkHighlighted as any).mockResolvedValue({ data: false, error: null });
+    (highlightService.createHighlight as any).mockResolvedValue({ 
       data: null, 
       error: new Error('データベースエラーが発生しました')
     });
