@@ -1,69 +1,98 @@
-# Welcome to your Lovable project
+# Kanushi Mobile App
 
-## Project info
+A React Native mobile application for the Kanushi platform, built with Expo.
 
-**URL**: https://lovable.dev/projects/cb76fb72-28c3-412c-b9ee-1fa5f7de603f
+## Features
 
-## How can I edit this code?
+- Timeline feed with multi-media posts (text, image, video, audio)
+- User profiles and social connections (following/followers)
+- Messaging system
+- Location-based discovery
+- Events system
+- E-commerce functionality
 
-There are several ways of editing your application.
+## Technology Stack
 
-**Use Lovable**
+- React Native
+- Expo
+- TypeScript
+- Supabase (Backend & Auth)
+- React Navigation
+- TanStack Query
+- Expo AV for audio/video
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/cb76fb72-28c3-412c-b9ee-1fa5f7de603f) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js (v16 or newer)
+- npm or Yarn
+- Expo CLI
+- iOS Simulator (for iOS development)
+- Android Emulator or physical device (for Android development)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. Clone the repository
+2. Install dependencies:
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+cd kanushi/expo-app
+npm install
+# or
+yarn install
 ```
 
-**Edit a file directly in GitHub**
+3. Set up environment variables:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Create a `.env` file in the root of the project with the following variables:
+```
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-**Use GitHub Codespaces**
+### Running the App
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+# Start the development server
+npx expo start
 
-## What technologies are used for this project?
+# Run on iOS simulator
+npx expo run:ios
 
-This project is built with .
+# Run on Android emulator/device
+npx expo run:android
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Project Structure
 
-## How can I deploy this project?
+- `/src/components` - Reusable UI components
+- `/src/screens` - Main screens of the application
+- `/src/navigation` - Navigation configuration
+- `/src/hooks` - Custom React hooks
+- `/src/lib` - Utilities and services
+- `/src/context` - React context providers
 
-Simply open [Lovable](https://lovable.dev/projects/cb76fb72-28c3-412c-b9ee-1fa5f7de603f) and click on Share -> Publish.
+## Deployment
 
-## I want to use a custom domain - is that possible?
+### Building for Production
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+```bash
+# Build for iOS
+eas build --platform ios
+
+# Build for Android
+eas build --platform android
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License.

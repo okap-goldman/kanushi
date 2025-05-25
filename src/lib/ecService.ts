@@ -25,7 +25,7 @@ export interface CreateProductInput {
   description: string;
   price: number;
   currency?: string;
-  image_file?: File;
+  image_file?: any; // Changed from File to any for React Native compatibility
   stock: number;
 }
 
@@ -35,7 +35,7 @@ export interface UpdateProductInput {
   description?: string;
   price?: number;
   currency?: string;
-  image_file?: File;
+  image_file?: any; // Changed from File to any for React Native compatibility
   image_url?: string;
   stock?: number;
 }
@@ -445,14 +445,24 @@ export const getOrders = async (
       .range(offset, offset + limit - 1);
 
     // Filter by user role (buyer or seller)
+    let productIds: any[] | null = null;
+    
     if (as_seller) {
       // As a seller, get orders for products sold by the user
-      query = query.in('product_id', function(subquery) {
-        return subquery
-          .from('products')
-          .select('id')
-          .eq('seller_user_id', userId);
-      });
+      // First get the product IDs for this seller
+      const { data } = await supabase
+        .from('products')
+        .select('id')
+        .eq('seller_user_id', userId);
+      
+      productIds = data;
+      
+      if (productIds && productIds.length > 0) {
+        query = query.in('product_id', productIds.map((p: any) => p.id));
+      } else {
+        // No products, return empty result
+        return { orders: [], next_page: null };
+      }
     } else {
       // As a buyer, get orders made by the user
       query = query.eq('buyer_user_id', userId);
@@ -503,12 +513,9 @@ export const getOrders = async (
       .select('*', { count: 'exact', head: true });
       
     if (as_seller) {
-      countQuery = countQuery.in('product_id', function(subquery) {
-        return subquery
-          .from('products')
-          .select('id')
-          .eq('seller_user_id', userId);
-      });
+      if (productIds && productIds.length > 0) {
+        countQuery = countQuery.in('product_id', productIds.map(p => p.id));
+      }
     } else {
       countQuery = countQuery.eq('buyer_user_id', userId);
     }
@@ -881,6 +888,22 @@ export const getSalesAnalytics = async (): Promise<{
       throw new Error('ログインが必要です');
     }
 
+    // First get the product IDs for this seller
+    const { data: productIds } = await supabase
+      .from('products')
+      .select('id')
+      .eq('seller_user_id', userId);
+    
+    if (!productIds || productIds.length === 0) {
+      // No products, return empty analytics
+      return {
+        total_revenue: 0,
+        total_orders: 0,
+        total_sales: 0,
+        products_sold: []
+      };
+    }
+
     // Get orders for products sold by the user
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
@@ -891,12 +914,7 @@ export const getSalesAnalytics = async (): Promise<{
           title
         )
       `)
-      .in('product_id', function(subquery) {
-        return subquery
-          .from('products')
-          .select('id')
-          .eq('seller_user_id', userId);
-      })
+      .in('product_id', productIds.map(p => p.id))
       .in('status', ['paid', 'shipped']);
 
     if (ordersError) {

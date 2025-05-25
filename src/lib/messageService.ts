@@ -173,7 +173,7 @@ export const getConversations = async (
           // For display in the UI, use other participant's name/image for 1:1 chats
           display_name: otherParticipants.length === 1 
             ? otherParticipants[0].user.name 
-            : formattedParticipants.map(p => p.user.name).join(', '),
+            : formattedParticipants.map((p: any) => p.user.name).join(', '),
           display_image: otherParticipants.length === 1 
             ? otherParticipants[0].user.image
             : 'https://api.dicebear.com/7.x/avataaars/svg?seed=group'
@@ -311,7 +311,7 @@ export const getConversation = async (
       // For display in the UI, use other participant's name/image for 1:1 chats
       display_name: otherParticipants.length === 1 
         ? otherParticipants[0].user.name 
-        : formattedParticipants.map(p => p.user.name).join(', '),
+        : formattedParticipants.map((p: any) => p.user.name).join(', '),
       display_image: otherParticipants.length === 1 
         ? otherParticipants[0].user.image
         : 'https://api.dicebear.com/7.x/avataaars/svg?seed=group'

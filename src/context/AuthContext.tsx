@@ -1,15 +1,14 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
-import { IS_DEV } from '@/lib/env';
+import { supabase } from '../lib/supabase';
 
 interface AuthContextProps {
   session: Session | null;
   user: User | null;
-  profile: any | null;
-  isLoading: boolean;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, username: string) => Promise<{ error: Error | null; user: User | null }>;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -17,122 +16,138 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Skip login in development mode if needed
-    console.log('DEV mode:', IS_DEV, 'Skip login:', import.meta.env.VITE_SKIP_LOGIN);
-    if (IS_DEV && (import.meta.env.VITE_SKIP_LOGIN === 'true' || import.meta.env.VITE_SKIP_LOGIN === true)) {
-      // Use a valid UUID format for development
-      const mockUser = {
-        id: 'f1e2d3c4-b5a6-7987-8765-4321abcdef98', // Valid UUID format (admin user from sample data)
-        email: 'dev@example.com',
-        // Add other required user properties
-      } as User;
-      
-      const mockSession = {
-        user: mockUser,
-        access_token: 'mock-token',
-        refresh_token: 'mock-refresh-token',
-        expires_at: Date.now() + 3600
-      } as Session;
-      
-      setSession(mockSession);
-      setUser(mockUser);
-      setProfile({
-        id: mockUser.id,
-        username: 'developer',
-        full_name: 'Development User',
-        avatar_url: '/placeholder.svg',
-        // Add other profile fields as needed
-      });
-      setIsLoading(false);
-      return;
-    }
-    
-    // Normal authentication flow
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
+
+      // If logged in, check if profile exists
       if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setIsLoading(false);
+        checkAndCreateProfileIfNeeded(session.user);
       }
     });
 
     // Listen for auth changes
-    // Skip subscription in dev mode with skip login
-    if (IS_DEV && (import.meta.env.VITE_SKIP_LOGIN === 'true' || import.meta.env.VITE_SKIP_LOGIN === true)) {
-      return () => {};
-    }
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-          setIsLoading(false);
-        }
-      }
-    );
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
 
-    return () => {
-      subscription.unsubscribe();
-    };
+      // If this is a sign-in event and we have a user, check if profile exists
+      if (event === 'SIGNED_IN' && session?.user) {
+        await checkAndCreateProfileIfNeeded(session.user);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  // Helper to check if profile exists and create one if needed
+  const checkAndCreateProfileIfNeeded = async (user: User) => {
     try {
-      setIsLoading(true);
+      // Check if profile exists
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', userId)
+        .select('id')
+        .eq('id', user.id)
         .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-      } else {
-        setProfile(data);
+        
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+        console.error('Error checking profile:', error);
+        return;
       }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    } finally {
-      setIsLoading(false);
+      
+      // If no profile exists, create one
+      if (!data) {
+        // Get username from metadata or use a default
+        const username = user.user_metadata?.username || 
+                          user.email?.split('@')[0] || 
+                          `user_${Math.random().toString(36).substring(2, 9)}`;
+                          
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            name: user.user_metadata?.name || username,
+            image: user.user_metadata?.image || 'https://via.placeholder.com/150',
+            username: username,
+            bio: user.user_metadata?.bio || '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+          
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
+      }
+    } catch (err) {
+      console.error('Profile check/creation error:', err);
     }
   };
 
-  const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id);
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return { error };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  const signUp = async (email: string, password: string, username: string) => {
+    try {
+      // Sign up the user
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.session) {
+        // User is signed in and authenticated, now create the profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user!.id,
+            name: username,
+            image: 'https://via.placeholder.com/150',
+            username,
+            bio: '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (profileError) {
+          console.error("Profile creation error:", profileError);
+          // Don't throw, since the user was created successfully
+        }
+      } else {
+        // Email confirmation is required - inform in the log
+        console.log("Email confirmation required before profile creation");
+      }
+
+      return { error: null, user: data.user };
+    } catch (error) {
+      return { error: error as Error, user: null };
     }
   };
 
   const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      setProfile(null);
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+    await supabase.auth.signOut();
   };
 
-  const value = {
-    session,
-    user,
-    profile,
-    isLoading,
-    signOut,
-    refreshProfile,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ session, user, loading, signIn, signUp, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

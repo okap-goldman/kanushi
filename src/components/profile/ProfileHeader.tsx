@@ -1,120 +1,219 @@
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Play, Pause, Store, LogOut } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useState, useRef } from "react";
-import { useAuth } from "@/context/AuthContext";
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Audio } from 'expo-av';
+import { Play, Pause, Store, LogOut } from 'lucide-react-native';
+import { useAuth } from '@/context/AuthContext';
+import { Avatar } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
 
 interface ProfileHeaderProps {
-  isPlaying: boolean;
-  handlePlayVoice: () => void;
-  selectedTab: string;
-  setSelectedTab: (tab: string) => void;
+  isPlaying?: boolean;
+  handlePlayVoice?: () => void;
+  selectedTab?: string;
+  setSelectedTab?: (tab: string) => void;
 }
 
 export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps) {
-  const navigate = useNavigate();
+  const navigation = useNavigation();
   const { user, profile, signOut } = useAuth();
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const toggleAudio = () => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio("https://s328.podbean.com/pb/4b3e15298687315db3070972aaa50fee/676f0aab/data1/fs91/20007750/uploads/6b592.m4a?pbss=abbaab44-f1dd-5725-bf73-452199e42c01");
-    }
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
 
-    if (isAudioPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
+  const toggleAudio = async () => {
+    try {
+      if (isAudioPlaying && sound) {
+        await sound.pauseAsync();
+        setIsAudioPlaying(false);
+      } else {
+        if (sound) {
+          await sound.playAsync();
+          setIsAudioPlaying(true);
+        } else {
+          const audioUrl = profile?.audio_url || "https://s328.podbean.com/pb/4b3e15298687315db3070972aaa50fee/676f0aab/data1/fs91/20007750/uploads/6b592.m4a?pbss=abbaab44-f1dd-5725-bf73-452199e42c01";
+          const { sound: newSound } = await Audio.Sound.createAsync(
+            { uri: audioUrl },
+            { shouldPlay: true }
+          );
+          setSound(newSound);
+          setIsAudioPlaying(true);
+
+          newSound.setOnPlaybackStatusUpdate((status) => {
+            if (status.isLoaded && status.didJustFinish) {
+              setIsAudioPlaying(false);
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error playing audio:', error);
     }
-    setIsAudioPlaying(!isAudioPlaying);
   };
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/login');
+    navigation.navigate('Login' as never);
   };
 
   return (
-    <div className="flex flex-col items-center space-y-6">
-      <div className="flex items-center gap-8">
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full"
-          onClick={toggleAudio}
+    <View style={styles.container}>
+      <View style={styles.avatarRow}>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={toggleAudio}
         >
           {isAudioPlaying ? (
-            <Pause className="h-6 w-6" />
+            <Pause size={24} color="#6366f1" />
           ) : (
-            <Play className="h-6 w-6" />
+            <Play size={24} color="#6366f1" />
           )}
-          <span className="sr-only">音声を再生</span>
-        </Button>
+        </TouchableOpacity>
 
-        <Avatar className="h-24 w-24">
-          <AvatarImage src={profile?.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || '1'}`} />
-          <AvatarFallback>{profile?.name?.[0] || user?.email?.[0] || 'U'}</AvatarFallback>
-        </Avatar>
+        <Avatar
+          source={{ uri: profile?.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || '1'}` }}
+          style={styles.avatar}
+          fallback={profile?.name?.[0] || user?.email?.[0] || 'U'}
+        />
 
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full"
-          onClick={() => navigate("/shop")}
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => navigation.navigate('Shop' as never)}
         >
-          <Store className="h-6 w-6" />
-          <span className="sr-only">ショップ</span>
-        </Button>
-      </div>
+          <Store size={24} color="#6366f1" />
+        </TouchableOpacity>
+      </View>
       
-      <div className="flex gap-2">
+      <View style={styles.actions}>
         <Button 
           variant="outline" 
-          className="mt-2"
-          onClick={() => navigate("/profile/edit")}
+          onPress={() => navigation.navigate('ProfileEdit' as never)}
         >
           プロフィールを編集
         </Button>
         
         <Button 
           variant="outline" 
-          className="mt-2"
-          onClick={handleSignOut}
+          onPress={handleSignOut}
         >
-          <LogOut className="h-4 w-4 mr-2" />
+          <LogOut size={16} color="#6366f1" style={{ marginRight: 8 }} />
           ログアウト
         </Button>
-      </div>
+      </View>
 
-      <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold">{profile?.name || user?.email?.split('@')[0]}</h1>
-        <p className="text-sm text-muted-foreground">@{profile?.username || 'username'}</p>
-        <p className="text-sm text-muted-foreground">ID: {user?.id?.substring(0, 8) || '123456789'}</p>
-        <p className="text-muted-foreground max-w-md">
+      <View style={styles.info}>
+        <Text style={styles.name}>{profile?.name || user?.email?.split('@')[0]}</Text>
+        <Text style={styles.username}>@{profile?.username || 'username'}</Text>
+        <Text style={styles.userId}>ID: {user?.id?.substring(0, 8) || '123456789'}</Text>
+        <Text style={styles.bio}>
           {profile?.bio || '地球での使命：人々の心に光を灯し、内なる平安への道を示すこと'}
-        </p>
-      </div>
+        </Text>
+      </View>
 
-      <div className="flex gap-8 border rounded-lg p-4 w-full max-w-md justify-between">
-        <div className="text-center">
-          <div className="font-bold">1.2k</div>
-          <div className="text-sm text-muted-foreground">ファミリー</div>
-        </div>
-        <div className="text-center">
-          <div className="font-bold">890</div>
-          <div className="text-sm text-muted-foreground">ウォッチ</div>
-        </div>
-        <div className="text-center">
-          <div className="font-bold">3.4k</div>
-          <div className="text-sm text-muted-foreground">フォロー</div>
-        </div>
-        <div className="text-center">
-          <div className="font-bold">2.1k</div>
-          <div className="text-sm text-muted-foreground">フォロワー</div>
-        </div>
-      </div>
-    </div>
+      <View style={styles.stats}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>1.2k</Text>
+          <Text style={styles.statLabel}>ファミリー</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>890</Text>
+          <Text style={styles.statLabel}>ウォッチ</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>3.4k</Text>
+          <Text style={styles.statLabel}>フォロー</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>2.1k</Text>
+          <Text style={styles.statLabel}>フォロワー</Text>
+        </View>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 32,
+    marginBottom: 16,
+  },
+  avatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+  },
+  iconButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  info: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  username: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 2,
+  },
+  userId: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  bio: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    maxWidth: 300,
+    lineHeight: 20,
+  },
+  stats: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 32,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+});

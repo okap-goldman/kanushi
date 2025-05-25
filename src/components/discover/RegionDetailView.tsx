@@ -1,11 +1,10 @@
-import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { RegionCharacteristics } from "./RegionCharacteristics";
-import { RegionEvents } from "./RegionEvents";
-import { RegionPeople } from "./RegionPeople";
-import { RegionSpecialties } from "./RegionSpecialties";
+import React from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { X } from 'lucide-react-native';
+import { RegionCharacteristics } from './RegionCharacteristics';
+import { RegionEvents } from './RegionEvents';
+import { RegionPeople } from './RegionPeople';
+import { RegionSpecialties } from './RegionSpecialties';
 
 interface RegionDetailViewProps {
   open: boolean;
@@ -167,7 +166,6 @@ const REGIONS_DATA = {
 };
 
 export function RegionDetailView({ open, onClose, region }: RegionDetailViewProps) {
-  // Don't proceed if there's no region selected
   if (!region) return null;
   
   const regionData = REGIONS_DATA[region as keyof typeof REGIONS_DATA];
@@ -175,32 +173,31 @@ export function RegionDetailView({ open, onClose, region }: RegionDetailViewProp
   if (!regionData) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl p-0">
-        <ScrollArea className="h-[80vh]">
-          <div className="p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">{region}の目醒め情報</h2>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={onClose}
-                className="hover:bg-destructive/10 transition-colors"
-              >
-                <X className="w-5 h-5" />
-                <span className="sr-only">閉じる</span>
-              </Button>
-            </div>
-
-            <div className="space-y-8">
+    <Modal
+      visible={open}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View className="flex-1 bg-black/50">
+        <View className="flex-1 mt-20 bg-gray-50 rounded-t-3xl">
+          <View className="p-6 flex-row items-center justify-between bg-white rounded-t-3xl">
+            <Text className="text-xl font-bold">{region}の目醒め情報</Text>
+            <TouchableOpacity onPress={onClose} className="p-2">
+              <X size={24} color="#000" />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView className="flex-1">
+            <View className="p-6 space-y-6">
               <RegionCharacteristics characteristics={regionData.features.characteristics} />
               <RegionEvents />
               <RegionPeople people={regionData.features.people} />
               <RegionSpecialties specialties={regionData.features.specialties} />
-            </div>
-          </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+            </View>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 }

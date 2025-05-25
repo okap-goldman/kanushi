@@ -1,72 +1,28 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { CalendarIcon, ClockIcon, MapPin, Globe, Users, DollarSign } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  Modal,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  Platform,
+  Switch,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Ionicons } from "@expo/vector-icons";
+import { format } from "date-fns";
 import { useAuth } from "../../context/AuthContext";
 import { eventService, CreateEventRequest } from "../../lib/eventService";
-
-import { Button } from "../ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
-import { Input } from "../ui/input";
-import { Textarea } from "../ui/textarea";
-import { Label } from "../ui/label";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "../ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Switch } from "../ui/switch";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Calendar } from "../ui/calendar";
-import { Spinner } from "../ui/spinner";
-import { format } from "date-fns";
-import { toast } from "../ui/use-toast";
-
-const eventSchema = z.object({
-  title: z.string().min(2, "Title must be at least 2 characters").max(100, "Title cannot exceed 100 characters"),
-  description: z.string().optional(),
-  start_date: z.date({
-    required_error: "Start date is required",
-  }),
-  start_time: z.string({
-    required_error: "Start time is required",
-  }),
-  end_date: z.date({
-    required_error: "End date is required",
-  }),
-  end_time: z.string({
-    required_error: "End time is required",
-  }),
-  is_online: z.boolean().default(false),
-  location: z.string().optional(),
-  online_url: z.string().optional(),
-  max_participants: z.number().int().positive().optional(),
-  price: z.number().int().min(0, "Price cannot be negative").default(0),
-  currency: z.string().default("JPY"),
-  category: z.string().optional(),
-  privacy_level: z.enum(["public", "friends", "private"]).default("public"),
-  registration_deadline: z.date().optional(),
-  cover_image_url: z.string().optional(),
-});
-
-type EventFormValues = z.infer<typeof eventSchema>;
+import { Picker } from "@react-native-picker/picker";
 
 interface CreateEventDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  visible: boolean;
+  onClose: () => void;
 }
 
 const CATEGORIES = [
@@ -86,76 +42,94 @@ const CATEGORIES = [
   "other",
 ];
 
-export default function CreateEventDialog({ open, onOpenChange }: CreateEventDialogProps) {
+const PRIVACY_LEVELS = [
+  { value: "public", label: "Public (Anyone can see and join)" },
+  { value: "friends", label: "Friends (Only your connections can see and join)" },
+  { value: "private", label: "Private (By invitation only)" },
+];
+
+export default function CreateEventDialog({ visible, onClose }: CreateEventDialogProps) {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const navigation = useNavigation();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<EventFormValues>({
-    resolver: zodResolver(eventSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      is_online: false,
-      price: 0,
-      currency: "JPY",
-      privacy_level: "public",
-    },
-  });
+  // Form fields
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [startDate, setStartDate] = useState(new Date());
+  const [startTime, setStartTime] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+  const [endTime, setEndTime] = useState(new Date());
+  const [isOnline, setIsOnline] = useState(false);
+  const [location, setLocation] = useState("");
+  const [onlineUrl, setOnlineUrl] = useState("");
+  const [maxParticipants, setMaxParticipants] = useState("");
+  const [price, setPrice] = useState("0");
+  const [currency] = useState("JPY");
+  const [category, setCategory] = useState("");
+  const [privacyLevel, setPrivacyLevel] = useState("public");
+  const [registrationDeadline, setRegistrationDeadline] = useState<Date | null>(null);
+  const [coverImageUrl, setCoverImageUrl] = useState("");
 
-  const isOnline = form.watch("is_online");
+  // Date picker states
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [showRegistrationDatePicker, setShowRegistrationDatePicker] = useState(false);
 
-  async function onSubmit(data: EventFormValues) {
+  const handleSubmit = async () => {
     if (!user) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to create an event",
-        variant: "destructive",
-      });
+      Alert.alert("Error", "You must be logged in to create an event");
+      return;
+    }
+
+    // Validate required fields
+    if (!title.trim()) {
+      Alert.alert("Error", "Please enter an event title");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Convert form data to API request format
-      const startDateTime = new Date(`${format(data.start_date, "yyyy-MM-dd")}T${data.start_time}`);
-      const endDateTime = new Date(`${format(data.end_date, "yyyy-MM-dd")}T${data.end_time}`);
+      // Combine date and time
+      const startDateTime = new Date(startDate);
+      startDateTime.setHours(startTime.getHours(), startTime.getMinutes());
+      
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(endTime.getHours(), endTime.getMinutes());
 
       // Basic validation for dates
       if (endDateTime <= startDateTime) {
-        toast({
-          title: "Invalid date/time",
-          description: "End date/time must be after start date/time",
-          variant: "destructive",
-        });
+        Alert.alert("Invalid date/time", "End date/time must be after start date/time");
         setIsSubmitting(false);
         return;
       }
 
       const eventData: CreateEventRequest = {
-        title: data.title,
-        description: data.description,
+        title,
+        description: description || undefined,
         start_datetime: startDateTime.toISOString(),
         end_datetime: endDateTime.toISOString(),
-        is_online: data.is_online,
-        price: data.price,
-        currency: data.currency,
-        category: data.category,
-        privacy_level: data.privacy_level,
-        registration_deadline: data.registration_deadline?.toISOString(),
-        cover_image_url: data.cover_image_url,
+        is_online: isOnline,
+        price: parseInt(price, 10) || 0,
+        currency,
+        category: category || undefined,
+        privacy_level: privacyLevel as "public" | "friends" | "private",
+        registration_deadline: registrationDeadline?.toISOString(),
+        cover_image_url: coverImageUrl || undefined,
       };
 
       // Add location or online URL based on event type
-      if (data.is_online) {
-        eventData.online_url = data.online_url;
+      if (isOnline) {
+        eventData.online_url = onlineUrl || undefined;
       } else {
-        eventData.location = data.location;
+        eventData.location = location || undefined;
       }
 
-      if (data.max_participants) {
-        eventData.max_participants = data.max_participants;
+      if (maxParticipants) {
+        eventData.max_participants = parseInt(maxParticipants, 10);
       }
 
       // Create the event
@@ -165,458 +139,455 @@ export default function CreateEventDialog({ open, onOpenChange }: CreateEventDia
         throw new Error(error.message);
       }
 
-      toast({
-        title: "Event created",
-        description: "Your event has been created successfully",
-      });
-
-      // Close the dialog and navigate to the new event
-      onOpenChange(false);
-      if (event?.id) {
-        navigate(`/events/${event.id}`);
-      }
+      Alert.alert("Success", "Your event has been created successfully", [
+        {
+          text: "OK",
+          onPress: () => {
+            onClose();
+            if (event?.id) {
+              navigation.navigate("EventDetail", { eventId: event.id });
+            }
+          },
+        },
+      ]);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create event",
-        variant: "destructive",
-      });
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to create event"
+      );
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
+
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setStartDate(new Date());
+    setStartTime(new Date());
+    setEndDate(new Date());
+    setEndTime(new Date());
+    setIsOnline(false);
+    setLocation("");
+    setOnlineUrl("");
+    setMaxParticipants("");
+    setPrice("0");
+    setCategory("");
+    setPrivacyLevel("public");
+    setRegistrationDeadline(null);
+    setCoverImageUrl("");
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create New Event</DialogTitle>
-        </DialogHeader>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Title */}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Event Title*</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Give your event a name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Description */}
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Describe your event..."
-                      className="min-h-[120px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Category */}
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category.charAt(0).toUpperCase() + category.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Start Date */}
-            <div className="flex flex-wrap gap-4">
-              <FormField
-                control={form.control}
-                name="start_date"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Start Date*</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={`w-[200px] pl-3 text-left font-normal ${
-                              !field.value && "text-muted-foreground"
-                            }`}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date < new Date(new Date().setHours(0, 0, 0, 0))
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Start Time */}
-              <FormField
-                control={form.control}
-                name="start_time"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Time*</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center">
-                        <Input
-                          type="time"
-                          className="w-[150px]"
-                          {...field}
-                        />
-                        <ClockIcon className="ml-2 h-4 w-4 opacity-50" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* End Date */}
-            <div className="flex flex-wrap gap-4">
-              <FormField
-                control={form.control}
-                name="end_date"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>End Date*</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={`w-[200px] pl-3 text-left font-normal ${
-                              !field.value && "text-muted-foreground"
-                            }`}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date < new Date(new Date().setHours(0, 0, 0, 0))
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* End Time */}
-              <FormField
-                control={form.control}
-                name="end_time"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End Time*</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center">
-                        <Input
-                          type="time"
-                          className="w-[150px]"
-                          {...field}
-                        />
-                        <ClockIcon className="ml-2 h-4 w-4 opacity-50" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Is Online Toggle */}
-            <FormField
-              control={form.control}
-              name="is_online"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Online Event</FormLabel>
-                    <FormDescription>
-                      Enable if this event will be held online
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            {/* Location or Online URL based on is_online value */}
-            {isOnline ? (
-              <FormField
-                control={form.control}
-                name="online_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Online URL</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center">
-                        <Input placeholder="e.g., https://zoom.us/j/123456789" {...field} />
-                        <Globe className="ml-2 h-4 w-4 opacity-50" />
-                      </div>
-                    </FormControl>
-                    <FormDescription>
-                      Provide a link where participants can join your event
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Create New Event</Text>
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#007AFF" />
             ) : (
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center">
-                        <Input placeholder="e.g., Tokyo, Shibuya" {...field} />
-                        <MapPin className="ml-2 h-4 w-4 opacity-50" />
-                      </div>
-                    </FormControl>
-                    <FormDescription>
-                      Provide the location of your event
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <Text style={styles.submitButtonText}>Create</Text>
             )}
+          </TouchableOpacity>
+        </View>
 
-            {/* Max Participants */}
-            <FormField
-              control={form.control}
-              name="max_participants"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Maximum Participants</FormLabel>
-                  <FormControl>
-                    <div className="flex items-center">
-                      <Input
-                        type="number"
-                        min={1}
-                        placeholder="Leave empty for unlimited"
-                        {...field}
-                        value={field.value || ""}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          field.onChange(value === "" ? undefined : parseInt(value, 10));
-                        }}
-                      />
-                      <Users className="ml-2 h-4 w-4 opacity-50" />
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    Set a limit on the number of participants, or leave empty for unlimited
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Title */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Event Title*</Text>
+            <TextInput
+              style={styles.input}
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Give your event a name"
+              placeholderTextColor="#999"
             />
+          </View>
 
-            {/* Price */}
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Price</FormLabel>
-                  <FormControl>
-                    <div className="flex items-center">
-                      <Input
-                        type="number"
-                        min={0}
-                        placeholder="0 for free events"
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)}
-                      />
-                      <DollarSign className="ml-2 h-4 w-4 opacity-50" />
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    Set a price for your event, or 0 for free events
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
+          {/* Description */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Describe your event..."
+              placeholderTextColor="#999"
+              multiline
+              numberOfLines={4}
             />
+          </View>
 
-            {/* Privacy Level */}
-            <FormField
-              control={form.control}
-              name="privacy_level"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Privacy Level</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select privacy level" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="public">Public (Anyone can see and join)</SelectItem>
-                      <SelectItem value="friends">Friends (Only your connections can see and join)</SelectItem>
-                      <SelectItem value="private">Private (By invitation only)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Control who can see and join your event
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Registration Deadline */}
-            <FormField
-              control={form.control}
-              name="registration_deadline"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Registration Deadline</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={`w-[240px] pl-3 text-left font-normal ${
-                            !field.value && "text-muted-foreground"
-                          }`}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Optional</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date < new Date(new Date().setHours(0, 0, 0, 0))
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormDescription>
-                    Last day for participants to register (optional)
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Cover Image URL */}
-            <FormField
-              control={form.control}
-              name="cover_image_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cover Image URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="URL to event cover image" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Provide a URL for an image that represents your event
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
+          {/* Category */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Category</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={category}
+                onValueChange={setCategory}
+                style={styles.picker}
               >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <Spinner className="mr-2" /> : null}
-                Create Event
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+                <Picker.Item label="Select a category" value="" />
+                {CATEGORIES.map((cat) => (
+                  <Picker.Item
+                    key={cat}
+                    label={cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    value={cat}
+                  />
+                ))}
+              </Picker>
+            </View>
+          </View>
+
+          {/* Start Date & Time */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Start Date & Time*</Text>
+            <View style={styles.dateTimeRow}>
+              <TouchableOpacity
+                style={[styles.dateTimeButton, { flex: 1 }]}
+                onPress={() => setShowStartDatePicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={20} color="#666" />
+                <Text style={styles.dateTimeText}>{format(startDate, "PPP")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.dateTimeButton}
+                onPress={() => setShowStartTimePicker(true)}
+              >
+                <Ionicons name="time-outline" size={20} color="#666" />
+                <Text style={styles.dateTimeText}>{format(startTime, "p")}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* End Date & Time */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>End Date & Time*</Text>
+            <View style={styles.dateTimeRow}>
+              <TouchableOpacity
+                style={[styles.dateTimeButton, { flex: 1 }]}
+                onPress={() => setShowEndDatePicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={20} color="#666" />
+                <Text style={styles.dateTimeText}>{format(endDate, "PPP")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.dateTimeButton}
+                onPress={() => setShowEndTimePicker(true)}
+              >
+                <Ionicons name="time-outline" size={20} color="#666" />
+                <Text style={styles.dateTimeText}>{format(endTime, "p")}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Online Event Toggle */}
+          <View style={styles.formGroup}>
+            <View style={styles.toggleRow}>
+              <View>
+                <Text style={styles.label}>Online Event</Text>
+                <Text style={styles.helperText}>
+                  Enable if this event will be held online
+                </Text>
+              </View>
+              <Switch value={isOnline} onValueChange={setIsOnline} />
+            </View>
+          </View>
+
+          {/* Location or Online URL */}
+          {isOnline ? (
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Online URL</Text>
+              <TextInput
+                style={styles.input}
+                value={onlineUrl}
+                onChangeText={setOnlineUrl}
+                placeholder="e.g., https://zoom.us/j/123456789"
+                placeholderTextColor="#999"
+                autoCapitalize="none"
+              />
+              <Text style={styles.helperText}>
+                Provide a link where participants can join your event
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Location</Text>
+              <TextInput
+                style={styles.input}
+                value={location}
+                onChangeText={setLocation}
+                placeholder="e.g., Tokyo, Shibuya"
+                placeholderTextColor="#999"
+              />
+              <Text style={styles.helperText}>Provide the location of your event</Text>
+            </View>
+          )}
+
+          {/* Max Participants */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Maximum Participants</Text>
+            <TextInput
+              style={styles.input}
+              value={maxParticipants}
+              onChangeText={setMaxParticipants}
+              placeholder="Leave empty for unlimited"
+              placeholderTextColor="#999"
+              keyboardType="numeric"
+            />
+            <Text style={styles.helperText}>
+              Set a limit on the number of participants, or leave empty for unlimited
+            </Text>
+          </View>
+
+          {/* Price */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Price ({currency})</Text>
+            <TextInput
+              style={styles.input}
+              value={price}
+              onChangeText={setPrice}
+              placeholder="0 for free events"
+              placeholderTextColor="#999"
+              keyboardType="numeric"
+            />
+            <Text style={styles.helperText}>
+              Set a price for your event, or 0 for free events
+            </Text>
+          </View>
+
+          {/* Privacy Level */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Privacy Level</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={privacyLevel}
+                onValueChange={setPrivacyLevel}
+                style={styles.picker}
+              >
+                {PRIVACY_LEVELS.map((level) => (
+                  <Picker.Item
+                    key={level.value}
+                    label={level.label}
+                    value={level.value}
+                  />
+                ))}
+              </Picker>
+            </View>
+            <Text style={styles.helperText}>Control who can see and join your event</Text>
+          </View>
+
+          {/* Registration Deadline */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Registration Deadline</Text>
+            <TouchableOpacity
+              style={styles.dateTimeButton}
+              onPress={() => setShowRegistrationDatePicker(true)}
+            >
+              <Ionicons name="calendar-outline" size={20} color="#666" />
+              <Text style={styles.dateTimeText}>
+                {registrationDeadline ? format(registrationDeadline, "PPP") : "Optional"}
+              </Text>
+            </TouchableOpacity>
+            <Text style={styles.helperText}>
+              Last day for participants to register (optional)
+            </Text>
+          </View>
+
+          {/* Cover Image URL */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Cover Image URL</Text>
+            <TextInput
+              style={styles.input}
+              value={coverImageUrl}
+              onChangeText={setCoverImageUrl}
+              placeholder="URL to event cover image"
+              placeholderTextColor="#999"
+              autoCapitalize="none"
+            />
+            <Text style={styles.helperText}>
+              Provide a URL for an image that represents your event
+            </Text>
+          </View>
+        </ScrollView>
+
+        {/* Date Pickers */}
+        {showStartDatePicker && (
+          <DateTimePicker
+            value={startDate}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={(event, date) => {
+              setShowStartDatePicker(false);
+              if (date) setStartDate(date);
+            }}
+            minimumDate={new Date()}
+          />
+        )}
+
+        {showStartTimePicker && (
+          <DateTimePicker
+            value={startTime}
+            mode="time"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={(event, time) => {
+              setShowStartTimePicker(false);
+              if (time) setStartTime(time);
+            }}
+          />
+        )}
+
+        {showEndDatePicker && (
+          <DateTimePicker
+            value={endDate}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={(event, date) => {
+              setShowEndDatePicker(false);
+              if (date) setEndDate(date);
+            }}
+            minimumDate={new Date()}
+          />
+        )}
+
+        {showEndTimePicker && (
+          <DateTimePicker
+            value={endTime}
+            mode="time"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={(event, time) => {
+              setShowEndTimePicker(false);
+              if (time) setEndTime(time);
+            }}
+          />
+        )}
+
+        {showRegistrationDatePicker && (
+          <DateTimePicker
+            value={registrationDeadline || new Date()}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={(event, date) => {
+              setShowRegistrationDatePicker(false);
+              if (date) setRegistrationDeadline(date);
+            }}
+            minimumDate={new Date()}
+          />
+        )}
+      </View>
+    </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 50 : 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  closeButton: {
+    padding: 8,
+  },
+  submitButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  submitButtonDisabled: {
+    opacity: 0.5,
+  },
+  submitButtonText: {
+    color: "#007AFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  formGroup: {
+    marginBottom: 24,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "500",
+    marginBottom: 8,
+    color: "#000",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: "#000",
+  },
+  textArea: {
+    minHeight: 100,
+    textAlignVertical: "top",
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  picker: {
+    height: 50,
+  },
+  dateTimeRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  dateTimeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  dateTimeText: {
+    fontSize: 16,
+    color: "#000",
+  },
+  toggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  helperText: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+  },
+});

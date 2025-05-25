@@ -1,22 +1,76 @@
-import * as React from "react"
+import React from 'react';
+import {
+  TextInput,
+  View,
+  Text,
+  StyleSheet,
+  ViewStyle,
+  TextStyle,
+  TextInputProps as RNTextInputProps,
+} from 'react-native';
 
-import { cn } from "@/lib/utils"
+interface InputProps extends RNTextInputProps {
+  label?: string;
+  error?: string;
+  containerStyle?: ViewStyle;
+  inputStyle?: TextStyle;
+  labelStyle?: TextStyle;
+  errorStyle?: TextStyle;
+}
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
-    return (
-      <input
-        type={type}
-        className={cn(
-          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          className
-        )}
-        ref={ref}
+export function Input({
+  label,
+  error,
+  containerStyle,
+  inputStyle,
+  labelStyle,
+  errorStyle,
+  ...props
+}: InputProps) {
+  return (
+    <View style={[styles.container, containerStyle]}>
+      {label && <Text style={[styles.label, labelStyle]}>{label}</Text>}
+      <TextInput
+        style={[
+          styles.input,
+          error ? styles.inputError : null,
+          inputStyle,
+        ]}
+        placeholderTextColor="#A0AEC0"
+        autoCapitalize="none"
         {...props}
       />
-    )
-  }
-)
-Input.displayName = "Input"
+      {error && <Text style={[styles.error, errorStyle]}>{error}</Text>}
+    </View>
+  );
+}
 
-export { Input }
+const styles = StyleSheet.create({
+  container: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 6,
+    color: '#4A5568',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: '#FFFFFF',
+    color: '#1A202C',
+  },
+  inputError: {
+    borderColor: '#E53E3E',
+  },
+  error: {
+    fontSize: 12,
+    color: '#E53E3E',
+    marginTop: 4,
+  },
+});

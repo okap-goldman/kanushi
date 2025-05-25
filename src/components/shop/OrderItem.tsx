@@ -1,17 +1,20 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Order } from '@/lib/ecService';
-import { Card, CardContent } from '@/components/ui/card';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { formatDistance } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { Order } from '../../lib/ecService';
 import OrderStatusBadge from './OrderStatusBadge';
 import PriceDisplay from './PriceDisplay';
+import Card from '../ui/Card';
 
 interface OrderItemProps {
   order: Order;
 }
 
 const OrderItem: React.FC<OrderItemProps> = ({ order }) => {
+  const navigation = useNavigation<any>();
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
     
@@ -38,57 +41,122 @@ const OrderItem: React.FC<OrderItemProps> = ({ order }) => {
     }
   };
 
+  const handlePress = () => {
+    navigation.navigate('OrderDetail', { orderId: order.id });
+  };
+
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-0">
-        <div className="p-4 flex justify-between items-center border-b">
-          <div>
-            <div className="text-sm text-gray-500">注文番号: {order.id.substring(0, 8)}</div>
-            <div className="text-sm">{formatDate(order.created_at)}</div>
-          </div>
-          <OrderStatusBadge status={order.status} />
-        </div>
-        
-        <Link to={`/orders/${order.id}`} className="block hover:bg-gray-50">
-          <div className="flex p-4">
-            {order.product?.image_url && (
-              <div className="flex-shrink-0 mr-4">
-                <img 
-                  src={order.product.image_url} 
-                  alt={order.product?.title || '商品画像'} 
-                  className="w-20 h-20 object-cover rounded"
-                />
-              </div>
+    <Card>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.orderNumber}>注文番号: {order.id.substring(0, 8)}</Text>
+          <Text style={styles.date}>{formatDate(order.created_at)}</Text>
+        </View>
+        <OrderStatusBadge status={order.status} />
+      </View>
+      
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
+        <View style={styles.content}>
+          {order.product?.image_url && (
+            <View style={styles.imageContainer}>
+              <Image 
+                source={{ uri: order.product.image_url }} 
+                style={styles.productImage}
+              />
+            </View>
+          )}
+          
+          <View style={styles.details}>
+            <Text style={styles.productTitle} numberOfLines={2}>
+              {order.product?.title || '商品名が取得できません'}
+            </Text>
+            
+            <View style={styles.row}>
+              <Text style={styles.quantity}>
+                数量: {order.quantity}
+              </Text>
+              <PriceDisplay price={order.amount} size="sm" />
+            </View>
+            
+            {order.status === 'shipped' && order.tracking_number && (
+              <Text style={styles.tracking}>
+                配送情報: {order.shipping_carrier || ''} {order.tracking_number}
+              </Text>
             )}
             
-            <div className="flex-grow">
-              <h3 className="font-medium">
-                {order.product?.title || '商品名が取得できません'}
-              </h3>
-              
-              <div className="flex justify-between mt-2">
-                <div className="text-sm text-gray-600">
-                  数量: {order.quantity}
-                </div>
-                <PriceDisplay price={order.amount} size="sm" />
-              </div>
-              
-              {order.status === 'shipped' && order.tracking_number && (
-                <div className="mt-2 text-xs text-gray-500">
-                  配送情報: {order.shipping_carrier || ''} {order.tracking_number}
-                </div>
-              )}
-              
-              <div className="mt-2 text-sm">
-                <span className="text-gray-500">ステータス更新: </span>
-                <span>{getRelevantDate(order)}</span>
-              </div>
-            </div>
-          </div>
-        </Link>
-      </CardContent>
+            <View style={styles.statusUpdate}>
+              <Text style={styles.statusLabel}>ステータス更新: </Text>
+              <Text style={styles.statusDate}>{getRelevantDate(order)}</Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
     </Card>
   );
 };
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e5e5',
+  },
+  orderNumber: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  date: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  content: {
+    flexDirection: 'row',
+    padding: 16,
+  },
+  imageContainer: {
+    marginRight: 16,
+  },
+  productImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  details: {
+    flex: 1,
+  },
+  productTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  quantity: {
+    fontSize: 14,
+    color: '#4b5563',
+  },
+  tracking: {
+    fontSize: 11,
+    color: '#6b7280',
+    marginTop: 8,
+  },
+  statusUpdate: {
+    flexDirection: 'row',
+    marginTop: 8,
+  },
+  statusLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  statusDate: {
+    fontSize: 14,
+  },
+});
 
 export default OrderItem;

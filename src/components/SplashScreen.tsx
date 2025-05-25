@@ -1,36 +1,85 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Animated, Easing, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 
 interface SplashScreenProps {
   onFinish: () => void;
 }
 
 export function SplashScreen({ onFinish }: SplashScreenProps) {
-  const [isVisible, setIsVisible] = useState(true);
+  // Use useRef to create the animated values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
-    // Fade out the splash screen after a delay
+    // Animate fade in and scale
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: false, // Changed to false to avoid native driver warnings
+        easing: Easing.out(Easing.ease),
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: false, // Changed to false to avoid native driver warnings
+        easing: Easing.out(Easing.ease),
+      }),
+    ]).start();
+
+    // Wait for animation to complete before onFinish
     const timer = setTimeout(() => {
-      setIsVisible(false);
-      // Call onFinish after animation completes
-      setTimeout(onFinish, 500);
+      // Fade out
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: false, // Changed to false to avoid native driver warnings
+        easing: Easing.in(Easing.ease),
+      }).start(() => {
+        onFinish();
+      });
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [onFinish]);
+  }, [fadeAnim, scaleAnim, onFinish]);
 
   return (
-    <div
-      className={`fixed inset-0 flex flex-col items-center justify-center bg-white z-50 transition-opacity duration-500 ${
-        isVisible ? 'opacity-100' : 'opacity-0'
-      }`}
-    >
-      <div className="flex flex-col items-center justify-center h-screen">
-        <img 
-          src="/logo.png" 
-          alt="Logo" 
-          className="w-64 h-64 object-contain animate-pulse" 
+    <View style={styles.container}>
+      <Animated.View
+        style={[
+          styles.logoContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      >
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.logo}
+          contentFit="contain"
         />
-      </div>
-    </div>
+      </Animated.View>
+    </View>
   );
 }
+
+const { width, height } = Dimensions.get('window');
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: {
+    width: width * 0.4,
+    height: width * 0.4,
+  },
+});

@@ -1,6 +1,5 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 
 interface QuantitySelectorProps {
   quantity: number;
@@ -27,8 +26,8 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
+  const handleChangeText = (text: string) => {
+    const value = parseInt(text);
     if (!isNaN(value)) {
       const newValue = Math.min(Math.max(value, minQuantity), maxQuantity);
       onChange(newValue);
@@ -36,39 +35,82 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   };
 
   return (
-    <div className="flex items-center">
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        onClick={handleDecrement}
+    <View style={styles.container}>
+      <TouchableOpacity
+        onPress={handleDecrement}
         disabled={quantity <= minQuantity}
-        className="h-8 w-8"
+        style={[
+          styles.button,
+          quantity <= minQuantity && styles.buttonDisabled
+        ]}
       >
-        -
-      </Button>
+        <Text style={[
+          styles.buttonText,
+          quantity <= minQuantity && styles.buttonTextDisabled
+        ]}>-</Text>
+      </TouchableOpacity>
       
-      <Input
-        type="number"
-        value={quantity}
-        onChange={handleChange}
-        min={minQuantity}
-        max={maxQuantity}
-        className="w-16 h-8 text-center mx-2"
+      <TextInput
+        style={styles.input}
+        value={quantity.toString()}
+        onChangeText={handleChangeText}
+        keyboardType="numeric"
+        selectTextOnFocus
       />
       
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        onClick={handleIncrement}
+      <TouchableOpacity
+        onPress={handleIncrement}
         disabled={quantity >= maxQuantity}
-        className="h-8 w-8"
+        style={[
+          styles.button,
+          quantity >= maxQuantity && styles.buttonDisabled
+        ]}
       >
-        +
-      </Button>
-    </div>
+        <Text style={[
+          styles.buttonText,
+          quantity >= maxQuantity && styles.buttonTextDisabled
+        ]}>+</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  button: {
+    width: 32,
+    height: 32,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+  buttonDisabled: {
+    backgroundColor: '#f3f4f6',
+  },
+  buttonText: {
+    fontSize: 18,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  buttonTextDisabled: {
+    color: '#9ca3af',
+  },
+  input: {
+    width: 64,
+    height: 32,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 4,
+    textAlign: 'center',
+    marginHorizontal: 8,
+    fontSize: 16,
+  },
+});
 
 export default QuantitySelector;

@@ -49,8 +49,8 @@ export const getPosts = async (timeline_type?: 'family' | 'watch' | 'all'): Prom
       // Format tags array from the nested structure returned by Supabase
       const tags = post.tags
         ? post.tags
-            .filter(tag => tag.tag !== null)
-            .map(tag => tag.tag as Tag)
+            .filter((tag: any) => tag.tag !== null)
+            .map((tag: any) => tag.tag as Tag)
         : [];
 
       return {
@@ -121,8 +121,8 @@ export const getPostById = async (id: string): Promise<ApiResponse<Post>> => {
     // Format tags array from the nested structure returned by Supabase
     const tags = data.tags
       ? data.tags
-          .filter(tag => tag.tag !== null)
-          .map(tag => tag.tag as Tag)
+          .filter((tag: any) => tag.tag !== null)
+          .map((tag: any) => tag.tag as Tag)
       : [];
 
     const formattedPost = {

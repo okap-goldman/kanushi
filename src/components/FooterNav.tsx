@@ -1,52 +1,75 @@
-import { Home, Search, PlusSquare, Compass, User, MessageCircle, Calendar, ShoppingBag } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
-import { useState } from "react";
-import { CreatePostDialog } from "./CreatePostDialog";
+import React from 'react';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
 
 export function FooterNav() {
-  const location = useLocation();
-  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
+  const navigation = useNavigation<any>();
+  const route = useRoute();
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
+  const navItems = [
+    { name: 'Home', icon: 'home', route: 'Home' },
+    { name: 'Search', icon: 'search', route: 'Search' },
+    { name: 'Discover', icon: 'compass', route: 'Discover' },
+    { name: 'Messages', icon: 'message-circle', route: 'Messages' },
+    { name: 'Profile', icon: 'user', route: 'Profile' },
+  ];
+
+  // Check if the current route matches the nav item
+  const isActive = (itemRoute: string) => {
+    return route.name === itemRoute;
+  };
 
   return (
-    <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-background border-t flex justify-around items-center p-3 z-50">
-        <Link to="/" className={`${isActive('/') && !isActive('/messages') ? 'text-primary' : 'text-muted-foreground'}`}>
-          <Home className="w-6 h-6" />
-        </Link>
-        <Link to="/search" className={`${isActive('/search') ? 'text-primary' : 'text-muted-foreground'}`}>
-          <Search className="w-6 h-6" />
-        </Link>
-        <button 
-          onClick={() => setIsCreatePostOpen(true)}
-          className="text-muted-foreground hover:text-primary transition-colors"
+    <View style={styles.container}>
+      {navItems.map((item) => (
+        <TouchableOpacity
+          key={item.name}
+          style={styles.navItem}
+          onPress={() => navigation.navigate(item.route)}
         >
-          <PlusSquare className="w-6 h-6" />
-        </button>
-        <Link to="/shop" className={`${isActive('/shop') ? 'text-primary' : 'text-muted-foreground'}`}>
-          <ShoppingBag className="w-6 h-6" />
-        </Link>
-        <Link to="/orders" className={`${isActive('/orders') ? 'text-primary' : 'text-muted-foreground'}`}>
-          <Calendar className="w-6 h-6" />
-        </Link>
-        <Link to="/messages" className={`${isActive('/messages') ? 'text-primary' : 'text-muted-foreground'}`}>
-          <MessageCircle className="w-6 h-6" />
-        </Link>
-        <Link to="/discover" className={`${isActive('/discover') ? 'text-primary' : 'text-muted-foreground'}`}>
-          <Compass className="w-6 h-6" />
-        </Link>
-        <Link to="/profile" className={`${isActive('/profile') ? 'text-primary' : 'text-muted-foreground'}`}>
-          <User className="w-6 h-6" />
-        </Link>
-      </nav>
-
-      <CreatePostDialog 
-        isOpen={isCreatePostOpen}
-        onClose={() => setIsCreatePostOpen(false)}
-      />
-    </>
+          <Feather
+            name={item.icon as any}
+            size={22}
+            color={isActive(item.route) ? '#0070F3' : '#64748B'}
+          />
+          <Text
+            style={[
+              styles.navText,
+              isActive(item.route) ? styles.activeText : null,
+            ]}
+          >
+            {item.name}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
   );
 }
 
-export default FooterNav;
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    boxShadow: '0px -3px 3px rgba(0, 0, 0, 0.1)',
+    elevation: 10,
+  },
+  navItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  navText: {
+    fontSize: 12,
+    marginTop: 2,
+    color: '#64748B',
+  },
+  activeText: {
+    color: '#0070F3',
+    fontWeight: '600',
+  },
+});

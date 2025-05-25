@@ -1,26 +1,56 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Avatar } from '../ui/Avatar';
+import { Feather } from '@expo/vector-icons';
 
 interface PostHeaderProps {
   author: {
     name: string;
     image: string;
-    id?: string;
+    id: string;
   };
 }
 
 export function PostHeader({ author }: PostHeaderProps) {
+  const navigation = useNavigation<any>();
+
+  const navigateToProfile = () => {
+    navigation.navigate('Profile', { userId: author.id });
+  };
+
   return (
-    <div className="flex items-center gap-3">
-      <Avatar>
-        <AvatarImage src={author.image} />
-        <AvatarFallback>{author.name[0]}</AvatarFallback>
-      </Avatar>
-      <div>
-        <div className="font-semibold">{author.name}</div>
-        <div className="text-sm text-muted-foreground">
-          {author.id || `@${author.name.toLowerCase().replace(/\s+/g, '')}`}
-        </div>
-      </div>
-    </div>
+    <View style={styles.container}>
+      <TouchableOpacity onPress={navigateToProfile} style={styles.userInfo}>
+        <Avatar source={author.image || 'https://via.placeholder.com/40'} size="md" />
+        <Text style={styles.userName}>{author.name}</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity style={styles.moreButton}>
+        <Feather name="more-horizontal" size={20} color="#64748B" />
+      </TouchableOpacity>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginLeft: 10,
+  },
+  moreButton: {
+    padding: 4,
+  },
+});

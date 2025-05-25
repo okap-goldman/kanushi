@@ -1,41 +1,80 @@
-import { useAuth } from '@/context/AuthContext';
-import { Button } from './ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Link } from 'react-router-dom';
+import React from 'react';
+import { View, TouchableOpacity, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
+import { Avatar } from './ui/Avatar';
+import { Button } from './ui/Button';
 
 export function UserAuthStatus() {
   const { user, profile, signOut, isLoading } = useAuth();
+  const navigation = useNavigation();
 
   if (isLoading) {
     return (
-      <div className="flex items-center space-x-2">
-        <div className="h-8 w-8 rounded-full bg-slate-200 animate-pulse"></div>
-        <div className="h-4 w-24 bg-slate-200 animate-pulse rounded"></div>
-      </div>
+      <View style={styles.loadingContainer}>
+        <View style={styles.loadingSkeleton} />
+        <View style={styles.loadingText} />
+      </View>
     );
   }
 
   if (!user) {
     return (
-      <div className="flex items-center space-x-2">
-        <Link to="/login">
-          <Button variant="outline" size="sm">ログイン</Button>
-        </Link>
-        <Link to="/register">
-          <Button size="sm">登録</Button>
-        </Link>
-      </div>
+      <View style={styles.authButtons}>
+        <Button
+          variant="outline"
+          size="sm"
+          onPress={() => navigation.navigate('Login' as never)}
+        >
+          ログイン
+        </Button>
+        <Button
+          size="sm"
+          onPress={() => navigation.navigate('Register' as never)}
+        >
+          登録
+        </Button>
+      </View>
     );
   }
 
   return (
-    <div className="flex items-center">
-      <Link to="/profile">
-        <Avatar>
-          <AvatarImage src={profile?.image} alt={profile?.name || "ユーザー"} />
-          <AvatarFallback>{profile?.name?.[0] || user.email?.[0]}</AvatarFallback>
-        </Avatar>
-      </Link>
-    </div>
+    <TouchableOpacity onPress={() => navigation.navigate('Profile' as never)}>
+      <Avatar
+        source={profile?.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+        style={styles.avatar}
+        fallbackText={profile?.name?.[0] || user.email?.[0] || 'U'}
+      />
+    </TouchableOpacity>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  loadingSkeleton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#e5e5e5',
+  },
+  loadingText: {
+    width: 60,
+    height: 16,
+    borderRadius: 4,
+    backgroundColor: '#e5e5e5',
+  },
+  authButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+});

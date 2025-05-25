@@ -1,16 +1,17 @@
 import React from 'react';
+import { Text, StyleSheet, TextStyle } from 'react-native';
 
 interface PriceDisplayProps {
   price: number;
   currency?: string;
-  className?: string;
+  style?: TextStyle;
   size?: 'sm' | 'md' | 'lg';
 }
 
 const PriceDisplay: React.FC<PriceDisplayProps> = ({ 
   price, 
   currency = 'JPY', 
-  className = '',
+  style,
   size = 'md'
 }) => {
   const formatPrice = (price: number, currency: string) => {
@@ -21,17 +22,33 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
     }).format(price);
   };
 
-  const sizeClasses = {
-    sm: 'text-base',
-    md: 'text-xl',
-    lg: 'text-2xl'
+  const sizeStyles = {
+    sm: styles.small,
+    md: styles.medium,
+    lg: styles.large
   };
 
   return (
-    <span className={`font-bold ${sizeClasses[size]} ${className}`}>
+    <Text style={[styles.base, sizeStyles[size], style]}>
       {formatPrice(price, currency)}
-    </span>
+    </Text>
   );
 };
+
+const styles = StyleSheet.create({
+  base: {
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  small: {
+    fontSize: 16,
+  },
+  medium: {
+    fontSize: 20,
+  },
+  large: {
+    fontSize: 24,
+  },
+});
 
 export default PriceDisplay;

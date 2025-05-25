@@ -1,6 +1,6 @@
-import { ArrowLeft, Bell, Bookmark, MessageCircle, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import React from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { ArrowLeft, Bell, Bookmark, MessageCircle, Settings } from 'lucide-react-native';
 
 interface AnalysisDetailViewProps {
   open: boolean;
@@ -9,66 +9,164 @@ interface AnalysisDetailViewProps {
 
 export function AnalysisDetailView({ open, onClose }: AnalysisDetailViewProps) {
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl p-0">
-        <div className="p-4 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <h2 className="text-xl font-bold">あなたのクローズアップ</h2>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="icon">
-                <Bell className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <Bookmark className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <MessageCircle className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <Settings className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
+    <Modal
+      visible={open}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.contentContainer}>
+          <ScrollView style={styles.scrollView}>
+            <View style={styles.innerContent}>
+              <View style={styles.header}>
+                <View style={styles.headerLeft}>
+                  <TouchableOpacity onPress={onClose} style={styles.iconButton}>
+                    <ArrowLeft size={20} color="#000" />
+                  </TouchableOpacity>
+                  <Text style={styles.title}>あなたのクローズアップ</Text>
+                </View>
+                <View style={styles.headerRight}>
+                  <TouchableOpacity style={styles.iconButton}>
+                    <Bell size={20} color="#000" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.iconButton}>
+                    <Bookmark size={20} color="#000" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.iconButton}>
+                    <MessageCircle size={20} color="#000" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.iconButton}>
+                    <Settings size={20} color="#000" />
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">直近の目醒めのサマリー</h3>
-              <p className="text-muted-foreground">
-                最近、あなたは「家族との対話」に目が向き始めています。特に以下の点で成長が見られます：
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                <li>家族との対話時間が増加傾向</li>
-                <li>感情表現がより豊かに</li>
-                <li>相手の立場に立った考え方の増加</li>
-              </ul>
-            </div>
+              <View style={styles.section}>
+                <View style={styles.subsection}>
+                  <Text style={styles.sectionTitle}>直近の目醒めのサマリー</Text>
+                  <Text style={styles.grayText}>
+                    最近、あなたは「家族との対話」に目が向き始めています。特に以下の点で成長が見られます：
+                  </Text>
+                  <View style={styles.bulletList}>
+                    <Text style={styles.grayText}>• 家族との対話時間が増加傾向</Text>
+                    <Text style={styles.grayText}>• 感情表現がより豊かに</Text>
+                    <Text style={styles.grayText}>• 相手の立場に立った考え方の増加</Text>
+                  </View>
+                </View>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">目醒めの提案</h3>
-              <p className="text-muted-foreground">こんなチャレンジはいかがでしょう？</p>
-              <div className="space-y-4">
-                <div className="p-4 bg-pink-50 rounded-lg">
-                  <h4 className="font-medium text-pink-600">苦手な親戚に手紙を書いてみる</h4>
-                  <p className="text-sm text-pink-600/80 mt-1">
-                    直接の対話が難しい場合、手紙から始めるのもよい方法です
-                  </p>
-                </div>
-                <div className="p-4 bg-purple-50 rounded-lg">
-                  <h4 className="font-medium text-purple-600">家族との食事時間を設定する</h4>
-                  <p className="text-sm text-purple-600/80 mt-1">
-                    週に1回でも、ゆっくりと話せる時間を作ってみましょう
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+                <View style={styles.subsection}>
+                  <Text style={styles.sectionTitle}>目醒めの提案</Text>
+                  <Text style={styles.grayText}>こんなチャレンジはいかがでしょう？</Text>
+                  <View style={styles.challengeList}>
+                    <View style={styles.pinkCard}>
+                      <Text style={styles.pinkText}>苦手な親戚に手紙を書いてみる</Text>
+                      <Text style={styles.pinkSubtext}>
+                        直接の対話が難しい場合、手紙から始めるのもよい方法です
+                      </Text>
+                    </View>
+                    <View style={styles.purpleCard}>
+                      <Text style={styles.purpleText}>家族との食事時間を設定する</Text>
+                      <Text style={styles.purpleSubtext}>
+                        週に1回でも、ゆっくりと話せる時間を作ってみましょう
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  contentContainer: {
+    flex: 1,
+    marginTop: 80,
+    backgroundColor: 'white',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  innerContent: {
+    padding: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerRight: {
+    flexDirection: 'row',
+  },
+  iconButton: {
+    padding: 8,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  section: {
+    marginBottom: 24,
+  },
+  subsection: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  grayText: {
+    color: '#666',
+  },
+  bulletList: {
+    paddingLeft: 16,
+  },
+  challengeList: {
+    marginTop: 16,
+  },
+  pinkCard: {
+    padding: 16,
+    backgroundColor: '#FEF2F2',
+    borderRadius: 8,
+  },
+  pinkText: {
+    fontWeight: '500',
+    color: '#DC2626',
+  },
+  pinkSubtext: {
+    fontSize: 14,
+    color: '#DC2626',
+    opacity: 0.8,
+    marginTop: 4,
+  },
+  purpleCard: {
+    padding: 16,
+    backgroundColor: '#F5F3FF',
+    borderRadius: 8,
+  },
+  purpleText: {
+    fontWeight: '500',
+    color: '#7C3AED',
+  },
+  purpleSubtext: {
+    fontSize: 14,
+    color: '#7C3AED',
+    opacity: 0.8,
+    marginTop: 4,
+  },
+});

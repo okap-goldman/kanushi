@@ -1,117 +1,109 @@
-import { useState, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
-import { Camera, FileVideo, Image, X, Send } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import React, { useState, useRef } from "react";
+import {
+  View,
+  Text,
+  Modal,
+  TouchableOpacity,
+  TextInput,
+  Image,
+  ScrollView,
+  Alert,
+  Platform,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { Camera, FileVideo, Image as ImageIcon, X, Send } from "lucide-react-native";
+import { Video, ResizeMode } from "expo-av";
 
 interface CreateStoryDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { file: File; caption: string; contentType: "image" | "video" }) => Promise<void>;
+  onSubmit: (data: {
+    file: { uri: string; type: string; name: string };
+    caption: string;
+    contentType: "image" | "video";
+  }) => Promise<void>;
 }
 
 export default function CreateStoryDialog({
   isOpen,
   onOpenChange,
-  onSubmit
+  onSubmit,
 }: CreateStoryDialogProps) {
   const [activeTab, setActiveTab] = useState<"upload" | "camera">("upload");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<{
+    uri: string;
+    type: string;
+    name: string;
+  } | null>(null);
   const [caption, setCaption] = useState("");
   const [contentType, setContentType] = useState<"image" | "video">("image");
   const [preview, setPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [9, 16],
+      quality: 1,
+    });
 
-    // Determine content type
-    const fileContentType = file.type.startsWith("image/") ? "image" : "video";
-    setContentType(fileContentType);
-
-    // Create preview
-    const fileUrl = URL.createObjectURL(file);
-    setPreview(fileUrl);
-    setSelectedFile(file);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    
-    const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-
-    if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
-      const fileContentType = file.type.startsWith("image/") ? "image" : "video";
-      setContentType(fileContentType);
-      
-      const fileUrl = URL.createObjectURL(file);
-      setPreview(fileUrl);
-      setSelectedFile(file);
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setSelectedFile({
+        uri: asset.uri,
+        type: "image/jpeg",
+        name: `story-${Date.now()}.jpg`,
+      });
+      setPreview(asset.uri);
+      setContentType("image");
     }
   };
 
-  const triggerFileInput = (type: "image" | "video") => {
-    setContentType(type);
-    if (fileInputRef.current) {
-      fileInputRef.current.accept = type === "image" ? "image/*" : "video/*";
-      fileInputRef.current.click();
+  const pickVideo = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setSelectedFile({
+        uri: asset.uri,
+        type: "video/mp4",
+        name: `story-${Date.now()}.mp4`,
+      });
+      setPreview(asset.uri);
+      setContentType("video");
     }
   };
 
-  const startCamera = async () => {
-    try {
-      const constraints = contentType === "image" 
-        ? { video: { facingMode: "environment" } }
-        : { video: { facingMode: "environment" }, audio: true };
-      
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = stream;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-    } catch (error) {
-      console.error("Error accessing camera:", error);
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("許可が必要です", "カメラへのアクセスを許可してください。");
+      return;
     }
-  };
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  };
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [9, 16],
+      quality: 1,
+    });
 
-  const captureImage = () => {
-    if (!videoRef.current) return;
-    
-    const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(blob => {
-        if (blob) {
-          const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
-          setSelectedFile(file);
-          setPreview(URL.createObjectURL(file));
-          stopCamera();
-        }
-      }, "image/jpeg");
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setSelectedFile({
+        uri: asset.uri,
+        type: "image/jpeg",
+        name: `story-${Date.now()}.jpg`,
+      });
+      setPreview(asset.uri);
+      setContentType("image");
+      setActiveTab("upload");
     }
   };
 
@@ -119,16 +111,6 @@ export default function CreateStoryDialog({
     setSelectedFile(null);
     setCaption("");
     setPreview(null);
-    stopCamera();
-  };
-
-  const handleTabChange = (value: string) => {
-    stopCamera();
-    setActiveTab(value as "upload" | "camera");
-    
-    if (value === "camera") {
-      startCamera();
-    }
   };
 
   const handleClose = () => {
@@ -138,204 +120,328 @@ export default function CreateStoryDialog({
 
   const handleSubmit = async () => {
     if (!selectedFile) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       await onSubmit({
         file: selectedFile,
         caption,
-        contentType
+        contentType,
       });
-      
+
       resetForm();
       onOpenChange(false);
     } catch (error) {
       console.error("Error creating story:", error);
+      Alert.alert("エラー", "ストーリーの作成に失敗しました。");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={value => {
-      if (!value) {
-        handleClose();
-      }
-      onOpenChange(value);
-    }}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>ストーリーを作成</DialogTitle>
-        </DialogHeader>
-        
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upload">アップロード</TabsTrigger>
-            <TabsTrigger value="camera">カメラ</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="upload" className="mt-4">
-            {!preview ? (
-              <div 
-                className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer h-60 flex flex-col items-center justify-center"
-                onClick={() => triggerFileInput("image")}
-                onDragOver={e => e.preventDefault()}
-                onDrop={handleDrop}
-              >
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  accept="image/*,video/*"
-                  onChange={handleFileChange}
-                />
-                <div className="flex flex-col items-center space-y-4">
-                  <p className="text-sm text-gray-500">
-                    画像またはビデオをドラッグ&ドロップ、または選択してください
-                  </p>
-                  <div className="flex space-x-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={e => {
-                        e.stopPropagation();
-                        triggerFileInput("image");
-                      }}
-                    >
-                      <Image className="h-4 w-4 mr-2" /> 画像
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={e => {
-                        e.stopPropagation();
-                        triggerFileInput("video");
-                      }}
-                    >
-                      <FileVideo className="h-4 w-4 mr-2" /> ビデオ
-                    </Button>
-                  </div>
-                </div>
-              </div>
+    <Modal
+      visible={isOpen}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={handleClose}
+    >
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>ストーリーを作成</Text>
+          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+            <X size={24} color="#000" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "upload" && styles.activeTab]}
+            onPress={() => setActiveTab("upload")}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "upload" && styles.activeTabText,
+              ]}
+            >
+              アップロード
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "camera" && styles.activeTab]}
+            onPress={() => setActiveTab("camera")}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "camera" && styles.activeTabText,
+              ]}
+            >
+              カメラ
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.content}>
+          {activeTab === "upload" ? (
+            !preview ? (
+              <View style={styles.uploadContainer}>
+                <Text style={styles.uploadText}>
+                  画像またはビデオを選択してください
+                </Text>
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    onPress={pickImage}
+                  >
+                    <ImageIcon size={20} color="#000" />
+                    <Text style={styles.uploadButtonText}>画像</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    onPress={pickVideo}
+                  >
+                    <FileVideo size={20} color="#000" />
+                    <Text style={styles.uploadButtonText}>ビデオ</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             ) : (
-              <div className="relative h-60 w-full overflow-hidden rounded-md">
+              <View style={styles.previewContainer}>
                 {contentType === "image" ? (
-                  <img
-                    src={preview}
-                    alt="Preview"
-                    className="h-full w-full object-contain"
-                  />
+                  <Image source={{ uri: preview }} style={styles.preview} />
                 ) : (
-                  <video
-                    src={preview}
-                    className="h-full w-full object-contain"
-                    controls
+                  <Video
+                    source={{ uri: preview }}
+                    style={styles.preview}
+                    useNativeControls
+                    resizeMode={ResizeMode.CONTAIN}
                   />
                 )}
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2"
-                  onClick={() => {
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => {
                     setPreview(null);
                     setSelectedFile(null);
                   }}
                 >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="camera" className="mt-4">
-            <div className="relative h-60 w-full overflow-hidden rounded-md bg-black">
-              <video
-                ref={videoRef}
-                className="h-full w-full object-contain"
-                playsInline
-                autoPlay
-                muted
+                  <X size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )
+          ) : (
+            <View style={styles.cameraContainer}>
+              <TouchableOpacity style={styles.cameraButton} onPress={takePhoto}>
+                <Camera size={40} color="#000" />
+                <Text style={styles.cameraText}>撮影</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {preview && (
+            <View style={styles.captionContainer}>
+              <TextInput
+                style={styles.captionInput}
+                placeholder="キャプションを追加..."
+                value={caption}
+                onChangeText={setCaption}
+                multiline
+                numberOfLines={2}
               />
-              
-              {contentType === "image" ? (
-                <Button
-                  type="button"
-                  variant="default"
-                  className="absolute bottom-2 left-1/2 transform -translate-x-1/2"
-                  onClick={captureImage}
+
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={handleClose}
+                  disabled={isSubmitting}
                 >
-                  <Camera className="h-4 w-4 mr-2" /> 撮影
-                </Button>
-              ) : (
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                  <Button type="button" variant="default">
-                    録画開始
-                  </Button>
-                  <Button type="button" variant="destructive">
-                    録画終了
-                  </Button>
-                </div>
-              )}
-              
-              <div className="absolute top-2 right-2 flex space-x-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setContentType("image")}
-                  className={contentType === "image" ? "bg-primary text-white" : ""}
+                  <Text style={styles.cancelButtonText}>キャンセル</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.button,
+                    styles.submitButton,
+                    (!selectedFile || isSubmitting) && styles.disabledButton,
+                  ]}
+                  onPress={handleSubmit}
+                  disabled={!selectedFile || isSubmitting}
                 >
-                  <Image className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setContentType("video")}
-                  className={contentType === "video" ? "bg-primary text-white" : ""}
-                >
-                  <FileVideo className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-        
-        {preview && (
-          <div className="space-y-4 mt-4">
-            <Textarea
-              placeholder="キャプションを追加..."
-              value={caption}
-              onChange={e => setCaption(e.target.value)}
-              className="resize-none"
-              rows={2}
-            />
-            
-            <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                disabled={isSubmitting}
-              >
-                キャンセル
-              </Button>
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!selectedFile || isSubmitting}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {isSubmitting ? "送信中..." : "ストーリーを投稿"}
-              </Button>
-            </div>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Send size={16} color="#fff" />
+                      <Text style={styles.submitButtonText}>
+                        ストーリーを投稿
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  closeButton: {
+    padding: 8,
+  },
+  tabContainer: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: "#000",
+  },
+  tabText: {
+    fontSize: 16,
+    color: "#666",
+  },
+  activeTabText: {
+    color: "#000",
+    fontWeight: "600",
+  },
+  content: {
+    flex: 1,
+  },
+  uploadContainer: {
+    padding: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 240,
+  },
+  uploadText: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  uploadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    gap: 8,
+  },
+  uploadButtonText: {
+    fontSize: 14,
+  },
+  previewContainer: {
+    position: "relative",
+    height: 400,
+    margin: 16,
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#000",
+  },
+  preview: {
+    width: "100%",
+    height: "100%",
+  },
+  removeButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 20,
+    padding: 8,
+  },
+  cameraContainer: {
+    padding: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 240,
+  },
+  cameraButton: {
+    alignItems: "center",
+    padding: 24,
+    borderWidth: 2,
+    borderColor: "#ddd",
+    borderRadius: 100,
+  },
+  cameraText: {
+    marginTop: 8,
+    fontSize: 16,
+  },
+  captionContainer: {
+    padding: 16,
+  },
+  captionInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 60,
+    textAlignVertical: "top",
+  },
+  actionButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 16,
+    gap: 12,
+  },
+  button: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: "#666",
+  },
+  submitButton: {
+    backgroundColor: "#000",
+  },
+  submitButtonText: {
+    fontSize: 16,
+    color: "#fff",
+    fontWeight: "600",
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+});

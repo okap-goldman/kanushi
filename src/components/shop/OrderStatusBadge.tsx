@@ -1,6 +1,6 @@
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { OrderStatus } from '@/lib/ecService';
+import { View, Text, StyleSheet } from 'react-native';
+import { OrderStatus } from '../../lib/ecService';
 
 interface OrderStatusBadgeProps {
   status: OrderStatus;
@@ -13,44 +13,68 @@ const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({ status, size = 'md'
       case 'pending':
         return {
           label: '注文受付',
-          variant: 'secondary' as const
+          backgroundColor: '#e5e7eb',
+          color: '#374151'
         };
       case 'paid':
         return {
           label: '支払い完了',
-          variant: 'default' as const
+          backgroundColor: '#3b82f6',
+          color: '#ffffff'
         };
       case 'shipped':
         return {
           label: '発送済み',
-          variant: 'success' as const
+          backgroundColor: '#10b981',
+          color: '#ffffff'
         };
       case 'refunded':
         return {
           label: '返金済み',
-          variant: 'destructive' as const
+          backgroundColor: '#ef4444',
+          color: '#ffffff'
         };
       default:
         return {
           label: status,
-          variant: 'outline' as const
+          backgroundColor: '#f3f4f6',
+          color: '#374151'
         };
     }
   };
 
   const config = getStatusConfig(status);
   
-  const sizeClass = {
-    sm: 'text-xs',
-    md: 'text-sm',
-    lg: 'text-base'
+  const sizeStyles = {
+    sm: { fontSize: 11, paddingHorizontal: 8, paddingVertical: 2 },
+    md: { fontSize: 12, paddingHorizontal: 10, paddingVertical: 4 },
+    lg: { fontSize: 14, paddingHorizontal: 12, paddingVertical: 6 }
   };
 
   return (
-    <Badge variant={config.variant} className={sizeClass[size]}>
-      {config.label}
-    </Badge>
+    <View style={[
+      styles.badge,
+      { backgroundColor: config.backgroundColor },
+      sizeStyles[size]
+    ]}>
+      <Text style={[
+        styles.text,
+        { color: config.color, fontSize: sizeStyles[size].fontSize }
+      ]}>
+        {config.label}
+      </Text>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  badge: {
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  text: {
+    fontWeight: '600',
+  },
+});
 
 export default OrderStatusBadge;

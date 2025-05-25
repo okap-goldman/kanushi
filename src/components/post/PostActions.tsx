@@ -1,12 +1,8 @@
-import { Heart, MessageSquare, Flame, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
-import { Textarea } from "@/components/ui/textarea";
-import { toggleLike, checkLiked } from "@/lib/postService";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/AuthContext";
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 interface PostActionsProps {
   postId: string;
@@ -15,158 +11,145 @@ interface PostActionsProps {
 
 export function PostActions({ postId, onComment }: PostActionsProps) {
   const [liked, setLiked] = useState(false);
-  const [kuratta, setKuratta] = useState(false);
-  const [kurattaText, setKurattaText] = useState("");
-  const [showKurattaDialog, setShowKurattaDialog] = useState(false);
-  const [isLiking, setIsLiking] = useState(false);
-  const [isCheckingLike, setIsCheckingLike] = useState(true);
-  const [isSubmittingKuratta, setIsSubmittingKuratta] = useState(false);
-  const { toast } = useToast();
+  const [likeCount, setLikeCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
   const { user } = useAuth();
-  
-  // ユーザーIDが利用可能な場合はそちらを使用し、そうでない場合はフォールバック
-  // フォールバックは管理者ユーザー (f1e2d3c4-b5a6-7987-8765-4321abcdef98) または "内なる光"ユーザー
-  const currentUserId = user?.id || "f1e2d3c4-b5a6-7987-8765-4321abcdef98";
 
   useEffect(() => {
-    // 投稿にいいねしているかチェック
-    const checkIfLiked = async () => {
+    // Check if the user has liked this post
+    const checkLikeStatus = async () => {
+      if (!user) return;
+      
       try {
-        setIsCheckingLike(true);
-        const { data, error } = await checkLiked(postId, currentUserId);
+        const { data, error } = await supabase
+          .from('likes')
+          .select()
+          .eq('post_id', postId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
         if (error) throw error;
         setLiked(!!data);
       } catch (err) {
-        console.error('Failed to check like status:', err);
-      } finally {
-        setIsCheckingLike(false);
+        console.error('Error checking like status:', err);
       }
     };
-    
-    checkIfLiked();
-  }, [postId, currentUserId]);
+
+    // Get like count
+    const getLikeCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('likes')
+          .select('*', { count: 'exact', head: true })
+          .eq('post_id', postId);
+          
+        if (error) throw error;
+        setLikeCount(count || 0);
+      } catch (err) {
+        console.error('Error getting like count:', err);
+      }
+    };
+
+    // Get comment count
+    const getCommentCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('comments')
+          .select('*', { count: 'exact', head: true })
+          .eq('post_id', postId);
+          
+        if (error) throw error;
+        setCommentCount(count || 0);
+      } catch (err) {
+        console.error('Error getting comment count:', err);
+      }
+    };
+
+    checkLikeStatus();
+    getLikeCount();
+    getCommentCount();
+  }, [postId, user]);
 
   const handleLike = async () => {
-    if (isLiking) return;
+    if (!user) return;
     
     try {
-      setIsLiking(true);
-      const { data, error } = await toggleLike(postId, currentUserId);
-      
-      if (error) throw error;
-      
-      if (data) {
-        setLiked(data.liked);
-        toast({
-          title: data.liked ? "投稿にいいねしました" : "いいねを取り消しました",
-        });
+      if (liked) {
+        // Unlike
+        const { error } = await supabase
+          .from('likes')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+          
+        if (error) throw error;
+        setLiked(false);
+        setLikeCount(prev => Math.max(0, prev - 1));
+      } else {
+        // Like
+        const { error } = await supabase
+          .from('likes')
+          .insert({
+            post_id: postId,
+            user_id: user.id,
+            created_at: new Date().toISOString(),
+          });
+          
+        if (error) throw error;
+        setLiked(true);
+        setLikeCount(prev => prev + 1);
       }
     } catch (err) {
-      console.error('Failed to toggle like:', err);
-      toast({
-        title: "いいねの処理に失敗しました",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLiking(false);
-    }
-  };
-
-  const handleKuratta = async () => {
-    if (!kurattaText.trim() || isSubmittingKuratta) return;
-    
-    setIsSubmittingKuratta(true);
-    
-    try {
-      // ここで「くらった」データを保存する処理を実装
-      // 現在は単純にコンソールに出力して状態を変更
-      console.log("「くらった」テキスト:", kurattaText, "投稿ID:", postId);
-      
-      // 成功したと仮定
-      setKuratta(true);
-      setShowKurattaDialog(false);
-      toast({
-        title: "魂に響いた部分を共有しました",
-      });
-    } catch (err) {
-      console.error('Failed to submit kuratta:', err);
-      toast({
-        title: "共有に失敗しました",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmittingKuratta(false);
+      console.error('Error toggling like:', err);
     }
   };
 
   return (
-    <div className="flex items-center gap-4">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="flex items-center gap-2 group"
-        onClick={handleLike}
-        disabled={isCheckingLike || isLiking}
-      >
-        {isCheckingLike || isLiking ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
-        ) : (
-          <Heart 
-            className={cn(
-              "h-5 w-5 transition-all duration-300 ease-in-out",
-              liked && "fill-red-500 text-red-500 scale-125 animate-heartBeat"
-            )} 
+    <View style={styles.container}>
+      <View style={styles.actionsRow}>
+        <TouchableOpacity onPress={handleLike} style={styles.actionButton}>
+          <Feather 
+            name={liked ? 'heart' : 'heart'} 
+            size={22} 
+            color={liked ? '#E53E3E' : '#64748B'} 
+            style={liked ? styles.filledHeart : undefined}
           />
-        )}
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="sm"
-        className="flex items-center gap-2"
-        onClick={onComment}
-      >
-        <MessageSquare className="h-5 w-5" />
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="sm"
-        className="flex items-center gap-2"
-        onClick={() => !kuratta && setShowKurattaDialog(true)}
-        disabled={kuratta}
-      >
-        <Flame className={`h-5 w-5 ${kuratta ? "fill-orange-500 text-orange-500" : ""}`} />
-      </Button>
-
-      <Dialog open={showKurattaDialog} onOpenChange={setShowKurattaDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>どんなことが魂に響きましたか？</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Textarea
-              placeholder="どんなことが魂に響きましたか？自由に入力してください"
-              value={kurattaText}
-              onChange={(e) => setKurattaText(e.target.value)}
-              className="min-h-[100px]"
-              disabled={isSubmittingKuratta}
-            />
-          </div>
-          <DialogFooter className="mt-4">
-            <Button
-              onClick={handleKuratta}
-              className="w-full"
-              disabled={!kurattaText.trim() || isSubmittingKuratta}
-            >
-              {isSubmittingKuratta ? (
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-              ) : null}
-              送信
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+          <Text style={styles.actionText}>{likeCount > 0 ? likeCount : ''}</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity onPress={onComment} style={styles.actionButton}>
+          <Feather name="message-circle" size={22} color="#64748B" />
+          <Text style={styles.actionText}>{commentCount > 0 ? commentCount : ''}</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.actionButton}>
+          <Feather name="share" size={22} color="#64748B" />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginTop: 8,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 24,
+    paddingVertical: 8,
+  },
+  actionText: {
+    fontSize: 14,
+    color: '#64748B',
+    marginLeft: 6,
+  },
+  filledHeart: {
+    // Style for filled heart icon
+  },
+});

@@ -1,0 +1,114 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 100,
+    "attributePosition": "auto"
+  },
+  "organizeImports": {
+    "enabled": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "a11y": {
+        "useButtonType": "warn",
+        "useKeyWithClickEvents": "warn"
+      },
+      "complexity": {
+        "noBannedTypes": "error",
+        "noUselessConstructor": "error",
+        "useOptionalChain": "error"
+      },
+      "correctness": {
+        "noConstAssign": "error",
+        "noConstantCondition": "warn",
+        "noPrecisionLoss": "error",
+        "noUnusedVariables": "warn",
+        "useExhaustiveDependencies": "error",
+        "useHookAtTopLevel": "error"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn"
+      },
+      "style": {
+        "noNegationElse": "off",
+        "noNonNullAssertion": "warn",
+        "noUselessElse": "warn",
+        "useAsConstAssertion": "error",
+        "useBlockStatements": "off",
+        "useConst": "error",
+        "useTemplate": "error"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "warn",
+        "noAsyncPromiseExecutor": "error",
+        "noCommentText": "off",
+        "noConsoleLog": "warn",
+        "noDebugger": "error",
+        "noDuplicateJsxProps": "error",
+        "noExplicitAny": "error"
+      }
+    },
+    "ignore": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"]
+  },
+  "javascript": {
+    "formatter": {
+      "jsxQuoteStyle": "double",
+      "quoteProperties": "asNeeded",
+      "trailingCommas": "es5",
+      "semicolons": "always",
+      "arrowParentheses": "always",
+      "bracketSpacing": true,
+      "bracketSameLine": false,
+      "quoteStyle": "single",
+      "attributePosition": "auto"
+    },
+    "globals": [
+      "__DEV__",
+      "global",
+      "window",
+      "document"
+    ]
+  },
+  "json": {
+    "formatter": {
+      "enabled": true,
+      "indentStyle": "space",
+      "indentWidth": 2,
+      "lineEnding": "lf"
+    }
+  },
+  "files": {
+    "ignore": [
+      "node_modules",
+      ".expo",
+      "dist",
+      "build",
+      "ios",
+      "android",
+      "web-build",
+      "*.log",
+      ".DS_Store",
+      "coverage",
+      ".env*",
+      "babel.config.js",
+      "metro.config.js",
+      "expo-env.d.ts",
+      ".expo-shared",
+      "assets/adaptive-icon.png",
+      "assets/icon.png",
+      "assets/splash.png"
+    ]
+  }
+}

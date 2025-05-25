@@ -1,18 +1,19 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Conversation } from "@/lib/messageService";
-import { formatRelativeTime } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+import React from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Avatar } from "../ui/Avatar";
+import { Conversation } from "../../lib/messageService";
+import { formatRelativeTime } from "../../lib/utils";
 
 interface ConversationItemProps {
   conversation: Conversation;
   isActive?: boolean;
-  onClick?: () => void;
+  onPress?: () => void;
 }
 
 export function ConversationItem({ 
   conversation, 
   isActive = false,
-  onClick 
+  onPress 
 }: ConversationItemProps) {
   // Get other participants (assuming display properties are set in the service)
   const displayName = conversation.display_name || "Chat";
@@ -26,40 +27,45 @@ export function ConversationItem({
   const timestamp = lastMessage ? formatRelativeTime(new Date(lastMessage.created_at)) : "";
 
   return (
-    <div 
-      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-        isActive ? 'bg-accent' : 'hover:bg-muted'
-      }`}
-      onClick={onClick}
+    <TouchableOpacity 
+      style={[
+        styles.container,
+        isActive ? styles.activeBackground : styles.defaultBackground
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
     >
-      <Avatar className="h-12 w-12">
-        <AvatarImage src={displayImage} />
-        <AvatarFallback>
-          {displayName.substring(0, 2).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
+      <Avatar
+        size={48}
+        source={displayImage || undefined}
+        fallbackText={displayName.substring(0, 2).toUpperCase()}
+      />
       
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-center">
-          <h3 className="font-medium text-sm truncate">{displayName}</h3>
-          <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+      <View style={styles.contentContainer}>
+        <View style={styles.headerRow}>
+          <Text style={styles.displayName} numberOfLines={1}>
+            {displayName}
+          </Text>
+          <Text style={styles.timestamp}>
             {timestamp}
-          </span>
-        </div>
+          </Text>
+        </View>
         
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+        <View style={styles.messageRow}>
+          <Text style={styles.messagePreview} numberOfLines={1}>
             {lastMessagePreview}
-          </p>
+          </Text>
           
           {conversation.unread_count > 0 && (
-            <Badge variant="default" className="ml-2 text-[10px] h-5 min-w-5 flex items-center justify-center rounded-full">
-              {conversation.unread_count}
-            </Badge>
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadCount}>
+                {conversation.unread_count}
+              </Text>
+            </View>
           )}
-        </div>
-      </div>
-    </div>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -83,3 +89,65 @@ function getMessagePreview(message: Conversation['last_message']) {
       return "New message";
   }
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderRadius: 8,
+  },
+  activeBackground: {
+    backgroundColor: "#e5e5e5",
+  },
+  defaultBackground: {
+    backgroundColor: "transparent",
+  },
+  contentContainer: {
+    flex: 1,
+    minWidth: 0,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  displayName: {
+    fontSize: 14,
+    fontWeight: "500",
+    flex: 1,
+  },
+  timestamp: {
+    fontSize: 12,
+    color: "#666666",
+    marginLeft: 8,
+  },
+  messageRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  messagePreview: {
+    fontSize: 12,
+    color: "#666666",
+    flex: 1,
+    maxWidth: 180,
+  },
+  unreadBadge: {
+    backgroundColor: "#007AFF",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8,
+  },
+  unreadCount: {
+    color: "#ffffff",
+    fontSize: 10,
+    fontWeight: "600",
+  },
+});

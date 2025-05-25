@@ -1,6 +1,13 @@
-import { useState } from 'react';
-import { Avatar } from "../ui/avatar";
-import { cn } from "../../lib/utils";
+import React, { useState } from "react";
+import {
+  View,
+  TouchableOpacity,
+  Text,
+  Image,
+  StyleSheet,
+  Animated,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface StoryCircleProps {
   userId: string;
@@ -8,7 +15,7 @@ interface StoryCircleProps {
   profileImage: string;
   hasUnviewedStory: boolean;
   isActive?: boolean;
-  onClick: () => void;
+  onPress: () => void;
 }
 
 export default function StoryCircle({
@@ -17,47 +24,108 @@ export default function StoryCircle({
   profileImage,
   hasUnviewedStory,
   isActive = false,
-  onClick
+  onPress,
 }: StoryCircleProps) {
-  const [isHovered, setIsHovered] = useState(false);
+  const [scaleAnim] = useState(new Animated.Value(1));
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const displayName =
+    username.length > 10 ? `${username.substring(0, 8)}...` : username;
 
   return (
-    <div 
-      className="flex flex-col items-center justify-center cursor-pointer mx-2"
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+    <TouchableOpacity
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      activeOpacity={0.7}
     >
-      <div 
-        className={cn(
-          "rounded-full p-[2px] mb-1", 
-          hasUnviewedStory 
-            ? "bg-gradient-to-tr from-purple-500 to-pink-500" 
-            : "bg-gray-300",
-          isActive && "scale-110 transition-transform duration-200"
-        )}
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            transform: [
+              { scale: isActive ? Animated.multiply(scaleAnim, 1.1) : scaleAnim },
+            ],
+          },
+        ]}
       >
-        <div 
-          className={cn(
-            "rounded-full p-[2px] bg-white",
-            isHovered && "scale-105 transition-transform duration-200",
-            isActive && "scale-105 transition-transform duration-200"
-          )}
-        >
-          <Avatar 
-            className="w-14 h-14 border-2 border-white"
+        {hasUnviewedStory ? (
+          <LinearGradient
+            colors={["#a855f7", "#ec4899"]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={styles.gradientBorder}
           >
-            <img 
-              src={profileImage} 
-              alt={username} 
-              className="w-full h-full object-cover rounded-full"
-            />
-          </Avatar>
-        </div>
-      </div>
-      <span className="text-xs text-center font-medium truncate w-16">
-        {username.length > 10 ? `${username.substring(0, 8)}...` : username}
-      </span>
-    </div>
+            <View style={styles.innerBorder}>
+              <Image source={{ uri: profileImage }} style={styles.avatar} />
+            </View>
+          </LinearGradient>
+        ) : (
+          <View style={styles.grayBorder}>
+            <View style={styles.innerBorder}>
+              <Image source={{ uri: profileImage }} style={styles.avatar} />
+            </View>
+          </View>
+        )}
+        <Text style={styles.username} numberOfLines={1}>
+          {displayName}
+        </Text>
+      </Animated.View>
+    </TouchableOpacity>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 8,
+  },
+  gradientBorder: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    padding: 2,
+    marginBottom: 4,
+  },
+  grayBorder: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#d1d5db",
+    padding: 2,
+    marginBottom: 4,
+  },
+  innerBorder: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderRadius: 28,
+    padding: 2,
+  },
+  avatar: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 26,
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  username: {
+    fontSize: 12,
+    textAlign: "center",
+    fontWeight: "500",
+    width: 64,
+  },
+});

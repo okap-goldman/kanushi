@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  ScrollView, 
+  TouchableOpacity, 
+  ActivityIndicator,
+  StyleSheet,
+  FlatList,
+  RefreshControl
+} from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { getProducts, Product } from '@/lib/ecService';
+import { getProducts, Product } from '../../lib/ecService';
 import ProductCard from './ProductCard';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
+import Button from '../ui/Button';
+import Input from '../ui/Input';
 
 interface ProductListProps {
   sellerId?: string;
@@ -17,6 +26,7 @@ const ProductList: React.FC<ProductListProps> = ({ sellerId, initialSearch = '' 
   const [page, setPage] = useState(1);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [nextPage, setNextPage] = useState<number | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
   
   // Price filter state
   const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
@@ -24,7 +34,7 @@ const ProductList: React.FC<ProductListProps> = ({ sellerId, initialSearch = '' 
   const [tempMinPrice, setTempMinPrice] = useState('');
   const [tempMaxPrice, setTempMaxPrice] = useState('');
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['products', page, search, minPrice, maxPrice, sellerId],
     queryFn: () => getProducts({
       page,
@@ -47,23 +57,22 @@ const ProductList: React.FC<ProductListProps> = ({ sellerId, initialSearch = '' 
     }
   }, [data, page]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = () => {
     setPage(1);
     refetch();
   };
 
   const handleLoadMore = () => {
-    if (nextPage) {
+    if (nextPage && !isLoading) {
       setPage(nextPage);
     }
   };
 
-  const handlePriceFilter = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePriceFilter = () => {
     setMinPrice(tempMinPrice ? Number(tempMinPrice) : undefined);
     setMaxPrice(tempMaxPrice ? Number(tempMaxPrice) : undefined);
     setPage(1);
+    setShowFilters(false);
   };
 
   const resetFilters = () => {
@@ -73,130 +82,309 @@ const ProductList: React.FC<ProductListProps> = ({ sellerId, initialSearch = '' 
     setMinPrice(undefined);
     setMaxPrice(undefined);
     setPage(1);
+    setShowFilters(false);
   };
 
-  // Skeleton loader for products
-  const ProductSkeleton = () => (
-    <div className="h-full">
-      <Skeleton className="h-48 w-full" />
-      <div className="p-4">
-        <Skeleton className="h-6 w-2/3 mt-2" />
-        <Skeleton className="h-4 w-1/3 mt-2" />
-        <Skeleton className="h-4 w-full mt-2" />
-        <Skeleton className="h-4 w-full mt-1" />
-        <div className="flex justify-between mt-4">
-          <Skeleton className="h-6 w-20" />
-          <Skeleton className="h-6 w-16" />
-        </div>
-      </div>
-    </div>
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="商品名で検索"
+          value={search}
+          onChangeText={setSearch}
+          onSubmitEditing={handleSearch}
+          returnKeyType="search"
+        />
+        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+          <Text style={styles.searchButtonText}>検索</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <TouchableOpacity 
+        style={styles.filterToggle} 
+        onPress={() => setShowFilters(!showFilters)}
+      >
+        <Text style={styles.filterToggleText}>詳細検索</Text>
+      </TouchableOpacity>
+
+      {showFilters && (
+        <View style={styles.filtersContainer}>
+          <View style={styles.priceFilters}>
+            <View style={styles.priceInputContainer}>
+              <Text style={styles.label}>最低価格</Text>
+              <TextInput
+                style={styles.priceInput}
+                placeholder="0"
+                value={tempMinPrice}
+                onChangeText={setTempMinPrice}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.priceInputContainer}>
+              <Text style={styles.label}>最高価格</Text>
+              <TextInput
+                style={styles.priceInput}
+                placeholder="100000"
+                value={tempMaxPrice}
+                onChangeText={setTempMaxPrice}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+          <View style={styles.filterButtons}>
+            <TouchableOpacity 
+              style={[styles.filterButton, styles.applyButton]} 
+              onPress={handlePriceFilter}
+            >
+              <Text style={styles.applyButtonText}>価格で絞り込む</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.filterButton, styles.resetButton]} 
+              onPress={resetFilters}
+            >
+              <Text style={styles.resetButtonText}>リセット</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {(minPrice !== undefined || maxPrice !== undefined || search) && (
+        <View style={styles.activeFilters}>
+          <Text style={styles.activeFiltersLabel}>検索条件: </Text>
+          {search && <Text style={styles.activeFilter}>「{search}」</Text>}
+          {minPrice !== undefined && <Text style={styles.activeFilter}>最低価格: {minPrice}円</Text>}
+          {maxPrice !== undefined && <Text style={styles.activeFilter}>最高価格: {maxPrice}円</Text>}
+        </View>
+      )}
+    </View>
   );
+
+  const renderProduct = ({ item }: { item: Product }) => (
+    <View style={styles.productItem}>
+      <ProductCard product={item} />
+    </View>
+  );
+
+  const renderFooter = () => {
+    if (isLoading && page > 1) {
+      return (
+        <View style={styles.loadingFooter}>
+          <ActivityIndicator size="small" color="#3b82f6" />
+        </View>
+      );
+    }
+
+    if (nextPage && !isLoading) {
+      return (
+        <TouchableOpacity style={styles.loadMoreButton} onPress={handleLoadMore}>
+          <Text style={styles.loadMoreText}>もっと見る</Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return null;
+  };
+
+  const renderEmpty = () => {
+    if (isLoading && page === 1) {
+      return (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#3b82f6" />
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.emptyText}>商品が見つかりませんでした</Text>
+      </View>
+    );
+  };
+
+  if (isError) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>
+          エラーが発生しました: {(error as Error).message}
+        </Text>
+      </View>
+    );
+  }
 
   return (
-    <div>
-      <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
-        <form onSubmit={handleSearch} className="flex gap-2 mb-4">
-          <Input
-            type="text"
-            placeholder="商品名で検索"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-grow"
-          />
-          <Button type="submit">検索</Button>
-        </form>
-        
-        <details className="text-sm">
-          <summary className="cursor-pointer font-medium">詳細検索</summary>
-          <form onSubmit={handlePriceFilter} className="mt-3 space-y-3">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="min-price">最低価格</Label>
-                <Input
-                  id="min-price"
-                  type="number"
-                  placeholder="0"
-                  value={tempMinPrice}
-                  onChange={(e) => setTempMinPrice(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="max-price">最高価格</Label>
-                <Input
-                  id="max-price"
-                  type="number"
-                  placeholder="100000"
-                  value={tempMaxPrice}
-                  onChange={(e) => setTempMaxPrice(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="flex justify-between">
-              <Button type="submit" variant="outline">
-                価格で絞り込む
-              </Button>
-              <Button type="button" variant="ghost" onClick={resetFilters}>
-                フィルターをリセット
-              </Button>
-            </div>
-          </form>
-        </details>
-      </div>
-
-      {isError ? (
-        <div className="p-4 text-center text-red-500">
-          エラーが発生しました: {(error as Error).message}
-        </div>
-      ) : (
-        <>
-          {(minPrice !== undefined || maxPrice !== undefined || search) && (
-            <div className="mb-4 text-sm">
-              <span className="font-medium">検索条件: </span>
-              {search && <span className="mr-2">「{search}」</span>}
-              {minPrice !== undefined && <span className="mr-2">最低価格: {minPrice}円</span>}
-              {maxPrice !== undefined && <span>最高価格: {maxPrice}円</span>}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {isLoading && page === 1 ? (
-              Array(6).fill(0).map((_, i) => (
-                <div key={i} className="border rounded-lg overflow-hidden">
-                  <ProductSkeleton />
-                </div>
-              ))
-            ) : allProducts.length > 0 ? (
-              allProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))
-            ) : (
-              <div className="col-span-full text-center py-8 text-gray-500">
-                商品が見つかりませんでした
-              </div>
-            )}
-          </div>
-
-          {isLoading && page > 1 && (
-            <div className="flex justify-center mt-6">
-              <div className="animate-pulse flex space-x-2">
-                <div className="h-3 w-3 bg-gray-400 rounded-full"></div>
-                <div className="h-3 w-3 bg-gray-400 rounded-full"></div>
-                <div className="h-3 w-3 bg-gray-400 rounded-full"></div>
-              </div>
-            </div>
-          )}
-
-          {nextPage && !isLoading && (
-            <div className="flex justify-center mt-8">
-              <Button onClick={handleLoadMore} variant="outline">
-                もっと見る
-              </Button>
-            </div>
-          )}
-        </>
-      )}
-    </div>
+    <FlatList
+      data={allProducts}
+      renderItem={renderProduct}
+      keyExtractor={(item) => item.id}
+      ListHeaderComponent={renderHeader}
+      ListFooterComponent={renderFooter}
+      ListEmptyComponent={renderEmpty}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefetching && page === 1}
+          onRefresh={() => {
+            setPage(1);
+            refetch();
+          }}
+        />
+      }
+      contentContainerStyle={styles.container}
+    />
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+  },
+  header: {
+    backgroundColor: '#ffffff',
+    padding: 16,
+    marginBottom: 8,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  searchInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    marginRight: 8,
+  },
+  searchButton: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  searchButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  filterToggle: {
+    alignSelf: 'flex-start',
+  },
+  filterToggleText: {
+    color: '#3b82f6',
+    fontWeight: '500',
+  },
+  filtersContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  priceFilters: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  priceInputContainer: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  label: {
+    fontSize: 12,
+    color: '#4b5563',
+    marginBottom: 4,
+  },
+  priceInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+  },
+  filterButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginHorizontal: 4,
+    alignItems: 'center',
+  },
+  applyButton: {
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  applyButtonText: {
+    color: '#374151',
+    fontWeight: '500',
+  },
+  resetButton: {
+    backgroundColor: '#ffffff',
+  },
+  resetButtonText: {
+    color: '#6b7280',
+  },
+  activeFilters: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  activeFiltersLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  activeFilter: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginRight: 8,
+  },
+  productItem: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  loadingFooter: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  loadMoreButton: {
+    marginVertical: 20,
+    marginHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  loadMoreText: {
+    color: '#374151',
+    fontWeight: '500',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    color: '#6b7280',
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  errorText: {
+    color: '#ef4444',
+    textAlign: 'center',
+  },
+});
 
 export default ProductList;

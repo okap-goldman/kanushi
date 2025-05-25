@@ -9,15 +9,18 @@
       OS:
         - "iOS"
         - "Android"
-      フレームワーク: "Flutter"
-  技術スタック:
-    バックエンド: "Express (TypeScript)"
+    デスクトップアプリ:
+      OS:
+        - "Web"
+          - "Chrome"
+          - "Safari"
 
 機能要件:
   ユーザー管理:
     認証:
-      Googleアカウント連携のみ: true
-      モデレーターアカウント不要: true
+      Googleアカウント連携: true
+      Appleアカウント連携: true
+      パスキー: true
     アカウント設定:
       表示名登録: true
       プロフィール文登録: true
@@ -42,23 +45,15 @@
 
   タイムライン:
     投稿メディア:
-      動画:
-        アプリ内撮影: true
-        アップロード: 端末動画／YouTube API
-        保持: サービス内保存なし（YouTube準拠）
-        公開設定:
-          - 公開
-          - 限定公開
-        フォーマット: YouTube準拠
+      動画: false
       画像:
         アップロード: true
         GIF対応: true
-        保存先: Sakuraオブジェクトストレージ
-        配信: CDN（cdn.sakura.ad.jp 経由）
+        保存先: Supabase
       音声:
         録音機能: true
         アップロード: true
-        保存先: Sakuraオブジェクトストレージ（限定公開）
+        保存先: Supabase
       テキスト:
         最大文字数: 10000
         プレビュー文字数: 280

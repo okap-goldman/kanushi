@@ -1,14 +1,17 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Avatar } from "@/components/ui/avatar";
-import { Product } from '@/lib/ecService';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Product } from '../../lib/ecService';
+import Card from '../ui/Card';
+import Avatar from '../ui/Avatar';
 
 interface ProductCardProps {
   product: Product;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const navigation = useNavigation<any>();
+
   const formatPrice = (price: number, currency: string = 'JPY') => {
     return new Intl.NumberFormat('ja-JP', { 
       style: 'currency', 
@@ -19,57 +22,148 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   const isOutOfStock = product.stock <= 0;
 
+  const handlePress = () => {
+    navigation.navigate('ProductDetail', { productId: product.id });
+  };
+
   return (
-    <Card className="h-full overflow-hidden flex flex-col">
-      <div className="relative">
-        <Link to={`/shop/product/${product.id}`}>
-          <img 
-            src={product.image_url} 
-            alt={product.title}
-            className="h-48 w-full object-cover"
+    <Card style={styles.card}>
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
+        <View style={styles.imageContainer}>
+          <Image 
+            source={{ uri: product.image_url }} 
+            style={styles.productImage}
           />
-        </Link>
-        {isOutOfStock && (
-          <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-            <span className="bg-red-600 text-white px-2 py-1 rounded text-sm font-bold">
-              売り切れ
-            </span>
-          </div>
-        )}
-      </div>
-      
-      <CardContent className="flex-grow pt-4">
-        <Link to={`/shop/product/${product.id}`} className="hover:underline">
-          <h3 className="font-bold text-lg line-clamp-1">{product.title}</h3>
-        </Link>
+          {isOutOfStock && (
+            <View style={styles.outOfStockOverlay}>
+              <View style={styles.outOfStockBadge}>
+                <Text style={styles.outOfStockText}>売り切れ</Text>
+              </View>
+            </View>
+          )}
+        </View>
         
-        {product.seller && (
-          <div className="flex items-center mt-2">
-            <Avatar className="h-5 w-5 mr-2">
-              <img src={product.seller.profile_image_url} alt={product.seller.display_name} />
-            </Avatar>
-            <span className="text-sm text-gray-600">{product.seller.display_name}</span>
-          </div>
-        )}
+        <View style={styles.content}>
+          <Text style={styles.title} numberOfLines={1}>
+            {product.title}
+          </Text>
+          
+          {product.seller && (
+            <View style={styles.sellerInfo}>
+              <Avatar 
+                source={{ uri: product.seller.profile_image_url }}
+                size={20}
+                style={styles.sellerAvatar}
+              />
+              <Text style={styles.sellerName} numberOfLines={1}>
+                {product.seller.display_name}
+              </Text>
+            </View>
+          )}
+          
+          <Text style={styles.description} numberOfLines={2}>
+            {product.description}
+          </Text>
+        </View>
         
-        <p className="text-sm text-gray-500 line-clamp-2 mt-2">
-          {product.description}
-        </p>
-      </CardContent>
-      
-      <CardFooter className="flex justify-between bg-gray-50 mt-auto">
-        <div className="font-bold text-lg">
-          {formatPrice(product.price, product.currency)}
-        </div>
-        <div className="text-sm text-gray-600">
-          {isOutOfStock 
-            ? <span className="text-red-600">在庫なし</span> 
-            : <span>在庫: {product.stock}点</span>
-          }
-        </div>
-      </CardFooter>
+        <View style={styles.footer}>
+          <Text style={styles.price}>
+            {formatPrice(product.price, product.currency)}
+          </Text>
+          <Text style={[
+            styles.stock,
+            isOutOfStock && styles.stockOut
+          ]}>
+            {isOutOfStock 
+              ? '在庫なし' 
+              : `在庫: ${product.stock}点`
+            }
+          </Text>
+        </View>
+      </TouchableOpacity>
     </Card>
   );
 };
+
+const styles = StyleSheet.create({
+  card: {
+    overflow: 'hidden',
+    margin: 0,
+    padding: 0,
+  },
+  imageContainer: {
+    position: 'relative',
+  },
+  productImage: {
+    height: 192,
+    width: '100%',
+  },
+  outOfStockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  outOfStockBadge: {
+    backgroundColor: '#dc2626',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  outOfStockText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  content: {
+    padding: 16,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  sellerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  sellerAvatar: {
+    marginRight: 8,
+  },
+  sellerName: {
+    fontSize: 14,
+    color: '#4b5563',
+    flex: 1,
+  },
+  description: {
+    fontSize: 14,
+    color: '#6b7280',
+    lineHeight: 20,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  price: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  stock: {
+    fontSize: 14,
+    color: '#4b5563',
+  },
+  stockOut: {
+    color: '#dc2626',
+  },
+});
 
 export default ProductCard;
