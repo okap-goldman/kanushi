@@ -1,7 +1,7 @@
-import AudioPlayer from '@/components/AudioPlayer';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import AudioPlayer from '../../src/components/AudioPlayer';
 
 // モックの設定
 vi.mock('expo-av', () => ({
@@ -33,10 +33,10 @@ vi.mock('expo-av', () => ({
 }));
 
 vi.mock('@expo/vector-icons', () => ({
-  Feather: ({ name, size, color }: any) => <span testID={`icon-${name}`}>{name}</span>,
+  Feather: ({ name, size, color }: any) => ({ testID: `icon-${name}`, children: name }),
 }));
 
-vi.mock('@/components/ui/Slider', () => ({
+vi.mock('../../src/components/ui/Slider', () => ({
   Slider: ({ onValueChange, value, testID }: any) => (
     <input
       type="range"
@@ -142,7 +142,7 @@ describe('AudioPlayer Component', () => {
     };
 
     (Audio.Sound.createAsync as any).mockImplementation(
-      async (source, initialStatus, onPlaybackStatusUpdate) => {
+      async (source: any, initialStatus: any, onPlaybackStatusUpdate: any) => {
         // 音声が読み込まれた状態を通知
         setTimeout(() => {
           onPlaybackStatusUpdate?.({
@@ -168,7 +168,7 @@ describe('AudioPlayer Component', () => {
 
     // シークバーを操作
     const seekBar = getByTestId('seek-bar');
-    fireEvent.change(seekBar, { target: { value: '90000' } });
+    fireEvent(seekBar, 'valueChange', 90000);
 
     await waitFor(() => {
       expect(mockSound.setPositionAsync).toHaveBeenCalledWith(90000);

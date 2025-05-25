@@ -1,5 +1,13 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 
+declare namespace Deno {
+  export interface Env {
+    get(key: string): string | undefined;
+  }
+  export const env: Env;
+  export function serve(handler: (req: Request) => Promise<Response>): void;
+}
+
 // 音声処理のための型定義
 interface ProcessAudioRequest {
   audioUrl: string;
@@ -175,7 +183,7 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         success: false,
         originalUrl: req.url,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       }),
       {
         status: 500,

@@ -52,22 +52,28 @@ export function createMediaService(supabaseClient = supabase): MediaService {
         });
 
         if (error) {
-          return { error: error.message };
+          return { success: false, data: null, error: new Error(error.message) };
         }
 
         if (!data.success) {
-          return { error: data.error || 'Upload failed' };
+          return { success: false, data: null, error: new Error(data.error || 'Upload failed') };
         }
 
         return {
+          success: true,
           data: {
             url: data.url,
             fileId: data.fileId,
           },
+          error: null
         };
       } catch (error) {
         console.error('File upload error:', error);
-        return { error: 'ファイルのアップロードに失敗しました' };
+        return { 
+          success: false, 
+          data: null, 
+          error: new Error('ファイルのアップロードに失敗しました') 
+        };
       }
     },
 
@@ -82,14 +88,15 @@ export function createMediaService(supabaseClient = supabase): MediaService {
         });
 
         if (error) {
-          return { error: error.message };
+          return { success: false, data: null, error: new Error(error.message) };
         }
 
         if (!data.success) {
-          return { error: data.error || 'Audio processing failed' };
+          return { success: false, data: null, error: new Error(data.error || 'Audio processing failed') };
         }
 
         return {
+          success: true,
           data: {
             originalUrl: data.originalUrl,
             processedUrl: data.processedUrl,
@@ -97,10 +104,11 @@ export function createMediaService(supabaseClient = supabase): MediaService {
             previewUrl: data.previewUrl,
             durationSeconds: data.durationSeconds,
           },
+          error: null
         };
       } catch (error) {
         console.error('Audio processing error:', error);
-        return { error: '音声の処理に失敗しました' };
+        return { success: false, data: null, error: new Error('音声の処理に失敗しました') };
       }
     },
 
@@ -119,14 +127,15 @@ export function createMediaService(supabaseClient = supabase): MediaService {
         });
 
         if (error) {
-          return { error: error.message };
+          return { success: false, data: null, error: new Error(error.message) };
         }
 
         if (!data.success) {
-          return { error: data.error || 'Image processing failed' };
+          return { success: false, data: null, error: new Error(data.error || 'Image processing failed') };
         }
 
         return {
+          success: true,
           data: {
             originalUrl: data.originalUrl,
             processedUrl: data.processedUrl,
@@ -135,10 +144,11 @@ export function createMediaService(supabaseClient = supabase): MediaService {
             height: data.height,
             size: data.size,
           },
+          error: null
         };
       } catch (error) {
         console.error('Image processing error:', error);
-        return { error: '画像の処理に失敗しました' };
+        return { success: false, data: null, error: new Error('画像の処理に失敗しました') };
       }
     },
   };
