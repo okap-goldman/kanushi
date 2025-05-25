@@ -10,7 +10,7 @@ Kanushi（かぬし）は「目醒め人のためのSNS」です。音声コン�
 ### 開発
 ```bash
 # 開発サーバーを起動
-npm start
+npm run web
 
 # 型チェックとLintを実行
 npm run check
@@ -21,25 +21,18 @@ npm run db:migrate   # データベースにマイグレーションを適用
 npm run db:studio    # DB管理のためにDrizzle Studioを開く
 ```
 
-### プラットフォーム固有のビルド
-```bash
-npm run ios      # iOSシミュレーターで実行
-npm run android  # Androidエミュレーターで実行
-npm run web      # Web版を実行
-```
-
 ## アーキテクチャ概要
 
 ### 技術スタック
 - **フロントエンド**: React Native + Expo + TypeScript
-- **バックエンド**: Supabase (PostgreSQL, Auth, Realtime, Storage)
+- **バックエンド**: Supabase (PostgreSQL, Auth, Realtime, Storage, Edge Function)
 - **データベース**: Drizzle ORM + PostgreSQL
 - **ストレージ**: Backblaze B2 + Cloudflare CDN (Edge Functions経由)
 - **UIコンポーネント**: shadcn/uiパターンに基づいたカスタムコンポーネント
 - **状態管理**: React Context API (AuthContext)
 
 ### 主要な設計決定
-1. **音声ファーストのコンテンツ**: 主要なコンテンツタイプは音声（最大15分の録音）
+1. **音声ファーストのコンテンツ**: 主要なコンテンツタイプは音声（最大8時間）
 2. **オフラインサポート**: 暗号化されたローカルキャッシュ（最大500MB、1ヶ月で自動削除）
 3. **マルチアカウント**: デバイスごとに最大5つのアカウントをサポート
 4. **リアルタイム**: チャットにはWebSocket、ライブルームにはWebRTC (LiveKit)
@@ -97,4 +90,5 @@ supabase/
 詳細なフェーズ状況については `doc/implementation-plan.md` を参照してください。現在フェーズ2（コア機能）です。
 
 ## 重要な注意事項
-- 作業完了後は @doc/implementation-plan.md を更新
+- 作業開始前に @doc/ を確認
+- 作業完了後は @doc/implementation-plan.md と @doc/progress を更新

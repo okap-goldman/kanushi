@@ -1,4 +1,109 @@
-// src/lib/__tests__/authService.test.ts
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { authService } from '../../src/lib/authService';
+import { supabase } from '../../src/lib/supabase';
+import { Profile, Account } from '../../src/lib/db/schema/profile';
+
+// モック設定
+vi.mock('../../src/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      signInWithIdToken: vi.fn(),
+      signOut: vi.fn(),
+      refreshSession: vi.fn(),
+      getUser: vi.fn(),
+      getSession: vi.fn(),
+    },
+    from: vi.fn(() => ({
+      insert: vi.fn(() => ({ select: vi.fn(() => ({ single: vi.fn() })) })),
+      select: vi.fn(() => ({ eq: vi.fn(() => ({ single: vi.fn() })) })),
+      update: vi.fn(() => ({ eq: vi.fn() })),
+      delete: vi.fn(() => ({ eq: vi.fn() })),
+    })),
+  },
+}));
+
+// テストヘルパー関数
+const createMockUser = (overrides = {}) => ({
+  id: 'test-user-id',
+  email: 'test@example.com',
+  app_metadata: {},
+  user_metadata: { name: 'Test User' },
+  aud: 'authenticated',
+  created_at: new Date().toISOString(),
+  ...overrides,
+});
+
+const createMockProfile = (overrides = {}): Partial<Profile> => ({
+  id: 'test-profile-id',
+  displayName: '開発テストユーザー',
+  email: 'testuser@kanushi.love',
+  profileText: 'これは開発用のテストアカウントです',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
+
+const createMockAccount = (overrides = {}): Partial<Account> => ({
+  id: 'test-account-id',
+  profileId: 'test-profile-id',
+  accountType: 'google',
+  isActive: true,
+  switchOrder: 1,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
+
+describe('認証バイパス機能', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // 環境変数をリセット
+    delete process.env.NODE_ENV;
+    delete process.env.TEST_FILE;
+    delete process.env.DISABLE_AUTO_LOGIN;
+  });
+
+  it('開発環境で認証バイパスが有効になること', async () => {
+    process.env.NODE_ENV = 'development';
+    process.env.TEST_FILE = 'post.test.ts';
+    
+    const result = await authService.checkAutoLogin();
+    expect(result.shouldAutoLogin).toBe(true);
+  });
+
+  it('本番環境では認証バイパスが無効になること', async () => {
+    process.env.NODE_ENV = 'production';
+    
+    const result = await authService.checkAutoLogin();
+    expect(result.shouldAutoLogin).toBe(false);
+  });
+
+  it('認証テスト実行時はバイパスが無効になること', async () => {
+    process.env.NODE_ENV = 'development';
+    process.env.TEST_FILE = 'authService.test.ts';
+    
+    const result = await authService.checkAutoLogin();
+    expect(result.shouldAutoLogin).toBe(false);
+  });
+
+  it('認証以外のテストではバイパスが有効になること', async () => {
+    process.env.NODE_ENV = 'development';
+    process.env.TEST_FILE = 'postService.test.ts';
+    
+    const result = await authService.checkAutoLogin();
+    expect(result.shouldAutoLogin).toBe(true);
+  });
+
+  it('DISABLE_AUTO_LOGINフラグでバイパスを無効化できること', async () => {
+    process.env.NODE_ENV = 'development';
+    process.env.TEST_FILE = 'post.test.ts';
+    process.env.DISABLE_AUTO_LOGIN = 'true';
+    
+    const result = await authService.checkAutoLogin();
+    expect(result.shouldAutoLogin).toBe(false);
+  });
+});
+
 describe('Google OAuth Authentication', () => {
   describe('signInWithGoogle', () => {
     it('新規ユーザー登録が成功する', async () => {

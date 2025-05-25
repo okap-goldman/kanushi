@@ -4,19 +4,6 @@
 本ドキュメントは、ライブルーム機能のTDD実装のための詳細なテスト仕様書です。
 API・UI・結合・E2Eの4つのテストレベルで包括的なテストケースを定義します。
 
-## テスト環境
-
-### 使用フレームワーク
-- `jest-expo@~53.0.0`
-- `@testing-library/react-native@^13`
-- `@testing-library/jest-native@^6`
-- `react-native-reanimated/mock`
-
-### テスト原則
-- 可能な限りモックを使用しない実装
-- リアルなデータフローでのテスト
-- LiveKit SDK は統合テスト用のテストサーバーを使用
-
 ## 1. APIユニットテスト
 
 ### 1.1 ライブルーム作成API

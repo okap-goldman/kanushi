@@ -5,17 +5,6 @@
 本書はダイレクトメッセージ機能のTDD実装のためのテスト仕様書です。
 APIユニットテスト、UIユニットテスト、結合テスト、E2Eテストの4種類のテストケースを定義します。
 
-### 使用ライブラリ
-- jest-expo@~53.0.0
-- @testing-library/react-native@^13
-- @testing-library/jest-native@^6
-- react-native-reanimated/mock
-
-### テスト方針
-- 可能な限りモックを使用せず、実際のAPIとコンポーネントとの統合を重視
-- E2E暗号化、WebSocketリアルタイム通信、ファイルアップロードなどの複雑な機能も含めてテスト
-- カバレッジ目標：≥90%
-
 ## 1. APIユニットテスト
 
 ### 1.1 DM会話開始API
