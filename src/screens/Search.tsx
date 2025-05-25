@@ -6,142 +6,174 @@ import {
   FlatList,
   SafeAreaView,
   ActivityIndicator,
+  SectionList,
 } from 'react-native';
-import { Input } from '../components/ui/Input';
+import { AISearchBar } from '../components/search/AISearchBar';
+import { AIChat } from '../components/ai/AIChat';
 import { Post } from '../components/post/Post';
+import { EventCard } from '../components/events/EventCard';
+import { ProductCard } from '../components/shop/ProductCard';
+import { SearchResults } from '../lib/aiChatService';
 import { Feather } from '@expo/vector-icons';
 
-// Temporary sample data
-const SAMPLE_SEARCH_RESULTS = [
-  {
-    id: '1',
-    user: {
-      id: 'user1',
-      name: 'John Doe',
-      username: 'johndoe',
-      avatarUrl: 'https://i.pravatar.cc/150?img=1',
-    },
-    content: 'Exploring new places in Tokyo today! #travel #japan',
-    images: ['https://picsum.photos/500/300?random=1'],
-    createdAt: '2023-05-10T09:24:00Z',
-    likes: 24,
-    comments: 5,
-  },
-  {
-    id: '2',
-    user: {
-      id: 'user2',
-      name: 'Jane Smith',
-      username: 'janesmith',
-      avatarUrl: 'https://i.pravatar.cc/150?img=5',
-    },
-    content: 'Amazing sunset at the beach! 🌅 #sunset #beach',
-    images: ['https://picsum.photos/500/300?random=2'],
-    createdAt: '2023-05-09T18:30:00Z',
-    likes: 42,
-    comments: 8,
-  },
-  {
-    id: '3',
-    user: {
-      id: 'user3',
-      name: 'Alex Johnson',
-      username: 'alexj',
-      avatarUrl: 'https://i.pravatar.cc/150?img=8',
-    },
-    content: 'Trying out a new recipe for dinner tonight. #cooking #foodie',
-    images: ['https://picsum.photos/500/300?random=3'],
-    createdAt: '2023-05-08T19:15:00Z',
-    likes: 18,
-    comments: 3,
-  },
-];
-
-export default function Search() {
-  const [searchQuery, setSearchQuery] = useState('');
+export const Search = () => {
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState(SAMPLE_SEARCH_RESULTS);
+  const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
+  const [showAIChat, setShowAIChat] = useState(false);
   
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    
-    // Show loading indicator for better UX
-    if (query.length > 2) {
-      setLoading(true);
-      
-      // Simulate API call
-      setTimeout(() => {
-        // In a real app, you would fetch search results from an API
-        // For now, we'll just filter our sample data based on the query
-        const filteredResults = SAMPLE_SEARCH_RESULTS.filter(post => 
-          post.content.toLowerCase().includes(query.toLowerCase()) ||
-          post.user.name.toLowerCase().includes(query.toLowerCase()) ||
-          post.user.username.toLowerCase().includes(query.toLowerCase())
-        );
-        
-        setResults(filteredResults);
-        setLoading(false);
-      }, 500);
-    } else if (query.length === 0) {
-      // Reset to default when query is cleared
-      setResults(SAMPLE_SEARCH_RESULTS);
-    }
+  const handleSearchResults = (results: SearchResults) => {
+    setSearchResults(results);
+  };
+
+  const handleAIChatPress = () => {
+    setShowAIChat(true);
   };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Feather name="search" size={48} color="#A0AEC0" />
-      <Text style={styles.emptyStateTitle}>No results found</Text>
+      <Text style={styles.emptyStateTitle}>検索結果がありません</Text>
       <Text style={styles.emptyStateText}>
-        Try searching for posts, users, or hashtags
+        投稿、ユーザー、ハッシュタグを検索してみてください
       </Text>
     </View>
   );
 
+  const renderSearchResults = () => {
+    if (!searchResults) {
+      return (
+        <View style={styles.welcomeState}>
+          <Feather name="search" size={48} color="#A0AEC0" />
+          <Text style={styles.welcomeTitle}>何をお探しですか？</Text>
+          <Text style={styles.welcomeText}>
+            上の検索バーから検索するか、AIチャットで質問してください
+          </Text>
+        </View>
+      );
+    }
+
+    const sections = [];
+
+    if (searchResults.posts.length > 0) {
+      sections.push({
+        title: '投稿',
+        data: searchResults.posts,
+        type: 'post',
+      });
+    }
+
+    if (searchResults.events.length > 0) {
+      sections.push({
+        title: 'イベント',
+        data: searchResults.events,
+        type: 'event',
+      });
+    }
+
+    if (searchResults.products.length > 0) {
+      sections.push({
+        title: '商品',
+        data: searchResults.products,
+        type: 'product',
+      });
+    }
+
+    if (sections.length === 0) {
+      return renderEmptyState();
+    }
+
+    return (
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => item.id}
+        renderSectionHeader={({ section: { title } }) => (
+          <Text style={styles.sectionHeader}>{title}</Text>
+        )}
+        renderItem={({ item, section }) => {
+          switch (section.type) {
+            case 'post':
+              return (
+                <View testID="search-results">
+                  <Post
+                    author={{
+                      id: item.user_id,
+                      name: item.user?.name || 'ユーザー',
+                      image: item.user?.avatar_url || '',
+                    }}
+                    content={item.content}
+                    caption={item.content}
+                    mediaType="text"
+                    postId={item.id}
+                    tags={[]}
+                  />
+                </View>
+              );
+            case 'event':
+              return (
+                <View testID="search-results">
+                  <EventCard
+                    event={{
+                      id: item.id,
+                      title: item.title,
+                      description: item.description,
+                      startDate: item.start_date,
+                      endDate: item.end_date,
+                      location: item.location,
+                      imageUrl: item.image_url,
+                      attendeeCount: item.attendee_count || 0,
+                    }}
+                    onPress={() => {}}
+                  />
+                </View>
+              );
+            case 'product':
+              return (
+                <View testID="search-results">
+                  <ProductCard
+                    product={{
+                      id: item.id,
+                      name: item.name,
+                      description: item.description,
+                      price: item.price,
+                      imageUrl: item.image_url,
+                      stockQuantity: item.stock_quantity,
+                    }}
+                    onPress={() => {}}
+                  />
+                </View>
+              );
+            default:
+              return null;
+          }
+        }}
+        contentContainerStyle={styles.content}
+      />
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Search</Text>
+        <Text style={styles.title}>検索</Text>
       </View>
       
-      <View style={styles.searchContainer}>
-        <View style={styles.inputWrapper}>
-          <Feather name="search" size={16} color="#718096" style={styles.searchIcon} />
-          <Input
-            placeholder="Search posts, users, or hashtags..."
-            value={searchQuery}
-            onChangeText={handleSearch}
-            inputStyle={styles.searchInput}
-          />
-        </View>
-      </View>
+      <AISearchBar
+        onSearchResults={handleSearchResults}
+        onAIChatPress={handleAIChatPress}
+      />
       
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0070F3" />
         </View>
       ) : (
-        <FlatList
-          data={results}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <Post 
-              author={{
-                id: item.user.id,
-                name: item.user.name,
-                image: item.user.avatarUrl
-              }}
-              content={item.images?.[0] || ''}
-              caption={item.content}
-              mediaType={item.images?.length > 0 ? 'image' : 'text'}
-              postId={item.id}
-              tags={[]}
-            />
-          )}
-          contentContainerStyle={styles.content}
-          ListEmptyComponent={renderEmptyState}
-        />
+        renderSearchResults()
       )}
+
+      <AIChat
+        isVisible={showAIChat}
+        onClose={() => setShowAIChat(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -160,12 +192,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1A202C',
-  },
-  searchContainer: {
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
   },
   content: {
     flexGrow: 1,
@@ -195,17 +221,31 @@ const styles = StyleSheet.create({
     color: '#718096',
     textAlign: 'center',
   },
-  inputWrapper: {
-    flexDirection: 'row',
+  welcomeState: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
+    paddingHorizontal: 24,
+    paddingVertical: 48,
   },
-  searchIcon: {
-    position: 'absolute',
-    left: 12,
-    zIndex: 1,
+  welcomeTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4A5568',
+    marginTop: 16,
+    marginBottom: 8,
   },
-  searchInput: {
-    paddingLeft: 40,
+  welcomeText: {
+    fontSize: 14,
+    color: '#718096',
+    textAlign: 'center',
+  },
+  sectionHeader: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2D3748',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#F7FAFC',
   },
 });

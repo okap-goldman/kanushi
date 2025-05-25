@@ -3,9 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Audio } from 'expo-av';
 import { Play, Pause, Store, LogOut } from 'lucide-react-native';
-import { useAuth } from '@/context/AuthContext';
-import { Avatar } from '@/components/ui/Avatar';
-import { Button } from '@/components/ui/Button';
+import { useAuth } from '../../context/AuthContext';
+import { Avatar } from '../ui/avatar';
+import { Button } from '../ui/button';
 
 interface ProfileHeaderProps {
   isPlaying?: boolean;

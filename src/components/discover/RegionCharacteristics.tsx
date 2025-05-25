@@ -7,9 +7,9 @@ interface RegionCharacteristicsProps {
 
 export function RegionCharacteristics({ characteristics }: RegionCharacteristicsProps) {
   return (
-    <View className="bg-white rounded-lg shadow-sm p-6">
-      <Text className="text-lg font-semibold mb-4">地域の特色</Text>
-      <Text className="text-gray-600">{characteristics}</Text>
+    <View style={{ backgroundColor: '#fff', borderRadius: 8, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 }}>
+      <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16 }}>地域の特色</Text>
+      <Text style={{ color: '#4B5563' }}>{characteristics}</Text>
     </View>
   );
 }

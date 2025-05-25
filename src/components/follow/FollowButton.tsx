@@ -1,13 +1,13 @@
 import React, { useState, useContext } from 'react';
-import { TouchableOpacity, View, Text, ActivityIndicator, Modal, TextInput } from 'react-native';
-import { AuthContext } from '@/context/AuthContext';
-import { followService } from '@/lib/followService';
-import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { TouchableOpacity, View, Text, ActivityIndicator, Modal, TextInput, StyleSheet } from 'react-native';
+import { AuthContext } from '../../context/AuthContext';
+import { followService } from '../../lib/followService';
+import { useToast } from '../../hooks/use-toast';
+import { Badge } from '../ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
 interface FollowButtonProps {
   userId: string;
@@ -136,28 +136,30 @@ export function FollowButton({
         onPress={handleFollowPress}
         onLongPress={() => followStatus === 'following' && setShowUnfollowDialog(true)}
         disabled={buttonDisabled}
-        className={`px-6 py-2 rounded-full flex-row items-center ${
+        style={[
+          styles.followButton,
           followStatus === 'following' 
-            ? 'bg-gray-200 dark:bg-gray-700' 
-            : 'bg-blue-500'
-        }`}
+            ? styles.followButtonFollowing 
+            : styles.followButtonNotFollowing
+        ]}
       >
         {(loading || isLoading) ? (
           <ActivityIndicator testID="loading-spinner" size="small" color="#fff" />
         ) : (
           <>
-            <Text className={`font-medium ${
+            <Text style={[
+              styles.followButtonText,
               followStatus === 'following' 
-                ? 'text-gray-700 dark:text-gray-300' 
-                : 'text-white'
-            }`}>
+                ? styles.followButtonTextFollowing 
+                : styles.followButtonTextNotFollowing
+            ]}>
               {followStatus === 'following' ? 'フォロー中' : 'フォロー'}
             </Text>
             {followStatus === 'following' && followType && (
               <Badge 
                 testID={`${followType}-badge`}
                 variant={followType === 'family' ? 'default' : 'secondary'}
-                className="ml-2"
+                style={styles.badge}
               >
                 {followType === 'family' ? 'ファミリー' : 'ウォッチ'}
               </Badge>
@@ -173,35 +175,35 @@ export function FollowButton({
         animationType="fade"
         testID="follow-type-modal"
       >
-        <View className="flex-1 bg-black/50 justify-center items-center px-4">
-          <View className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-sm">
-            <Text className="text-lg font-bold mb-4">フォロータイプを選択</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>フォロータイプを選択</Text>
             
             <TouchableOpacity
               onPress={() => handleFollowTypeSelect('family')}
-              className="bg-blue-500 px-4 py-3 rounded-lg mb-3"
+              style={styles.familyFollowButton}
             >
-              <Text className="text-white font-medium text-center">ファミリーフォロー</Text>
-              <Text className="text-white/80 text-sm text-center mt-1">
+              <Text style={styles.buttonTextWhite}>ファミリーフォロー</Text>
+              <Text style={styles.buttonSubtext}>
                 深い繋がりを築きたい相手に
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => handleFollowTypeSelect('watch')}
-              className="bg-gray-500 px-4 py-3 rounded-lg mb-3"
+              style={styles.watchFollowButton}
             >
-              <Text className="text-white font-medium text-center">ウォッチフォロー</Text>
-              <Text className="text-white/80 text-sm text-center mt-1">
+              <Text style={styles.buttonTextWhite}>ウォッチフォロー</Text>
+              <Text style={styles.buttonSubtext}>
                 投稿を見たい相手に
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setShowFollowTypeModal(false)}
-              className="px-4 py-2"
+              style={styles.cancelButton}
             >
-              <Text className="text-gray-500 text-center">キャンセル</Text>
+              <Text style={styles.cancelButtonText}>キャンセル</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -214,9 +216,9 @@ export function FollowButton({
         animationType="fade"
         testID="follow-reason-modal"
       >
-        <View className="flex-1 bg-black/50 justify-center items-center px-4">
-          <View className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-sm">
-            <Text className="text-lg font-bold mb-4">ファミリーフォローの理由</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>ファミリーフォローの理由</Text>
             
             <TextInput
               testID="follow-reason-input"
@@ -226,18 +228,18 @@ export function FollowButton({
               placeholderTextColor="#9CA3AF"
               multiline
               numberOfLines={3}
-              className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 mb-4 text-gray-900 dark:text-white"
+              style={styles.textInput}
             />
 
-            <View className="flex-row gap-3">
+            <View style={styles.modalButtonRow}>
               <TouchableOpacity
                 onPress={() => {
                   setShowFollowReasonModal(false);
                   setFollowReason('');
                 }}
-                className="flex-1 px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700"
+                style={[styles.modalButton, styles.modalButtonSecondary]}
               >
-                <Text className="text-center text-gray-700 dark:text-gray-300">
+                <Text style={styles.modalButtonTextSecondary}>
                   キャンセル
                 </Text>
               </TouchableOpacity>
@@ -246,17 +248,19 @@ export function FollowButton({
                 testID="submit-follow-button"
                 onPress={() => executeFollow('family', followReason)}
                 disabled={!followReason.trim() || loading}
-                className={`flex-1 px-4 py-2 rounded-lg ${
+                style={[
+                  styles.modalButton,
                   !followReason.trim() || loading
-                    ? 'bg-gray-300 dark:bg-gray-600'
-                    : 'bg-blue-500'
-                }`}
+                    ? styles.modalButtonDisabled
+                    : styles.modalButtonPrimary
+                ]}
               >
-                <Text className={`text-center ${
+                <Text style={[
+                  styles.modalButtonText,
                   !followReason.trim() || loading
-                    ? 'text-gray-500 dark:text-gray-400'
-                    : 'text-white'
-                }`}>
+                    ? styles.modalButtonTextDisabled
+                    : styles.modalButtonTextPrimary
+                ]}>
                   フォロー
                 </Text>
               </TouchableOpacity>
@@ -272,9 +276,9 @@ export function FollowButton({
         animationType="fade"
         testID="unfollow-dialog"
       >
-        <View className="flex-1 bg-black/50 justify-center items-center px-4">
-          <View className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-sm">
-            <Text className="text-lg font-bold mb-4">フォローを解除しますか？</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>フォローを解除しますか？</Text>
             
             <TextInput
               value={unfollowReason}
@@ -283,18 +287,18 @@ export function FollowButton({
               placeholderTextColor="#9CA3AF"
               multiline
               numberOfLines={2}
-              className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 mb-4 text-gray-900 dark:text-white"
+              style={styles.textInput}
             />
 
-            <View className="flex-row gap-3">
+            <View style={styles.modalButtonRow}>
               <TouchableOpacity
                 onPress={() => {
                   setShowUnfollowDialog(false);
                   setUnfollowReason('');
                 }}
-                className="flex-1 px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700"
+                style={[styles.modalButton, styles.modalButtonSecondary]}
               >
-                <Text className="text-center text-gray-700 dark:text-gray-300">
+                <Text style={styles.modalButtonTextSecondary}>
                   キャンセル
                 </Text>
               </TouchableOpacity>
@@ -302,9 +306,9 @@ export function FollowButton({
               <TouchableOpacity
                 onPress={handleUnfollow}
                 disabled={loading}
-                className="flex-1 px-4 py-2 rounded-lg bg-red-500"
+                style={[styles.modalButton, styles.modalButtonDanger]}
               >
-                <Text className="text-center text-white">
+                <Text style={styles.modalButtonTextPrimary}>
                   アンフォロー
                 </Text>
               </TouchableOpacity>
@@ -315,3 +319,126 @@ export function FollowButton({
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  followButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  followButtonNotFollowing: {
+    backgroundColor: '#3B82F6',
+  },
+  followButtonFollowing: {
+    backgroundColor: '#E5E7EB',
+  },
+  followButtonText: {
+    fontWeight: '500',
+  },
+  followButtonTextNotFollowing: {
+    color: '#FFFFFF',
+  },
+  followButtonTextFollowing: {
+    color: '#374151',
+  },
+  badge: {
+    marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  familyFollowButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  watchFollowButton: {
+    backgroundColor: '#6B7280',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  buttonTextWhite: {
+    color: '#FFFFFF',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  buttonSubtext: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  cancelButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  cancelButtonText: {
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    color: '#111827',
+    minHeight: 60,
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  modalButtonPrimary: {
+    backgroundColor: '#3B82F6',
+  },
+  modalButtonSecondary: {
+    backgroundColor: '#E5E7EB',
+  },
+  modalButtonDisabled: {
+    backgroundColor: '#D1D5DB',
+  },
+  modalButtonDanger: {
+    backgroundColor: '#EF4444',
+  },
+  modalButtonText: {
+    textAlign: 'center',
+  },
+  modalButtonTextPrimary: {
+    color: '#FFFFFF',
+  },
+  modalButtonTextSecondary: {
+    color: '#374151',
+  },
+  modalButtonTextDisabled: {
+    color: '#6B7280',
+  },
+});

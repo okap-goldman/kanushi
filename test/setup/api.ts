@@ -2,8 +2,8 @@
 import { beforeEach, vi } from 'vitest';
 
 // グローバル変数の定義
-global.__DEV__ = true;
-global.fetch = vi.fn();
+(global as any).__DEV__ = true;
+(global as any).fetch = vi.fn();
 
 // React NativeとExpo関連のモック
 vi.mock('react-native', () => ({
@@ -53,8 +53,38 @@ vi.mock('@supabase/supabase-js', () => ({
       insert: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       update: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn(),
+      neq: vi.fn().mockReturnThis(),
+      gt: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      like: vi.fn().mockReturnThis(),
+      ilike: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      contains: vi.fn().mockReturnThis(),
+      containedBy: vi.fn().mockReturnThis(),
+      rangegt: vi.fn().mockReturnThis(),
+      rangegte: vi.fn().mockReturnThis(),
+      rangelt: vi.fn().mockReturnThis(),
+      rangelts: vi.fn().mockReturnThis(),
+      adjacent: vi.fn().mockReturnThis(),
+      not: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      range: vi.fn().mockReturnThis(),
+      abortSignal: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      csv: vi.fn().mockResolvedValue({ data: '', error: null }),
+      geojson: vi.fn().mockResolvedValue({ data: null, error: null }),
+      explain: vi.fn().mockResolvedValue({ data: '', error: null }),
+      rollback: vi.fn().mockResolvedValue({ data: null, error: null }),
+      returns: vi.fn().mockReturnThis(),
+      then: vi.fn().mockResolvedValue({ data: [], error: null })
     })),
   })),
 }));

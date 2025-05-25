@@ -1,8 +1,9 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
+import { Linking } from 'react-native';
 
 // Auth Screens
 import Login from '../screens/Login';
@@ -24,6 +25,13 @@ import ProductDetail from '../screens/ProductDetail';
 import Orders from '../screens/Orders';
 import OrderDetail from '../screens/OrderDetail';
 import { useAuth } from '../context/AuthContext';
+
+// LiveRoom Screens
+import { LiveRoomScreen } from '../components/liveroom/LiveRoomScreen';
+import LiveRooms from '../screens/LiveRooms';
+
+// Navigation ref for programmatic navigation
+export const navigationRef = React.createRef<NavigationContainerRef<any>>();
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -66,12 +74,12 @@ function HomeTabs() {
         }}
       />
       <Tab.Screen 
-        name="DiscoverTab" 
-        component={Discover} 
+        name="LiveRoomsTab" 
+        component={LiveRooms} 
         options={{
-          tabBarLabel: 'Discover',
+          tabBarLabel: 'Live',
           tabBarIcon: ({ color, size }) => (
-            <Feather name="compass" color={color} size={size} />
+            <Feather name="radio" color={color} size={size} />
           ),
         }}
       />
@@ -99,6 +107,28 @@ function HomeTabs() {
   );
 }
 
+// Deep Link configuration
+const linking = {
+  prefixes: ['kanushi://', 'https://kanushi.app'],
+  config: {
+    screens: {
+      Home: {
+        screens: {
+          LiveRoomsTab: 'live',
+        },
+      },
+      LiveRoom: 'liveroom/:roomId',
+      Login: {
+        path: 'login',
+        parse: {
+          redirectTo: (redirectTo: string) => redirectTo,
+          redirectParams: (params: string) => JSON.parse(params || '{}'),
+        },
+      },
+    },
+  },
+};
+
 export default function Navigation() {
   const { user, loading } = useAuth();
 
@@ -107,8 +137,24 @@ export default function Navigation() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <NavigationContainer 
+      ref={navigationRef}
+      linking={linking}
+      onReady={() => {
+        // Handle initial deep link
+        Linking.getInitialURL().then((url) => {
+          if (url) {
+            // Handle deep link
+          }
+        });
+      }}
+    >
+      <Stack.Navigator 
+        screenOptions={{ 
+          headerShown: false,
+          animation: 'slide_from_bottom',
+        }}
+      >
         {!user ? (
           // Auth Screens
           <>
@@ -138,6 +184,17 @@ export default function Navigation() {
             <Stack.Screen name="ProductDetail" component={ProductDetail} />
             <Stack.Screen name="Orders" component={Orders} />
             <Stack.Screen name="OrderDetail" component={OrderDetail} />
+            
+            {/* LiveRoom Stack */}
+            <Stack.Screen name="LiveRooms" component={LiveRooms} />
+            <Stack.Screen 
+              name="LiveRoom" 
+              component={LiveRoomScreen}
+              options={{
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+              }}
+            />
           </>
         )}
       </Stack.Navigator>

@@ -1,15 +1,25 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { FollowButton } from '@/components/follow/FollowButton';
-import { followService } from '@/lib/followService';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { FollowButton } from '../../src/components/follow/FollowButton';
+import * as followService from '../../src/lib/followService';
 
 // Mock followService
-vi.mock('@/lib/followService', () => ({
-  followService: {
-    createFollow: vi.fn(),
-    unfollowUser: vi.fn()
+vi.mock('../../src/lib/followService');
+
+// Mock AuthContext
+vi.mock('../../src/context/AuthContext', () => ({
+  AuthContext: {
+    Provider: ({ children }: { children: React.ReactNode }) => children,
+    Consumer: ({ children }: { children: (value: any) => React.ReactNode }) => children({ user: { id: 'user1' } })
   }
+}));
+
+// Mock useToast
+vi.mock('../../src/hooks/use-toast', () => ({
+  useToast: () => ({
+    toast: vi.fn()
+  })
 }));
 
 describe('FollowButton Component', () => {
@@ -19,7 +29,7 @@ describe('FollowButton Component', () => {
 
   describe('フォローボタン表示', () => {
     it('未フォローユーザーに対して「フォロー」ボタンが表示される', () => {
-      render(
+      const { getByText } = render(
         <FollowButton 
           userId="user2"
           followStatus="not_following"
@@ -27,11 +37,11 @@ describe('FollowButton Component', () => {
         />
       );
 
-      expect(screen.getByText('フォロー')).toBeTruthy();
+      expect(getByText('フォロー')).toBeTruthy();
     });
 
     it('フォロー済みユーザーに対して「フォロー中」ボタンとファミリーバッジが表示される', () => {
-      render(
+      const { getByText, getByTestId } = render(
         <FollowButton 
           userId="user2"
           followStatus="following"
@@ -41,12 +51,12 @@ describe('FollowButton Component', () => {
         />
       );
 
-      expect(screen.getByText('フォロー中')).toBeTruthy();
-      expect(screen.getByTestId('family-badge')).toBeTruthy();
+      expect(getByText('フォロー中')).toBeTruthy();
+      expect(getByTestId('family-badge')).toBeTruthy();
     });
 
     it('ウォッチフォローの場合、ウォッチバッジが表示される', () => {
-      render(
+      const { getByText, getByTestId } = render(
         <FollowButton 
           userId="user2"
           followStatus="following"
@@ -56,12 +66,12 @@ describe('FollowButton Component', () => {
         />
       );
 
-      expect(screen.getByText('フォロー中')).toBeTruthy();
-      expect(screen.getByTestId('watch-badge')).toBeTruthy();
+      expect(getByText('フォロー中')).toBeTruthy();
+      expect(getByTestId('watch-badge')).toBeTruthy();
     });
 
     it('フォロー処理中はローディングスピナーが表示され、ボタンが無効化される', async () => {
-      const { rerender } = render(
+      const { rerender, getByText, getByTestId } = render(
         <FollowButton 
           userId="user2"
           followStatus="not_following"
@@ -69,24 +79,24 @@ describe('FollowButton Component', () => {
         />
       );
 
-      const button = screen.getByText('フォロー');
+      const button = getByText('フォロー');
       fireEvent.press(button);
 
       // モーダルが表示される
       await waitFor(() => {
-        expect(screen.getByTestId('follow-type-modal')).toBeTruthy();
+        expect(getByTestId('follow-type-modal')).toBeTruthy();
       });
 
       // ファミリーフォローを選択
-      fireEvent.press(screen.getByText('ファミリーフォロー'));
+      fireEvent.press(getByText('ファミリーフォロー'));
 
       // 理由入力画面が表示される
       await waitFor(() => {
-        expect(screen.getByTestId('follow-reason-input')).toBeTruthy();
+        expect(getByTestId('follow-reason-input')).toBeTruthy();
       });
 
       // isLoadingがtrueの時の表示を確認
-      rerender(
+      const { getByTestId: getByTestId2, getByText: getByText2 } = rerender(
         <FollowButton 
           userId="user2"
           followStatus="not_following"
@@ -95,14 +105,16 @@ describe('FollowButton Component', () => {
         />
       );
 
-      expect(screen.getByTestId('loading-spinner')).toBeTruthy();
-      expect(screen.getByText('フォロー')).toBeDisabled();
+      expect(getByTestId2('loading-spinner')).toBeTruthy();
+      // ボタンが無効化されていることを確認
+      const button = getByText2('フォロー').parent;
+      expect(button?.props.disabled).toBe(true);
     });
   });
 
   describe('フォローボタンインタラクション', () => {
     it('フォローボタンプレス時にモーダルが表示される', async () => {
-      render(
+      const { getByText, getByTestId } = render(
         <FollowButton 
           userId="user2"
           followStatus="not_following"
@@ -110,18 +122,18 @@ describe('FollowButton Component', () => {
         />
       );
 
-      const button = screen.getByText('フォロー');
+      const button = getByText('フォロー');
       fireEvent.press(button);
 
       await waitFor(() => {
-        expect(screen.getByTestId('follow-type-modal')).toBeTruthy();
-        expect(screen.getByText('ファミリーフォロー')).toBeTruthy();
-        expect(screen.getByText('ウォッチフォロー')).toBeTruthy();
+        expect(getByTestId('follow-type-modal')).toBeTruthy();
+        expect(getByText('ファミリーフォロー')).toBeTruthy();
+        expect(getByText('ウォッチフォロー')).toBeTruthy();
       });
     });
 
     it('フォロー中ボタン長押し時にアンフォロー確認ダイアログが表示される', async () => {
-      render(
+      const { getByText, getByTestId } = render(
         <FollowButton 
           userId="user2"
           followStatus="following"
@@ -131,17 +143,17 @@ describe('FollowButton Component', () => {
         />
       );
 
-      const button = screen.getByText('フォロー中');
+      const button = getByText('フォロー中');
       fireEvent(button, 'onLongPress');
 
       await waitFor(() => {
-        expect(screen.getByTestId('unfollow-dialog')).toBeTruthy();
-        expect(screen.getByText('フォローを解除しますか？')).toBeTruthy();
+        expect(getByTestId('unfollow-dialog')).toBeTruthy();
+        expect(getByText('フォローを解除しますか？')).toBeTruthy();
       });
     });
 
     it('ファミリーフォロー選択時に理由入力画面が表示される', async () => {
-      render(
+      const { getByText, getByTestId, getByPlaceholderText } = render(
         <FollowButton 
           userId="user2"
           followStatus="not_following"
@@ -149,18 +161,18 @@ describe('FollowButton Component', () => {
         />
       );
 
-      fireEvent.press(screen.getByText('フォロー'));
+      fireEvent.press(getByText('フォロー'));
       
       await waitFor(() => {
-        expect(screen.getByTestId('follow-type-modal')).toBeTruthy();
+        expect(getByTestId('follow-type-modal')).toBeTruthy();
       });
 
-      fireEvent.press(screen.getByText('ファミリーフォロー'));
+      fireEvent.press(getByText('ファミリーフォロー'));
 
       await waitFor(() => {
-        expect(screen.getByTestId('follow-reason-modal')).toBeTruthy();
-        expect(screen.getByText('ファミリーフォローの理由')).toBeTruthy();
-        expect(screen.getByPlaceholderText('フォローする理由を入力してください')).toBeTruthy();
+        expect(getByTestId('follow-reason-modal')).toBeTruthy();
+        expect(getByText('ファミリーフォローの理由')).toBeTruthy();
+        expect(getByPlaceholderText('フォローする理由を入力してください')).toBeTruthy();
       });
     });
 
@@ -178,7 +190,7 @@ describe('FollowButton Component', () => {
         unfollowReason: null
       });
 
-      render(
+      const { getByText, getByTestId } = render(
         <FollowButton 
           userId="user2"
           followStatus="not_following"
@@ -187,13 +199,13 @@ describe('FollowButton Component', () => {
         />
       );
 
-      fireEvent.press(screen.getByText('フォロー'));
+      fireEvent.press(getByText('フォロー'));
       
       await waitFor(() => {
-        expect(screen.getByTestId('follow-type-modal')).toBeTruthy();
+        expect(getByTestId('follow-type-modal')).toBeTruthy();
       });
 
-      fireEvent.press(screen.getByText('ウォッチフォロー'));
+      fireEvent.press(getByText('ウォッチフォロー'));
 
       await waitFor(() => {
         expect(followService.createFollow).toHaveBeenCalledWith({
@@ -223,7 +235,7 @@ describe('FollowButton Component', () => {
         unfollowReason: null
       });
 
-      render(
+      const { getByText, getByTestId, getByPlaceholderText } = render(
         <FollowButton 
           userId="user2"
           followStatus="not_following"
@@ -233,26 +245,26 @@ describe('FollowButton Component', () => {
       );
 
       // フォローボタンをタップ
-      fireEvent.press(screen.getByText('フォロー'));
+      fireEvent.press(getByText('フォロー'));
       
       await waitFor(() => {
-        expect(screen.getByTestId('follow-type-modal')).toBeTruthy();
+        expect(getByTestId('follow-type-modal')).toBeTruthy();
       });
 
       // ファミリーフォローを選択
-      fireEvent.press(screen.getByText('ファミリーフォロー'));
+      fireEvent.press(getByText('ファミリーフォロー'));
 
       await waitFor(() => {
-        expect(screen.getByTestId('follow-reason-modal')).toBeTruthy();
+        expect(getByTestId('follow-reason-modal')).toBeTruthy();
       });
 
       // 理由を入力
-      const reasonInput = screen.getByPlaceholderText('フォローする理由を入力してください');
+      const reasonInput = getByPlaceholderText('フォローする理由を入力してください');
       fireEvent.changeText(reasonInput, '素晴らしいコンテンツを共有してくれるから');
 
       // フォローボタンが有効になっていることを確認
-      const submitButton = screen.getByTestId('submit-follow-button');
-      expect(submitButton).not.toBeDisabled();
+      const submitButton = getByTestId('submit-follow-button');
+      expect(submitButton.props.disabled).toBe(false);
 
       // フォローを実行
       fireEvent.press(submitButton);
@@ -286,7 +298,7 @@ describe('FollowButton Component', () => {
         unfollowReason: 'コンテンツの方向性が変わったため'
       });
 
-      render(
+      const { getByText, getByTestId, getByPlaceholderText } = render(
         <FollowButton 
           userId="user2"
           followStatus="following"
@@ -298,19 +310,19 @@ describe('FollowButton Component', () => {
       );
 
       // フォロー中ボタンを長押し
-      const button = screen.getByText('フォロー中');
+      const button = getByText('フォロー中');
       fireEvent(button, 'onLongPress');
 
       await waitFor(() => {
-        expect(screen.getByTestId('unfollow-dialog')).toBeTruthy();
+        expect(getByTestId('unfollow-dialog')).toBeTruthy();
       });
 
       // アンフォロー理由を入力（任意）
-      const reasonInput = screen.getByPlaceholderText('アンフォローする理由（任意）');
+      const reasonInput = getByPlaceholderText('アンフォローする理由（任意）');
       fireEvent.changeText(reasonInput, 'コンテンツの方向性が変わったため');
 
       // アンフォローを実行
-      fireEvent.press(screen.getByText('アンフォロー'));
+      fireEvent.press(getByText('アンフォロー'));
 
       await waitFor(() => {
         expect(followService.unfollowUser).toHaveBeenCalledWith({
@@ -332,7 +344,7 @@ describe('FollowButton Component', () => {
         new Error('ネットワークエラーが発生しました')
       );
 
-      render(
+      const { getByText, getByTestId, queryByText } = render(
         <FollowButton 
           userId="user2"
           followStatus="not_following"
@@ -341,16 +353,16 @@ describe('FollowButton Component', () => {
         />
       );
 
-      fireEvent.press(screen.getByText('フォロー'));
+      fireEvent.press(getByText('フォロー'));
       
       await waitFor(() => {
-        expect(screen.getByTestId('follow-type-modal')).toBeTruthy();
+        expect(getByTestId('follow-type-modal')).toBeTruthy();
       });
 
-      fireEvent.press(screen.getByText('ウォッチフォロー'));
+      fireEvent.press(getByText('ウォッチフォロー'));
 
       await waitFor(() => {
-        expect(screen.getByText('ネットワークエラーが発生しました')).toBeTruthy();
+        expect(queryByText('ネットワークエラーが発生しました')).toBeTruthy();
         expect(onFollowChange).not.toHaveBeenCalled();
       });
     });

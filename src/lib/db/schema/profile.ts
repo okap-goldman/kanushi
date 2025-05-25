@@ -17,6 +17,8 @@ export const profiles = pgTable('profile', {
   prefecture: text('prefecture'),
   city: text('city'),
   fcmToken: text('fcm_token'),
+  publicKey: text('public_key'),
+  keyGeneratedAt: timestamp('key_generated_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => ({

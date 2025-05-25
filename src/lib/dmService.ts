@@ -4,7 +4,10 @@ import { dmThreads, directMessages } from './db/schema/messaging';
 import { profiles } from './db/schema/profile';
 import { eq, and, or, desc, gt, inArray } from 'drizzle-orm';
 import { uploadToB2 } from './b2Service';
+import { cryptoService } from './cryptoService';
+import { realtimeService } from './realtimeService';
 import type { User } from '@supabase/supabase-js';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 // Types
 export interface DmThread {
@@ -189,11 +192,18 @@ export class DmService {
     }
 
     // Handle encryption if requested
+    let encryptedKey: string | null = null;
+    let encryptionIv: string | null = null;
+    
     if (data.encrypted) {
       const recipientId = threadData.user1Id === currentUser.id 
         ? threadData.user2Id 
         : threadData.user1Id;
-      textContent = await this.encryptMessage(textContent, recipientId);
+      
+      const encryptionResult = await this.encryptMessage(textContent, recipientId);
+      textContent = encryptionResult.encryptedContent;
+      encryptedKey = encryptionResult.encryptedKey;
+      encryptionIv = encryptionResult.iv;
     }
 
     // Insert message
@@ -204,7 +214,10 @@ export class DmService {
         messageType,
         textContent,
         mediaUrl,
-        isRead: false
+        isRead: false,
+        isEncrypted: data.encrypted || false,
+        encryptedKey,
+        encryptionIv
       })
       .returning();
 
@@ -213,11 +226,11 @@ export class DmService {
       threadId: newMessage.threadId,
       senderId: newMessage.senderId,
       messageType: newMessage.messageType,
-      content: data.encrypted ? textContent : newMessage.textContent || '',
+      content: newMessage.textContent || '',
       mediaUrl: newMessage.mediaUrl,
       isRead: newMessage.isRead,
       createdAt: newMessage.createdAt,
-      encrypted: data.encrypted
+      encrypted: newMessage.isEncrypted
     };
   }
 
@@ -258,17 +271,40 @@ export class DmService {
       }
     }
 
-    // Transform to DmMessage format
-    return messages.map(msg => ({
-      id: msg.id,
-      threadId: msg.threadId,
-      senderId: msg.senderId,
-      messageType: msg.messageType,
-      content: msg.textContent || '',
-      mediaUrl: msg.mediaUrl,
-      isRead: msg.isRead,
-      createdAt: msg.createdAt
-    }));
+    // Transform to DmMessage format and decrypt if needed
+    const transformedMessages = await Promise.all(
+      messages.map(async (msg) => {
+        let content = msg.textContent || '';
+        
+        // Decrypt if message is encrypted
+        if (msg.isEncrypted && msg.encryptedKey && msg.encryptionIv) {
+          try {
+            content = await this.decryptMessage(
+              msg.textContent || '',
+              msg.encryptedKey,
+              msg.encryptionIv
+            );
+          } catch (error) {
+            console.error('Failed to decrypt message:', error);
+            content = '[Encrypted message - decryption failed]';
+          }
+        }
+        
+        return {
+          id: msg.id,
+          threadId: msg.threadId,
+          senderId: msg.senderId,
+          messageType: msg.messageType,
+          content,
+          mediaUrl: msg.mediaUrl,
+          isRead: msg.isRead,
+          createdAt: msg.createdAt,
+          encrypted: msg.isEncrypted
+        };
+      })
+    );
+    
+    return transformedMessages;
   }
 
   /**
@@ -376,21 +412,261 @@ export class DmService {
   }
 
   /**
-   * Encrypt message (placeholder - implement actual E2E encryption)
+   * Encrypt message for recipient
    */
-  private async encryptMessage(content: string, recipientId: string): Promise<string> {
-    // TODO: Implement actual E2E encryption
-    // This is a placeholder that should be replaced with real encryption
-    return `encrypted:${content}`;
+  private async encryptMessage(content: string, recipientId: string): Promise<{
+    encryptedContent: string;
+    encryptedKey: string;
+    iv: string;
+  }> {
+    // Get recipient's public key
+    const recipientProfile = await db.select()
+      .from(profiles)
+      .where(eq(profiles.id, recipientId))
+      .execute();
+
+    if (!recipientProfile.length || !recipientProfile[0].publicKey) {
+      throw new Error('Recipient does not have E2E encryption enabled');
+    }
+
+    const publicKey = recipientProfile[0].publicKey;
+    return cryptoService.encryptMessage(content, publicKey);
   }
 
   /**
-   * Decrypt message (placeholder - implement actual E2E decryption)
+   * Decrypt message using current user's private key
    */
-  private async decryptMessage(encryptedContent: string): Promise<string> {
-    // TODO: Implement actual E2E decryption
-    // This is a placeholder that should be replaced with real decryption
-    return encryptedContent.replace('encrypted:', '');
+  private async decryptMessage(
+    encryptedContent: string,
+    encryptedKey: string,
+    iv: string
+  ): Promise<string> {
+    const currentUser = await this.getCurrentUser();
+    const privateKey = await cryptoService.getPrivateKey(currentUser.id);
+
+    if (!privateKey) {
+      throw new Error('Private key not found');
+    }
+
+    return cryptoService.decryptMessage(
+      { encryptedContent, encryptedKey, iv },
+      privateKey
+    );
+  }
+  /**
+   * Subscribe to real-time updates for a thread
+   */
+  async subscribeToThread(
+    threadId: string,
+    handlers: {
+      onNewMessage: (message: DmMessage) => void;
+      onMessageRead: (messageId: string, readBy: string) => void;
+      onTyping: (userId: string, isTyping: boolean) => void;
+      onPresenceChange: (userId: string, presence: any) => void;
+    }
+  ): Promise<RealtimeChannel> {
+    const currentUser = await this.getCurrentUser();
+    
+    // Verify user is part of the thread
+    const thread = await db.select()
+      .from(dmThreads)
+      .where(
+        and(
+          eq(dmThreads.id, threadId),
+          or(
+            eq(dmThreads.user1Id, currentUser.id),
+            eq(dmThreads.user2Id, currentUser.id)
+          )
+        )
+      )
+      .execute();
+
+    if (!thread.length) {
+      throw new Error(ERROR_MESSAGES.THREAD_NOT_FOUND);
+    }
+
+    // Subscribe to realtime updates
+    return realtimeService.subscribeToThread(
+      threadId,
+      currentUser.id,
+      {
+        onNewMessage: async (realtimeMessage) => {
+          // Transform and potentially decrypt the message
+          let content = realtimeMessage.content;
+          
+          // Check if message needs decryption
+          const fullMessage = await db.select()
+            .from(directMessages)
+            .where(eq(directMessages.id, realtimeMessage.id))
+            .execute();
+            
+          if (fullMessage.length && fullMessage[0].isEncrypted) {
+            try {
+              content = await this.decryptMessage(
+                fullMessage[0].textContent || '',
+                fullMessage[0].encryptedKey || '',
+                fullMessage[0].encryptionIv || ''
+              );
+            } catch (error) {
+              console.error('Failed to decrypt message:', error);
+              content = '[Encrypted message - decryption failed]';
+            }
+          }
+          
+          const dmMessage: DmMessage = {
+            id: realtimeMessage.id,
+            threadId: realtimeMessage.threadId,
+            senderId: realtimeMessage.senderId,
+            messageType: realtimeMessage.messageType,
+            content,
+            mediaUrl: realtimeMessage.mediaUrl,
+            isRead: realtimeMessage.isRead,
+            createdAt: realtimeMessage.createdAt,
+            encrypted: fullMessage[0]?.isEncrypted || false
+          };
+          
+          handlers.onNewMessage(dmMessage);
+        },
+        onMessageRead: handlers.onMessageRead,
+        onTyping: handlers.onTyping,
+        onPresenceChange: handlers.onPresenceChange
+      }
+    );
+  }
+
+  /**
+   * Unsubscribe from thread updates
+   */
+  async unsubscribeFromThread(threadId: string): Promise<void> {
+    await realtimeService.unsubscribeFromThread(threadId);
+  }
+
+  /**
+   * Send typing indicator
+   */
+  async sendTypingIndicator(
+    threadId: string,
+    isTyping: boolean
+  ): Promise<void> {
+    const currentUser = await this.getCurrentUser();
+    await realtimeService.sendTypingIndicator(threadId, currentUser.id, isTyping);
+  }
+
+  /**
+   * Update user presence
+   */
+  async updatePresence(
+    threadId: string,
+    status: 'online' | 'typing' | 'away'
+  ): Promise<void> {
+    const currentUser = await this.getCurrentUser();
+    await realtimeService.updatePresence(threadId, currentUser.id, status);
+  }
+
+  /**
+   * Get all user threads with last message
+   */
+  async getUserThreads(): Promise<DmThread[]> {
+    const currentUser = await this.getCurrentUser();
+    
+    // Get all threads for the user
+    const threads = await db.select()
+      .from(dmThreads)
+      .where(
+        or(
+          eq(dmThreads.user1Id, currentUser.id),
+          eq(dmThreads.user2Id, currentUser.id)
+        )
+      )
+      .orderBy(desc(dmThreads.createdAt))
+      .execute();
+
+    // Get participants and last messages for each thread
+    const threadsWithDetails = await Promise.all(
+      threads.map(async (thread) => {
+        // Get participant info
+        const otherUserId = thread.user1Id === currentUser.id 
+          ? thread.user2Id 
+          : thread.user1Id;
+          
+        const participantProfiles = await db.select()
+          .from(profiles)
+          .where(
+            or(
+              eq(profiles.id, currentUser.id),
+              eq(profiles.id, otherUserId)
+            )
+          )
+          .execute();
+
+        const participants: DmParticipant[] = participantProfiles.map(p => ({
+          id: p.id,
+          displayName: p.displayName || 'Unknown User',
+          profileImage: p.profileImage
+        }));
+
+        // Get last message
+        const lastMessages = await db.select()
+          .from(directMessages)
+          .where(eq(directMessages.threadId, thread.id))
+          .orderBy(desc(directMessages.createdAt))
+          .limit(1)
+          .execute();
+
+        // Get unread count
+        const unreadMessages = await db.select()
+          .from(directMessages)
+          .where(
+            and(
+              eq(directMessages.threadId, thread.id),
+              eq(directMessages.isRead, false),
+              eq(directMessages.senderId, otherUserId)
+            )
+          )
+          .execute();
+
+        const result: DmThread = {
+          id: thread.id,
+          participants,
+          createdAt: thread.createdAt,
+          unreadCount: unreadMessages.length
+        };
+
+        if (lastMessages.length > 0) {
+          const lastMsg = lastMessages[0];
+          let content = lastMsg.textContent || '';
+          
+          // Decrypt if needed
+          if (lastMsg.isEncrypted && lastMsg.encryptedKey && lastMsg.encryptionIv) {
+            try {
+              content = await this.decryptMessage(
+                content,
+                lastMsg.encryptedKey,
+                lastMsg.encryptionIv
+              );
+            } catch {
+              content = '[Encrypted message]';
+            }
+          }
+
+          result.lastMessage = {
+            id: lastMsg.id,
+            threadId: lastMsg.threadId,
+            senderId: lastMsg.senderId,
+            messageType: lastMsg.messageType,
+            content,
+            mediaUrl: lastMsg.mediaUrl,
+            isRead: lastMsg.isRead,
+            createdAt: lastMsg.createdAt,
+            encrypted: lastMsg.isEncrypted
+          };
+        }
+
+        return result;
+      })
+    );
+
+    return threadsWithDetails;
   }
 }
 

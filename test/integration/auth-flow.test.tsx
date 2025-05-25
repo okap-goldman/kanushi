@@ -1,4 +1,10 @@
-// src/__tests__/integration/auth-flow.test.ts
+import React from 'react';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import App from '../../App';
+import { createTestUser, resetTestDatabase, createMockNavigation, mockGoogleSignIn, mockGoogleSignInError } from '../setup/integration';
+import * as userService from '../../src/lib/authService';
+
 describe('Authentication Flow Integration', () => {
   beforeEach(async () => {
     await resetTestDatabase();

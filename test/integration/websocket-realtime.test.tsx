@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react-native';
 import { createTestUser } from '../setup/integration';
 
@@ -56,11 +57,11 @@ describe('WebSocket Realtime Integration', () => {
     // Mock component for testing
     function WebSocketConnectionScreen() {
       return (
-        <div data-testid="websocket-screen">
+        <>
           <div data-testid="connection-status">接続中...</div>
           <button data-testid="connect-button">接続</button>
           <button data-testid="disconnect-button">切断</button>
-        </div>
+        </>
       );
     }
     
@@ -120,7 +121,7 @@ describe('WebSocket Realtime Integration', () => {
     // Mock component for testing
     function MultiChannelScreen() {
       return (
-        <div data-testid="multi-channel-screen">
+        <>
           <button data-testid="subscribe-channel1">チャンネル1を購読</button>
           <button data-testid="subscribe-channel2">チャンネル2を購読</button>
           <button data-testid="unsubscribe-channel1">チャンネル1の購読解除</button>
@@ -130,7 +131,7 @@ describe('WebSocket Realtime Integration', () => {
           <div data-testid="messages">
             {/* メッセージ表示エリア */}
           </div>
-        </div>
+        </>
       );
     }
     
@@ -214,7 +215,7 @@ describe('WebSocket Realtime Integration', () => {
     // Mock component for testing
     function DmThreadScreen() {
       return (
-        <div data-testid="dm-thread-screen">
+        <>
           <div data-testid="message-list">
             {displayedMessages.map((msg, index) => (
               <div key={index} data-testid={`message-item-${index}`}>
@@ -224,7 +225,7 @@ describe('WebSocket Realtime Integration', () => {
           </div>
           <input data-testid="message-input" placeholder="メッセージを入力" />
           <button data-testid="send-button">送信</button>
-        </div>
+        </>
       );
     }
     
@@ -340,11 +341,11 @@ describe('WebSocket Realtime Integration', () => {
     // Mock component for testing
     function WebSocketReconnectScreen() {
       return (
-        <div data-testid="websocket-reconnect-screen">
+        <>
           <div data-testid="connection-state">{connectionState}</div>
           <button data-testid="simulate-disconnect">切断をシミュレート</button>
           <div data-testid="reconnect-count">再接続回数: 0</div>
-        </div>
+        </>
       );
     }
     

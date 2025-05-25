@@ -5,11 +5,12 @@ import {
   FlatList, 
   TouchableOpacity, 
   Image, 
-  ActivityIndicator 
+  ActivityIndicator,
+  StyleSheet 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { followService } from '@/lib/followService';
-import { Badge } from '@/components/ui/badge';
+import { followService } from '../../lib/followService';
+import { Badge } from '../ui/badge';
 import { Users } from 'lucide-react-native';
 
 interface FollowersListProps {
@@ -78,29 +79,30 @@ export function FollowersList({ userId, currentUserId }: FollowersListProps) {
     <TouchableOpacity
       testID={`follower-item-${item.followerId}`}
       onPress={() => handleUserPress(item.followerId)}
-      className="flex-row items-center p-4 border-b border-gray-200 dark:border-gray-700"
+      style={styles.followerItem}
     >
       <Image
         source={{ uri: item.follower.profileImageUrl || 'https://via.placeholder.com/50' }}
-        className="w-12 h-12 rounded-full mr-3"
+        style={styles.profileImage}
       />
       
-      <View className="flex-1">
-        <View className="flex-row items-center">
-          <Text className="font-semibold text-gray-900 dark:text-white">
+      <View style={styles.followerInfo}>
+        <View style={styles.nameRow}>
+          <Text style={styles.displayName}>
             {item.follower.displayName}
           </Text>
           {item.isFollowingBack && (
             <Users
               testID={`mutual-follow-icon-${item.id}`}
               size={16}
-              className="ml-2 text-blue-500"
+              color="#3B82F6"
+              style={styles.mutualIcon}
             />
           )}
         </View>
         
         {item.followReason && (
-          <Text className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <Text style={styles.followReason}>
             {item.followReason}
           </Text>
         )}
@@ -116,8 +118,8 @@ export function FollowersList({ userId, currentUserId }: FollowersListProps) {
   );
 
   const renderEmpty = () => (
-    <View className="flex-1 justify-center items-center py-20">
-      <Text className="text-gray-500 dark:text-gray-400">
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyText}>
         フォロワーはまだいません
       </Text>
     </View>
@@ -126,7 +128,7 @@ export function FollowersList({ userId, currentUserId }: FollowersListProps) {
   const renderFooter = () => {
     if (!loadingMore) return null;
     return (
-      <View className="py-4">
+      <View style={styles.footerContainer}>
         <ActivityIndicator size="small" />
       </View>
     );
@@ -140,7 +142,7 @@ export function FollowersList({ userId, currentUserId }: FollowersListProps) {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center">
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" />
       </View>
     );
@@ -159,3 +161,55 @@ export function FollowersList({ userId, currentUserId }: FollowersListProps) {
     />
   );
 }
+
+const styles = StyleSheet.create({
+  followerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  profileImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+  },
+  followerInfo: {
+    flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  displayName: {
+    fontWeight: '600',
+    color: '#111827',
+  },
+  mutualIcon: {
+    marginLeft: 8,
+  },
+  followReason: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  emptyText: {
+    color: '#6B7280',
+  },
+  footerContainer: {
+    paddingVertical: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

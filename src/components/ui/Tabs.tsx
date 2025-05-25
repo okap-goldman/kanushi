@@ -126,6 +126,11 @@ export function TabsContent({ value, children, style }: TabsContentProps) {
   return <View style={[styles.content, style]}>{children}</View>;
 }
 
+// Add subcomponents to Tabs
+Tabs.List = TabsList;
+Tabs.Trigger = TabsTrigger;
+Tabs.Content = TabsContent;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -25,6 +25,9 @@ export const directMessages = pgTable('direct_message', {
   textContent: text('text_content'),
   mediaUrl: text('media_url'),
   isRead: boolean('is_read').notNull().default(false),
+  isEncrypted: boolean('is_encrypted').notNull().default(false),
+  encryptedKey: text('encrypted_key'),
+  encryptionIv: text('encryption_iv'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => ({
   threadIdIdx: index('idx_direct_message_thread_id').on(table.threadId),

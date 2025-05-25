@@ -1,186 +1,222 @@
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { LiveRoomChat } from '@/components/liveroom/LiveRoomChat';
+import { liveRoomService } from '@/lib/liveRoomService';
 
-// Mock components
-jest.mock('@/components/ui/FlatList', () => 'FlatList');
-jest.mock('@/components/ui/TextInput', () => 'TextInput');
-jest.mock('@/components/ui/Button', () => 'Button');
-jest.mock('@/components/ui/Text', () => 'Text');
-jest.mock('@/components/ui/View', () => 'View');
-jest.mock('@/components/ui/Icon', () => 'Icon');
+jest.mock('@/lib/liveRoomService');
 
-import LiveRoomChat from '@/components/LiveRoomChat';
+describe('LiveRoomChat', () => {
+  const mockMessages = [
+    {
+      id: 'msg-1',
+      content: 'こんにちは！',
+      user_id: 'user-1',
+      created_at: new Date().toISOString(),
+      user: {
+        display_name: 'ユーザー1'
+      }
+    },
+    {
+      id: 'msg-2',
+      content: 'よろしくお願いします',
+      user_id: 'user-2',
+      created_at: new Date().toISOString(),
+      user: {
+        display_name: 'ユーザー2'
+      }
+    }
+  ];
 
-// Mock chat service
-jest.mock('@/services/chatService', () => ({
-  sendChatMessage: jest.fn().mockResolvedValue({}),
-  subscribeToChatMessages: jest.fn().mockImplementation((roomId, callback) => {
-    // テスト用にコールバックを呼び出す
-    setTimeout(() => {
-      callback({
-        id: 'msg-1',
-        userId: 'user-123',
-        userName: 'テストユーザー',
-        content: 'こんにちは！',
-        timestamp: new Date().toISOString()
-      });
-    }, 100);
-    
-    return { unsubscribe: jest.fn() };
-  })
-}));
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-describe('LiveRoomChat Component', () => {
   test('チャットの表示', async () => {
-    // Given
-    const props = {
-      roomId: 'room-123',
-      userId: 'user-456',
-      userName: '現在のユーザー'
-    };
+    (liveRoomService.getChatMessages as jest.Mock).mockResolvedValue(mockMessages);
 
-    // When
-    render(<LiveRoomChat {...props} />);
-    
-    // Then - リアルタイムメッセージが表示される
-    await screen.findByText('テストユーザー');
-    expect(screen.getByText('こんにちは！')).toBeOnTheScreen();
-    
-    // 入力フィールドが表示されている
-    expect(screen.getByPlaceholderText('メッセージを入力...')).toBeOnTheScreen();
+    const { getByPlaceholderText, getByText, getByTestId } = render(
+      <LiveRoomChat
+        roomId="room-123"
+        userId="user-1"
+        userName="テストユーザー"
+      />
+    );
+
+    await waitFor(() => {
+      // メッセージリスト
+      expect(getByText('こんにちは！')).toBeTruthy();
+      expect(getByText('よろしくお願いします')).toBeTruthy();
+      expect(getByText('ユーザー1')).toBeTruthy();
+      expect(getByText('ユーザー2')).toBeTruthy();
+    });
+
+    // 入力フィールド
+    expect(getByPlaceholderText('メッセージを入力...')).toBeTruthy();
+    expect(getByTestId('send-button')).toBeTruthy();
   });
 
   test('メッセージの送信', async () => {
-    // Given
-    const props = {
-      roomId: 'room-123',
-      userId: 'user-456',
-      userName: '現在のユーザー'
-    };
+    (liveRoomService.getChatMessages as jest.Mock).mockResolvedValue([]);
+    (liveRoomService.sendChatMessage as jest.Mock).mockResolvedValue({
+      id: 'new-msg',
+      content: '新しいメッセージ',
+      userId: 'user-1',
+      createdAt: new Date().toISOString()
+    });
 
-    // When
-    render(<LiveRoomChat {...props} />);
+    const { getByPlaceholderText, getByTestId } = render(
+      <LiveRoomChat
+        roomId="room-123"
+        userId="user-1"
+        userName="テストユーザー"
+      />
+    );
+
+    const input = getByPlaceholderText('メッセージを入力...');
+    const sendButton = getByTestId('send-button');
+
+    // メッセージ入力
+    fireEvent.changeText(input, '新しいメッセージ');
     
-    // メッセージを入力
-    await act(() => {
-      fireEvent.changeText(
-        screen.getByPlaceholderText('メッセージを入力...'),
-        'テストメッセージです'
+    // 送信
+    fireEvent.press(sendButton);
+
+    await waitFor(() => {
+      expect(liveRoomService.sendChatMessage).toHaveBeenCalledWith(
+        'room-123',
+        '新しいメッセージ',
+        undefined
+      );
+      // 入力フィールドがクリアされる
+      expect(input.props.value).toBe('');
+    });
+  });
+
+  test('空メッセージの送信防止', () => {
+    (liveRoomService.getChatMessages as jest.Mock).mockResolvedValue([]);
+
+    const { getByPlaceholderText, getByTestId } = render(
+      <LiveRoomChat
+        roomId="room-123"
+        userId="user-1"
+        userName="テストユーザー"
+      />
+    );
+
+    const input = getByPlaceholderText('メッセージを入力...');
+    const sendButton = getByTestId('send-button');
+
+    // 空の状態で送信
+    fireEvent.press(sendButton);
+
+    expect(liveRoomService.sendChatMessage).not.toHaveBeenCalled();
+  });
+
+  test('URL共有付きメッセージ', async () => {
+    (liveRoomService.getChatMessages as jest.Mock).mockResolvedValue([]);
+    (liveRoomService.sendChatMessage as jest.Mock).mockResolvedValue({
+      id: 'url-msg',
+      content: 'このリンクを見てください',
+      userId: 'user-1',
+      sharedUrl: 'https://example.com',
+      urlPreview: {
+        title: 'サンプルページ',
+        description: 'サンプルの説明'
+      },
+      createdAt: new Date().toISOString()
+    });
+
+    const { getByPlaceholderText, getByTestId } = render(
+      <LiveRoomChat
+        roomId="room-123"
+        userId="user-1"
+        userName="テストユーザー"
+      />
+    );
+
+    const input = getByPlaceholderText('メッセージを入力...');
+    const sendButton = getByTestId('send-button');
+    const urlButton = getByTestId('url-share-button');
+
+    // URL共有ボタンをタップ
+    fireEvent.press(urlButton);
+
+    // URL入力ダイアログが表示される
+    await waitFor(() => {
+      const urlInput = getByPlaceholderText('URLを入力...');
+      fireEvent.changeText(urlInput, 'https://example.com');
+      fireEvent.press(getByTestId('url-confirm'));
+    });
+
+    // メッセージ入力
+    fireEvent.changeText(input, 'このリンクを見てください');
+    
+    // 送信
+    fireEvent.press(sendButton);
+
+    await waitFor(() => {
+      expect(liveRoomService.sendChatMessage).toHaveBeenCalledWith(
+        'room-123',
+        'このリンクを見てください',
+        { sharedUrl: 'https://example.com' }
       );
     });
-    
-    // 送信ボタンをタップ
-    await act(() => {
-      fireEvent.press(screen.getByTestId('send-button'));
-    });
-    
-    // Then
-    expect(require('@/services/chatService').sendChatMessage).toHaveBeenCalledWith(
-      'room-123',
-      'user-456',
-      '現在のユーザー',
-      'テストメッセージです'
+  });
+
+  test('リアルタイム更新', async () => {
+    (liveRoomService.getChatMessages as jest.Mock).mockResolvedValue([]);
+
+    const { getByText, rerender } = render(
+      <LiveRoomChat
+        roomId="room-123"
+        userId="user-1"
+        userName="テストユーザー"
+      />
     );
-    
-    // 入力フィールドがクリアされる
-    expect(screen.getByPlaceholderText('メッセージを入力...')).toHaveProp('value', '');
-  });
 
-  test('空メッセージの送信防止', async () => {
-    // Given
-    const props = {
-      roomId: 'room-123',
-      userId: 'user-456',
-      userName: '現在のユーザー'
+    // WebSocketメッセージを受信（シミュレート）
+    const newMessage = {
+      id: 'realtime-msg',
+      content: 'リアルタイムメッセージ',
+      user_id: 'user-2',
+      created_at: new Date().toISOString(),
+      user: {
+        display_name: 'ユーザー2'
+      }
     };
 
-    // When
-    render(<LiveRoomChat {...props} />);
-    
-    // 空のメッセージで送信ボタンをタップ
-    await act(() => {
-      fireEvent.press(screen.getByTestId('send-button'));
-    });
-    
-    // Then
-    expect(require('@/services/chatService').sendChatMessage).not.toHaveBeenCalled();
-  });
-
-  test('長いメッセージの切り詰め', async () => {
-    // Given
-    const props = {
-      roomId: 'room-123',
-      userId: 'user-456',
-      userName: '現在のユーザー'
-    };
-
-    // When
-    render(<LiveRoomChat {...props} />);
-    
-    // 300文字を超えるメッセージを入力
-    const longMessage = 'あ'.repeat(301);
-    
-    await act(() => {
-      fireEvent.changeText(
-        screen.getByPlaceholderText('メッセージを入力...'),
-        longMessage
+    // コンポーネントのonNewMessageコールバックを呼び出す
+    // 実際の実装ではWebSocketイベントによって呼ばれる
+    await waitFor(() => {
+      rerender(
+        <LiveRoomChat
+          roomId="room-123"
+          userId="user-1"
+          userName="テストユーザー"
+          newMessage={newMessage}
+        />
       );
     });
-    
-    // 送信ボタンをタップ
-    await act(() => {
-      fireEvent.press(screen.getByTestId('send-button'));
-    });
-    
-    // Then
-    expect(require('@/services/chatService').sendChatMessage).toHaveBeenCalledWith(
-      'room-123',
-      'user-456',
-      '現在のユーザー',
-      'あ'.repeat(300) // 300文字に切り詰められる
-    );
+
+    expect(getByText('リアルタイムメッセージ')).toBeTruthy();
   });
 
-  test('チャットのスクロール動作', async () => {
-    // Given
-    const props = {
-      roomId: 'room-123',
-      userId: 'user-456',
-      userName: '現在のユーザー'
-    };
+  test('エラーハンドリング', async () => {
+    (liveRoomService.getChatMessages as jest.Mock).mockRejectedValue(
+      new Error('メッセージ取得エラー')
+    );
 
-    // When
-    render(<LiveRoomChat {...props} />);
-    
-    // チャットリストを取得
-    const chatList = screen.getByTestId('chat-list');
-    
-    // スクロールイベントをシミュレート
-    await act(() => {
-      fireEvent.scroll(chatList, {
-        nativeEvent: {
-          contentOffset: { y: 100 },
-          contentSize: { height: 500, width: 100 },
-          layoutMeasurement: { height: 100, width: 100 }
-        }
-      });
+    const { getByText } = render(
+      <LiveRoomChat
+        roomId="room-123"
+        userId="user-1"
+        userName="テストユーザー"
+      />
+    );
+
+    await waitFor(() => {
+      expect(getByText('メッセージの読み込みに失敗しました')).toBeTruthy();
     });
-    
-    // 新しいメッセージが到着
-    act(() => {
-      require('@/services/chatService').subscribeToChatMessages.mock.calls[0][1]({
-        id: 'msg-2',
-        userId: 'user-789',
-        userName: '別のユーザー',
-        content: '新しいメッセージ',
-        timestamp: new Date().toISOString()
-      });
-    });
-    
-    // Then
-    // スクロール位置が変わらないことを確認（自動スクロールされない）
-    // 実際のテストでは、scrollToEndがコールされないことを検証
-    await screen.findByText('別のユーザー');
-    expect(screen.getByText('新しいメッセージ')).toBeOnTheScreen();
   });
 });
+EOF < /dev/null

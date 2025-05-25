@@ -2,6 +2,8 @@
 
 // Post types
 export type ContentType = "text" | "image" | "video" | "audio";
+export type MediaType = ContentType;
+export type TimelineType = "family" | "watch" | "all";
 
 export interface Author {
   id: string;
@@ -45,8 +47,145 @@ export interface Comment {
   created_at: string;
 }
 
+// New post creation types (Drizzle schema based)
+export interface PostCreateInput {
+  userId: string;
+  contentType: MediaType;
+  textContent?: string;
+  mediaUrl?: string;
+  previewUrl?: string;
+  waveformUrl?: string;
+  durationSeconds?: number;
+  youtubeVideoId?: string;
+  eventId?: string;
+  groupId?: string;
+  hashtags?: string[];
+}
+
+export interface PostUpdateInput {
+  textContent?: string;
+  mediaUrl?: string;
+  previewUrl?: string;
+  waveformUrl?: string;
+  durationSeconds?: number;
+}
+
+export interface DrizzlePost {
+  id: string;
+  userId: string;
+  contentType: MediaType;
+  textContent?: string | null;
+  mediaUrl?: string | null;
+  previewUrl?: string | null;
+  waveformUrl?: string | null;
+  durationSeconds?: number | null;
+  youtubeVideoId?: string | null;
+  eventId?: string | null;
+  groupId?: string | null;
+  aiMetadata?: any;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date | null;
+}
+
+export interface DrizzleComment {
+  id: string;
+  postId: string;
+  userId: string;
+  body: string;
+  createdAt: Date;
+}
+
+export interface DrizzleLike {
+  id: string;
+  postId: string;
+  userId: string;
+  createdAt: Date;
+}
+
+export interface DrizzleHighlight {
+  id: string;
+  postId: string;
+  userId: string;
+  reason?: string | null;
+  createdAt: Date;
+}
+
+export interface DrizzleBookmark {
+  id: string;
+  postId: string;
+  userId: string;
+  createdAt: Date;
+}
+
+export interface DrizzleHashtag {
+  id: string;
+  name: string;
+  useCount: number;
+  createdAt: Date;
+}
+
 // API response types
 export interface ApiResponse<T> {
   data: T | null;
   error: Error | null;
+}
+
+export interface ServiceResult<T> {
+  success: boolean;
+  data: T | null;
+  error: Error | null;
+}
+
+// Follow related types
+export type FollowType = "family" | "watch";
+export type FollowStatus = "active" | "unfollowed" | "blocked";
+
+export interface FollowCreateInput {
+  followerId: string;
+  followeeId: string;
+  followType: FollowType;
+  followReason?: string;
+}
+
+export interface FollowUpdateInput {
+  followReason?: string;
+  unfollowReason?: string;
+}
+
+export interface DrizzleFollow {
+  id: string;
+  followerId: string;
+  followeeId: string;
+  followType: FollowType;
+  status: FollowStatus;
+  followReason?: string | null;
+  createdAt: Date;
+  unfollowedAt?: Date | null;
+  unfollowReason?: string | null;
+}
+
+export interface MutualFollowInfo {
+  isMutual: boolean;
+  user1FollowsUser2: boolean;
+  user2FollowsUser1: boolean;
+}
+
+// Timeline related types
+export interface PaginatedResult<T> {
+  items: T[];
+  hasMore: boolean;
+  nextCursor: string | null;
+}
+
+export interface CachedTimeline {
+  items: DrizzlePost[];
+  hasMore: boolean;
+  nextCursor: string | null;
+  cachedAt: Date;
+}
+
+export interface TimelineCursor {
+  createdAt: string;
+  postId?: string;
 }

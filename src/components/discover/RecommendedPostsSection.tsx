@@ -71,14 +71,14 @@ const SAMPLE_POSTS = [
 
 export function RecommendedPostsSection() {
   return (
-    <View className="flex-1">
-      <View className="flex-row items-center gap-2 mb-4 px-4">
+    <View style={{ flex: 1 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, paddingHorizontal: 16 }}>
         <ThumbsUp size={20} color="#000" />
-        <Text className="text-lg font-semibold">おすすめ投稿</Text>
+        <Text style={{ fontSize: 18, fontWeight: '600' }}>おすすめ投稿</Text>
       </View>
 
-      <ScrollView className="flex-1">
-        <View className="space-y-4">
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ gap: 16 }}>
           {SAMPLE_POSTS.map((post) => (
             <Post
               key={post.id}

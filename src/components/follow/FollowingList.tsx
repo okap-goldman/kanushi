@@ -6,11 +6,12 @@ import {
   TouchableOpacity, 
   Image, 
   ActivityIndicator,
-  ScrollView 
+  ScrollView,
+  StyleSheet 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { followService } from '@/lib/followService';
-import { Badge } from '@/components/ui/badge';
+import { followService } from '../../lib/followService';
+import { Badge } from '../ui/badge';
 import { FileText, Image as ImageIcon, Mic, Video } from 'lucide-react-native';
 
 interface FollowingListProps {
@@ -88,13 +89,13 @@ export function FollowingList({ userId }: FollowingListProps) {
   const getContentIcon = (contentType: string) => {
     switch (contentType) {
       case 'text':
-        return <FileText size={16} className="text-gray-500" />;
+        return <FileText size={16} color="#6B7280" />;
       case 'image':
-        return <ImageIcon size={16} className="text-gray-500" />;
+        return <ImageIcon size={16} color="#6B7280" />;
       case 'audio':
-        return <Mic testID={`audio-icon-${contentType}`} size={16} className="text-gray-500" />;
+        return <Mic testID={`audio-icon-${contentType}`} size={16} color="#6B7280" />;
       case 'video':
-        return <Video size={16} className="text-gray-500" />;
+        return <Video size={16} color="#6B7280" />;
       default:
         return null;
     }
@@ -104,34 +105,34 @@ export function FollowingList({ userId }: FollowingListProps) {
     <TouchableOpacity
       testID={`following-item-${item.followeeId}`}
       onPress={() => handleUserPress(item.followeeId)}
-      className="flex-row items-start p-4 border-b border-gray-200 dark:border-gray-700"
+      style={styles.followingItem}
     >
       <Image
         source={{ uri: item.followee.profileImageUrl || 'https://via.placeholder.com/50' }}
-        className="w-12 h-12 rounded-full mr-3"
+        style={styles.profileImage}
       />
       
-      <View className="flex-1">
-        <View className="flex-row items-center mb-1">
-          <Text className="font-semibold text-gray-900 dark:text-white">
+      <View style={styles.followingInfo}>
+        <View style={styles.nameRow}>
+          <Text style={styles.displayName}>
             {item.followee.displayName}
           </Text>
           <Badge
             testID={`${item.followType}-badge-${item.id}`}
             variant={item.followType === 'family' ? 'default' : 'secondary'}
-            className="ml-2"
+            style={styles.badge}
           >
             {item.followType === 'family' ? 'ファミリー' : 'ウォッチ'}
           </Badge>
         </View>
         
         {item.latestPost ? (
-          <View className="flex-row items-start">
-            <View className="mr-2 mt-1">
+          <View style={styles.postPreview}>
+            <View style={styles.iconContainer}>
               {getContentIcon(item.latestPost.contentType)}
             </View>
             <Text 
-              className="text-sm text-gray-600 dark:text-gray-400 flex-1"
+              style={styles.postContent}
               numberOfLines={2}
             >
               {item.latestPost.content || 
@@ -141,7 +142,7 @@ export function FollowingList({ userId }: FollowingListProps) {
             </Text>
           </View>
         ) : (
-          <Text className="text-sm text-gray-500 dark:text-gray-400">
+          <Text style={styles.noPostText}>
             まだ投稿がありません
           </Text>
         )}
@@ -150,8 +151,8 @@ export function FollowingList({ userId }: FollowingListProps) {
   );
 
   const renderEmpty = () => (
-    <View className="flex-1 justify-center items-center py-20">
-      <Text className="text-gray-500 dark:text-gray-400">
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyText}>
         まだ誰もフォローしていません
       </Text>
     </View>
@@ -160,7 +161,7 @@ export function FollowingList({ userId }: FollowingListProps) {
   const renderFooter = () => {
     if (!loadingMore) return null;
     return (
-      <View className="py-4">
+      <View style={styles.footerContainer}>
         <ActivityIndicator size="small" />
       </View>
     );
@@ -174,35 +175,37 @@ export function FollowingList({ userId }: FollowingListProps) {
 
   if (loading && following.length === 0) {
     return (
-      <View className="flex-1 justify-center items-center">
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1">
+    <View style={styles.container}>
       {/* フィルタータブ */}
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
-        className="border-b border-gray-200 dark:border-gray-700"
+        style={styles.filterContainer}
       >
-        <View className="flex-row px-4 py-2">
+        <View style={styles.filterRow}>
           <TouchableOpacity
             testID="filter-all"
             onPress={() => setFilter('all')}
-            className={`px-4 py-2 rounded-full mr-2 ${
+            style={[
+              styles.filterButton,
               filter === 'all' 
-                ? 'bg-blue-500' 
-                : 'bg-gray-200 dark:bg-gray-700'
-            }`}
+                ? styles.filterButtonActive 
+                : styles.filterButtonInactive
+            ]}
           >
-            <Text className={`font-medium ${
+            <Text style={[
+              styles.filterButtonText,
               filter === 'all' 
-                ? 'text-white' 
-                : 'text-gray-700 dark:text-gray-300'
-            }`}>
+                ? styles.filterButtonTextActive 
+                : styles.filterButtonTextInactive
+            ]}>
               すべて
             </Text>
           </TouchableOpacity>
@@ -210,17 +213,19 @@ export function FollowingList({ userId }: FollowingListProps) {
           <TouchableOpacity
             testID="filter-family"
             onPress={() => setFilter('family')}
-            className={`px-4 py-2 rounded-full mr-2 ${
+            style={[
+              styles.filterButton,
               filter === 'family' 
-                ? 'bg-blue-500' 
-                : 'bg-gray-200 dark:bg-gray-700'
-            }`}
+                ? styles.filterButtonActive 
+                : styles.filterButtonInactive
+            ]}
           >
-            <Text className={`font-medium ${
+            <Text style={[
+              styles.filterButtonText,
               filter === 'family' 
-                ? 'text-white' 
-                : 'text-gray-700 dark:text-gray-300'
-            }`}>
+                ? styles.filterButtonTextActive 
+                : styles.filterButtonTextInactive
+            ]}>
               ファミリー
             </Text>
           </TouchableOpacity>
@@ -228,17 +233,20 @@ export function FollowingList({ userId }: FollowingListProps) {
           <TouchableOpacity
             testID="filter-watch"
             onPress={() => setFilter('watch')}
-            className={`px-4 py-2 rounded-full ${
+            style={[
+              styles.filterButton,
               filter === 'watch' 
-                ? 'bg-blue-500' 
-                : 'bg-gray-200 dark:bg-gray-700'
-            }`}
+                ? styles.filterButtonActive 
+                : styles.filterButtonInactive,
+              { marginRight: 0 }
+            ]}
           >
-            <Text className={`font-medium ${
+            <Text style={[
+              styles.filterButtonText,
               filter === 'watch' 
-                ? 'text-white' 
-                : 'text-gray-700 dark:text-gray-300'
-            }`}>
+                ? styles.filterButtonTextActive 
+                : styles.filterButtonTextInactive
+            ]}>
               ウォッチ
             </Text>
           </TouchableOpacity>
@@ -259,3 +267,101 @@ export function FollowingList({ userId }: FollowingListProps) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  followingItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  profileImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+  },
+  followingInfo: {
+    flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  displayName: {
+    fontWeight: '600',
+    color: '#111827',
+  },
+  badge: {
+    marginLeft: 8,
+  },
+  postPreview: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  iconContainer: {
+    marginRight: 8,
+    marginTop: 4,
+  },
+  postContent: {
+    fontSize: 14,
+    color: '#6B7280',
+    flex: 1,
+  },
+  noPostText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  emptyText: {
+    color: '#6B7280',
+  },
+  footerContainer: {
+    paddingVertical: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  filterButtonActive: {
+    backgroundColor: '#3B82F6',
+  },
+  filterButtonInactive: {
+    backgroundColor: '#E5E7EB',
+  },
+  filterButtonText: {
+    fontWeight: '500',
+  },
+  filterButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  filterButtonTextInactive: {
+    color: '#374151',
+  },
+});

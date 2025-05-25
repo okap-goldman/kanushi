@@ -16,21 +16,21 @@ export function RegionSpecialties({ specialties }: RegionSpecialtiesProps) {
   };
 
   return (
-    <View className="bg-white rounded-lg shadow-sm p-6">
-      <Text className="text-lg font-semibold mb-4">名産品</Text>
-      <View className="space-y-4">
+    <View style={{ backgroundColor: '#fff', borderRadius: 8, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 }}>
+      <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16 }}>名産品</Text>
+      <View style={{ gap: 16 }}>
         {specialties.map((specialty, index) => (
-          <View key={index} className="bg-gray-50 rounded-lg p-4">
-            <View className="aspect-square bg-gray-200 rounded-lg mb-4" />
-            <Text className="font-medium mb-2">{specialty}</Text>
-            <View className="flex-row justify-between items-center">
-              <Text className="text-sm text-gray-600">¥3,800</Text>
+          <View key={index} style={{ backgroundColor: '#F9FAFB', borderRadius: 8, padding: 16 }}>
+            <View style={{ aspectRatio: 1, backgroundColor: '#E5E7EB', borderRadius: 8, marginBottom: 16 }} />
+            <Text style={{ fontWeight: '500', marginBottom: 8 }}>{specialty}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 14, color: '#4B5563' }}>¥3,800</Text>
               <TouchableOpacity
                 onPress={() => handlePurchase(specialty)}
-                className="flex-row items-center gap-2 px-3 py-1 bg-black rounded-md"
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: '#000', borderRadius: 6 }}
               >
                 <ShoppingCart size={16} color="#fff" />
-                <Text className="text-white text-sm">購入</Text>
+                <Text style={{ color: '#fff', fontSize: 14 }}>購入</Text>
               </TouchableOpacity>
             </View>
           </View>

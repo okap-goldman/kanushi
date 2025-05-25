@@ -6,7 +6,7 @@ import { nanoid } from 'nanoid'
 interface CreateGroupData {
   name: string
   description: string
-  groupType: 'free' | 'subscription'
+  groupType: 'public' | 'private' | 'subscription'
   subscriptionPrice?: number
   memberLimit?: number
 }
@@ -152,6 +152,16 @@ export async function leaveGroup(userId: string, groupId: string) {
     throw new Error('グループオーナーは退出できません')
   }
 
+  // 既に退出済みの場合
+  if (member.status === 'left') {
+    throw new Error('既に退出済みです')
+  }
+
+  // 除名されている場合
+  if (member.status === 'blocked') {
+    throw new Error('既に除名されています')
+  }
+
   // ステータスを'left'に更新
   await db
     .update(groupMembers)
@@ -175,6 +185,15 @@ export async function sendGroupMessage(
   groupId: string,
   data: SendMessageData
 ) {
+  // バリデーション
+  if (data.messageType === 'text' && !data.textContent) {
+    throw new Error('テキストメッセージにはテキスト内容が必要です')
+  }
+
+  if ((data.messageType === 'image' || data.messageType === 'audio') && !data.mediaUrl) {
+    throw new Error('メディアメッセージにはメディアURLが必要です')
+  }
+
   // メンバー確認
   const [member] = await db
     .select()
@@ -366,11 +385,11 @@ export async function removeMember(
     throw new Error('オーナーは除名できません')
   }
 
-  // ステータスを'removed'に更新
+  // ステータスを'blocked'に更新（除名）
   await db
     .update(groupMembers)
     .set({
-      status: 'removed',
+      status: 'blocked',
       leftAt: new Date(),
     })
     .where(
@@ -445,4 +464,165 @@ export async function updateGroup(
     .returning()
 
   return updatedGroup
+}
+
+export async function requestJoinGroup(userId: string, groupId: string) {
+  // グループの存在確認
+  const [group] = await db
+    .select()
+    .from(groups)
+    .where(eq(groups.id, groupId))
+    .execute()
+
+  if (!group) {
+    throw new Error('グループが見つかりません')
+  }
+
+  // 既存メンバーチェック
+  const [existingMember] = await db
+    .select()
+    .from(groupMembers)
+    .where(
+      and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.userId, userId)
+      )
+    )
+    .execute()
+
+  if (existingMember) {
+    if (existingMember.status === 'pending') {
+      throw new Error('既に参加申請中です')
+    } else if (existingMember.status === 'active') {
+      throw new Error('既にグループに参加しています')
+    }
+  }
+
+  // 参加申請作成（プライベートグループの場合はpending、それ以外はactive）
+  const status = group.groupType === 'private' ? 'pending' : 'active'
+
+  const [member] = await db.insert(groupMembers).values({
+    id: nanoid(),
+    groupId: groupId,
+    userId: userId,
+    role: 'member',
+    status: status,
+    joinedAt: status === 'active' ? new Date() : undefined,
+  }).returning()
+
+  return member
+}
+
+export async function approveMember(
+  operatorUserId: string,
+  groupId: string,
+  targetUserId: string
+) {
+  // 操作者の権限確認
+  const [operator] = await db
+    .select()
+    .from(groupMembers)
+    .where(
+      and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.userId, operatorUserId)
+      )
+    )
+    .execute()
+
+  if (!operator || (operator.role !== 'owner' && operator.role !== 'admin')) {
+    throw new Error('グループオーナーまたは管理者のみが承認できます')
+  }
+
+  // 対象メンバーの確認
+  const [targetMember] = await db
+    .select()
+    .from(groupMembers)
+    .where(
+      and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.userId, targetUserId)
+      )
+    )
+    .execute()
+
+  if (!targetMember) {
+    throw new Error('対象のメンバーが見つかりません')
+  }
+
+  if (targetMember.status !== 'pending') {
+    throw new Error('承認待ちのメンバーではありません')
+  }
+
+  // ステータスを'active'に更新
+  await db
+    .update(groupMembers)
+    .set({
+      status: 'active',
+      joinedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.userId, targetUserId)
+      )
+    )
+    .execute()
+
+  return true
+}
+
+export async function rejectMember(
+  operatorUserId: string,
+  groupId: string,
+  targetUserId: string
+) {
+  // 操作者の権限確認
+  const [operator] = await db
+    .select()
+    .from(groupMembers)
+    .where(
+      and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.userId, operatorUserId)
+      )
+    )
+    .execute()
+
+  if (!operator || (operator.role !== 'owner' && operator.role !== 'admin')) {
+    throw new Error('グループオーナーまたは管理者のみが拒否できます')
+  }
+
+  // 対象メンバーの確認
+  const [targetMember] = await db
+    .select()
+    .from(groupMembers)
+    .where(
+      and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.userId, targetUserId)
+      )
+    )
+    .execute()
+
+  if (!targetMember) {
+    throw new Error('対象のメンバーが見つかりません')
+  }
+
+  if (targetMember.status !== 'pending') {
+    throw new Error('承認待ちのメンバーではありません')
+  }
+
+  // 申請を削除
+  await db
+    .delete(groupMembers)
+    .where(
+      and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.userId, targetUserId)
+      )
+    )
+    .execute()
+
+  return true
 }

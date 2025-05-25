@@ -1,3 +1,9 @@
+import React from 'react';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import App from '../../App';
+import { setupAuthenticatedUser, createTestAccount, mockGoogleSignIn } from '../setup/integration';
+import * as userService from '../../src/lib/authService';
+
 describe('Multiple Account Management Integration', () => {
   it('アカウント追加から切替まで', async () => {
     // Given - 認証済みユーザー

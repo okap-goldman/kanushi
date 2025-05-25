@@ -1,234 +1,334 @@
+import { supabase } from './supabase';
 import { db } from './db/client';
-import { follows, profiles, posts } from './db/schema';
-import { eq, and, desc, or } from 'drizzle-orm';
+import { follows } from './db/schema';
+import { 
+  FollowCreateInput, FollowUpdateInput, FollowType, FollowStatus,
+  DrizzleFollow, MutualFollowInfo, ServiceResult
+} from './data';
+import { eq, and, desc, count } from 'drizzle-orm';
 
-// Types
-interface CreateFollowParams {
-  followerId: string;
-  followeeId: string;
-  followType: 'family' | 'watch';
-  followReason?: string;
+export interface FollowService {
+  createFollow(input: FollowCreateInput): Promise<ServiceResult<DrizzleFollow>>;
+  unfollow(followId: string, userId: string, unfollowReason?: string): Promise<ServiceResult<boolean>>;
+  getFollowers(userId: string, limit?: number, cursor?: string): Promise<ServiceResult<DrizzleFollow[]>>;
+  getFollowing(userId: string, followType?: FollowType): Promise<ServiceResult<DrizzleFollow[]>>;
+  checkMutualFollow(userId1: string, userId2: string): Promise<ServiceResult<MutualFollowInfo>>;
+  getFollowStats(userId: string): Promise<ServiceResult<{ followersCount: number; followingCount: number }>>;
 }
 
-interface UnfollowParams {
-  followId: string;
-  userId: string;
-  unfollowReason?: string;
-}
+export function createFollowService(supabaseClient = supabase, dbClient = db): FollowService {
+  return {
+    async createFollow(input: FollowCreateInput): Promise<ServiceResult<DrizzleFollow>> {
+      try {
+        // Validation: Cannot follow yourself
+        if (input.followerId === input.followeeId) {
+          return {
+            success: false,
+            data: null,
+            error: new Error('Cannot follow yourself')
+          };
+        }
 
-interface GetFollowersParams {
-  userId: string;
-  limit?: number;
-  cursor?: string;
-}
+        // Validation: Family follow requires a reason
+        if (input.followType === 'family' && (!input.followReason || input.followReason.trim() === '')) {
+          return {
+            success: false,
+            data: null,
+            error: new Error('Family follow requires a reason')
+          };
+        }
 
-interface GetFollowingParams {
-  userId: string;
-  type?: 'family' | 'watch';
-  limit?: number;
-  cursor?: string;
-}
-
-// Rate limiting
-const rateLimitMap = new Map<string, number[]>();
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const RATE_LIMIT_MAX = 20;
-
-function checkRateLimit(userId: string): void {
-  const now = Date.now();
-  const userRequests = rateLimitMap.get(userId) || [];
-  
-  // Clean old requests
-  const recentRequests = userRequests.filter(time => now - time < RATE_LIMIT_WINDOW);
-  
-  if (recentRequests.length >= RATE_LIMIT_MAX) {
-    throw new Error('RATE_LIMIT_EXCEEDED');
-  }
-  
-  recentRequests.push(now);
-  rateLimitMap.set(userId, recentRequests);
-}
-
-// Service methods
-export const followService = {
-  async createFollow(params: CreateFollowParams) {
-    const { followerId, followeeId, followType, followReason } = params;
-
-    // Validation
-    if (followerId === followeeId) {
-      throw new Error('自分自身をフォローすることはできません');
-    }
-
-    if (followType === 'family' && !followReason) {
-      throw new Error('ファミリーフォローには理由の入力が必要です');
-    }
-
-    // Check if already following
-    const existingFollow = await db.select()
-      .from(follows)
-      .where(
-        and(
-          eq(follows.followerId, followerId),
-          eq(follows.followeeId, followeeId),
-          or(
-            eq(follows.status, 'active'),
-            eq(follows.status, 'blocked')
+        // Check if already following
+        const existingFollow = await dbClient.query.follows.findFirst({
+          where: and(
+            eq(follows.followerId, input.followerId),
+            eq(follows.followeeId, input.followeeId),
+            eq(follows.status, 'active')
           )
-        )
-      );
+        });
 
-    if (existingFollow.length > 0) {
-      throw new Error('すでにフォローしています');
-    }
+        if (existingFollow) {
+          return {
+            success: false,
+            data: null,
+            error: new Error('Already following this user')
+          };
+        }
 
-    // Rate limit check
-    checkRateLimit(followerId);
+        // Create follow relationship
+        const [createdFollow] = await dbClient.insert(follows).values({
+          followerId: input.followerId,
+          followeeId: input.followeeId,
+          followType: input.followType,
+          status: 'active' as FollowStatus,
+          followReason: input.followReason?.trim() || null,
+          createdAt: new Date()
+        }).returning();
 
-    // Create follow
-    const [newFollow] = await db.insert(follows)
-      .values({
-        followerId,
-        followeeId,
-        followType,
-        status: 'active',
-        followReason: followReason || null
-      })
-      .returning();
+        return {
+          success: true,
+          data: createdFollow,
+          error: null
+        };
 
-    return newFollow;
-  },
-
-  async unfollowUser(params: UnfollowParams) {
-    const { followId, userId, unfollowReason } = params;
-
-    // Check if follow exists
-    const [existingFollow] = await db.select()
-      .from(follows)
-      .where(eq(follows.id, followId));
-
-    if (!existingFollow) {
-      throw new Error('RESOURCE_NOT_FOUND');
-    }
-
-    // Check ownership
-    if (existingFollow.followerId !== userId) {
-      throw new Error('他のユーザーのフォロー関係は操作できません');
-    }
-
-    // Update to unfollowed
-    const [updated] = await db.update(follows)
-      .set({
-        status: 'unfollowed',
-        unfollowedAt: new Date(),
-        unfollowReason: unfollowReason || null
-      })
-      .where(eq(follows.id, followId))
-      .returning();
-
-    return updated;
-  },
-
-  async getFollowers(params: GetFollowersParams) {
-    const { userId, limit = 20, cursor } = params;
-
-    // Build query
-    let query = db.select({
-      id: follows.id,
-      followerId: follows.followerId,
-      followeeId: follows.followeeId,
-      followType: follows.followType,
-      followReason: follows.followReason,
-      createdAt: follows.createdAt,
-      follower: {
-        id: profiles.id,
-        displayName: profiles.displayName,
-        profileImageUrl: profiles.profileImageUrl
+      } catch (error) {
+        console.error('Error creating follow:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
       }
-    })
-    .from(follows)
-    .leftJoin(profiles, eq(follows.followerId, profiles.id))
-    .where(
-      and(
-        eq(follows.followeeId, userId),
-        eq(follows.status, 'active')
-      )
-    )
-    .orderBy(desc(follows.createdAt))
-    .limit(limit + 1); // Fetch one extra for cursor
+    },
 
-    // Apply cursor if provided
-    if (cursor) {
-      // In a real implementation, decode cursor to get timestamp
-      // For now, we'll skip cursor implementation
+    async unfollow(followId: string, userId: string, unfollowReason?: string): Promise<ServiceResult<boolean>> {
+      try {
+        // Check if follow exists and user owns it
+        const existingFollow = await dbClient.query.follows.findFirst({
+          where: and(eq(follows.id, followId), eq(follows.status, 'active'))
+        });
+
+        if (!existingFollow) {
+          return {
+            success: false,
+            data: null,
+            error: new Error('Follow relationship not found')
+          };
+        }
+
+        if (existingFollow.followerId !== userId) {
+          return {
+            success: false,
+            data: null,
+            error: new Error('You can only unfollow your own follows')
+          };
+        }
+
+        // Update follow status to unfollowed
+        const result = await dbClient.update(follows)
+          .set({
+            status: 'unfollowed' as FollowStatus,
+            unfollowedAt: new Date(),
+            unfollowReason: unfollowReason?.trim() || null
+          })
+          .where(eq(follows.id, followId));
+
+        return {
+          success: true,
+          data: result.rowCount > 0,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error unfollowing:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async getFollowers(userId: string, limit = 20, cursor?: string): Promise<ServiceResult<DrizzleFollow[]>> {
+      try {
+        const followersData = await dbClient.query.follows.findMany({
+          where: and(
+            eq(follows.followeeId, userId),
+            eq(follows.status, 'active')
+          ),
+          orderBy: [desc(follows.createdAt)],
+          limit: limit
+        });
+
+        return {
+          success: true,
+          data: followersData,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error getting followers:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async getFollowing(userId: string, followType?: FollowType): Promise<ServiceResult<DrizzleFollow[]>> {
+      try {
+        const conditions = [
+          eq(follows.followerId, userId),
+          eq(follows.status, 'active')
+        ];
+
+        if (followType) {
+          conditions.push(eq(follows.followType, followType));
+        }
+
+        const followingData = await dbClient.query.follows.findMany({
+          where: and(...conditions),
+          orderBy: [desc(follows.createdAt)]
+        });
+
+        return {
+          success: true,
+          data: followingData,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error getting following:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async checkMutualFollow(userId1: string, userId2: string): Promise<ServiceResult<MutualFollowInfo>> {
+      try {
+        // Check if user1 follows user2
+        const user1FollowsUser2 = await dbClient.query.follows.findFirst({
+          where: and(
+            eq(follows.followerId, userId1),
+            eq(follows.followeeId, userId2),
+            eq(follows.status, 'active')
+          )
+        });
+
+        // Check if user2 follows user1
+        const user2FollowsUser1 = await dbClient.query.follows.findFirst({
+          where: and(
+            eq(follows.followerId, userId2),
+            eq(follows.followeeId, userId1),
+            eq(follows.status, 'active')
+          )
+        });
+
+        const mutualInfo: MutualFollowInfo = {
+          isMutual: !!user1FollowsUser2 && !!user2FollowsUser1,
+          user1FollowsUser2: !!user1FollowsUser2,
+          user2FollowsUser1: !!user2FollowsUser1
+        };
+
+        return {
+          success: true,
+          data: mutualInfo,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error checking mutual follow:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async getFollowStats(userId: string): Promise<ServiceResult<{ followersCount: number; followingCount: number }>> {
+      try {
+        // Count followers
+        const [followersCountResult] = await dbClient
+          .select({ count: count() })
+          .from(follows)
+          .where(and(
+            eq(follows.followeeId, userId),
+            eq(follows.status, 'active')
+          ));
+
+        // Count following
+        const [followingCountResult] = await dbClient
+          .select({ count: count() })
+          .from(follows)
+          .where(and(
+            eq(follows.followerId, userId),
+            eq(follows.status, 'active')
+          ));
+
+        return {
+          success: true,
+          data: {
+            followersCount: followersCountResult.count,
+            followingCount: followingCountResult.count
+          },
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error getting follow stats:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
     }
+  };
+}
 
-    const results = await query;
-    
-    // Check if there's a next page
-    const hasMore = results.length > limit;
-    const followers = hasMore ? results.slice(0, -1) : results;
-    
-    // Generate next cursor
-    const nextCursor = hasMore && followers.length > 0 
-      ? Buffer.from(followers[followers.length - 1].createdAt.toISOString()).toString('base64')
-      : null;
+// Default export - service instance
+export const followServiceInstance = createFollowService();
 
+// Backward compatibility - export the old interface
+export const followService = {
+  async createFollow(params: {
+    followerId: string;
+    followeeId: string;
+    followType: 'family' | 'watch';
+    followReason?: string;
+  }) {
+    const result = await followServiceInstance.createFollow(params);
+    if (!result.success) {
+      throw result.error;
+    }
+    return result.data;
+  },
+
+  async unfollowUser(params: {
+    followId: string;
+    userId: string;
+    unfollowReason?: string;
+  }) {
+    const result = await followServiceInstance.unfollow(params.followId, params.userId, params.unfollowReason);
+    if (!result.success) {
+      throw result.error;
+    }
+    return result.data;
+  },
+
+  async getFollowers(params: {
+    userId: string;
+    limit?: number;
+    cursor?: string;
+  }) {
+    const result = await followServiceInstance.getFollowers(params.userId, params.limit, params.cursor);
+    if (!result.success) {
+      throw result.error;
+    }
     return {
-      followers,
-      nextCursor
+      followers: result.data,
+      nextCursor: null // Legacy interface
     };
   },
 
-  async getFollowing(params: GetFollowingParams) {
-    const { userId, type, limit = 20, cursor } = params;
-
-    // Build query with latest post
-    let whereConditions = [
-      eq(follows.followerId, userId),
-      eq(follows.status, 'active')
-    ];
-
-    if (type) {
-      whereConditions.push(eq(follows.followType, type));
+  async getFollowing(params: {
+    userId: string;
+    type?: 'family' | 'watch';
+    limit?: number;
+    cursor?: string;
+  }) {
+    const result = await followServiceInstance.getFollowing(params.userId, params.type);
+    if (!result.success) {
+      throw result.error;
     }
-
-    const results = await db.select({
-      id: follows.id,
-      followerId: follows.followerId,
-      followeeId: follows.followeeId,
-      followType: follows.followType,
-      createdAt: follows.createdAt,
-      followee: {
-        id: profiles.id,
-        displayName: profiles.displayName,
-        profileImageUrl: profiles.profileImageUrl
-      }
-    })
-    .from(follows)
-    .leftJoin(profiles, eq(follows.followeeId, profiles.id))
-    .where(and(...whereConditions))
-    .orderBy(desc(follows.createdAt))
-    .limit(limit + 1);
-
-    // For simplicity, not implementing latest post join here
-    // In production, would need a more complex query or separate fetch
-    const following = results.map(f => ({
-      ...f,
-      latestPost: null // Placeholder
-    }));
-
-    // Check if there's a next page
-    const hasMore = following.length > limit;
-    const items = hasMore ? following.slice(0, -1) : following;
-    
-    // Generate next cursor
-    const nextCursor = hasMore && items.length > 0 
-      ? Buffer.from(items[items.length - 1].createdAt.toISOString()).toString('base64')
-      : null;
-
     return {
-      following: items,
-      nextCursor
+      following: result.data,
+      nextCursor: null // Legacy interface
     };
   }
 };

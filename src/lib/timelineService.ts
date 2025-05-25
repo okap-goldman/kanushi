@@ -1,6 +1,252 @@
 import { supabase } from './supabase';
-import { Post, ApiResponse } from './data';
+import { db } from './db/client';
+import { posts, follows } from './db/schema';
+import { 
+  Post, ApiResponse, TimelineType, DrizzlePost, 
+  ServiceResult, PaginatedResult, CachedTimeline, TimelineCursor
+} from './data';
+import { eq, and, desc, inArray, lt, isNull } from 'drizzle-orm';
 
+export interface TimelineService {
+  getTimeline(userId: string, timelineType: TimelineType, limit?: number, cursor?: string): Promise<ServiceResult<PaginatedResult<DrizzlePost>>>;
+  refreshTimeline(userId: string, timelineType: TimelineType): Promise<ServiceResult<PaginatedResult<DrizzlePost>>>;
+  getCachedTimeline(userId: string, timelineType: TimelineType): Promise<ServiceResult<CachedTimeline | null>>;
+  getAllPosts(limit?: number, cursor?: string): Promise<ServiceResult<PaginatedResult<DrizzlePost>>>;
+}
+
+// Simple in-memory cache for demonstration
+// In production, use Redis or similar
+export class SimpleCache {
+  private cache = new Map<string, { data: any; expiresAt: number }>();
+
+  get(key: string): any | null {
+    const item = this.cache.get(key);
+    if (!item) return null;
+    
+    if (Date.now() > item.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return item.data;
+  }
+
+  set(key: string, data: any, ttlSeconds: number): void {
+    this.cache.set(key, {
+      data,
+      expiresAt: Date.now() + (ttlSeconds * 1000)
+    });
+  }
+}
+
+export function createTimelineService(
+  supabaseClient = supabase, 
+  dbClient = db,
+  cacheService = new SimpleCache()
+): TimelineService {
+
+  return {
+    async getTimeline(
+      userId: string, 
+      timelineType: TimelineType, 
+      limit = 20, 
+      cursor?: string
+    ): Promise<ServiceResult<PaginatedResult<DrizzlePost>>> {
+      try {
+        // Get follows based on timeline type
+        const followsData = await dbClient.query.follows.findMany({
+          where: and(
+            eq(follows.followerId, userId),
+            eq(follows.followType, timelineType),
+            eq(follows.status, 'active')
+          )
+        });
+
+        // If no follows, return empty timeline
+        if (followsData.length === 0) {
+          const emptyResult: PaginatedResult<DrizzlePost> = {
+            items: [],
+            hasMore: false,
+            nextCursor: null
+          };
+
+          return {
+            success: true,
+            data: emptyResult,
+            error: null
+          };
+        }
+
+        // Extract followee IDs
+        const followeeIds = followsData.map(f => f.followeeId);
+
+        // Build query conditions
+        const conditions = [
+          inArray(posts.userId, followeeIds),
+          isNull(posts.deletedAt)
+        ];
+
+        // Add cursor condition if provided
+        if (cursor) {
+          const cursorData = JSON.parse(Buffer.from(cursor, 'base64').toString()) as TimelineCursor;
+          conditions.push(lt(posts.createdAt, new Date(cursorData.createdAt)));
+        }
+
+        // Fetch posts with limit + 1 to check for more
+        const postsData = await dbClient.query.posts.findMany({
+          where: and(...conditions),
+          orderBy: [desc(posts.createdAt)],
+          limit: limit + 1
+        });
+
+        // Check if there are more posts
+        const hasMore = postsData.length > limit;
+        const items = hasMore ? postsData.slice(0, limit) : postsData;
+
+        // Generate next cursor
+        let nextCursor: string | null = null;
+        if (hasMore && items.length > 0) {
+          const lastPost = items[items.length - 1];
+          const cursorData: TimelineCursor = {
+            createdAt: lastPost.createdAt.toISOString(),
+            postId: lastPost.id
+          };
+          nextCursor = Buffer.from(JSON.stringify(cursorData)).toString('base64');
+        }
+
+        const result: PaginatedResult<DrizzlePost> = {
+          items,
+          hasMore,
+          nextCursor
+        };
+
+        // Cache the result
+        const cacheKey = `timeline:${userId}:${timelineType}`;
+        const cacheData: CachedTimeline = {
+          ...result,
+          cachedAt: new Date()
+        };
+        cacheService.set(cacheKey, cacheData, 300); // 5 minutes TTL
+
+        return {
+          success: true,
+          data: result,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error getting timeline:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async refreshTimeline(
+      userId: string, 
+      timelineType: TimelineType
+    ): Promise<ServiceResult<PaginatedResult<DrizzlePost>>> {
+      // Clear cache and get fresh data
+      const cacheKey = `timeline:${userId}:${timelineType}`;
+      cacheService.set(cacheKey, null, 0); // Clear cache
+      
+      return this.getTimeline(userId, timelineType, 20);
+    },
+
+    async getCachedTimeline(
+      userId: string, 
+      timelineType: TimelineType
+    ): Promise<ServiceResult<CachedTimeline | null>> {
+      try {
+        const cacheKey = `timeline:${userId}:${timelineType}`;
+        const cachedData = cacheService.get(cacheKey) as CachedTimeline | null;
+
+        return {
+          success: true,
+          data: cachedData,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error getting cached timeline:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async getAllPosts(
+      limit = 20, 
+      cursor?: string
+    ): Promise<ServiceResult<PaginatedResult<DrizzlePost>>> {
+      try {
+        // Build query conditions
+        const conditions = [isNull(posts.deletedAt)];
+
+        // Add cursor condition if provided
+        if (cursor) {
+          const cursorData = JSON.parse(Buffer.from(cursor, 'base64').toString()) as TimelineCursor;
+          conditions.push(lt(posts.createdAt, new Date(cursorData.createdAt)));
+        }
+
+        // Fetch posts with limit + 1 to check for more
+        const postsData = await dbClient.query.posts.findMany({
+          where: and(...conditions),
+          orderBy: [desc(posts.createdAt)],
+          limit: limit + 1
+        });
+
+        // Check if there are more posts
+        const hasMore = postsData.length > limit;
+        const items = hasMore ? postsData.slice(0, limit) : postsData;
+
+        // Generate next cursor
+        let nextCursor: string | null = null;
+        if (hasMore && items.length > 0) {
+          const lastPost = items[items.length - 1];
+          const cursorData: TimelineCursor = {
+            createdAt: lastPost.createdAt.toISOString(),
+            postId: lastPost.id
+          };
+          nextCursor = Buffer.from(JSON.stringify(cursorData)).toString('base64');
+        }
+
+        const result: PaginatedResult<DrizzlePost> = {
+          items,
+          hasMore,
+          nextCursor
+        };
+
+        return {
+          success: true,
+          data: result,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error getting all posts:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    }
+  };
+}
+
+// Export service instance and make cacheService accessible for testing
+const service = createTimelineService();
+export const timelineServiceInstance = service;
+
+// Add cache service to the instance for testing purposes
+(timelineServiceInstance as any).cacheService = new SimpleCache();
+
+// Legacy exports for backward compatibility
 interface TimelineResponse {
   posts: Post[];
   hasMore: boolean;
