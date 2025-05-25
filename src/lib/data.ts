@@ -1,9 +1,9 @@
 // Data models and types for the application
 
 // Post types
-export type ContentType = "text" | "image" | "video" | "audio";
+export type ContentType = 'text' | 'image' | 'video' | 'audio';
 export type MediaType = ContentType;
-export type TimelineType = "family" | "watch" | "all";
+export type TimelineType = 'family' | 'watch' | 'all';
 
 export interface Author {
   id: string;
@@ -18,30 +18,30 @@ export interface Tag {
 
 export interface Post {
   id: string;
-  user_id: string;                // DB field
-  author_id?: string;             // For API compatibility
+  user_id: string; // DB field
+  author_id?: string; // For API compatibility
   author: Author;
-  content_type: ContentType;      // DB field
-  text_content: string;           // DB field
-  media_url?: string | null;      // DB field
-  audio_url?: string | null;      // DB field
-  thumbnail_url?: string | null;  // DB field
-  content?: string;               // For API compatibility
-  caption?: string;               // For API compatibility
-  media_type?: ContentType;       // For API compatibility
+  content_type: ContentType; // DB field
+  text_content: string; // DB field
+  media_url?: string | null; // DB field
+  audio_url?: string | null; // DB field
+  thumbnail_url?: string | null; // DB field
+  content?: string; // For API compatibility
+  caption?: string; // For API compatibility
+  media_type?: ContentType; // For API compatibility
   created_at: string;
   updated_at?: string;
   likes_count: number;
   comments_count: number;
-  timeline_type?: "family" | "watch" | "all"; // Virtual field for UI
-  tags?: Tag[];                  // Tags associated with the post
+  timeline_type?: 'family' | 'watch' | 'all'; // Virtual field for UI
+  tags?: Tag[]; // Tags associated with the post
 }
 
 export interface Comment {
   id: string;
   post_id: string;
-  user_id?: string;     // Actual DB field
-  author_id: string;    // For API compatibility
+  user_id?: string; // Actual DB field
+  author_id: string; // For API compatibility
   author: Author;
   content: string;
   created_at: string;
@@ -138,8 +138,8 @@ export interface ServiceResult<T> {
 }
 
 // Follow related types
-export type FollowType = "family" | "watch";
-export type FollowStatus = "active" | "unfollowed" | "blocked";
+export type FollowType = 'family' | 'watch';
+export type FollowStatus = 'active' | 'unfollowed' | 'blocked';
 
 export interface FollowCreateInput {
   followerId: string;

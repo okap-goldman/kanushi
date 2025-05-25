@@ -1,5 +1,5 @@
 import React from 'react';
-import { Switch as RNSwitch, SwitchProps as RNSwitchProps, StyleSheet } from 'react-native';
+import { Switch as RNSwitch, type SwitchProps as RNSwitchProps, StyleSheet } from 'react-native';
 
 interface SwitchProps extends RNSwitchProps {
   checked?: boolean;

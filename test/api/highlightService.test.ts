@@ -118,7 +118,7 @@ describe('Highlight Service Tests', () => {
       };
 
       // 最後のeqでerrorを返す
-      mockSupabaseChain.eq.mockImplementation(function(this: any) {
+      mockSupabaseChain.eq.mockImplementation(function (this: any) {
         if (this.eq.mock.calls.length === 2) {
           return { error: null };
         }
@@ -146,7 +146,7 @@ describe('Highlight Service Tests', () => {
         eq: vi.fn().mockReturnThis(),
       };
 
-      mockSupabaseChain.eq.mockImplementation(function(this: any) {
+      mockSupabaseChain.eq.mockImplementation(function (this: any) {
         if (this.eq.mock.calls.length === 2) {
           return { error: mockError };
         }

@@ -14,7 +14,7 @@ describe('Login Screen', () => {
     // Given
     const mockSignInWithGoogle = jest.fn().mockResolvedValue({
       user: mockUser,
-      accessToken: 'token'
+      accessToken: 'token',
     });
     jest.spyOn(authService, 'signInWithGoogle').mockImplementation(mockSignInWithGoogle);
 
@@ -32,9 +32,9 @@ describe('Login Screen', () => {
 
   it('認証中はローディング状態が表示される', async () => {
     // Given
-    const mockSignInWithGoogle = jest.fn().mockImplementation(
-      () => new Promise(resolve => setTimeout(resolve, 1000))
-    );
+    const mockSignInWithGoogle = jest
+      .fn()
+      .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 1000)));
     jest.spyOn(authService, 'signInWithGoogle').mockImplementation(mockSignInWithGoogle);
 
     render(<Login />);
@@ -50,9 +50,7 @@ describe('Login Screen', () => {
 
   it('認証エラー時にエラーメッセージが表示される', async () => {
     // Given
-    const mockSignInWithGoogle = jest.fn().mockRejectedValue(
-      new Error('INVALID_TOKEN')
-    );
+    const mockSignInWithGoogle = jest.fn().mockRejectedValue(new Error('INVALID_TOKEN'));
     jest.spyOn(authService, 'signInWithGoogle').mockImplementation(mockSignInWithGoogle);
 
     render(<Login />);
@@ -69,9 +67,7 @@ describe('Login Screen', () => {
 
   it('ネットワークエラー時に適切なメッセージが表示される', async () => {
     // Given
-    const mockSignInWithGoogle = jest.fn().mockRejectedValue(
-      new Error('NETWORK_ERROR')
-    );
+    const mockSignInWithGoogle = jest.fn().mockRejectedValue(new Error('NETWORK_ERROR'));
     jest.spyOn(authService, 'signInWithGoogle').mockImplementation(mockSignInWithGoogle);
 
     render(<Login />);
@@ -82,7 +78,9 @@ describe('Login Screen', () => {
 
     // Then
     await waitFor(() => {
-      expect(screen.getByText('ネットワークエラーが発生しました。接続を確認してください。')).toBeOnTheScreen();
+      expect(
+        screen.getByText('ネットワークエラーが発生しました。接続を確認してください。')
+      ).toBeOnTheScreen();
     });
   });
 });

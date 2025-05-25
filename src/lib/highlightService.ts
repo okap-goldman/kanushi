@@ -1,5 +1,5 @@
+import type { ApiResponse } from './data';
 import { supabase } from './supabase';
-import { ApiResponse } from './data';
 
 export interface Highlight {
   id: string;
@@ -90,9 +90,7 @@ export const removeHighlight = async (
  * Get all highlights for a post
  * @param post_id The post ID
  */
-export const getHighlights = async (
-  post_id: string
-): Promise<ApiResponse<Highlight[]>> => {
+export const getHighlights = async (post_id: string): Promise<ApiResponse<Highlight[]>> => {
   try {
     const { data, error } = await supabase
       .from('highlights')

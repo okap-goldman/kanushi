@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useRef } from "react";
+import { type AVPlaybackStatus, ResizeMode, Video } from 'expo-av';
+import { X } from 'lucide-react-native';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  View,
+  Dimensions,
+  Image,
   Modal,
+  SafeAreaView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  Text,
-  Image,
-  Dimensions,
-  StyleSheet,
-  SafeAreaView,
-} from "react-native";
-import { Video, ResizeMode, AVPlaybackStatus } from "expo-av";
-import { X } from "lucide-react-native";
-import StoryProgress from "./StoryProgress";
+  View,
+} from 'react-native';
+import StoryProgress from './StoryProgress';
 
 interface Story {
   id: string;
@@ -20,7 +20,7 @@ interface Story {
   username: string;
   profileImage: string;
   mediaUrl: string;
-  contentType: "image" | "video";
+  contentType: 'image' | 'video';
   caption?: string;
   createdAt: string;
 }
@@ -41,7 +41,7 @@ interface StoryViewerProps {
   onStoryView?: (storyId: string) => void;
 }
 
-const { width: screenWidth } = Dimensions.get("window");
+const { width: screenWidth } = Dimensions.get('window');
 
 export default function StoryViewer({
   userStories,
@@ -124,8 +124,8 @@ export default function StoryViewer({
   if (!activeUser || !activeStory) return null;
 
   const createdAtTime = new Date(activeStory.createdAt).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
+    hour: '2-digit',
+    minute: '2-digit',
   });
 
   return (
@@ -136,15 +136,10 @@ export default function StoryViewer({
       onRequestClose={() => onOpenChange(false)}
     >
       <SafeAreaView style={styles.container}>
-        <TouchableWithoutFeedback
-          onPress={(e) => handlePress(e.nativeEvent.locationX)}
-        >
+        <TouchableWithoutFeedback onPress={(e) => handlePress(e.nativeEvent.locationX)}>
           <View style={styles.content}>
             {/* Close button */}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => onOpenChange(false)}
-            >
+            <TouchableOpacity style={styles.closeButton} onPress={() => onOpenChange(false)}>
               <X size={24} color="#fff" />
             </TouchableOpacity>
 
@@ -160,10 +155,7 @@ export default function StoryViewer({
 
             {/* User info */}
             <View style={styles.userInfo}>
-              <Image
-                source={{ uri: activeUser.profileImage }}
-                style={styles.avatar}
-              />
+              <Image source={{ uri: activeUser.profileImage }} style={styles.avatar} />
               <View>
                 <Text style={styles.username}>{activeUser.username}</Text>
                 <Text style={styles.timestamp}>{createdAtTime}</Text>
@@ -172,7 +164,7 @@ export default function StoryViewer({
 
             {/* Story content */}
             <View style={styles.mediaContainer}>
-              {activeStory.contentType === "image" ? (
+              {activeStory.contentType === 'image' ? (
                 <Image
                   source={{ uri: activeStory.mediaUrl }}
                   style={styles.media}
@@ -208,33 +200,33 @@ export default function StoryViewer({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: '#000',
   },
   content: {
     flex: 1,
   },
   closeButton: {
-    position: "absolute",
+    position: 'absolute',
     top: 16,
     right: 16,
     zIndex: 50,
     padding: 8,
   },
   progressContainer: {
-    position: "absolute",
+    position: 'absolute',
     top: 8,
     left: 0,
     right: 0,
     zIndex: 40,
   },
   userInfo: {
-    position: "absolute",
+    position: 'absolute',
     top: 24,
     left: 16,
     right: 16,
     zIndex: 40,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   avatar: {
@@ -242,29 +234,29 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: "#fff",
+    borderColor: '#fff',
   },
   username: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   timestamp: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 12,
     opacity: 0.8,
   },
   mediaContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   media: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
   },
   captionContainer: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 32,
     left: 0,
     right: 0,
@@ -272,11 +264,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   caption: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 16,
-    fontWeight: "500",
-    textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    fontWeight: '500',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },

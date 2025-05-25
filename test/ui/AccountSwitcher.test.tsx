@@ -4,7 +4,7 @@ describe('AccountSwitcher Component', () => {
     // Given
     const mockAccounts = [
       { id: 'acc1', profile: { displayName: 'アカウント1' }, isActive: true },
-      { id: 'acc2', profile: { displayName: 'アカウント2' }, isActive: false }
+      { id: 'acc2', profile: { displayName: 'アカウント2' }, isActive: false },
     ];
     jest.spyOn(accountService, 'getAccounts').mockResolvedValue(mockAccounts);
 
@@ -22,7 +22,7 @@ describe('AccountSwitcher Component', () => {
     // Given
     const mockAccounts = [
       { id: 'acc1', profile: { displayName: 'アカウント1' }, isActive: true },
-      { id: 'acc2', profile: { displayName: 'アカウント2' }, isActive: false }
+      { id: 'acc2', profile: { displayName: 'アカウント2' }, isActive: false },
     ];
     jest.spyOn(accountService, 'getAccounts').mockResolvedValue(mockAccounts);
 
@@ -65,11 +65,13 @@ describe('AccountSwitcher Component', () => {
 
   it('5アカウント制限時にアカウント追加ボタンが無効になる', async () => {
     // Given
-    const mockAccounts = Array(5).fill(null).map((_, i) => ({
-      id: `acc${i + 1}`,
-      profile: { displayName: `アカウント${i + 1}` },
-      isActive: i === 0
-    }));
+    const mockAccounts = Array(5)
+      .fill(null)
+      .map((_, i) => ({
+        id: `acc${i + 1}`,
+        profile: { displayName: `アカウント${i + 1}` },
+        isActive: i === 0,
+      }));
     jest.spyOn(accountService, 'getAccounts').mockResolvedValue(mockAccounts);
 
     // When

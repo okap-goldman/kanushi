@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface CheckboxProps {
   checked?: boolean;
@@ -22,20 +22,10 @@ export function Checkbox({ checked = false, onChange, disabled, label }: Checkbo
       disabled={disabled}
       activeOpacity={0.7}
     >
-      <View style={[
-        styles.checkbox,
-        checked && styles.checked,
-        disabled && styles.disabled
-      ]}>
-        {checked && (
-          <Text style={styles.checkmark}>✓</Text>
-        )}
+      <View style={[styles.checkbox, checked && styles.checked, disabled && styles.disabled]}>
+        {checked && <Text style={styles.checkmark}>✓</Text>}
       </View>
-      {label && (
-        <Text style={[styles.label, disabled && styles.disabledText]}>
-          {label}
-        </Text>
-      )}
+      {label && <Text style={[styles.label, disabled && styles.disabledText]}>{label}</Text>}
     </TouchableOpacity>
   );
 }

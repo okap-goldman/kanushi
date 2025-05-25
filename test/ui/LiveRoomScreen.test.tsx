@@ -1,8 +1,8 @@
-import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { LiveRoomScreen } from '@/components/liveroom/LiveRoomScreen';
 import { liveRoomService } from '@/lib/liveRoomService';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import React from 'react';
 
 jest.mock('@/lib/liveRoomService');
 jest.mock('@react-navigation/native');

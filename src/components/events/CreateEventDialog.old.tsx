@@ -1,24 +1,28 @@
-import React, { useState } from "react";
+import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
+import { useNavigation } from '@react-navigation/native';
+import { format } from 'date-fns';
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  Modal,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  Alert,
   ActivityIndicator,
+  Alert,
+  Modal,
   Platform,
+  ScrollView,
+  StyleSheet,
   Switch,
-} from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { Ionicons } from "@expo/vector-icons";
-import { format } from "date-fns";
-import { useAuth } from "../../context/AuthContext";
-import { eventServiceDrizzle, CreateEventRequest, CreateVoiceWorkshopRequest } from "../../lib/eventServiceDrizzle";
-import { Picker } from "@react-native-picker/picker";
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useAuth } from '../../context/AuthContext';
+import {
+  type CreateEventRequest,
+  type CreateVoiceWorkshopRequest,
+  eventServiceDrizzle,
+} from '../../lib/eventServiceDrizzle';
 
 interface CreateEventDialogProps {
   visible: boolean;
@@ -26,12 +30,11 @@ interface CreateEventDialogProps {
 }
 
 const EVENT_TYPES = [
-  { value: "offline", label: "オフライン" },
-  { value: "online", label: "オンライン" },
-  { value: "hybrid", label: "ハイブリッド" },
-  { value: "voice_workshop", label: "音声ワークショップ" },
+  { value: 'offline', label: 'オフライン' },
+  { value: 'online', label: 'オンライン' },
+  { value: 'hybrid', label: 'ハイブリッド' },
+  { value: 'voice_workshop', label: '音声ワークショップ' },
 ];
-
 
 export default function CreateEventDialog({ visible, onClose }: CreateEventDialogProps) {
   const { user } = useAuth();
@@ -39,20 +42,22 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form fields
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [eventType, setEventType] = useState<"offline" | "online" | "hybrid" | "voice_workshop">("offline");
-  const [location, setLocation] = useState("");
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [eventType, setEventType] = useState<'offline' | 'online' | 'hybrid' | 'voice_workshop'>(
+    'offline'
+  );
+  const [location, setLocation] = useState('');
   const [startDate, setStartDate] = useState(new Date());
   const [startTime, setStartTime] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
-  const [fee, setFee] = useState("");
-  const [currency] = useState("JPY");
-  const [refundPolicy, setRefundPolicy] = useState("イベント開始24時間前まで全額返金");
-  
+  const [fee, setFee] = useState('');
+  const [currency] = useState('JPY');
+  const [refundPolicy, setRefundPolicy] = useState('イベント開始24時間前まで全額返金');
+
   // Voice workshop specific fields
-  const [maxParticipants, setMaxParticipants] = useState("");
+  const [maxParticipants, setMaxParticipants] = useState('');
   const [isRecorded, setIsRecorded] = useState(false);
   const [archiveExpiresAt, setArchiveExpiresAt] = useState<Date | null>(null);
 
@@ -65,13 +70,13 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
 
   const handleSubmit = async () => {
     if (!user) {
-      Alert.alert("Error", "You must be logged in to create an event");
+      Alert.alert('Error', 'You must be logged in to create an event');
       return;
     }
 
     // Validate required fields
     if (!name.trim()) {
-      Alert.alert("エラー", "イベント名を入力してください");
+      Alert.alert('エラー', 'イベント名を入力してください');
       return;
     }
 
@@ -81,13 +86,13 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
       // Combine date and time
       const startDateTime = new Date(startDate);
       startDateTime.setHours(startTime.getHours(), startTime.getMinutes());
-      
+
       const endDateTime = new Date(endDate);
       endDateTime.setHours(endTime.getHours(), endTime.getMinutes());
 
       // Basic validation for dates
       if (endDateTime <= startDateTime) {
-        Alert.alert("日時エラー", "終了日時は開始日時より後に設定してください");
+        Alert.alert('日時エラー', '終了日時は開始日時より後に設定してください');
         setIsSubmitting(false);
         return;
       }
@@ -102,10 +107,10 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
           location: location || 'オンライン',
           startsAt: startDateTime,
           endsAt: endDateTime,
-          fee: fee ? parseInt(fee, 10) : undefined,
+          fee: fee ? Number.parseInt(fee, 10) : undefined,
           currency,
           refundPolicy: refundPolicy || undefined,
-          maxParticipants: maxParticipants ? parseInt(maxParticipants, 10) : 10,
+          maxParticipants: maxParticipants ? Number.parseInt(maxParticipants, 10) : 10,
           isRecorded,
           archiveExpiresAt: archiveExpiresAt || undefined,
         };
@@ -120,7 +125,7 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
           location: location || undefined,
           startsAt: startDateTime,
           endsAt: endDateTime,
-          fee: fee ? parseInt(fee, 10) : undefined,
+          fee: fee ? Number.parseInt(fee, 10) : undefined,
           currency,
           refundPolicy: refundPolicy || undefined,
         };
@@ -134,40 +139,37 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
         throw new Error(error.message);
       }
 
-      Alert.alert("成功", "イベントが作成されました", [
+      Alert.alert('成功', 'イベントが作成されました', [
         {
-          text: "OK",
+          text: 'OK',
           onPress: () => {
             onClose();
             resetForm();
             if (data?.id) {
-              navigation.navigate("EventDetail", { eventId: data.id });
+              navigation.navigate('EventDetail', { eventId: data.id });
             }
           },
         },
       ]);
     } catch (error) {
-      Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to create event"
-      );
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create event');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const resetForm = () => {
-    setName("");
-    setDescription("");
-    setEventType("offline");
-    setLocation("");
+    setName('');
+    setDescription('');
+    setEventType('offline');
+    setLocation('');
     setStartDate(new Date());
     setStartTime(new Date());
     setEndDate(new Date());
     setEndTime(new Date());
-    setFee("");
-    setRefundPolicy("イベント開始24時間前まで全額返金");
-    setMaxParticipants("");
+    setFee('');
+    setRefundPolicy('イベント開始24時間前まで全額返金');
+    setMaxParticipants('');
     setIsRecorded(false);
     setArchiveExpiresAt(null);
   };
@@ -203,17 +205,9 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
           <View style={styles.formGroup}>
             <Text style={styles.label}>イベント種別*</Text>
             <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={eventType}
-                onValueChange={setEventType}
-                style={styles.picker}
-              >
+              <Picker selectedValue={eventType} onValueChange={setEventType} style={styles.picker}>
                 {EVENT_TYPES.map((type) => (
-                  <Picker.Item
-                    key={type.value}
-                    label={type.label}
-                    value={type.value}
-                  />
+                  <Picker.Item key={type.value} label={type.label} value={type.value} />
                 ))}
               </Picker>
             </View>
@@ -254,14 +248,14 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
                 onPress={() => setShowStartDatePicker(true)}
               >
                 <Ionicons name="calendar-outline" size={20} color="#666" />
-                <Text style={styles.dateTimeText}>{format(startDate, "PPP")}</Text>
+                <Text style={styles.dateTimeText}>{format(startDate, 'PPP')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.dateTimeButton}
                 onPress={() => setShowStartTimePicker(true)}
               >
                 <Ionicons name="time-outline" size={20} color="#666" />
-                <Text style={styles.dateTimeText}>{format(startTime, "p")}</Text>
+                <Text style={styles.dateTimeText}>{format(startTime, 'p')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -275,14 +269,14 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
                 onPress={() => setShowEndDatePicker(true)}
               >
                 <Ionicons name="calendar-outline" size={20} color="#666" />
-                <Text style={styles.dateTimeText}>{format(endDate, "PPP")}</Text>
+                <Text style={styles.dateTimeText}>{format(endDate, 'PPP')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.dateTimeButton}
                 onPress={() => setShowEndTimePicker(true)}
               >
                 <Ionicons name="time-outline" size={20} color="#666" />
-                <Text style={styles.dateTimeText}>{format(endTime, "p")}</Text>
+                <Text style={styles.dateTimeText}>{format(endTime, 'p')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -292,9 +286,7 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
             <View style={styles.toggleRow}>
               <View>
                 <Text style={styles.label}>Online Event</Text>
-                <Text style={styles.helperText}>
-                  Enable if this event will be held online
-                </Text>
+                <Text style={styles.helperText}>Enable if this event will be held online</Text>
               </View>
               <Switch value={isOnline} onValueChange={setIsOnline} />
             </View>
@@ -357,9 +349,7 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
               placeholderTextColor="#999"
               keyboardType="numeric"
             />
-            <Text style={styles.helperText}>
-              Set a price for your event, or 0 for free events
-            </Text>
+            <Text style={styles.helperText}>Set a price for your event, or 0 for free events</Text>
           </View>
 
           {/* Privacy Level */}
@@ -372,11 +362,7 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
                 style={styles.picker}
               >
                 {PRIVACY_LEVELS.map((level) => (
-                  <Picker.Item
-                    key={level.value}
-                    label={level.label}
-                    value={level.value}
-                  />
+                  <Picker.Item key={level.value} label={level.label} value={level.value} />
                 ))}
               </Picker>
             </View>
@@ -392,12 +378,10 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
             >
               <Ionicons name="calendar-outline" size={20} color="#666" />
               <Text style={styles.dateTimeText}>
-                {registrationDeadline ? format(registrationDeadline, "PPP") : "Optional"}
+                {registrationDeadline ? format(registrationDeadline, 'PPP') : 'Optional'}
               </Text>
             </TouchableOpacity>
-            <Text style={styles.helperText}>
-              Last day for participants to register (optional)
-            </Text>
+            <Text style={styles.helperText}>Last day for participants to register (optional)</Text>
           </View>
 
           {/* Cover Image URL */}
@@ -422,7 +406,7 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
           <DateTimePicker
             value={startDate}
             mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={(event, date) => {
               setShowStartDatePicker(false);
               if (date) setStartDate(date);
@@ -435,7 +419,7 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
           <DateTimePicker
             value={startTime}
             mode="time"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={(event, time) => {
               setShowStartTimePicker(false);
               if (time) setStartTime(time);
@@ -447,7 +431,7 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
           <DateTimePicker
             value={endDate}
             mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={(event, date) => {
               setShowEndDatePicker(false);
               if (date) setEndDate(date);
@@ -460,7 +444,7 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
           <DateTimePicker
             value={endTime}
             mode="time"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={(event, time) => {
               setShowEndTimePicker(false);
               if (time) setEndTime(time);
@@ -472,7 +456,7 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
           <DateTimePicker
             value={registrationDeadline || new Date()}
             mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={(event, date) => {
               setShowRegistrationDatePicker(false);
               if (date) setRegistrationDeadline(date);
@@ -488,21 +472,21 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 50 : 16,
+    paddingTop: Platform.OS === 'ios' ? 50 : 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: '#e0e0e0',
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   closeButton: {
     padding: 8,
@@ -515,9 +499,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   submitButtonText: {
-    color: "#007AFF",
+    color: '#007AFF',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   content: {
     flex: 1,
@@ -528,41 +512,41 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: '500',
     marginBottom: 8,
-    color: "#000",
+    color: '#000',
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    color: "#000",
+    color: '#000',
   },
   textArea: {
     minHeight: 100,
-    textAlignVertical: "top",
+    textAlignVertical: 'top',
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
     borderRadius: 8,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   picker: {
     height: 50,
   },
   dateTimeRow: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 8,
   },
   dateTimeButton: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -570,17 +554,17 @@ const styles = StyleSheet.create({
   },
   dateTimeText: {
     fontSize: 16,
-    color: "#000",
+    color: '#000',
   },
   toggleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 8,
   },
   helperText: {
     fontSize: 14,
-    color: "#666",
+    color: '#666',
     marginTop: 4,
   },
 });

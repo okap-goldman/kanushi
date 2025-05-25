@@ -1,6 +1,6 @@
-import { supabase } from './supabase';
 import type { ApiResponse } from './data';
 import { stripeService } from './stripeService';
+import { supabase } from './supabase';
 
 // イベント作成リクエストの型定義
 export interface CreateEventRequest {
@@ -62,29 +62,32 @@ export interface ArchiveAccessResponse {
 
 export const eventServiceDrizzle = {
   // 通常イベントの作成
-  async createEvent(eventData: CreateEventRequest, userId: string): Promise<ApiResponse<EventResponse>> {
+  async createEvent(
+    eventData: CreateEventRequest,
+    userId: string
+  ): Promise<ApiResponse<EventResponse>> {
     try {
       // バリデーション
       if (!eventData.name || !eventData.startsAt || !eventData.endsAt) {
-        return { 
-          data: null, 
-          error: new Error('必須項目が不足しています: name, startsAt, endsAt') 
+        return {
+          data: null,
+          error: new Error('必須項目が不足しています: name, startsAt, endsAt'),
         };
       }
 
       // 開始時間の検証
       if (eventData.startsAt < new Date()) {
-        return { 
-          data: null, 
-          error: new Error('開始時間は現在以降である必要があります') 
+        return {
+          data: null,
+          error: new Error('開始時間は現在以降である必要があります'),
         };
       }
 
       // 終了時間の検証
       if (eventData.endsAt <= eventData.startsAt) {
-        return { 
-          data: null, 
-          error: new Error('終了時間は開始時間より後である必要があります') 
+        return {
+          data: null,
+          error: new Error('終了時間は開始時間より後である必要があります'),
         };
       }
 
@@ -101,14 +104,14 @@ export const eventServiceDrizzle = {
           ends_at: eventData.endsAt.toISOString(),
           fee: eventData.fee?.toString(),
           currency: eventData.currency || 'JPY',
-          refund_policy: eventData.refundPolicy
+          refund_policy: eventData.refundPolicy,
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      return { 
+      return {
         data: {
           id: data.id,
           creatorUserId: data.creator_user_id,
@@ -122,9 +125,9 @@ export const eventServiceDrizzle = {
           currency: data.currency,
           refundPolicy: data.refund_policy,
           liveRoomId: data.live_room_id,
-          createdAt: new Date(data.created_at)
-        } as EventResponse, 
-        error: null 
+          createdAt: new Date(data.created_at),
+        } as EventResponse,
+        error: null,
       };
     } catch (error) {
       console.error('Error creating event:', error);
@@ -133,36 +136,39 @@ export const eventServiceDrizzle = {
   },
 
   // 音声ワークショップの作成
-  async createVoiceWorkshop(workshopData: CreateVoiceWorkshopRequest, userId: string): Promise<ApiResponse<EventResponse>> {
+  async createVoiceWorkshop(
+    workshopData: CreateVoiceWorkshopRequest,
+    userId: string
+  ): Promise<ApiResponse<EventResponse>> {
     try {
       // バリデーション
       if (!workshopData.name || !workshopData.startsAt || !workshopData.endsAt) {
-        return { 
-          data: null, 
-          error: new Error('必須項目が不足しています: name, startsAt, endsAt') 
+        return {
+          data: null,
+          error: new Error('必須項目が不足しています: name, startsAt, endsAt'),
         };
       }
 
       // 開始時間の検証
       if (workshopData.startsAt < new Date()) {
-        return { 
-          data: null, 
-          error: new Error('開始時間は現在以降である必要があります') 
+        return {
+          data: null,
+          error: new Error('開始時間は現在以降である必要があります'),
         };
       }
 
       // 定員の検証
       const maxParticipants = workshopData.maxParticipants || 10;
       if (maxParticipants < 1) {
-        return { 
-          data: null, 
-          error: new Error('定員は1人以上である必要があります') 
+        return {
+          data: null,
+          error: new Error('定員は1人以上である必要があります'),
         };
       }
       if (maxParticipants > 1000) {
-        return { 
-          data: null, 
-          error: new Error('定員は1000人以下である必要があります') 
+        return {
+          data: null,
+          error: new Error('定員は1000人以下である必要があります'),
         };
       }
 
@@ -179,7 +185,7 @@ export const eventServiceDrizzle = {
           ends_at: workshopData.endsAt.toISOString(),
           fee: workshopData.fee?.toString(),
           currency: workshopData.currency || 'JPY',
-          refund_policy: workshopData.refundPolicy
+          refund_policy: workshopData.refundPolicy,
         })
         .select()
         .single();
@@ -193,7 +199,7 @@ export const eventServiceDrizzle = {
           event_id: newEvent.id,
           max_participants: maxParticipants,
           is_recorded: workshopData.isRecorded || false,
-          archive_expires_at: workshopData.archiveExpiresAt?.toISOString()
+          archive_expires_at: workshopData.archiveExpiresAt?.toISOString(),
         })
         .select()
         .single();
@@ -204,7 +210,7 @@ export const eventServiceDrizzle = {
         throw workshopError;
       }
 
-      return { 
+      return {
         data: {
           id: newEvent.id,
           creatorUserId: newEvent.creator_user_id,
@@ -225,10 +231,12 @@ export const eventServiceDrizzle = {
             maxParticipants: workshopInfo.max_participants,
             isRecorded: workshopInfo.is_recorded,
             recordingUrl: workshopInfo.recording_url,
-            archiveExpiresAt: workshopInfo.archive_expires_at ? new Date(workshopInfo.archive_expires_at) : null
-          }
-        } as EventResponse, 
-        error: null 
+            archiveExpiresAt: workshopInfo.archive_expires_at
+              ? new Date(workshopInfo.archive_expires_at)
+              : null,
+          },
+        } as EventResponse,
+        error: null,
       };
     } catch (error) {
       console.error('Error creating voice workshop:', error);
@@ -237,7 +245,16 @@ export const eventServiceDrizzle = {
   },
 
   // イベント参加
-  async joinEvent(joinData: JoinEventRequest, userId: string): Promise<ApiResponse<{ participantId: string; paymentRequired: boolean; paymentIntentClientSecret?: string }>> {
+  async joinEvent(
+    joinData: JoinEventRequest,
+    userId: string
+  ): Promise<
+    ApiResponse<{
+      participantId: string;
+      paymentRequired: boolean;
+      paymentIntentClientSecret?: string;
+    }>
+  > {
     try {
       // イベント情報を取得
       const { data: event, error: eventError } = await supabase
@@ -281,21 +298,22 @@ export const eventServiceDrizzle = {
       }
 
       // 決済が必要かチェック
-      const paymentRequired = !!(event.fee && parseFloat(event.fee) > 0);
+      const paymentRequired = !!(event.fee && Number.parseFloat(event.fee) > 0);
       let paymentIntentClientSecret: string | undefined;
       let paymentIntentId: string | undefined = joinData.paymentIntentId;
-      
+
       // 有料イベントで決済インテントがない場合は作成
       if (paymentRequired && !paymentIntentId) {
-        const { data: paymentIntent, error: paymentError } = await stripeService.createPaymentIntent({
-          amount: parseFloat(event.fee),
-          currency: event.currency || 'JPY',
-          metadata: {
-            eventId: joinData.eventId,
-            userId: userId,
-            type: 'event_participation'
-          }
-        });
+        const { data: paymentIntent, error: paymentError } =
+          await stripeService.createPaymentIntent({
+            amount: Number.parseFloat(event.fee),
+            currency: event.currency || 'JPY',
+            metadata: {
+              eventId: joinData.eventId,
+              userId: userId,
+              type: 'event_participation',
+            },
+          });
 
         if (paymentError || !paymentIntent) {
           return { data: null, error: new Error('決済インテントの作成に失敗しました') };
@@ -304,7 +322,7 @@ export const eventServiceDrizzle = {
         paymentIntentId = paymentIntent.id;
         paymentIntentClientSecret = paymentIntent.client_secret || undefined;
       }
-      
+
       // 参加者レコードを作成
       const { data: participant, error: participantError } = await supabase
         .from('event_participant')
@@ -313,20 +331,20 @@ export const eventServiceDrizzle = {
           user_id: userId,
           status: paymentRequired ? 'pending' : 'confirmed',
           payment_status: paymentRequired ? 'pending' : 'free',
-          stores_payment_id: paymentIntentId
+          stores_payment_id: paymentIntentId,
         })
         .select()
         .single();
 
       if (participantError) throw participantError;
 
-      return { 
-        data: { 
-          participantId: participant.id, 
+      return {
+        data: {
+          participantId: participant.id,
           paymentRequired,
-          paymentIntentClientSecret
-        }, 
-        error: null 
+          paymentIntentClientSecret,
+        },
+        error: null,
       };
     } catch (error) {
       console.error('Error joining event:', error);
@@ -335,7 +353,10 @@ export const eventServiceDrizzle = {
   },
 
   // アーカイブアクセス制御
-  async getArchiveAccess(eventId: string, userId: string): Promise<ApiResponse<ArchiveAccessResponse>> {
+  async getArchiveAccess(
+    eventId: string,
+    userId: string
+  ): Promise<ApiResponse<ArchiveAccessResponse>> {
     try {
       // イベントとワークショップ情報を取得
       const { data: event, error: eventError } = await supabase
@@ -371,9 +392,9 @@ export const eventServiceDrizzle = {
         return {
           data: {
             url: workshop.recording_url,
-            expiresAt: workshop.archive_expires_at ? new Date(workshop.archive_expires_at) : null
+            expiresAt: workshop.archive_expires_at ? new Date(workshop.archive_expires_at) : null,
           },
-          error: null
+          error: null,
         };
       }
 
@@ -390,9 +411,9 @@ export const eventServiceDrizzle = {
         return {
           data: {
             url: workshop.recording_url,
-            expiresAt: workshop.archive_expires_at ? new Date(workshop.archive_expires_at) : null
+            expiresAt: workshop.archive_expires_at ? new Date(workshop.archive_expires_at) : null,
           },
-          error: null
+          error: null,
         };
       }
 
@@ -413,9 +434,9 @@ export const eventServiceDrizzle = {
         return {
           data: {
             url: workshop.recording_url,
-            expiresAt: archiveAccess.expires_at ? new Date(archiveAccess.expires_at) : null
+            expiresAt: archiveAccess.expires_at ? new Date(archiveAccess.expires_at) : null,
           },
-          error: null
+          error: null,
         };
       }
 
@@ -428,7 +449,10 @@ export const eventServiceDrizzle = {
   },
 
   // ワークショップ入室制御
-  async getWorkshopRoomAccess(eventId: string, userId: string): Promise<ApiResponse<{ liveRoomId: string; role: 'moderator' | 'speaker' | 'listener' }>> {
+  async getWorkshopRoomAccess(
+    eventId: string,
+    userId: string
+  ): Promise<ApiResponse<{ liveRoomId: string; role: 'moderator' | 'speaker' | 'listener' }>> {
     try {
       // イベント情報を取得
       const { data: event, error: eventError } = await supabase
@@ -458,7 +482,7 @@ export const eventServiceDrizzle = {
 
       // 開始30分前から入室可能
       const entryAllowedTime = new Date(startsAt.getTime() - 30 * 60 * 1000);
-      
+
       if (now < entryAllowedTime) {
         return { data: null, error: new Error('ワークショップ開始30分前から入室可能です') };
       }
@@ -495,7 +519,7 @@ export const eventServiceDrizzle = {
         //   .eq('event_id', eventId)
         //   .eq('user_id', userId)
         //   .single();
-        // 
+        //
         // if (coHost) {
         //   role = 'speaker';
         // }
@@ -504,9 +528,9 @@ export const eventServiceDrizzle = {
       return {
         data: {
           liveRoomId: event.live_room_id,
-          role
+          role,
         },
-        error: null
+        error: null,
       };
     } catch (error) {
       console.error('Error getting workshop room access:', error);
@@ -515,7 +539,11 @@ export const eventServiceDrizzle = {
   },
 
   // イベント更新
-  async updateEvent(eventId: string, eventData: Partial<CreateEventRequest>, userId: string): Promise<ApiResponse<EventResponse>> {
+  async updateEvent(
+    eventId: string,
+    eventData: Partial<CreateEventRequest>,
+    userId: string
+  ): Promise<ApiResponse<EventResponse>> {
     try {
       // イベントの所有者確認
       const { data: existingEvent } = await supabase
@@ -553,9 +581,9 @@ export const eventServiceDrizzle = {
         data: {
           ...data,
           startsAt: new Date(data.starts_at),
-          endsAt: new Date(data.ends_at)
+          endsAt: new Date(data.ends_at),
         } as EventResponse,
-        error: null
+        error: null,
       };
     } catch (error) {
       console.error('Error updating event:', error);
@@ -583,10 +611,7 @@ export const eventServiceDrizzle = {
       }
 
       // イベントの削除（カスケード削除により関連データも削除される）
-      const { error } = await supabase
-        .from('event')
-        .delete()
-        .eq('id', eventId);
+      const { error } = await supabase.from('event').delete().eq('id', eventId);
 
       if (error) throw error;
 
@@ -598,7 +623,10 @@ export const eventServiceDrizzle = {
   },
 
   // イベント参加の決済確認
-  async confirmEventPayment(participantId: string, paymentIntentId: string): Promise<ApiResponse<{ status: 'confirmed' | 'failed' }>> {
+  async confirmEventPayment(
+    participantId: string,
+    paymentIntentId: string
+  ): Promise<ApiResponse<{ status: 'confirmed' | 'failed' }>> {
     try {
       // 参加者情報を取得
       const { data: participant, error: participantError } = await supabase
@@ -617,8 +645,9 @@ export const eventServiceDrizzle = {
       }
 
       // Stripeから決済情報を取得
-      const { data: paymentIntent, error: stripeError } = await stripeService.getPaymentIntent(paymentIntentId);
-      
+      const { data: paymentIntent, error: stripeError } =
+        await stripeService.getPaymentIntent(paymentIntentId);
+
       if (stripeError || !paymentIntent) {
         return { data: null, error: new Error('決済情報の取得に失敗しました') };
       }
@@ -629,7 +658,7 @@ export const eventServiceDrizzle = {
       }
 
       // 金額の検証
-      const expectedAmount = parseFloat(participant.event.fee || '0');
+      const expectedAmount = Number.parseFloat(participant.event.fee || '0');
       if (paymentIntent.amount !== expectedAmount) {
         return { data: null, error: new Error('決済金額が一致しません') };
       }
@@ -640,7 +669,7 @@ export const eventServiceDrizzle = {
         .update({
           status: 'confirmed',
           payment_status: 'completed',
-          stores_payment_id: paymentIntentId
+          stores_payment_id: paymentIntentId,
         })
         .eq('id', participantId);
 
@@ -654,7 +683,10 @@ export const eventServiceDrizzle = {
   },
 
   // イベント参加のキャンセルと返金
-  async cancelEventParticipation(participantId: string, userId: string): Promise<ApiResponse<{ refunded: boolean }>> {
+  async cancelEventParticipation(
+    participantId: string,
+    userId: string
+  ): Promise<ApiResponse<{ refunded: boolean }>> {
     try {
       // 参加者情報を取得
       const { data: participant, error: participantError } = await supabase
@@ -680,17 +712,21 @@ export const eventServiceDrizzle = {
       if (event.refund_policy) {
         const match = event.refund_policy.match(/(\d+)時間前/);
         if (match) {
-          refundDeadlineHours = parseInt(match[1]);
+          refundDeadlineHours = Number.parseInt(match[1]);
         }
       }
 
       let refunded = false;
 
       // 返金可能期間内で、決済済みの場合
-      if (hoursUntilStart >= refundDeadlineHours && participant.stores_payment_id && participant.payment_status === 'completed') {
+      if (
+        hoursUntilStart >= refundDeadlineHours &&
+        participant.stores_payment_id &&
+        participant.payment_status === 'completed'
+      ) {
         const { data: refund, error: refundError } = await stripeService.createRefund({
           paymentIntentId: participant.stores_payment_id,
-          reason: 'requested_by_customer'
+          reason: 'requested_by_customer',
         });
 
         if (!refundError && refund) {
@@ -714,7 +750,11 @@ export const eventServiceDrizzle = {
   },
 
   // アーカイブアクセス権の購入
-  async purchaseArchiveAccess(eventId: string, userId: string, paymentIntentId: string): Promise<ApiResponse<{ accessId: string }>> {
+  async purchaseArchiveAccess(
+    eventId: string,
+    userId: string,
+    paymentIntentId: string
+  ): Promise<ApiResponse<{ accessId: string }>> {
     try {
       // イベントとワークショップ情報を取得
       const { data: event, error: eventError } = await supabase
@@ -760,7 +800,7 @@ export const eventServiceDrizzle = {
         .insert({
           event_id: eventId,
           user_id: userId,
-          expires_at: expiresAt.toISOString()
+          expires_at: expiresAt.toISOString(),
         })
         .select()
         .single();
@@ -769,11 +809,11 @@ export const eventServiceDrizzle = {
 
       return {
         data: { accessId: archiveAccess.id },
-        error: null
+        error: null,
       };
     } catch (error) {
       console.error('Error purchasing archive access:', error);
       return { data: null, error: error as Error };
     }
-  }
+  },
 };

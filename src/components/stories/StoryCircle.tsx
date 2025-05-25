@@ -1,13 +1,6 @@
-import React, { useState } from "react";
-import {
-  View,
-  TouchableOpacity,
-  Text,
-  Image,
-  StyleSheet,
-  Animated,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState } from 'react';
+import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface StoryCircleProps {
   userId: string;
@@ -42,8 +35,7 @@ export default function StoryCircle({
     }).start();
   };
 
-  const displayName =
-    username.length > 10 ? `${username.substring(0, 8)}...` : username;
+  const displayName = username.length > 10 ? `${username.substring(0, 8)}...` : username;
 
   return (
     <TouchableOpacity
@@ -56,15 +48,13 @@ export default function StoryCircle({
         style={[
           styles.container,
           {
-            transform: [
-              { scale: isActive ? Animated.multiply(scaleAnim, 1.1) : scaleAnim },
-            ],
+            transform: [{ scale: isActive ? Animated.multiply(scaleAnim, 1.1) : scaleAnim }],
           },
         ]}
       >
         {hasUnviewedStory ? (
           <LinearGradient
-            colors={["#a855f7", "#ec4899"]}
+            colors={['#a855f7', '#ec4899']}
             start={[0, 0]}
             end={[1, 1]}
             style={styles.gradientBorder}
@@ -90,8 +80,8 @@ export default function StoryCircle({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     marginHorizontal: 8,
   },
   gradientBorder: {
@@ -105,27 +95,27 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#d1d5db",
+    backgroundColor: '#d1d5db',
     padding: 2,
     marginBottom: 4,
   },
   innerBorder: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 28,
     padding: 2,
   },
   avatar: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
     borderRadius: 26,
     borderWidth: 2,
-    borderColor: "#fff",
+    borderColor: '#fff',
   },
   username: {
     fontSize: 12,
-    textAlign: "center",
-    fontWeight: "500",
+    textAlign: 'center',
+    fontWeight: '500',
     width: 64,
   },
 });

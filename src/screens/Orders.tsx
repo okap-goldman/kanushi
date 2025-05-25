@@ -1,15 +1,8 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  SafeAreaView,
-} from 'react-native';
-import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { Image } from 'expo-image';
+import React from 'react';
+import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Sample orders data
 const SAMPLE_ORDERS = [
@@ -118,56 +111,51 @@ export default function Orders() {
   };
 
   const renderOrderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.orderCard}
-      onPress={() => navigateToOrderDetail(item.id)}
-    >
+    <TouchableOpacity style={styles.orderCard} onPress={() => navigateToOrderDetail(item.id)}>
       <View style={styles.orderHeader}>
         <View>
           <Text style={styles.orderDate}>{formatDate(item.date)}</Text>
           <Text style={styles.orderId}>Order #{item.id}</Text>
         </View>
-        
-        <View style={[
-          styles.statusBadge,
-          { backgroundColor: ORDER_STATUS[item.status as keyof typeof ORDER_STATUS].color + '20' },
-        ]}>
-          <Text style={[
-            styles.statusText,
-            { color: ORDER_STATUS[item.status as keyof typeof ORDER_STATUS].color },
-          ]}>
+
+        <View
+          style={[
+            styles.statusBadge,
+            {
+              backgroundColor: ORDER_STATUS[item.status as keyof typeof ORDER_STATUS].color + '20',
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.statusText,
+              { color: ORDER_STATUS[item.status as keyof typeof ORDER_STATUS].color },
+            ]}
+          >
             {ORDER_STATUS[item.status as keyof typeof ORDER_STATUS].label}
           </Text>
         </View>
       </View>
-      
+
       <View style={styles.itemsContainer}>
         {item.items.map((orderItem: any) => (
           <View key={orderItem.id} style={styles.orderItem}>
-            <Image
-              source={{ uri: orderItem.image }}
-              style={styles.itemImage}
-              contentFit="cover"
-            />
-            
+            <Image source={{ uri: orderItem.image }} style={styles.itemImage} contentFit="cover" />
+
             <View style={styles.itemDetails}>
               <Text style={styles.itemName} numberOfLines={1}>
                 {orderItem.name}
               </Text>
-              
+
               <View style={styles.itemPriceRow}>
-                <Text style={styles.itemPrice}>
-                  ¥{orderItem.price.toLocaleString()}
-                </Text>
-                <Text style={styles.itemQuantity}>
-                  × {orderItem.quantity}
-                </Text>
+                <Text style={styles.itemPrice}>¥{orderItem.price.toLocaleString()}</Text>
+                <Text style={styles.itemQuantity}>× {orderItem.quantity}</Text>
               </View>
             </View>
           </View>
         ))}
       </View>
-      
+
       <View style={styles.orderFooter}>
         <Text style={styles.totalLabel}>Total:</Text>
         <Text style={styles.totalAmount}>¥{item.total.toLocaleString()}</Text>
@@ -179,13 +167,8 @@ export default function Orders() {
     <View style={styles.emptyState}>
       <Feather name="shopping-bag" size={48} color="#A0AEC0" />
       <Text style={styles.emptyStateTitle}>No orders yet</Text>
-      <Text style={styles.emptyStateText}>
-        When you place orders, they'll appear here
-      </Text>
-      <TouchableOpacity
-        style={styles.shopButton}
-        onPress={() => navigation.navigate('Shop')}
-      >
+      <Text style={styles.emptyStateText}>When you place orders, they'll appear here</Text>
+      <TouchableOpacity style={styles.shopButton} onPress={() => navigation.navigate('Shop')}>
         <Text style={styles.shopButtonText}>Browse Products</Text>
       </TouchableOpacity>
     </View>
@@ -194,10 +177,7 @@ export default function Orders() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color="#1A202C" />
         </TouchableOpacity>
         <Text style={styles.title}>My Orders</Text>
@@ -207,7 +187,7 @@ export default function Orders() {
       <FlatList
         data={SAMPLE_ORDERS}
         renderItem={renderOrderItem}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.ordersList}
         ListEmptyComponent={renderEmptyState}
       />

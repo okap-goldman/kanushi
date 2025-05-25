@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import { Image } from 'expo-image';
-import { Video, Audio, AVPlaybackStatus } from 'expo-av';
 import { Feather } from '@expo/vector-icons';
+import { type AVPlaybackStatus, Audio, Video } from 'expo-av';
+import { Image } from 'expo-image';
+import React from 'react';
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface PostContentProps {
   content: string;
@@ -35,7 +35,7 @@ export function PostContent({
 
   const toggleAudio = async () => {
     if (!contentRef.current) return;
-    
+
     try {
       const status = await contentRef.current.getStatusAsync();
       if (status.isLoaded) {
@@ -62,7 +62,7 @@ export function PostContent({
             transition={300}
           />
         );
-      
+
       case 'video':
         return (
           <View style={styles.videoContainer}>
@@ -77,16 +77,12 @@ export function PostContent({
             />
           </View>
         );
-        
+
       case 'audio':
         return (
           <View style={styles.audioContainer}>
             <TouchableOpacity onPress={toggleAudio} style={styles.audioButton}>
-              <Feather 
-                name={isPlaying ? 'pause' : 'play'} 
-                size={24} 
-                color="#FFFFFF" 
-              />
+              <Feather name={isPlaying ? 'pause' : 'play'} size={24} color="#FFFFFF" />
             </TouchableOpacity>
             <View style={styles.audioWaveform}>
               <View style={styles.waveformBar} />
@@ -96,18 +92,19 @@ export function PostContent({
               <View style={styles.waveformBar} />
             </View>
             <Text style={styles.audioDuration}>
-              {audioStatus && audioStatus.positionMillis ? Math.floor(audioStatus.positionMillis / 1000) : 0}s
+              {audioStatus && audioStatus.positionMillis
+                ? Math.floor(audioStatus.positionMillis / 1000)
+                : 0}
+              s
             </Text>
           </View>
         );
-      
+
       case 'text':
       default:
         return (
           <View style={styles.textContent}>
-            <Text style={styles.textContentText}>
-              {content}
-            </Text>
+            <Text style={styles.textContentText}>{content}</Text>
           </View>
         );
     }
@@ -116,21 +113,14 @@ export function PostContent({
   return (
     <View style={styles.container}>
       {renderMedia()}
-      
+
       {caption && mediaType !== 'text' && (
         <View style={styles.captionContainer}>
-          <Text style={styles.caption}>
-            {truncatedText}
-          </Text>
-          
+          <Text style={styles.caption}>{truncatedText}</Text>
+
           {caption.length > MAX_TEXT_LENGTH && (
-            <TouchableOpacity
-              onPress={() => setIsExpanded(!isExpanded)}
-              style={styles.readMore}
-            >
-              <Text style={styles.readMoreText}>
-                {isExpanded ? 'Read less' : 'Read more'}
-              </Text>
+            <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)} style={styles.readMore}>
+              <Text style={styles.readMoreText}>{isExpanded ? 'Read less' : 'Read more'}</Text>
             </TouchableOpacity>
           )}
         </View>

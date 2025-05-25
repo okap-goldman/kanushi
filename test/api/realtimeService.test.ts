@@ -1,14 +1,14 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { RealtimeService } from '@/lib/realtimeService';
 import { supabase } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Supabase
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     channel: vi.fn(),
-    from: vi.fn()
-  }
+    from: vi.fn(),
+  },
 }));
 
 describe('Realtime Service', () => {
@@ -18,7 +18,7 @@ describe('Realtime Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     realtimeService = new RealtimeService();
-    
+
     // Create a mock channel
     mockChannel = {
       on: vi.fn().mockReturnThis(),
@@ -31,9 +31,9 @@ describe('Realtime Service', () => {
       unsubscribe: vi.fn().mockResolvedValue(undefined),
       send: vi.fn().mockResolvedValue({ status: 'ok' }),
       track: vi.fn().mockResolvedValue({ status: 'ok' }),
-      presenceState: vi.fn().mockReturnValue({})
+      presenceState: vi.fn().mockReturnValue({}),
     };
-    
+
     vi.mocked(supabase.channel).mockReturnValue(mockChannel);
   });
 
@@ -50,7 +50,7 @@ describe('Realtime Service', () => {
         onNewMessage: vi.fn(),
         onMessageRead: vi.fn(),
         onTyping: vi.fn(),
-        onPresenceChange: vi.fn()
+        onPresenceChange: vi.fn(),
       };
 
       // Act
@@ -62,9 +62,9 @@ describe('Realtime Service', () => {
         expect.objectContaining({
           config: {
             presence: {
-              key: userId
-            }
-          }
+              key: userId,
+            },
+          },
         })
       );
       expect(mockChannel.on).toHaveBeenCalledWith(
@@ -73,7 +73,7 @@ describe('Realtime Service', () => {
           event: 'INSERT',
           schema: 'public',
           table: 'direct_message',
-          filter: `thread_id=eq.${threadId}`
+          filter: `thread_id=eq.${threadId}`,
         }),
         expect.any(Function)
       );
@@ -89,7 +89,7 @@ describe('Realtime Service', () => {
         onNewMessage: vi.fn(),
         onMessageRead: vi.fn(),
         onTyping: vi.fn(),
-        onPresenceChange: vi.fn()
+        onPresenceChange: vi.fn(),
       };
 
       // Subscribe twice
@@ -109,7 +109,7 @@ describe('Realtime Service', () => {
         onNewMessage: vi.fn(),
         onMessageRead: vi.fn(),
         onTyping: vi.fn(),
-        onPresenceChange: vi.fn()
+        onPresenceChange: vi.fn(),
       };
 
       await realtimeService.subscribeToThread(threadId, userId, handlers);
@@ -131,14 +131,14 @@ describe('Realtime Service', () => {
         onNewMessage: vi.fn(),
         onMessageRead: vi.fn(),
         onTyping: vi.fn(),
-        onPresenceChange: vi.fn()
+        onPresenceChange: vi.fn(),
       };
 
       await realtimeService.subscribeToThread(threadId, userId, handlers);
 
       // Get the INSERT handler
       const insertCall = mockChannel.on.mock.calls.find(
-        call => call[0] === 'postgres_changes' && call[1].event === 'INSERT'
+        (call) => call[0] === 'postgres_changes' && call[1].event === 'INSERT'
       );
       const insertHandler = insertCall[2];
 
@@ -150,7 +150,7 @@ describe('Realtime Service', () => {
         message_type: 'text',
         text_content: 'Hello!',
         is_read: false,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       // Act
@@ -164,7 +164,7 @@ describe('Realtime Service', () => {
           senderId: 'user-456',
           messageType: 'text',
           content: 'Hello!',
-          isRead: false
+          isRead: false,
         })
       );
     });
@@ -177,25 +177,25 @@ describe('Realtime Service', () => {
         onNewMessage: vi.fn(),
         onMessageRead: vi.fn(),
         onTyping: vi.fn(),
-        onPresenceChange: vi.fn()
+        onPresenceChange: vi.fn(),
       };
 
       await realtimeService.subscribeToThread(threadId, userId, handlers);
 
       // Get the UPDATE handler
       const updateCall = mockChannel.on.mock.calls.find(
-        call => call[0] === 'postgres_changes' && call[1].event === 'UPDATE'
+        (call) => call[0] === 'postgres_changes' && call[1].event === 'UPDATE'
       );
       const updateHandler = updateCall[2];
 
       // Simulate read status update
       const updatedMessage = {
         id: 'msg-123',
-        is_read: true
+        is_read: true,
       };
       const oldMessage = {
         id: 'msg-123',
-        is_read: false
+        is_read: false,
       };
 
       // Act
@@ -215,7 +215,7 @@ describe('Realtime Service', () => {
         onNewMessage: vi.fn(),
         onMessageRead: vi.fn(),
         onTyping: vi.fn(),
-        onPresenceChange: vi.fn()
+        onPresenceChange: vi.fn(),
       };
 
       await realtimeService.subscribeToThread(threadId, userId, handlers);
@@ -227,7 +227,7 @@ describe('Realtime Service', () => {
       expect(mockChannel.send).toHaveBeenCalledWith({
         type: 'broadcast',
         event: 'typing',
-        payload: { userId, isTyping: true }
+        payload: { userId, isTyping: true },
       });
     });
 
@@ -239,20 +239,18 @@ describe('Realtime Service', () => {
         onNewMessage: vi.fn(),
         onMessageRead: vi.fn(),
         onTyping: vi.fn(),
-        onPresenceChange: vi.fn()
+        onPresenceChange: vi.fn(),
       };
 
       await realtimeService.subscribeToThread(threadId, userId, handlers);
 
       // Get the broadcast handler
-      const broadcastCall = mockChannel.on.mock.calls.find(
-        call => call[0] === 'broadcast'
-      );
+      const broadcastCall = mockChannel.on.mock.calls.find((call) => call[0] === 'broadcast');
       const broadcastHandler = broadcastCall[2];
 
       // Act
       broadcastHandler({
-        payload: { userId: 'user-456', isTyping: true }
+        payload: { userId: 'user-456', isTyping: true },
       });
 
       // Assert
@@ -269,7 +267,7 @@ describe('Realtime Service', () => {
         onNewMessage: vi.fn(),
         onMessageRead: vi.fn(),
         onTyping: vi.fn(),
-        onPresenceChange: vi.fn()
+        onPresenceChange: vi.fn(),
       };
 
       await realtimeService.subscribeToThread(threadId, userId, handlers);
@@ -280,7 +278,7 @@ describe('Realtime Service', () => {
       // Assert
       expect(mockChannel.track).toHaveBeenCalledWith({
         status: 'typing',
-        lastSeen: expect.any(String)
+        lastSeen: expect.any(String),
       });
     });
 
@@ -292,23 +290,23 @@ describe('Realtime Service', () => {
         onNewMessage: vi.fn(),
         onMessageRead: vi.fn(),
         onTyping: vi.fn(),
-        onPresenceChange: vi.fn()
+        onPresenceChange: vi.fn(),
       };
 
       await realtimeService.subscribeToThread(threadId, userId, handlers);
 
       // Get the presence handler
-      const presenceCall = mockChannel.on.mock.calls.find(
-        call => call[0] === 'presence'
-      );
+      const presenceCall = mockChannel.on.mock.calls.find((call) => call[0] === 'presence');
       const presenceHandler = presenceCall[2];
 
       // Mock presence state
       mockChannel.presenceState.mockReturnValue({
-        'user-456': [{
-          status: 'online',
-          lastSeen: new Date().toISOString()
-        }]
+        'user-456': [
+          {
+            status: 'online',
+            lastSeen: new Date().toISOString(),
+          },
+        ],
       });
 
       // Act
@@ -320,7 +318,7 @@ describe('Realtime Service', () => {
         expect.objectContaining({
           userId: 'user-456',
           status: 'online',
-          lastSeen: expect.any(Date)
+          lastSeen: expect.any(Date),
         })
       );
 
@@ -342,14 +340,14 @@ describe('Realtime Service', () => {
       const mockEq = vi.fn().mockReturnThis();
       const mockOr = vi.fn().mockReturnThis();
       const mockSingle = vi.fn().mockResolvedValue({
-        data: { id: 'thread-123', user1_id: userId, user2_id: 'user-456' }
+        data: { id: 'thread-123', user1_id: userId, user2_id: 'user-456' },
       });
 
       vi.mocked(supabase.from).mockReturnValue({
         select: mockSelect,
         eq: mockEq,
         or: mockOr,
-        single: mockSingle
+        single: mockSingle,
       } as any);
 
       // Act
@@ -362,7 +360,7 @@ describe('Realtime Service', () => {
         expect.objectContaining({
           event: 'INSERT',
           schema: 'public',
-          table: 'direct_message'
+          table: 'direct_message',
         }),
         expect.any(Function)
       );
@@ -377,7 +375,7 @@ describe('Realtime Service', () => {
         onNewMessage: vi.fn(),
         onMessageRead: vi.fn(),
         onTyping: vi.fn(),
-        onPresenceChange: vi.fn()
+        onPresenceChange: vi.fn(),
       };
 
       // Subscribe to multiple threads

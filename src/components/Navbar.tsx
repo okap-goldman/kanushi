@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, SafeAreaView } from 'react-native';
-import { Bell, MessageCircle } from 'lucide-react-native';
-import { useToast } from '@/hooks/use-toast';
 import { Avatar } from '@/components/ui/Avatar';
+import { useToast } from '@/hooks/use-toast';
+import { Bell, MessageCircle } from 'lucide-react-native';
+import React, { useState } from 'react';
+import {
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { UserAuthStatus } from './UserAuthStatus';
 
 export function Navbar() {
-  const { toast } = useToast();
+  const { toast: _ } = useToast(); // Keep the import but mark as unused
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
 
@@ -14,22 +22,16 @@ export function Navbar() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.navbar}>
         <Text style={styles.logo}>Kuripura</Text>
-        
+
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setShowNotifications(true)}
-          >
+          <TouchableOpacity style={styles.iconButton} onPress={() => setShowNotifications(true)}>
             <Bell size={20} color="#666" />
           </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setShowMessages(true)}
-          >
+
+          <TouchableOpacity style={styles.iconButton} onPress={() => setShowMessages(true)}>
             <MessageCircle size={20} color="#666" />
           </TouchableOpacity>
-          
+
           <UserAuthStatus />
         </View>
       </View>
@@ -52,7 +54,7 @@ export function Navbar() {
             <ScrollView style={styles.modalScroll}>
               {[1, 2, 3].map((i) => (
                 <TouchableOpacity key={i} style={styles.notificationItem}>
-                  <Avatar 
+                  <Avatar
                     source={{ uri: `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}` }}
                     style={styles.avatar}
                   />
@@ -87,7 +89,7 @@ export function Navbar() {
             <ScrollView style={styles.modalScroll}>
               {[1, 2, 3].map((i) => (
                 <TouchableOpacity key={i} style={styles.messageItem}>
-                  <Avatar 
+                  <Avatar
                     source={{ uri: `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}` }}
                     style={styles.avatar}
                   />

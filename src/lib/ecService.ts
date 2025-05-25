@@ -1,5 +1,5 @@
-import { supabase, uploadFile } from './supabase';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase, uploadFile } from './supabase';
 
 // Types for EC domain
 export interface Product {
@@ -187,14 +187,7 @@ export const getProducts = async (
   } = {}
 ): Promise<{ products: Product[]; next_page: number | null }> => {
   try {
-    const {
-      limit = 20,
-      page = 1,
-      seller_id,
-      search,
-      min_price,
-      max_price,
-    } = options;
+    const { limit = 20, page = 1, seller_id, search, min_price, max_price } = options;
 
     const offset = (page - 1) * limit;
 
@@ -236,20 +229,20 @@ export const getProducts = async (
     }
 
     // Format the response
-    const products = data.map(product => ({
+    const products = data.map((product) => ({
       ...product,
-      seller: product.profiles ? {
-        id: product.profiles.id,
-        display_name: product.profiles.display_name,
-        profile_image_url: product.profiles.avatar_url,
-      } : undefined,
+      seller: product.profiles
+        ? {
+            id: product.profiles.id,
+            display_name: product.profiles.display_name,
+            profile_image_url: product.profiles.avatar_url,
+          }
+        : undefined,
       profiles: undefined, // Remove the nested profiles to clean up response
     }));
 
     // Check if there's a next page
-    const { count } = await supabase
-      .from('products')
-      .select('*', { count: 'exact', head: true });
+    const { count } = await supabase.from('products').select('*', { count: 'exact', head: true });
 
     const next_page = offset + limit < (count || 0) ? page + 1 : null;
 
@@ -286,11 +279,13 @@ export const getProductById = async (id: string): Promise<Product> => {
     // Format the response
     const product: Product = {
       ...data,
-      seller: data.profiles ? {
-        id: data.profiles.id,
-        display_name: data.profiles.display_name,
-        profile_image_url: data.profiles.avatar_url,
-      } : undefined,
+      seller: data.profiles
+        ? {
+            id: data.profiles.id,
+            display_name: data.profiles.display_name,
+            profile_image_url: data.profiles.avatar_url,
+          }
+        : undefined,
     };
 
     // Remove the nested profiles to clean up response
@@ -387,7 +382,8 @@ export const updateProduct = async (input: UpdateProductInput): Promise<Product>
     // Update the product
     const updateData: Partial<Product> = {
       title: input.title !== undefined ? input.title : existingProduct.title,
-      description: input.description !== undefined ? input.description : existingProduct.description,
+      description:
+        input.description !== undefined ? input.description : existingProduct.description,
       price: input.price !== undefined ? input.price : existingProduct.price,
       currency: input.currency || existingProduct.currency,
       image_url: imageUrl,
@@ -450,10 +446,7 @@ export const deleteProduct = async (id: string): Promise<boolean> => {
     }
 
     // Delete the product
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('products').delete().eq('id', id);
 
     if (error) {
       throw error;
@@ -484,12 +477,7 @@ export const getOrders = async (
       throw new Error('ログインが必要です');
     }
 
-    const {
-      limit = 20,
-      page = 1,
-      status = 'all',
-      as_seller = false,
-    } = options;
+    const { limit = 20, page = 1, status = 'all', as_seller = false } = options;
 
     const offset = (page - 1) * limit;
 
@@ -517,19 +505,19 @@ export const getOrders = async (
 
     // Filter by user role (buyer or seller)
     let productIds: any[] | null = null;
-    
+
     if (as_seller) {
       // As a seller, get orders for products sold by the user
       // First get the product IDs for this seller
-      const { data } = await supabase
-        .from('products')
-        .select('id')
-        .eq('seller_user_id', userId);
-      
+      const { data } = await supabase.from('products').select('id').eq('seller_user_id', userId);
+
       productIds = data;
-      
+
       if (productIds && productIds.length > 0) {
-        query = query.in('product_id', productIds.map((p: any) => p.id));
+        query = query.in(
+          'product_id',
+          productIds.map((p: any) => p.id)
+        );
       } else {
         // No products, return empty result
         return { orders: [], next_page: null };
@@ -551,22 +539,28 @@ export const getOrders = async (
     }
 
     // Format the response
-    const orders = data.map(order => {
+    const orders = data.map((order) => {
       const formattedOrder: Order = {
         ...order,
-        product: order.product ? {
-          ...order.product,
-          seller: order.product.seller ? {
-            id: order.product.seller.id,
-            display_name: order.product.seller.display_name,
-            profile_image_url: order.product.seller.avatar_url,
-          } : undefined,
-        } : undefined,
-        buyer: order.buyer ? {
-          id: order.buyer.id,
-          display_name: order.buyer.display_name,
-          profile_image_url: order.buyer.avatar_url,
-        } : undefined,
+        product: order.product
+          ? {
+              ...order.product,
+              seller: order.product.seller
+                ? {
+                    id: order.product.seller.id,
+                    display_name: order.product.seller.display_name,
+                    profile_image_url: order.product.seller.avatar_url,
+                  }
+                : undefined,
+            }
+          : undefined,
+        buyer: order.buyer
+          ? {
+              id: order.buyer.id,
+              display_name: order.buyer.display_name,
+              profile_image_url: order.buyer.avatar_url,
+            }
+          : undefined,
       };
 
       // Remove nested properties to clean up response
@@ -574,27 +568,28 @@ export const getOrders = async (
         delete (formattedOrder.product as any).seller_user_id;
         delete (formattedOrder.product as any).seller;
       }
-      
+
       return formattedOrder;
     });
 
     // Check if there's a next page
-    let countQuery = supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true });
-      
+    let countQuery = supabase.from('orders').select('*', { count: 'exact', head: true });
+
     if (as_seller) {
       if (productIds && productIds.length > 0) {
-        countQuery = countQuery.in('product_id', productIds.map(p => p.id));
+        countQuery = countQuery.in(
+          'product_id',
+          productIds.map((p) => p.id)
+        );
       }
     } else {
       countQuery = countQuery.eq('buyer_user_id', userId);
     }
-    
+
     if (status !== 'all') {
       countQuery = countQuery.eq('status', status);
     }
-    
+
     const { count } = await countQuery;
 
     const next_page = offset + limit < (count || 0) ? page + 1 : null;
@@ -648,19 +643,25 @@ export const getOrderById = async (id: string): Promise<Order> => {
     // Format the response
     const order: Order = {
       ...data,
-      product: data.product ? {
-        ...data.product,
-        seller: data.product.seller ? {
-          id: data.product.seller.id,
-          display_name: data.product.seller.display_name,
-          profile_image_url: data.product.seller.avatar_url,
-        } : undefined,
-      } : undefined,
-      buyer: data.buyer ? {
-        id: data.buyer.id,
-        display_name: data.buyer.display_name,
-        profile_image_url: data.buyer.avatar_url,
-      } : undefined,
+      product: data.product
+        ? {
+            ...data.product,
+            seller: data.product.seller
+              ? {
+                  id: data.product.seller.id,
+                  display_name: data.product.seller.display_name,
+                  profile_image_url: data.product.seller.avatar_url,
+                }
+              : undefined,
+          }
+        : undefined,
+      buyer: data.buyer
+        ? {
+            id: data.buyer.id,
+            display_name: data.buyer.display_name,
+            profile_image_url: data.buyer.avatar_url,
+          }
+        : undefined,
     };
 
     // Remove nested properties to clean up response
@@ -827,7 +828,9 @@ export const getShippingAddresses = async (): Promise<ShippingAddress[]> => {
   }
 };
 
-export const createShippingAddress = async (input: CreateShippingAddressInput): Promise<ShippingAddress> => {
+export const createShippingAddress = async (
+  input: CreateShippingAddressInput
+): Promise<ShippingAddress> => {
   try {
     // Get current user session
     const { data: sessionData } = await supabase.auth.getSession();
@@ -906,7 +909,7 @@ export const processPayment = async (
     // Simulate payment processing
     // In a real app, this would create a Stripe payment intent and return checkout URL
     const paymentId = `sim_pay_${uuidv4()}`;
-    
+
     // Update order with payment ID
     const { error } = await supabase
       .from('orders')
@@ -922,16 +925,14 @@ export const processPayment = async (
     }
 
     // Create payment history record
-    await supabase
-      .from('payment_history')
-      .insert({
-        order_id: orderId,
-        payment_method: 'stripe',
-        transaction_id: paymentId,
-        amount: order.amount,
-        status: 'succeeded',
-        payment_date: new Date().toISOString(),
-      });
+    await supabase.from('payment_history').insert({
+      order_id: orderId,
+      payment_method: 'stripe',
+      transaction_id: paymentId,
+      amount: order.amount,
+      status: 'succeeded',
+      payment_date: new Date().toISOString(),
+    });
 
     return {
       success: true,
@@ -964,14 +965,14 @@ export const getSalesAnalytics = async (): Promise<{
       .from('products')
       .select('id')
       .eq('seller_user_id', userId);
-    
+
     if (!productIds || productIds.length === 0) {
       // No products, return empty analytics
       return {
         total_revenue: 0,
         total_orders: 0,
         total_sales: 0,
-        products_sold: []
+        products_sold: [],
       };
     }
 
@@ -985,7 +986,10 @@ export const getSalesAnalytics = async (): Promise<{
           title
         )
       `)
-      .in('product_id', productIds.map(p => p.id))
+      .in(
+        'product_id',
+        productIds.map((p) => p.id)
+      )
       .in('status', ['paid', 'shipped']);
 
     if (ordersError) {
@@ -997,12 +1001,15 @@ export const getSalesAnalytics = async (): Promise<{
     const total_revenue = orders.reduce((sum, order) => sum + order.amount, 0);
 
     // Group by product
-    const productMap = new Map<string, { id: string; title: string; quantity: number; revenue: number }>();
-    
-    orders.forEach(order => {
+    const productMap = new Map<
+      string,
+      { id: string; title: string; quantity: number; revenue: number }
+    >();
+
+    orders.forEach((order) => {
       const productId = order.product_id;
       const existingProduct = productMap.get(productId);
-      
+
       if (existingProduct) {
         existingProduct.quantity += order.quantity;
         existingProduct.revenue += order.amount;
@@ -1078,7 +1085,7 @@ export const getCart = async (): Promise<Cart> => {
     // Calculate total amount
     const items = data.cart_items || [];
     const totalAmount = items.reduce((sum: number, item: any) => {
-      return sum + (item.product.price * item.quantity);
+      return sum + item.product.price * item.quantity;
     }, 0);
 
     return {
@@ -1168,7 +1175,7 @@ export const addToCart = async (input: AddToCartInput): Promise<CartItem> => {
     if (existingItem) {
       // Update existing item quantity
       const newQuantity = existingItem.quantity + input.quantity;
-      
+
       if (product.stock < newQuantity) {
         throw new Error('在庫が不足しています');
       }
@@ -1206,8 +1213,8 @@ export const addToCart = async (input: AddToCartInput): Promise<CartItem> => {
     }
   } catch (error) {
     console.error('Error adding to cart:', error);
-    throw error instanceof Error && error.message.includes('在庫') 
-      ? error 
+    throw error instanceof Error && error.message.includes('在庫')
+      ? error
       : new Error('カートへの追加に失敗しました');
   }
 };
@@ -1273,8 +1280,8 @@ export const updateCartItem = async (input: UpdateCartItemInput): Promise<CartIt
     return updatedItem;
   } catch (error) {
     console.error('Error updating cart item:', error);
-    throw error instanceof Error && error.message.includes('在庫') 
-      ? error 
+    throw error instanceof Error && error.message.includes('在庫')
+      ? error
       : new Error('カートアイテムの更新に失敗しました');
   }
 };
@@ -1311,10 +1318,7 @@ export const removeFromCart = async (itemId: string): Promise<boolean> => {
     }
 
     // Delete item
-    const { error: deleteError } = await supabase
-      .from('cart_items')
-      .delete()
-      .eq('id', itemId);
+    const { error: deleteError } = await supabase.from('cart_items').delete().eq('id', itemId);
 
     if (deleteError) {
       throw deleteError;
@@ -1351,10 +1355,7 @@ export const clearCart = async (): Promise<boolean> => {
     }
 
     // Delete all items from cart
-    const { error } = await supabase
-      .from('cart_items')
-      .delete()
-      .eq('cart_id', cart.id);
+    const { error } = await supabase.from('cart_items').delete().eq('cart_id', cart.id);
 
     if (error) {
       throw error;
@@ -1420,7 +1421,7 @@ export const createCheckoutSession = async (
 
     // Calculate total amount
     const totalAmount = cart.cart_items.reduce((sum: number, item: any) => {
-      return sum + (item.product.price * item.quantity);
+      return sum + item.product.price * item.quantity;
     }, 0);
 
     // Create order
@@ -1442,16 +1443,15 @@ export const createCheckoutSession = async (
     }
 
     // Update cart status
-    await supabase
-      .from('carts')
-      .update({ status: 'checked_out' })
-      .eq('id', cart.id);
+    await supabase.from('carts').update({ status: 'checked_out' }).eq('id', cart.id);
 
     // Generate Stripe checkout URL (simulated)
-    const checkoutUrl = `https://checkout.stripe.com/c/pay/cs_test_${order.id}#${btoa(JSON.stringify({
-      success_url: 'https://example.com/success',
-      cancel_url: 'https://example.com/cancel',
-    }))}`;
+    const checkoutUrl = `https://checkout.stripe.com/c/pay/cs_test_${order.id}#${btoa(
+      JSON.stringify({
+        success_url: 'https://example.com/success',
+        cancel_url: 'https://example.com/cancel',
+      })
+    )}`;
 
     return {
       payment_url: checkoutUrl,
@@ -1464,10 +1464,7 @@ export const createCheckoutSession = async (
 };
 
 // Gift Services
-export const sendGiftToPost = async (
-  postId: string,
-  input: SendGiftInput
-): Promise<Gift> => {
+export const sendGiftToPost = async (postId: string, input: SendGiftInput): Promise<Gift> => {
   try {
     // Get current user session
     const { data: sessionData } = await supabase.auth.getSession();
@@ -1647,7 +1644,7 @@ export const getSellerDashboard = async (
     // Calculate date range based on period
     const now = new Date();
     let startDate: Date;
-    
+
     switch (period) {
       case 'daily':
         startDate = new Date(now.setDate(now.getDate() - 7));
@@ -1681,7 +1678,7 @@ export const getSellerDashboard = async (
       };
     }
 
-    const productIds = products.map(p => p.id);
+    const productIds = products.map((p) => p.id);
 
     // Get orders for the period
     const { data: orders } = await supabase
@@ -1707,14 +1704,20 @@ export const getSellerDashboard = async (
 
     // Calculate metrics
     const totalRevenue = (orders || []).reduce((sum, order) => sum + order.amount, 0);
-    const giftRevenue = (gifts || []).reduce((sum, gift) => sum + (gift.amount * (1 - gift.platform_fee_rate)), 0);
+    const giftRevenue = (gifts || []).reduce(
+      (sum, gift) => sum + gift.amount * (1 - gift.platform_fee_rate),
+      0
+    );
     const totalOrders = (orders || []).length;
     const totalProductsSold = (orders || []).reduce((sum, order) => sum + order.quantity, 0);
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     // Group by product for top products
-    const productMap = new Map<string, { id: string; title: string; quantity: number; revenue: number }>();
-    (orders || []).forEach(order => {
+    const productMap = new Map<
+      string,
+      { id: string; title: string; quantity: number; revenue: number }
+    >();
+    (orders || []).forEach((order) => {
       const existing = productMap.get(order.product_id);
       if (existing) {
         existing.quantity += order.quantity;

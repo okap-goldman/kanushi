@@ -1,5 +1,5 @@
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { MiniAudioPlayer } from '../../src/components/audio/MiniAudioPlayer';
 
 // Mock Audio player
@@ -24,14 +24,14 @@ jest.mock('../../src/hooks/useAudio', () => ({
     pause: mockAudio.pause,
     stop: mockAudio.stop,
     seek: mockAudio.seek,
-    setRate: mockAudio.setRate
-  })
+    setRate: mockAudio.setRate,
+  }),
 }));
 
 // Mock Expo Vector Icons
 jest.mock('@expo/vector-icons', () => ({
   Feather: 'Feather',
-  MaterialIcons: 'MaterialIcons'
+  MaterialIcons: 'MaterialIcons',
 }));
 
 describe('MiniAudioPlayer Component', () => {
@@ -40,7 +40,7 @@ describe('MiniAudioPlayer Component', () => {
     title: 'Test Audio',
     author: 'Test Author',
     waveformData: [0.1, 0.5, 0.8, 0.3, 0.6, 0.9, 0.2, 0.7],
-    onClose: jest.fn()
+    onClose: jest.fn(),
   };
 
   beforeEach(() => {
@@ -48,26 +48,20 @@ describe('MiniAudioPlayer Component', () => {
   });
 
   it('renders with correct title and author', () => {
-    const { getByText } = render(
-      <MiniAudioPlayer {...defaultProps} />
-    );
+    const { getByText } = render(<MiniAudioPlayer {...defaultProps} />);
 
     expect(getByText('Test Audio')).toBeTruthy();
     expect(getByText('Test Author')).toBeTruthy();
   });
 
   it('displays play button when audio is not playing', () => {
-    const { getByTestId } = render(
-      <MiniAudioPlayer {...defaultProps} />
-    );
+    const { getByTestId } = render(<MiniAudioPlayer {...defaultProps} />);
 
     expect(getByTestId('play-button')).toBeTruthy();
   });
 
   it('plays audio when play button is pressed', () => {
-    const { getByTestId } = render(
-      <MiniAudioPlayer {...defaultProps} />
-    );
+    const { getByTestId } = render(<MiniAudioPlayer {...defaultProps} />);
 
     const playButton = getByTestId('play-button');
     fireEvent.press(playButton);
@@ -88,13 +82,11 @@ describe('MiniAudioPlayer Component', () => {
         pause: mockAudio.pause,
         stop: mockAudio.stop,
         seek: mockAudio.seek,
-        setRate: mockAudio.setRate
-      })
+        setRate: mockAudio.setRate,
+      }),
     }));
 
-    const { getByTestId } = render(
-      <MiniAudioPlayer {...defaultProps} />
-    );
+    const { getByTestId } = render(<MiniAudioPlayer {...defaultProps} />);
 
     expect(getByTestId('pause-button')).toBeTruthy();
   });
@@ -112,13 +104,11 @@ describe('MiniAudioPlayer Component', () => {
         pause: mockAudio.pause,
         stop: mockAudio.stop,
         seek: mockAudio.seek,
-        setRate: mockAudio.setRate
-      })
+        setRate: mockAudio.setRate,
+      }),
     }));
 
-    const { getByTestId } = render(
-      <MiniAudioPlayer {...defaultProps} />
-    );
+    const { getByTestId } = render(<MiniAudioPlayer {...defaultProps} />);
 
     const pauseButton = getByTestId('pause-button');
     fireEvent.press(pauseButton);
@@ -127,30 +117,26 @@ describe('MiniAudioPlayer Component', () => {
   });
 
   it('displays waveform correctly', () => {
-    const { getByTestId } = render(
-      <MiniAudioPlayer {...defaultProps} />
-    );
+    const { getByTestId } = render(<MiniAudioPlayer {...defaultProps} />);
 
     expect(getByTestId('waveform-container')).toBeTruthy();
-    
+
     // Check that waveform bars are rendered
     const waveformBars = getByTestId('waveform-bars');
     expect(waveformBars).toBeTruthy();
   });
 
   it('seeks to position when waveform is tapped', () => {
-    const { getByTestId } = render(
-      <MiniAudioPlayer {...defaultProps} />
-    );
+    const { getByTestId } = render(<MiniAudioPlayer {...defaultProps} />);
 
     const waveform = getByTestId('waveform-container');
-    
+
     // Simulate tap at 50% position
     fireEvent.press(waveform, {
       nativeEvent: {
         locationX: 150, // Half of 300px width
-        target: { offsetWidth: 300 }
-      }
+        target: { offsetWidth: 300 },
+      },
     });
 
     // Should seek to 50% of duration (60 seconds)
@@ -158,9 +144,7 @@ describe('MiniAudioPlayer Component', () => {
   });
 
   it('displays current time and duration', () => {
-    const { getByText } = render(
-      <MiniAudioPlayer {...defaultProps} />
-    );
+    const { getByText } = render(<MiniAudioPlayer {...defaultProps} />);
 
     expect(getByText('0:30')).toBeTruthy(); // Current position
     expect(getByText('2:00')).toBeTruthy(); // Duration
@@ -168,9 +152,7 @@ describe('MiniAudioPlayer Component', () => {
 
   it('calls onClose when close button is pressed', () => {
     const mockOnClose = jest.fn();
-    const { getByTestId } = render(
-      <MiniAudioPlayer {...defaultProps} onClose={mockOnClose} />
-    );
+    const { getByTestId } = render(<MiniAudioPlayer {...defaultProps} onClose={mockOnClose} />);
 
     const closeButton = getByTestId('close-button');
     fireEvent.press(closeButton);
@@ -191,21 +173,17 @@ describe('MiniAudioPlayer Component', () => {
         pause: mockAudio.pause,
         stop: mockAudio.stop,
         seek: mockAudio.seek,
-        setRate: mockAudio.setRate
-      })
+        setRate: mockAudio.setRate,
+      }),
     }));
 
-    const { getByTestId } = render(
-      <MiniAudioPlayer {...defaultProps} />
-    );
+    const { getByTestId } = render(<MiniAudioPlayer {...defaultProps} />);
 
     expect(getByTestId('loading-indicator')).toBeTruthy();
   });
 
   it('supports playback rate control', () => {
-    const { getByTestId } = render(
-      <MiniAudioPlayer {...defaultProps} showPlaybackRate={true} />
-    );
+    const { getByTestId } = render(<MiniAudioPlayer {...defaultProps} showPlaybackRate={true} />);
 
     const rateButton = getByTestId('playback-rate-button');
     fireEvent.press(rateButton);
@@ -215,13 +193,11 @@ describe('MiniAudioPlayer Component', () => {
   });
 
   it('displays progress correctly on waveform', () => {
-    const { getByTestId } = render(
-      <MiniAudioPlayer {...defaultProps} />
-    );
+    const { getByTestId } = render(<MiniAudioPlayer {...defaultProps} />);
 
     const progressIndicator = getByTestId('waveform-progress');
     expect(progressIndicator).toBeTruthy();
-    
+
     // Progress should be 25% (30s / 120s)
     // This would be tested by checking the width style of the progress bar
   });
@@ -240,33 +216,29 @@ describe('MiniAudioPlayer Component', () => {
         pause: jest.fn(),
         stop: jest.fn(),
         seek: jest.fn(),
-        setRate: jest.fn()
-      })
+        setRate: jest.fn(),
+      }),
     }));
 
-    const { getByTestId, getByText } = render(
-      <MiniAudioPlayer {...defaultProps} />
-    );
+    const { getByTestId, getByText } = render(<MiniAudioPlayer {...defaultProps} />);
 
     expect(getByText('音声の読み込みに失敗しました')).toBeTruthy();
     expect(getByTestId('retry-button')).toBeTruthy();
   });
 
   it('can be minimized and expanded', () => {
-    const { getByTestId } = render(
-      <MiniAudioPlayer {...defaultProps} minimizable={true} />
-    );
+    const { getByTestId } = render(<MiniAudioPlayer {...defaultProps} minimizable={true} />);
 
     const minimizeButton = getByTestId('minimize-button');
     fireEvent.press(minimizeButton);
 
     // Should show minimized state
     expect(getByTestId('mini-player-minimized')).toBeTruthy();
-    
+
     // Click to expand again
     const miniPlayer = getByTestId('mini-player-minimized');
     fireEvent.press(miniPlayer);
-    
+
     expect(getByTestId('mini-player-expanded')).toBeTruthy();
   });
 });

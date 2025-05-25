@@ -1,12 +1,12 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { formatDistance } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Order } from '../../lib/ecService';
+import type React from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import type { Order } from '../../lib/ecService';
+import Card from '../ui/Card';
 import OrderStatusBadge from './OrderStatusBadge';
 import PriceDisplay from './PriceDisplay';
-import Card from '../ui/Card';
 
 interface OrderItemProps {
   order: Order;
@@ -17,7 +17,7 @@ const OrderItem: React.FC<OrderItemProps> = ({ order }) => {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
-    
+
     try {
       return formatDistance(new Date(dateString), new Date(), {
         addSuffix: true,
@@ -54,36 +54,31 @@ const OrderItem: React.FC<OrderItemProps> = ({ order }) => {
         </View>
         <OrderStatusBadge status={order.status} />
       </View>
-      
+
       <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
         <View style={styles.content}>
           {order.product?.image_url && (
             <View style={styles.imageContainer}>
-              <Image 
-                source={{ uri: order.product.image_url }} 
-                style={styles.productImage}
-              />
+              <Image source={{ uri: order.product.image_url }} style={styles.productImage} />
             </View>
           )}
-          
+
           <View style={styles.details}>
             <Text style={styles.productTitle} numberOfLines={2}>
               {order.product?.title || '商品名が取得できません'}
             </Text>
-            
+
             <View style={styles.row}>
-              <Text style={styles.quantity}>
-                数量: {order.quantity}
-              </Text>
+              <Text style={styles.quantity}>数量: {order.quantity}</Text>
               <PriceDisplay price={order.amount} size="sm" />
             </View>
-            
+
             {order.status === 'shipped' && order.tracking_number && (
               <Text style={styles.tracking}>
                 配送情報: {order.shipping_carrier || ''} {order.tracking_number}
               </Text>
             )}
-            
+
             <View style={styles.statusUpdate}>
               <Text style={styles.statusLabel}>ステータス更新: </Text>
               <Text style={styles.statusDate}>{getRelevantDate(order)}</Text>

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { stripeService } from '../../src/lib/stripeService';
 import Stripe from 'stripe';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { stripeService } from '../../src/lib/stripeService';
 
 // Stripeをモック
 vi.mock('stripe', () => {
@@ -8,32 +8,32 @@ vi.mock('stripe', () => {
     paymentIntents: {
       create: vi.fn(),
       confirm: vi.fn(),
-      retrieve: vi.fn()
+      retrieve: vi.fn(),
     },
     refunds: {
-      create: vi.fn()
+      create: vi.fn(),
     },
     paymentMethods: {
-      attach: vi.fn()
+      attach: vi.fn(),
     },
     customers: {
-      create: vi.fn()
+      create: vi.fn(),
     },
     webhooks: {
-      constructEvent: vi.fn()
-    }
+      constructEvent: vi.fn(),
+    },
   };
 
   return {
-    default: vi.fn(() => mockStripe)
+    default: vi.fn(() => mockStripe),
   };
 });
 
 // 環境変数をモック
 vi.mock('../../src/lib/env', () => ({
   env: {
-    STRIPE_SECRET_KEY: 'sk_test_mock_key'
-  }
+    STRIPE_SECRET_KEY: 'sk_test_mock_key',
+  },
 }));
 
 describe('StripeService', () => {
@@ -61,8 +61,8 @@ describe('StripeService', () => {
         metadata: {
           eventId: 'event-1',
           userId: 'user-1',
-          type: 'event_participation'
-        }
+          type: 'event_participation',
+        },
       };
 
       mockStripe.paymentIntents.create.mockResolvedValue(mockPaymentIntent);
@@ -72,8 +72,8 @@ describe('StripeService', () => {
         metadata: {
           eventId: 'event-1',
           userId: 'user-1',
-          type: 'event_participation'
-        }
+          type: 'event_participation',
+        },
       });
 
       expect(result.error).toBeNull();
@@ -84,17 +84,17 @@ describe('StripeService', () => {
         metadata: {
           eventId: 'event-1',
           userId: 'user-1',
-          type: 'event_participation'
+          type: 'event_participation',
         },
         automatic_payment_methods: {
-          enabled: true
-        }
+          enabled: true,
+        },
       });
     });
 
     it('50円未満の金額でエラー', async () => {
       const result = await stripeService.createPaymentIntent({
-        amount: 49
+        amount: 49,
       });
 
       expect(result.data).toBeNull();
@@ -107,7 +107,7 @@ describe('StripeService', () => {
       mockStripe.paymentIntents.create.mockRejectedValue(mockError);
 
       const result = await stripeService.createPaymentIntent({
-        amount: 5000
+        amount: 5000,
       });
 
       expect(result.data).toBeNull();
@@ -120,22 +120,21 @@ describe('StripeService', () => {
       const mockPaymentIntent = {
         id: 'pi_test_123',
         status: 'succeeded',
-        amount: 3000
+        amount: 3000,
       };
 
       mockStripe.paymentIntents.confirm.mockResolvedValue(mockPaymentIntent);
 
       const result = await stripeService.confirmPayment({
         paymentIntentId: 'pi_test_123',
-        paymentMethodId: 'pm_test_456'
+        paymentMethodId: 'pm_test_456',
       });
 
       expect(result.error).toBeNull();
       expect(result.data).toEqual(mockPaymentIntent);
-      expect(mockStripe.paymentIntents.confirm).toHaveBeenCalledWith(
-        'pi_test_123',
-        { payment_method: 'pm_test_456' }
-      );
+      expect(mockStripe.paymentIntents.confirm).toHaveBeenCalledWith('pi_test_123', {
+        payment_method: 'pm_test_456',
+      });
     });
   });
 
@@ -145,7 +144,7 @@ describe('StripeService', () => {
         id: 'pi_test_123',
         status: 'succeeded',
         amount: 3000,
-        metadata: { eventId: 'event-1' }
+        metadata: { eventId: 'event-1' },
       };
 
       mockStripe.paymentIntents.retrieve.mockResolvedValue(mockPaymentIntent);
@@ -164,14 +163,14 @@ describe('StripeService', () => {
         id: 're_test_123',
         amount: 3000,
         status: 'succeeded',
-        payment_intent: 'pi_test_123'
+        payment_intent: 'pi_test_123',
       };
 
       mockStripe.refunds.create.mockResolvedValue(mockRefund);
 
       const result = await stripeService.createRefund({
         paymentIntentId: 'pi_test_123',
-        reason: 'requested_by_customer'
+        reason: 'requested_by_customer',
       });
 
       expect(result.error).toBeNull();
@@ -179,7 +178,7 @@ describe('StripeService', () => {
       expect(mockStripe.refunds.create).toHaveBeenCalledWith({
         payment_intent: 'pi_test_123',
         amount: undefined,
-        reason: 'requested_by_customer'
+        reason: 'requested_by_customer',
       });
     });
 
@@ -187,7 +186,7 @@ describe('StripeService', () => {
       const mockRefund = {
         id: 're_test_123',
         amount: 1500,
-        status: 'succeeded'
+        status: 'succeeded',
       };
 
       mockStripe.refunds.create.mockResolvedValue(mockRefund);
@@ -195,7 +194,7 @@ describe('StripeService', () => {
       const result = await stripeService.createRefund({
         paymentIntentId: 'pi_test_123',
         amount: 1500,
-        reason: 'fraudulent'
+        reason: 'fraudulent',
       });
 
       expect(result.error).toBeNull();
@@ -203,7 +202,7 @@ describe('StripeService', () => {
       expect(mockStripe.refunds.create).toHaveBeenCalledWith({
         payment_intent: 'pi_test_123',
         amount: 1500,
-        reason: 'fraudulent'
+        reason: 'fraudulent',
       });
     });
   });
@@ -213,16 +212,12 @@ describe('StripeService', () => {
       const mockEvent = {
         id: 'evt_test_123',
         type: 'payment_intent.succeeded',
-        data: { object: { id: 'pi_test_123' } }
+        data: { object: { id: 'pi_test_123' } },
       };
 
       mockStripe.webhooks.constructEvent.mockReturnValue(mockEvent);
 
-      const result = stripeService.constructWebhookEvent(
-        'payload',
-        'signature',
-        'whsec_test'
-      );
+      const result = stripeService.constructWebhookEvent('payload', 'signature', 'whsec_test');
 
       expect(result).toEqual(mockEvent);
       expect(mockStripe.webhooks.constructEvent).toHaveBeenCalledWith(
@@ -252,21 +247,18 @@ describe('StripeService', () => {
       const mockCustomer = {
         id: 'cus_test_123',
         email: 'test@example.com',
-        metadata: { userId: 'user-1' }
+        metadata: { userId: 'user-1' },
       };
 
       mockStripe.customers.create.mockResolvedValue(mockCustomer);
 
-      const result = await stripeService.createCustomer(
-        'test@example.com',
-        { userId: 'user-1' }
-      );
+      const result = await stripeService.createCustomer('test@example.com', { userId: 'user-1' });
 
       expect(result.error).toBeNull();
       expect(result.data).toEqual(mockCustomer);
       expect(mockStripe.customers.create).toHaveBeenCalledWith({
         email: 'test@example.com',
-        metadata: { userId: 'user-1' }
+        metadata: { userId: 'user-1' },
       });
     });
   });

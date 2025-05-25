@@ -1,20 +1,20 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { createPostService, PostService } from '../../src/lib/postService';
-import type { PostCreateInput, PostUpdateInput, MediaType, TimelineType } from '../../src/lib/data';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { MediaType, PostCreateInput, PostUpdateInput, TimelineType } from '../../src/lib/data';
+import { PostService, createPostService } from '../../src/lib/postService';
 
 // Mock Supabase client
 const mockSupabaseClient = {
   from: vi.fn(),
   storage: {
-    from: vi.fn()
+    from: vi.fn(),
   },
   auth: {
-    getUser: vi.fn()
+    getUser: vi.fn(),
   },
-  rpc: vi.fn()
+  rpc: vi.fn(),
 };
 
-// Mock database client  
+// Mock database client
 const mockDb = {
   select: vi.fn(),
   insert: vi.fn(),
@@ -23,31 +23,31 @@ const mockDb = {
   query: {
     posts: {
       findMany: vi.fn(),
-      findFirst: vi.fn()
+      findFirst: vi.fn(),
     },
     hashtags: {
       findMany: vi.fn(),
-      findFirst: vi.fn()
+      findFirst: vi.fn(),
     },
     postHashtags: {
-      findMany: vi.fn()
+      findMany: vi.fn(),
     },
     likes: {
       findFirst: vi.fn(),
-      findMany: vi.fn()
+      findMany: vi.fn(),
     },
     comments: {
-      findMany: vi.fn()
+      findMany: vi.fn(),
     },
     highlights: {
-      findFirst: vi.fn()
+      findFirst: vi.fn(),
     },
     bookmarks: {
       findFirst: vi.fn(),
-      findMany: vi.fn()
-    }
+      findMany: vi.fn(),
+    },
   },
-  transaction: vi.fn()
+  transaction: vi.fn(),
 };
 
 describe('PostService - 投稿作成機能', () => {
@@ -71,7 +71,7 @@ describe('PostService - 投稿作成機能', () => {
         textContent: '目醒めの瞬間について語ります',
         mediaUrl: 'https://storage.b2.com/audio/123.mp3',
         durationSeconds: 300,
-        hashtags: ['#目醒め', '#瞑想']
+        hashtags: ['#目醒め', '#瞑想'],
       };
 
       const mockPostId = 'post-123';
@@ -90,48 +90,51 @@ describe('PostService - 投稿作成機能', () => {
         waveformUrl: null,
         youtubeVideoId: null,
         eventId: null,
-        groupId: null
+        groupId: null,
       };
 
       // Mock hashtag creation/lookup
       const mockHashtags = [
         { id: 'hashtag-1', name: '目醒め', useCount: 10 },
-        { id: 'hashtag-2', name: '瞑想', useCount: 5 }
+        { id: 'hashtag-2', name: '瞑想', useCount: 5 },
       ];
 
       mockDb.transaction.mockImplementation(async (callback) => {
         return await callback({
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockReturnValue({
-              returning: vi.fn().mockResolvedValue([mockCreatedPost])
-            })
+              returning: vi.fn().mockResolvedValue([mockCreatedPost]),
+            }),
           }),
           update: vi.fn().mockReturnValue({
             set: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue({})
-            })
+              where: vi.fn().mockResolvedValue({}),
+            }),
           }),
           query: {
             hashtags: {
-              findFirst: vi.fn()
+              findFirst: vi
+                .fn()
                 .mockResolvedValueOnce(mockHashtags[0])
-                .mockResolvedValueOnce(mockHashtags[1])
-            }
-          }
+                .mockResolvedValueOnce(mockHashtags[1]),
+            },
+          },
         });
       });
 
       const result = await postService.createPost(audioPostInput);
 
       expect(result.success).toBe(true);
-      expect(result.data).toEqual(expect.objectContaining({
-        id: mockPostId,
-        userId: mockUserId,
-        contentType: 'audio',
-        textContent: audioPostInput.textContent,
-        mediaUrl: audioPostInput.mediaUrl,
-        durationSeconds: 300
-      }));
+      expect(result.data).toEqual(
+        expect.objectContaining({
+          id: mockPostId,
+          userId: mockUserId,
+          contentType: 'audio',
+          textContent: audioPostInput.textContent,
+          mediaUrl: audioPostInput.mediaUrl,
+          durationSeconds: 300,
+        })
+      );
       expect(result.error).toBeNull();
     });
 
@@ -142,7 +145,7 @@ describe('PostService - 投稿作成機能', () => {
         textContent: '長時間の音声投稿',
         mediaUrl: 'https://storage.b2.com/audio/large.mp3',
         durationSeconds: 28801, // 8時間1秒 = 制限超過
-        hashtags: []
+        hashtags: [],
       };
 
       const result = await postService.createPost(largeAudioInput);
@@ -161,7 +164,7 @@ describe('PostService - 投稿作成機能', () => {
         mediaUrl: 'https://storage.b2.com/audio/workshop.mp3',
         durationSeconds: 1200,
         eventId: 'event-456',
-        hashtags: ['#ワークショップ']
+        hashtags: ['#ワークショップ'],
       };
 
       const mockCreatedPost = {
@@ -179,26 +182,28 @@ describe('PostService - 投稿作成機能', () => {
         previewUrl: null,
         waveformUrl: null,
         youtubeVideoId: null,
-        groupId: null
+        groupId: null,
       };
 
       mockDb.transaction.mockImplementation(async (callback) => {
         return await callback({
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockReturnValue({
-              returning: vi.fn().mockResolvedValue([mockCreatedPost])
-            })
+              returning: vi.fn().mockResolvedValue([mockCreatedPost]),
+            }),
           }),
           update: vi.fn().mockReturnValue({
             set: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue({})
-            })
+              where: vi.fn().mockResolvedValue({}),
+            }),
           }),
           query: {
             hashtags: {
-              findFirst: vi.fn().mockResolvedValue({ id: 'hashtag-3', name: 'ワークショップ', useCount: 1 })
-            }
-          }
+              findFirst: vi
+                .fn()
+                .mockResolvedValue({ id: 'hashtag-3', name: 'ワークショップ', useCount: 1 }),
+            },
+          },
         });
       });
 
@@ -218,7 +223,7 @@ describe('PostService - 投稿作成機能', () => {
         textContent: '美しい朝焼けの写真',
         mediaUrl: 'https://storage.b2.com/images/sunrise.jpg',
         previewUrl: 'https://storage.b2.com/images/sunrise_thumb.jpg',
-        hashtags: ['#朝焼け', '#自然']
+        hashtags: ['#朝焼け', '#自然'],
       };
 
       const mockCreatedPost = {
@@ -236,39 +241,42 @@ describe('PostService - 投稿作成機能', () => {
         waveformUrl: null,
         youtubeVideoId: null,
         eventId: null,
-        groupId: null
+        groupId: null,
       };
 
       mockDb.transaction.mockImplementation(async (callback) => {
         return await callback({
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockReturnValue({
-              returning: vi.fn().mockResolvedValue([mockCreatedPost])
-            })
+              returning: vi.fn().mockResolvedValue([mockCreatedPost]),
+            }),
           }),
           update: vi.fn().mockReturnValue({
             set: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue({})
-            })
+              where: vi.fn().mockResolvedValue({}),
+            }),
           }),
           query: {
             hashtags: {
-              findFirst: vi.fn()
+              findFirst: vi
+                .fn()
                 .mockResolvedValueOnce({ id: 'hashtag-4', name: '朝焼け', useCount: 3 })
-                .mockResolvedValueOnce({ id: 'hashtag-5', name: '自然', useCount: 8 })
-            }
-          }
+                .mockResolvedValueOnce({ id: 'hashtag-5', name: '自然', useCount: 8 }),
+            },
+          },
         });
       });
 
       const result = await postService.createPost(imagePostInput);
 
       expect(result.success).toBe(true);
-      expect(result.data).toEqual(expect.objectContaining({
-        contentType: 'image',
-        mediaUrl: imagePostInput.mediaUrl,
-        previewUrl: imagePostInput.previewUrl
-      }));
+      expect(result.data).toEqual(
+        expect.objectContaining({
+          contentType: 'image',
+          mediaUrl: imagePostInput.mediaUrl,
+          previewUrl: imagePostInput.previewUrl,
+        })
+      );
       expect(result.error).toBeNull();
     });
   });
@@ -278,8 +286,9 @@ describe('PostService - 投稿作成機能', () => {
       const textPostInput: PostCreateInput = {
         userId: mockUserId,
         contentType: 'text' as MediaType,
-        textContent: '今日の気づきをシェアします。自分の内なる声に耳を傾けることの大切さを改めて感じました。',
-        hashtags: ['#気づき', '#内観']
+        textContent:
+          '今日の気づきをシェアします。自分の内なる声に耳を傾けることの大切さを改めて感じました。',
+        hashtags: ['#気づき', '#内観'],
       };
 
       const mockCreatedPost = {
@@ -297,28 +306,29 @@ describe('PostService - 投稿作成機能', () => {
         youtubeVideoId: null,
         eventId: null,
         groupId: null,
-        aiMetadata: null
+        aiMetadata: null,
       };
 
       mockDb.transaction.mockImplementation(async (callback) => {
         return await callback({
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockReturnValue({
-              returning: vi.fn().mockResolvedValue([mockCreatedPost])
-            })
+              returning: vi.fn().mockResolvedValue([mockCreatedPost]),
+            }),
           }),
           update: vi.fn().mockReturnValue({
             set: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue({})
-            })
+              where: vi.fn().mockResolvedValue({}),
+            }),
           }),
           query: {
             hashtags: {
-              findFirst: vi.fn()
+              findFirst: vi
+                .fn()
                 .mockResolvedValueOnce({ id: 'hashtag-6', name: '気づき', useCount: 15 })
-                .mockResolvedValueOnce({ id: 'hashtag-7', name: '内観', useCount: 12 })
-            }
-          }
+                .mockResolvedValueOnce({ id: 'hashtag-7', name: '内観', useCount: 12 }),
+            },
+          },
         });
       });
 
@@ -336,7 +346,7 @@ describe('PostService - 投稿作成機能', () => {
         userId: mockUserId,
         contentType: 'text' as MediaType,
         textContent: longText,
-        hashtags: []
+        hashtags: [],
       };
 
       const mockCreatedPost = {
@@ -354,16 +364,16 @@ describe('PostService - 投稿作成機能', () => {
         youtubeVideoId: null,
         eventId: null,
         groupId: null,
-        aiMetadata: null
+        aiMetadata: null,
       };
 
       mockDb.transaction.mockImplementation(async (callback) => {
         return await callback({
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockReturnValue({
-              returning: vi.fn().mockResolvedValue([mockCreatedPost])
-            })
-          })
+              returning: vi.fn().mockResolvedValue([mockCreatedPost]),
+            }),
+          }),
         });
       });
 
@@ -381,7 +391,7 @@ describe('PostService - 投稿作成機能', () => {
         userId: mockUserId,
         contentType: 'text' as MediaType,
         textContent: tooLongText,
-        hashtags: []
+        hashtags: [],
       };
 
       const result = await postService.createPost(invalidTextInput);
@@ -397,7 +407,7 @@ describe('PostService - 投稿作成機能', () => {
         userId: mockUserId,
         contentType: 'text' as MediaType,
         textContent: 'ハッシュタグのテスト投稿',
-        hashtags: ['#テスト', '#投稿', '#ハッシュタグ', '#機能', '#確認']
+        hashtags: ['#テスト', '#投稿', '#ハッシュタグ', '#機能', '#確認'],
       };
 
       const mockHashtags = [
@@ -405,7 +415,7 @@ describe('PostService - 投稿作成機能', () => {
         { id: 'h2', name: '投稿', useCount: 1 },
         { id: 'h3', name: 'ハッシュタグ', useCount: 1 },
         { id: 'h4', name: '機能', useCount: 1 },
-        { id: 'h5', name: '確認', useCount: 1 }
+        { id: 'h5', name: '確認', useCount: 1 },
       ];
 
       const mockCreatedPost = {
@@ -423,31 +433,32 @@ describe('PostService - 投稿作成機能', () => {
         youtubeVideoId: null,
         eventId: null,
         groupId: null,
-        aiMetadata: null
+        aiMetadata: null,
       };
 
       mockDb.transaction.mockImplementation(async (callback) => {
         return await callback({
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockReturnValue({
-              returning: vi.fn().mockResolvedValue([mockCreatedPost])
-            })
+              returning: vi.fn().mockResolvedValue([mockCreatedPost]),
+            }),
           }),
           update: vi.fn().mockReturnValue({
             set: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue({})
-            })
+              where: vi.fn().mockResolvedValue({}),
+            }),
           }),
           query: {
             hashtags: {
-              findFirst: vi.fn()
+              findFirst: vi
+                .fn()
                 .mockResolvedValueOnce(mockHashtags[0])
                 .mockResolvedValueOnce(mockHashtags[1])
                 .mockResolvedValueOnce(mockHashtags[2])
                 .mockResolvedValueOnce(mockHashtags[3])
-                .mockResolvedValueOnce(mockHashtags[4])
-            }
-          }
+                .mockResolvedValueOnce(mockHashtags[4]),
+            },
+          },
         });
       });
 
@@ -463,7 +474,7 @@ describe('PostService - 投稿作成機能', () => {
         userId: mockUserId,
         contentType: 'text' as MediaType,
         textContent: '過多なハッシュタグのテスト',
-        hashtags: ['#1', '#2', '#3', '#4', '#5', '#6']
+        hashtags: ['#1', '#2', '#3', '#4', '#5', '#6'],
       };
 
       const result = await postService.createPost(tooManyHashtagsInput);
@@ -483,14 +494,14 @@ describe('PostService - 投稿作成機能', () => {
         userId: mockUserId,
         contentType: 'text',
         textContent: '削除予定の投稿',
-        deletedAt: null
+        deletedAt: null,
       };
 
       mockDb.query.posts.findFirst.mockResolvedValue(mockPost);
       mockDb.update.mockReturnValue({
         set: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue({ rowCount: 1 })
-        })
+          where: vi.fn().mockResolvedValue({ rowCount: 1 }),
+        }),
       });
 
       const result = await postService.deletePost(postId, mockUserId);
@@ -508,7 +519,7 @@ describe('PostService - 投稿作成機能', () => {
         userId: otherUserId,
         contentType: 'text',
         textContent: '他人の投稿',
-        deletedAt: null
+        deletedAt: null,
       };
 
       mockDb.query.posts.findFirst.mockResolvedValue(mockPost);
@@ -550,7 +561,7 @@ describe('PostService - 投稿アクション機能', () => {
     it('投稿にいいねを追加できること', async () => {
       mockDb.query.likes.findFirst.mockResolvedValue(null); // いいね未済
       mockDb.insert.mockReturnValue({
-        values: vi.fn().mockResolvedValue({})
+        values: vi.fn().mockResolvedValue({}),
       });
 
       const result = await postService.addLike(mockPostId, mockUserId);
@@ -565,7 +576,7 @@ describe('PostService - 投稿アクション機能', () => {
         id: 'like-123',
         postId: mockPostId,
         userId: mockUserId,
-        createdAt: new Date()
+        createdAt: new Date(),
       };
 
       mockDb.query.likes.findFirst.mockResolvedValue(existingLike);
@@ -583,12 +594,12 @@ describe('PostService - 投稿アクション機能', () => {
         id: 'like-123',
         postId: mockPostId,
         userId: mockUserId,
-        createdAt: new Date()
+        createdAt: new Date(),
       };
 
       mockDb.query.likes.findFirst.mockResolvedValue(existingLike);
       mockDb.delete.mockReturnValue({
-        where: vi.fn().mockResolvedValue({ rowCount: 1 })
+        where: vi.fn().mockResolvedValue({ rowCount: 1 }),
       });
 
       const result = await postService.removeLike(mockPostId, mockUserId);
@@ -613,10 +624,10 @@ describe('PostService - 投稿アクション機能', () => {
   describe('ハイライト機能', () => {
     it('理由付きでハイライトが正常に追加されること', async () => {
       const reason = 'とても感動しました';
-      
+
       mockDb.query.highlights.findFirst.mockResolvedValue(null);
       mockDb.insert.mockReturnValue({
-        values: vi.fn().mockResolvedValue({})
+        values: vi.fn().mockResolvedValue({}),
       });
 
       const result = await postService.addHighlight(mockPostId, mockUserId, reason);
@@ -641,7 +652,7 @@ describe('PostService - 投稿アクション機能', () => {
         postId: mockPostId,
         userId: mockUserId,
         reason: '既存のハイライト',
-        createdAt: new Date()
+        createdAt: new Date(),
       };
 
       mockDb.query.highlights.findFirst.mockResolvedValue(existingHighlight);
@@ -663,23 +674,25 @@ describe('PostService - 投稿アクション機能', () => {
         postId: mockPostId,
         userId: mockUserId,
         body: commentText,
-        createdAt: new Date()
+        createdAt: new Date(),
       };
 
       mockDb.insert.mockReturnValue({
         values: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([mockComment])
-        })
+          returning: vi.fn().mockResolvedValue([mockComment]),
+        }),
       });
 
       const result = await postService.addComment(mockPostId, mockUserId, commentText);
 
       expect(result.success).toBe(true);
-      expect(result.data).toEqual(expect.objectContaining({
-        body: commentText,
-        postId: mockPostId,
-        userId: mockUserId
-      }));
+      expect(result.data).toEqual(
+        expect.objectContaining({
+          body: commentText,
+          postId: mockPostId,
+          userId: mockUserId,
+        })
+      );
       expect(result.error).toBeNull();
     });
 
@@ -699,15 +712,15 @@ describe('PostService - 投稿アクション機能', () => {
           postId: mockPostId,
           userId: 'user-1',
           body: 'First comment',
-          createdAt: new Date('2024-01-01')
+          createdAt: new Date('2024-01-01'),
         },
         {
           id: 'comment-2',
           postId: mockPostId,
           userId: 'user-2',
           body: 'Second comment',
-          createdAt: new Date('2024-01-02')
-        }
+          createdAt: new Date('2024-01-02'),
+        },
       ];
 
       mockDb.query.comments.findMany.mockResolvedValue(mockComments);
@@ -726,7 +739,7 @@ describe('PostService - 投稿アクション機能', () => {
     it('投稿をブックマークに追加できること', async () => {
       mockDb.query.bookmarks.findFirst.mockResolvedValue(null);
       mockDb.insert.mockReturnValue({
-        values: vi.fn().mockResolvedValue({})
+        values: vi.fn().mockResolvedValue({}),
       });
 
       const result = await postService.addBookmark(mockPostId, mockUserId);
@@ -741,12 +754,12 @@ describe('PostService - 投稿アクション機能', () => {
         id: 'bookmark-123',
         postId: mockPostId,
         userId: mockUserId,
-        createdAt: new Date()
+        createdAt: new Date(),
       };
 
       mockDb.query.bookmarks.findFirst.mockResolvedValue(existingBookmark);
       mockDb.delete.mockReturnValue({
-        where: vi.fn().mockResolvedValue({ rowCount: 1 })
+        where: vi.fn().mockResolvedValue({ rowCount: 1 }),
       });
 
       const result = await postService.removeBookmark(mockPostId, mockUserId);
@@ -762,14 +775,14 @@ describe('PostService - 投稿アクション機能', () => {
           id: 'bookmark-1',
           postId: 'post-1',
           userId: mockUserId,
-          createdAt: new Date('2024-01-01')
+          createdAt: new Date('2024-01-01'),
         },
         {
           id: 'bookmark-2',
           postId: 'post-2',
           userId: mockUserId,
-          createdAt: new Date('2024-01-02')
-        }
+          createdAt: new Date('2024-01-02'),
+        },
       ];
 
       mockDb.query.bookmarks.findMany.mockResolvedValue(mockBookmarks);

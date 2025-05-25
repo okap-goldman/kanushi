@@ -1,125 +1,145 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { 
-  likePost, 
-  unlikePost, 
-  addComment, 
+import {
+  addComment,
   deleteComment,
+  getPostEngagement,
   highlightPost,
-  getPostEngagement 
+  likePost,
+  unlikePost,
 } from '@/lib/postService';
 import { supabase } from '@/lib/supabase';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Supabaseモックの設定
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
-      getUser: vi.fn(() => Promise.resolve({
-        data: { user: { id: 'current-user-id' } },
-        error: null,
-      })),
+      getUser: vi.fn(() =>
+        Promise.resolve({
+          data: { user: { id: 'current-user-id' } },
+          error: null,
+        })
+      ),
     },
     from: vi.fn((table: string) => {
       switch (table) {
         case 'post_likes':
           return {
-            insert: vi.fn(() => Promise.resolve({
-              data: { post_id: 'post-1', user_id: 'current-user-id' },
-              error: null,
-            })),
-            delete: vi.fn(() => ({
-              match: vi.fn(() => Promise.resolve({
+            insert: vi.fn(() =>
+              Promise.resolve({
+                data: { post_id: 'post-1', user_id: 'current-user-id' },
                 error: null,
-              })),
+              })
+            ),
+            delete: vi.fn(() => ({
+              match: vi.fn(() =>
+                Promise.resolve({
+                  error: null,
+                })
+              ),
             })),
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
-                single: vi.fn(() => Promise.resolve({
-                  data: { post_id: 'post-1', user_id: 'current-user-id' },
-                  error: null,
-                })),
+                single: vi.fn(() =>
+                  Promise.resolve({
+                    data: { post_id: 'post-1', user_id: 'current-user-id' },
+                    error: null,
+                  })
+                ),
               })),
             })),
           };
-        
+
         case 'comments':
           return {
             insert: vi.fn(() => ({
               select: vi.fn(() => ({
-                single: vi.fn(() => Promise.resolve({
-                  data: {
-                    id: 'comment-1',
-                    post_id: 'post-1',
-                    user_id: 'current-user-id',
-                    content: 'Great post!',
-                    created_at: new Date().toISOString(),
-                  },
-                  error: null,
-                })),
+                single: vi.fn(() =>
+                  Promise.resolve({
+                    data: {
+                      id: 'comment-1',
+                      post_id: 'post-1',
+                      user_id: 'current-user-id',
+                      content: 'Great post!',
+                      created_at: new Date().toISOString(),
+                    },
+                    error: null,
+                  })
+                ),
               })),
             })),
             delete: vi.fn(() => ({
-              eq: vi.fn(() => Promise.resolve({
-                error: null,
-              })),
+              eq: vi.fn(() =>
+                Promise.resolve({
+                  error: null,
+                })
+              ),
             })),
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
-                order: vi.fn(() => Promise.resolve({
-                  data: [
-                    {
-                      id: 'comment-1',
-                      content: 'Great post!',
-                      user: { displayName: 'User 1' },
-                      created_at: '2024-01-01T10:00:00Z',
-                    },
-                    {
-                      id: 'comment-2',
-                      content: 'Thanks for sharing',
-                      user: { displayName: 'User 2' },
-                      created_at: '2024-01-01T11:00:00Z',
-                    },
-                  ],
-                  error: null,
-                })),
+                order: vi.fn(() =>
+                  Promise.resolve({
+                    data: [
+                      {
+                        id: 'comment-1',
+                        content: 'Great post!',
+                        user: { displayName: 'User 1' },
+                        created_at: '2024-01-01T10:00:00Z',
+                      },
+                      {
+                        id: 'comment-2',
+                        content: 'Thanks for sharing',
+                        user: { displayName: 'User 2' },
+                        created_at: '2024-01-01T11:00:00Z',
+                      },
+                    ],
+                    error: null,
+                  })
+                ),
               })),
             })),
           };
-        
+
         case 'post_highlights':
           return {
-            insert: vi.fn(() => Promise.resolve({
-              data: {
-                post_id: 'post-1',
-                user_id: 'current-user-id',
-                reason: '深い洞察を含んでいる',
-              },
-              error: null,
-            })),
+            insert: vi.fn(() =>
+              Promise.resolve({
+                data: {
+                  post_id: 'post-1',
+                  user_id: 'current-user-id',
+                  reason: '深い洞察を含んでいる',
+                },
+                error: null,
+              })
+            ),
           };
-        
+
         case 'posts':
           return {
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
-                single: vi.fn(() => Promise.resolve({
-                  data: {
-                    id: 'post-1',
-                    likes_count: 10,
-                    comments_count: 5,
-                    highlights_count: 2,
-                  },
-                  error: null,
-                })),
+                single: vi.fn(() =>
+                  Promise.resolve({
+                    data: {
+                      id: 'post-1',
+                      likes_count: 10,
+                      comments_count: 5,
+                      highlights_count: 2,
+                    },
+                    error: null,
+                  })
+                ),
               })),
             })),
             update: vi.fn(() => ({
-              eq: vi.fn(() => Promise.resolve({
-                data: { likes_count: 11 },
-                error: null,
-              })),
+              eq: vi.fn(() =>
+                Promise.resolve({
+                  data: { likes_count: 11 },
+                  error: null,
+                })
+              ),
             })),
           };
-        
+
         default:
           return {};
       }
@@ -267,9 +287,7 @@ describe('いいね・コメント連携統合テスト', () => {
 
       // 2. ハイライトテーブルに挿入されることを確認
       expect(supabase.from).toHaveBeenCalledWith('post_highlights');
-      const mockInsert = (supabase.from as any).mock.results.find(
-        (r: any) => r.value.insert
-      );
+      const mockInsert = (supabase.from as any).mock.results.find((r: any) => r.value.insert);
       expect(mockInsert).toBeDefined();
 
       // 3. 理由が保存されることを確認
@@ -360,9 +378,7 @@ describe('いいね・コメント連携統合テスト', () => {
       const startTime = Date.now();
 
       // 100件のいいねをシミュレート
-      const likePromises = Array.from({ length: 100 }, (_, i) => 
-        likePost(postId, `user-${i}`)
-      );
+      const likePromises = Array.from({ length: 100 }, (_, i) => likePost(postId, `user-${i}`));
 
       await Promise.all(likePromises);
 

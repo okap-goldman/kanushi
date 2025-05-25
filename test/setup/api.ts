@@ -84,7 +84,7 @@ vi.mock('@supabase/supabase-js', () => ({
       explain: vi.fn().mockResolvedValue({ data: '', error: null }),
       rollback: vi.fn().mockResolvedValue({ data: null, error: null }),
       returns: vi.fn().mockReturnThis(),
-      then: vi.fn().mockResolvedValue({ data: [], error: null })
+      then: vi.fn().mockResolvedValue({ data: [], error: null }),
     })),
   })),
 }));

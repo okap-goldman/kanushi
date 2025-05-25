@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { createTestUser } from '../setup/integration';
 
 // Mock services
@@ -10,11 +10,11 @@ jest.mock('@/services/liveRoomService', () => ({
       id: 'room-123',
       title: '目醒めトーク',
       hostUser: { id: 'host-id', displayName: 'ホスト' },
-      status: 'active'
-    }
+      status: 'active',
+    },
   }),
   endRoom: jest.fn().mockResolvedValue({}),
-  leaveRoom: jest.fn().mockResolvedValue({})
+  leaveRoom: jest.fn().mockResolvedValue({}),
 }));
 
 // Mock LiveKit SDK
@@ -24,37 +24,37 @@ jest.mock('@livekit/react-native', () => ({
     disconnect: jest.fn(),
     localParticipant: {
       publishTrack: jest.fn().mockResolvedValue({}),
-      setMicrophoneEnabled: jest.fn().mockResolvedValue(true)
+      setMicrophoneEnabled: jest.fn().mockResolvedValue(true),
     },
     participants: new Map(),
-    createLocalTracks: jest.fn().mockResolvedValue([])
+    createLocalTracks: jest.fn().mockResolvedValue([]),
   })),
   RoomEvent: {
     ParticipantConnected: 'participantConnected',
     ParticipantDisconnected: 'participantDisconnected',
     TrackSubscribed: 'trackSubscribed',
-    TrackUnsubscribed: 'trackUnsubscribed'
-  }
+    TrackUnsubscribed: 'trackUnsubscribed',
+  },
 }));
 
 describe('WebRTC Integration Flow', () => {
   test('ルーム作成から入室、WebRTC接続までの全体フロー', async () => {
     // Given
     const hostUser = await createTestUser({
-      displayName: 'ホストユーザー'
+      displayName: 'ホストユーザー',
     });
-    
+
     // 1. ルーム作成ダイアログを開く
     render(<CreateLiveRoomButton onRoomCreated={jest.fn()} />);
-    
+
     await act(() => {
       fireEvent.press(screen.getByText('ライブルームを作成'));
     });
-    
+
     await waitFor(() => {
       expect(screen.getByText('ライブルーム作成')).toBeVisible();
     });
-    
+
     // 2. ルーム情報を入力して作成
     await act(() => {
       fireEvent.changeText(
@@ -62,51 +62,49 @@ describe('WebRTC Integration Flow', () => {
         '目醒めトーク'
       );
     });
-    
+
     await act(() => {
       fireEvent.press(screen.getByText('作成'));
     });
-    
+
     // 3. ルームが作成され、LiveKitのトークンが取得される
     await waitFor(() => {
       expect(require('@/services/liveRoomService').createRoom).toHaveBeenCalledWith({
         title: '目醒めトーク',
         maxSpeakers: 5, // デフォルト値
-        isRecording: false // デフォルト値
+        isRecording: false, // デフォルト値
       });
     });
-    
+
     // 4. LiveRoomScreenコンポーネントがレンダリングされる
-    render(<LiveRoomScreen 
-      roomId="room-123"
-      userId={hostUser.id}
-      role="host"
-      onRoomEnded={jest.fn()}
-    />);
-    
+    render(
+      <LiveRoomScreen roomId="room-123" userId={hostUser.id} role="host" onRoomEnded={jest.fn()} />
+    );
+
     // 5. LiveKitのRoomに接続される
     await waitFor(() => {
       expect(require('@livekit/react-native').Room().connect).toHaveBeenCalledWith(
-        'https://livekit.kanushi.app', 
+        'https://livekit.kanushi.app',
         'mock-token'
       );
     });
-    
+
     // 6. マイク権限リクエストが表示される
     await waitFor(() => {
       expect(screen.getByText('マイクへのアクセスを許可してください')).toBeVisible();
     });
-    
+
     // 7. 許可を与えると、マイクが有効化される
     await act(() => {
       fireEvent.press(screen.getByText('許可する'));
     });
-    
+
     await waitFor(() => {
-      expect(require('@livekit/react-native').Room().localParticipant.publishTrack)
-        .toHaveBeenCalledWith('microphone', { enabled: true });
+      expect(
+        require('@livekit/react-native').Room().localParticipant.publishTrack
+      ).toHaveBeenCalledWith('microphone', { enabled: true });
     });
-    
+
     // 8. ルーム画面が完全に表示される
     await waitFor(() => {
       expect(screen.getByText('目醒めトーク')).toBeVisible();
@@ -121,7 +119,7 @@ describe('Realtime Chat Integration', () => {
     // Given
     const user1 = await createTestUser({ displayName: 'ユーザー1' });
     const user2 = await createTestUser({ displayName: 'ユーザー2' });
-    
+
     // Mock chat service
     const mockChatService = {
       sendChatMessage: jest.fn().mockResolvedValue({}),
@@ -132,44 +130,41 @@ describe('Realtime Chat Integration', () => {
             userId: user2.id,
             userName: 'ユーザー2',
             content: 'こんにちは！',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
         }, 100);
-        
+
         return { unsubscribe: jest.fn() };
-      })
+      }),
     };
-    
+
     jest.mock('@/services/chatService', () => mockChatService);
-    
+
     // 1. ルームに入室
-    render(<LiveRoomScreen 
-      roomId="room-123"
-      userId={user1.id}
-      role="listener"
-      onLeaveRoom={jest.fn()}
-    />);
-    
+    render(
+      <LiveRoomScreen roomId="room-123" userId={user1.id} role="listener" onLeaveRoom={jest.fn()} />
+    );
+
     // 2. チャットタブをアクティブにする
     await waitFor(() => {
       expect(screen.getByText('チャット')).toBeVisible();
     });
-    
+
     await act(() => {
       fireEvent.press(screen.getByText('チャット'));
     });
-    
+
     // 3. チャットコンポーネントが表示される
     await waitFor(() => {
       expect(screen.getByPlaceholderText('メッセージを入力...')).toBeVisible();
     });
-    
+
     // 4. リアルタイムメッセージを受信
     await waitFor(() => {
       expect(screen.getByText('ユーザー2')).toBeVisible();
       expect(screen.getByText('こんにちは！')).toBeVisible();
     });
-    
+
     // 5. メッセージを送信
     await act(() => {
       fireEvent.changeText(
@@ -177,11 +172,11 @@ describe('Realtime Chat Integration', () => {
         'こんにちは、よろしくお願いします！'
       );
     });
-    
+
     await act(() => {
       fireEvent.press(screen.getByTestId('send-button'));
     });
-    
+
     // 6. 送信APIが呼ばれる
     await waitFor(() => {
       expect(mockChatService.sendChatMessage).toHaveBeenCalledWith(
@@ -191,7 +186,7 @@ describe('Realtime Chat Integration', () => {
         'こんにちは、よろしくお願いします！'
       );
     });
-    
+
     // 7. 入力フィールドがクリアされる
     await waitFor(() => {
       expect(screen.getByPlaceholderText('メッセージを入力...')).toHaveProp('value', '');

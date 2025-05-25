@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextInput, TextInputProps, StyleSheet } from 'react-native';
+import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
 
 interface TextareaProps extends TextInputProps {
   disabled?: boolean;
@@ -10,11 +10,7 @@ export function Textarea({ disabled, style, ...props }: TextareaProps) {
     <TextInput
       multiline
       textAlignVertical="top"
-      style={[
-        styles.textarea,
-        disabled && styles.disabled,
-        style
-      ]}
+      style={[styles.textarea, disabled && styles.disabled, style]}
       editable={!disabled}
       {...props}
     />

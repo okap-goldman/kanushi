@@ -1,18 +1,18 @@
+import { Feather } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
   ActivityIndicator,
   Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
-import { Audio } from 'expo-av';
 import { Button } from '../components/ui/Button';
 
 type MediaType = 'text' | 'image' | 'audio';
@@ -34,9 +34,8 @@ export default function CreatePost() {
 
   const characterCount = textContent.length;
   const isTextTooLong = characterCount > MAX_CHARS;
-  const canSubmit = !isTextTooLong && 
-    (activeType !== 'text' || textContent.trim().length > 0) &&
-    !loading;
+  const canSubmit =
+    !isTextTooLong && (activeType !== 'text' || textContent.trim().length > 0) && !loading;
 
   const handleTypeChange = (type: MediaType) => {
     setActiveType(type);
@@ -130,13 +129,13 @@ export default function CreatePost() {
       await recording.stopAndUnloadAsync();
       const result = await recording.getStatusAsync();
       const uri = recording.getURI();
-      
+
       if (uri) {
         setAudioUri(uri);
       }
-      
+
       setRecording(null);
-      
+
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
       });
@@ -177,7 +176,7 @@ export default function CreatePost() {
   };
 
   const removeHashtag = (tagToRemove: string) => {
-    setHashtags(hashtags.filter(tag => tag !== tagToRemove));
+    setHashtags(hashtags.filter((tag) => tag !== tagToRemove));
     setShowHashtagWarning(false);
   };
 
@@ -187,8 +186,8 @@ export default function CreatePost() {
     setLoading(true);
     try {
       // Simulate post submission
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Reset form
       setTextContent('');
       setImageUri(null);
@@ -196,7 +195,7 @@ export default function CreatePost() {
       setHashtags([]);
       setHashtagInput('');
       setActiveType('text');
-      
+
       console.log('Post submitted successfully');
     } catch (error) {
       console.error('Error submitting post:', error);
@@ -211,10 +210,7 @@ export default function CreatePost() {
         return (
           <View style={styles.textSection}>
             <TextInput
-              style={[
-                styles.textInput,
-                isTextTooLong && styles.textInputError
-              ]}
+              style={[styles.textInput, isTextTooLong && styles.textInputError]}
               placeholder="今何を考えていますか？"
               value={textContent}
               onChangeText={setTextContent}
@@ -224,10 +220,7 @@ export default function CreatePost() {
             />
             <View style={styles.charCountContainer}>
               <Text
-                style={[
-                  styles.charCount,
-                  isTextTooLong && styles.charCountError
-                ]}
+                style={[styles.charCount, isTextTooLong && styles.charCountError]}
                 testID="char-count"
               >
                 {characterCount} / {MAX_CHARS}
@@ -265,7 +258,7 @@ export default function CreatePost() {
                   <Feather name="camera" size={40} color="#0070F3" />
                   <Text style={styles.imageOptionText}>カメラで撮影</Text>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
                   style={styles.imageOption}
                   onPress={selectFromGallery}
@@ -315,27 +308,20 @@ export default function CreatePost() {
                     <Text style={styles.recordingText}>録音中...</Text>
                   </View>
                 )}
-                
+
                 <TouchableOpacity
-                  style={[
-                    styles.recordButton,
-                    isRecording && styles.recordButtonActive
-                  ]}
+                  style={[styles.recordButton, isRecording && styles.recordButtonActive]}
                   onPress={isRecording ? stopRecording : startRecording}
-                  testID={isRecording ? "stop-button" : "record-button"}
+                  testID={isRecording ? 'stop-button' : 'record-button'}
                 >
-                  <Feather
-                    name={isRecording ? "square" : "mic"}
-                    size={24}
-                    color="#FFFFFF"
-                  />
+                  <Feather name={isRecording ? 'square' : 'mic'} size={24} color="#FFFFFF" />
                   <Text style={styles.recordButtonText}>
-                    {isRecording ? "録音停止" : "録音開始"}
+                    {isRecording ? '録音停止' : '録音開始'}
                   </Text>
                 </TouchableOpacity>
-                
+
                 <Text style={styles.orText}>または</Text>
-                
+
                 <TouchableOpacity
                   style={styles.fileSelectButton}
                   onPress={selectAudioFile}
@@ -373,46 +359,34 @@ export default function CreatePost() {
       {/* Type Selector */}
       <View style={styles.typeSelector}>
         <TouchableOpacity
-          style={[
-            styles.typeButton,
-            activeType === 'text' && styles.activeTypeButton
-          ]}
+          style={[styles.typeButton, activeType === 'text' && styles.activeTypeButton]}
           onPress={() => handleTypeChange('text')}
         >
-          <Text style={[
-            styles.typeButtonText,
-            activeType === 'text' && styles.activeTypeButtonText
-          ]}>
+          <Text
+            style={[styles.typeButtonText, activeType === 'text' && styles.activeTypeButtonText]}
+          >
             テキスト投稿
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
-          style={[
-            styles.typeButton,
-            activeType === 'image' && styles.activeTypeButton
-          ]}
+          style={[styles.typeButton, activeType === 'image' && styles.activeTypeButton]}
           onPress={() => handleTypeChange('image')}
         >
-          <Text style={[
-            styles.typeButtonText,
-            activeType === 'image' && styles.activeTypeButtonText
-          ]}>
+          <Text
+            style={[styles.typeButtonText, activeType === 'image' && styles.activeTypeButtonText]}
+          >
             画像投稿
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
-          style={[
-            styles.typeButton,
-            activeType === 'audio' && styles.activeTypeButton
-          ]}
+          style={[styles.typeButton, activeType === 'audio' && styles.activeTypeButton]}
           onPress={() => handleTypeChange('audio')}
         >
-          <Text style={[
-            styles.typeButtonText,
-            activeType === 'audio' && styles.activeTypeButtonText
-          ]}>
+          <Text
+            style={[styles.typeButtonText, activeType === 'audio' && styles.activeTypeButtonText]}
+          >
             音声投稿
           </Text>
         </TouchableOpacity>
@@ -424,7 +398,7 @@ export default function CreatePost() {
         {/* Hashtag Section */}
         <View style={styles.hashtagSection}>
           <Text style={styles.hashtagTitle}>ハッシュタグ</Text>
-          
+
           <View style={styles.hashtagInputContainer}>
             <TextInput
               style={styles.hashtagInput}
@@ -437,7 +411,7 @@ export default function CreatePost() {
             <TouchableOpacity
               style={[
                 styles.addHashtagButton,
-                !hashtagInput.trim() && styles.addHashtagButtonDisabled
+                !hashtagInput.trim() && styles.addHashtagButtonDisabled,
               ]}
               onPress={addHashtag}
               disabled={!hashtagInput.trim()}

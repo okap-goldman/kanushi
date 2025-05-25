@@ -1,29 +1,29 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { Feather } from '@expo/vector-icons';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  View,
-  TextInput,
-  TouchableOpacity,
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
-  FlatList,
-  ActivityIndicator,
-  Platform,
-  KeyboardAvoidingView,
-} from 'react-native'
-import { Feather } from '@expo/vector-icons'
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 interface SearchBarProps {
-  onSearch: (query: string) => void
-  onClear?: () => void
-  onFocus?: () => void
-  onBlur?: () => void
-  placeholder?: string
-  initialValue?: string
-  value?: string
-  isLoading?: boolean
-  enableSuggestions?: boolean
-  onGetSuggestions?: (query: string) => Promise<string[]>
-  debounceDelay?: number
+  onSearch: (query: string) => void;
+  onClear?: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  placeholder?: string;
+  initialValue?: string;
+  value?: string;
+  isLoading?: boolean;
+  enableSuggestions?: boolean;
+  onGetSuggestions?: (query: string) => Promise<string[]>;
+  debounceDelay?: number;
 }
 
 export function SearchBar({
@@ -39,85 +39,85 @@ export function SearchBar({
   onGetSuggestions,
   debounceDelay = 300,
 }: SearchBarProps) {
-  const [internalValue, setInternalValue] = useState(initialValue)
-  const [isFocused, setIsFocused] = useState(false)
-  const [suggestions, setSuggestions] = useState<string[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const debounceTimerRef = useRef<NodeJS.Timeout>()
-  const inputRef = useRef<TextInput>(null)
+  const [internalValue, setInternalValue] = useState(initialValue);
+  const [isFocused, setIsFocused] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout>();
+  const inputRef = useRef<TextInput>(null);
 
   // Use controlled value if provided, otherwise use internal state
-  const value = controlledValue !== undefined ? controlledValue : internalValue
+  const value = controlledValue !== undefined ? controlledValue : internalValue;
 
   const handleChangeText = (text: string) => {
     if (controlledValue === undefined) {
-      setInternalValue(text)
+      setInternalValue(text);
     }
 
     // Handle suggestions with debounce
     if (enableSuggestions && onGetSuggestions && text.trim()) {
       if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current)
+        clearTimeout(debounceTimerRef.current);
       }
 
       debounceTimerRef.current = setTimeout(async () => {
         try {
-          const results = await onGetSuggestions(text)
-          setSuggestions(results)
-          setShowSuggestions(true)
+          const results = await onGetSuggestions(text);
+          setSuggestions(results);
+          setShowSuggestions(true);
         } catch (error) {
-          console.error('Failed to get suggestions:', error)
-          setSuggestions([])
+          console.error('Failed to get suggestions:', error);
+          setSuggestions([]);
         }
-      }, debounceDelay)
+      }, debounceDelay);
     } else {
-      setSuggestions([])
-      setShowSuggestions(false)
+      setSuggestions([]);
+      setShowSuggestions(false);
     }
-  }
+  };
 
   const handleSearch = () => {
-    const trimmedValue = value.trim()
+    const trimmedValue = value.trim();
     if (trimmedValue && !isLoading) {
-      onSearch(trimmedValue)
-      setShowSuggestions(false)
+      onSearch(trimmedValue);
+      setShowSuggestions(false);
     }
-  }
+  };
 
   const handleClear = () => {
     if (controlledValue === undefined) {
-      setInternalValue('')
+      setInternalValue('');
     }
-    setSuggestions([])
-    setShowSuggestions(false)
-    onClear?.()
-  }
+    setSuggestions([]);
+    setShowSuggestions(false);
+    onClear?.();
+  };
 
   const handleFocus = () => {
-    setIsFocused(true)
-    onFocus?.()
-  }
+    setIsFocused(true);
+    onFocus?.();
+  };
 
   const handleBlur = () => {
-    setIsFocused(false)
-    onBlur?.()
-  }
+    setIsFocused(false);
+    onBlur?.();
+  };
 
   const handleSelectSuggestion = (suggestion: string) => {
     if (controlledValue === undefined) {
-      setInternalValue(suggestion)
+      setInternalValue(suggestion);
     }
-    setShowSuggestions(false)
-    onSearch(suggestion)
-  }
+    setShowSuggestions(false);
+    onSearch(suggestion);
+  };
 
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current)
+        clearTimeout(debounceTimerRef.current);
       }
-    }
-  }, [])
+    };
+  }, []);
 
   return (
     <KeyboardAvoidingView
@@ -126,10 +126,7 @@ export function SearchBar({
     >
       <View style={styles.container}>
         <View
-          style={[
-            styles.searchContainer,
-            isFocused && styles.searchContainerFocused,
-          ]}
+          style={[styles.searchContainer, isFocused && styles.searchContainerFocused]}
           testID="search-container"
         >
           <Feather
@@ -182,10 +179,12 @@ export function SearchBar({
             accessibilityLabel="検索"
             disabled={isLoading || !value.trim()}
           >
-            <Text style={[
-              styles.searchButtonText,
-              (isLoading || !value.trim()) && styles.searchButtonTextDisabled
-            ]}>
+            <Text
+              style={[
+                styles.searchButtonText,
+                (isLoading || !value.trim()) && styles.searchButtonTextDisabled,
+              ]}
+            >
               検索
             </Text>
           </TouchableOpacity>
@@ -211,7 +210,7 @@ export function SearchBar({
         )}
       </View>
     </KeyboardAvoidingView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -299,4 +298,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-})
+});

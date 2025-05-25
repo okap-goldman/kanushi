@@ -1,17 +1,17 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface JapanMapProps {
   onRegionSelect: (region: string) => void;
 }
 
 const regions = [
-  { name: "北海道・東北", color: '#e11d48' },
-  { name: "関東", color: '#f59e0b' },
-  { name: "中部", color: '#10b981' },
-  { name: "近畿", color: '#3b82f6' },
-  { name: "中国・四国", color: '#8b5cf6' },
-  { name: "九州・沖縄", color: '#ec4899' },
+  { name: '北海道・東北', color: '#e11d48' },
+  { name: '関東', color: '#f59e0b' },
+  { name: '中部', color: '#10b981' },
+  { name: '近畿', color: '#3b82f6' },
+  { name: '中国・四国', color: '#8b5cf6' },
+  { name: '九州・沖縄', color: '#ec4899' },
 ];
 
 export function JapanMap({ onRegionSelect }: JapanMapProps) {

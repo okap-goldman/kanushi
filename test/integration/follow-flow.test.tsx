@@ -1,13 +1,13 @@
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { View } from 'react-native';
-import { AuthProvider } from '../../src/context/AuthContext';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import FollowButton from '../../src/components/follow/FollowButton';
 import FollowersList from '../../src/components/follow/FollowersList';
 import FollowingList from '../../src/components/follow/FollowingList';
-import * as followService from '../../src/lib/followService';
+import { AuthProvider } from '../../src/context/AuthContext';
 import { useToast } from '../../src/hooks/use-toast';
+import * as followService from '../../src/lib/followService';
 
 // Mock NavigationContainer as a simple wrapper
 const NavigationContainer = ({ children }: any) => <View>{children}</View>;
@@ -168,10 +168,7 @@ describe('フォロー機能の結合テスト', () => {
         // Then - 期待結果を検証
         await waitFor(() => {
           // アンフォローAPIが呼ばれたか
-          expect(mockUnfollowUser).toHaveBeenCalledWith(
-            targetUser.id,
-            '投稿頻度が多すぎるため'
-          );
+          expect(mockUnfollowUser).toHaveBeenCalledWith(targetUser.id, '投稿頻度が多すぎるため');
 
           // 成功トーストが表示されたか
           expect(mockToast).toHaveBeenCalledWith({

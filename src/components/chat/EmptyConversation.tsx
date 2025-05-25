@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 interface EmptyConversationProps {
   userName?: string;
@@ -16,9 +16,7 @@ export function EmptyConversation({ userName }: EmptyConversationProps) {
       <Text style={styles.title}>
         {userName ? `Start a conversation with ${userName}` : 'No messages yet'}
       </Text>
-      <Text style={styles.subtitle}>
-        Send a message to start the conversation
-      </Text>
+      <Text style={styles.subtitle}>Send a message to start the conversation</Text>
     </View>
   );
 }
