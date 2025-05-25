@@ -4,21 +4,6 @@
 本ドキュメントは、AIチャット・検索機能のTDD実装のための詳細なテスト仕様書です。
 Claude Codeによる実装時の品質保証と動作検証を目的としています。
 
-## テスト環境
-
-### 使用ライブラリ
-- jest-expo@~53.0.0
-- @testing-library/react-native@^13
-- @testing-library/jest-native@^6
-- react-native-reanimated/mock
-- MSW (Mock Service Worker) for API mocking
-
-### テスト方針
-- ミニマルモッキング：必要最小限のモックのみ使用
-- 実際の動作に近いテストを優先
-- 非同期処理は適切にawaitする
-- エラーケースを網羅的にテスト
-
 ## 1. API単体テスト
 
 ### 1.1 検索API

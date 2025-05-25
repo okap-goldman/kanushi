@@ -4,20 +4,6 @@
 本ドキュメントは、ショップ・EC機能のTDD（Test-Driven Development）実装のためのテスト仕様書です。
 APIユニットテスト、UIユニットテスト、結合テスト、E2Eテストの4種類のテストケースを定義します。
 
-## テスト環境設定
-
-### 依存関係
-- jest-expo: ~53.0.0
-- @testing-library/react-native: ^13
-- @testing-library/jest-native: ^6
-- react-native-reanimated: ~3.17.0
-
-### Jest設定
-- preset: 'jest-expo'
-- setupFilesAfterEnv: ['@testing-library/jest-native/extend-expect']
-- moduleNameMapper: {'react-native-reanimated': 'react-native-reanimated/mock'}
-- 適切なtransformIgnorePatterns設定
-
 ## 1. APIユニットテスト
 
 ### 1.1 商品管理API

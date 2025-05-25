@@ -4,20 +4,6 @@
 本ドキュメントは、ストーリーズ機能のTDD実装のための詳細なテスト仕様書です。
 一時的なユーザーコンテンツの投稿、表示、インタラクションに関するテストケースを定義します。
 
-## テスト環境
-
-### 使用ライブラリ
-- jest-expo@~53.0.0
-- @testing-library/react-native@^13
-- @testing-library/jest-native@^6
-- react-native-reanimated/mock
-
-### 前提条件
-- React Native Expo環境
-- Firebase/Supabaseバックエンド
-- React Navigation
-- ユーザー認証機能の実装済み
-
 ## 1. API単体テスト
 
 ### 1.1 ストーリー作成API
