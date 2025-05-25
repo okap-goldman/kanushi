@@ -1,5 +1,489 @@
 import { supabase } from './supabase';
-import { Post, ApiResponse, ContentType, Comment, Tag } from './data';
+import { db } from './db/client';
+import { posts, comments, likes, highlights, bookmarks, hashtags, postHashtags } from './db/schema';
+import { 
+  Post, ApiResponse, ContentType, Comment, Tag,
+  PostCreateInput, PostUpdateInput, DrizzlePost, DrizzleComment, 
+  DrizzleLike, DrizzleHighlight, DrizzleBookmark, DrizzleHashtag,
+  ServiceResult, MediaType, TimelineType
+} from './data';
+import { eq, and, desc, inArray } from 'drizzle-orm';
+
+// Constants
+const MAX_TEXT_LENGTH = 10000;
+const MAX_HASHTAGS = 5;
+const MAX_AUDIO_DURATION = 28800; // 8 hours in seconds
+
+export interface PostService {
+  createPost(input: PostCreateInput): Promise<ServiceResult<DrizzlePost>>;
+  deletePost(postId: string, userId: string): Promise<ServiceResult<boolean>>;
+  addLike(postId: string, userId: string): Promise<ServiceResult<boolean>>;
+  removeLike(postId: string, userId: string): Promise<ServiceResult<boolean>>;
+  addHighlight(postId: string, userId: string, reason: string): Promise<ServiceResult<boolean>>;
+  addComment(postId: string, userId: string, body: string): Promise<ServiceResult<DrizzleComment>>;
+  getComments(postId: string): Promise<ServiceResult<DrizzleComment[]>>;
+  addBookmark(postId: string, userId: string): Promise<ServiceResult<boolean>>;
+  removeBookmark(postId: string, userId: string): Promise<ServiceResult<boolean>>;
+  getBookmarks(userId: string): Promise<ServiceResult<DrizzleBookmark[]>>;
+}
+
+export function createPostService(supabaseClient = supabase, dbClient = db): PostService {
+  return {
+    async createPost(input: PostCreateInput): Promise<ServiceResult<DrizzlePost>> {
+      try {
+        // Validation
+        if (input.contentType === 'text' && input.textContent && input.textContent.length > MAX_TEXT_LENGTH) {
+          return {
+            success: false,
+            data: null,
+            error: new Error(`Text content exceeds maximum limit of ${MAX_TEXT_LENGTH} characters`)
+          };
+        }
+
+        if (input.contentType === 'audio' && input.durationSeconds && input.durationSeconds > MAX_AUDIO_DURATION) {
+          return {
+            success: false,
+            data: null,
+            error: new Error(`Audio duration exceeds maximum limit of ${MAX_AUDIO_DURATION} seconds`)
+          };
+        }
+
+        if (input.hashtags && input.hashtags.length > MAX_HASHTAGS) {
+          return {
+            success: false,
+            data: null,
+            error: new Error(`Maximum ${MAX_HASHTAGS} hashtags allowed`)
+          };
+        }
+
+        const result = await dbClient.transaction(async (tx) => {
+          // Create post
+          const [createdPost] = await tx.insert(posts).values({
+            userId: input.userId,
+            contentType: input.contentType,
+            textContent: input.textContent || null,
+            mediaUrl: input.mediaUrl || null,
+            previewUrl: input.previewUrl || null,
+            waveformUrl: input.waveformUrl || null,
+            durationSeconds: input.durationSeconds || null,
+            youtubeVideoId: input.youtubeVideoId || null,
+            eventId: input.eventId || null,
+            groupId: input.groupId || null,
+            aiMetadata: null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }).returning();
+
+          // Handle hashtags if present
+          if (input.hashtags && input.hashtags.length > 0) {
+            const hashtagIds: string[] = [];
+
+            for (const hashtagName of input.hashtags) {
+              // Check if hashtag exists
+              let existingHashtag = await tx.query.hashtags.findFirst({
+                where: eq(hashtags.name, hashtagName)
+              });
+
+              if (!existingHashtag) {
+                // Create new hashtag
+                const [newHashtag] = await tx.insert(hashtags).values({
+                  name: hashtagName,
+                  useCount: 1,
+                  createdAt: new Date()
+                }).returning();
+                existingHashtag = newHashtag;
+              } else {
+                // Increment use count
+                await tx.update(hashtags)
+                  .set({ useCount: existingHashtag.useCount + 1 })
+                  .where(eq(hashtags.id, existingHashtag.id));
+              }
+
+              hashtagIds.push(existingHashtag.id);
+            }
+
+            // Link hashtags to post
+            const postHashtagData = hashtagIds.map(hashtagId => ({
+              postId: createdPost.id,
+              hashtagId,
+              createdAt: new Date()
+            }));
+
+            await tx.insert(postHashtags).values(postHashtagData);
+          }
+
+          return createdPost;
+        });
+
+        return {
+          success: true,
+          data: result,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error creating post:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async deletePost(postId: string, userId: string): Promise<ServiceResult<boolean>> {
+      try {
+        // Check if post exists and user owns it
+        const existingPost = await dbClient.query.posts.findFirst({
+          where: and(eq(posts.id, postId), eq(posts.deletedAt, null))
+        });
+
+        if (!existingPost) {
+          return {
+            success: false,
+            data: null,
+            error: new Error('Post not found')
+          };
+        }
+
+        if (existingPost.userId !== userId) {
+          return {
+            success: false,
+            data: null,
+            error: new Error('You do not have permission to delete this post')
+          };
+        }
+
+        // Soft delete
+        const result = await dbClient.update(posts)
+          .set({ 
+            deletedAt: new Date(),
+            updatedAt: new Date()
+          })
+          .where(eq(posts.id, postId));
+
+        return {
+          success: true,
+          data: result.rowCount > 0,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async addLike(postId: string, userId: string): Promise<ServiceResult<boolean>> {
+      try {
+        // Check if already liked
+        const existingLike = await dbClient.query.likes.findFirst({
+          where: and(eq(likes.postId, postId), eq(likes.userId, userId))
+        });
+
+        if (existingLike) {
+          return {
+            success: false,
+            data: null,
+            error: new Error('Already liked this post')
+          };
+        }
+
+        await dbClient.insert(likes).values({
+          postId,
+          userId,
+          createdAt: new Date()
+        });
+
+        return {
+          success: true,
+          data: true,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error adding like:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async removeLike(postId: string, userId: string): Promise<ServiceResult<boolean>> {
+      try {
+        // Check if like exists
+        const existingLike = await dbClient.query.likes.findFirst({
+          where: and(eq(likes.postId, postId), eq(likes.userId, userId))
+        });
+
+        if (!existingLike) {
+          return {
+            success: false,
+            data: null,
+            error: new Error('Like not found')
+          };
+        }
+
+        const result = await dbClient.delete(likes)
+          .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+
+        return {
+          success: true,
+          data: result.rowCount > 0,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error removing like:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async addHighlight(postId: string, userId: string, reason: string): Promise<ServiceResult<boolean>> {
+      try {
+        if (!reason || reason.trim() === '') {
+          return {
+            success: false,
+            data: null,
+            error: new Error('Reason is required for highlighting')
+          };
+        }
+
+        // Check if already highlighted
+        const existingHighlight = await dbClient.query.highlights.findFirst({
+          where: and(eq(highlights.postId, postId), eq(highlights.userId, userId))
+        });
+
+        if (existingHighlight) {
+          return {
+            success: false,
+            data: null,
+            error: new Error('Already highlighted this post')
+          };
+        }
+
+        await dbClient.insert(highlights).values({
+          postId,
+          userId,
+          reason: reason.trim(),
+          createdAt: new Date()
+        });
+
+        return {
+          success: true,
+          data: true,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error adding highlight:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async addComment(postId: string, userId: string, body: string): Promise<ServiceResult<DrizzleComment>> {
+      try {
+        if (!body || body.trim() === '') {
+          return {
+            success: false,
+            data: null,
+            error: new Error('Comment body cannot be empty')
+          };
+        }
+
+        const [comment] = await dbClient.insert(comments).values({
+          postId,
+          userId,
+          body: body.trim(),
+          createdAt: new Date()
+        }).returning();
+
+        return {
+          success: true,
+          data: comment,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error adding comment:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async getComments(postId: string): Promise<ServiceResult<DrizzleComment[]>> {
+      try {
+        const commentsData = await dbClient.query.comments.findMany({
+          where: eq(comments.postId, postId),
+          orderBy: [desc(comments.createdAt)]
+        });
+
+        return {
+          success: true,
+          data: commentsData,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error getting comments:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async addBookmark(postId: string, userId: string): Promise<ServiceResult<boolean>> {
+      try {
+        // Check if already bookmarked
+        const existingBookmark = await dbClient.query.bookmarks.findFirst({
+          where: and(eq(bookmarks.postId, postId), eq(bookmarks.userId, userId))
+        });
+
+        if (existingBookmark) {
+          return {
+            success: false,
+            data: null,
+            error: new Error('Already bookmarked this post')
+          };
+        }
+
+        await dbClient.insert(bookmarks).values({
+          postId,
+          userId,
+          createdAt: new Date()
+        });
+
+        return {
+          success: true,
+          data: true,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error adding bookmark:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async removeBookmark(postId: string, userId: string): Promise<ServiceResult<boolean>> {
+      try {
+        // Check if bookmark exists
+        const existingBookmark = await dbClient.query.bookmarks.findFirst({
+          where: and(eq(bookmarks.postId, postId), eq(bookmarks.userId, userId))
+        });
+
+        if (!existingBookmark) {
+          return {
+            success: false,
+            data: null,
+            error: new Error('Bookmark not found')
+          };
+        }
+
+        const result = await dbClient.delete(bookmarks)
+          .where(and(eq(bookmarks.postId, postId), eq(bookmarks.userId, userId)));
+
+        return {
+          success: true,
+          data: result.rowCount > 0,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error removing bookmark:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    },
+
+    async getBookmarks(userId: string): Promise<ServiceResult<DrizzleBookmark[]>> {
+      try {
+        const bookmarksData = await dbClient.query.bookmarks.findMany({
+          where: eq(bookmarks.userId, userId),
+          orderBy: [desc(bookmarks.createdAt)]
+        });
+
+        return {
+          success: true,
+          data: bookmarksData,
+          error: null
+        };
+
+      } catch (error) {
+        console.error('Error getting bookmarks:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error
+        };
+      }
+    }
+  };
+}
+
+// Default export - backward compatibility with existing code
+export const postServiceInstance = createPostService();
+
+// Get posts by IDs
+export const getPostsByIds = async (ids: string[]): Promise<Post[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        user:profiles!posts_user_id_fkey(*),
+        likes(user_id),
+        comments(id)
+      `)
+      .in('id', ids);
+
+    if (error) throw error;
+
+    return (data || []).map((post: any) => ({
+      id: post.id,
+      user_id: post.user_id,
+      content: post.content || '',
+      media_type: post.media_type as MediaType,
+      media_url: post.media_url,
+      hashtags: post.hashtags || [],
+      created_at: post.created_at,
+      updated_at: post.updated_at,
+      user: post.user,
+      likes_count: post.likes?.length || 0,
+      comments_count: post.comments?.length || 0,
+      is_liked: false, // Will be set by the caller
+    }));
+  } catch (error) {
+    console.error('Error fetching posts by IDs:', error);
+    return [];
+  }
+};
 
 /**
  * Fetches all posts from Supabase

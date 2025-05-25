@@ -1,420 +1,521 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { followService } from '@/lib/followService';
-import { db } from '@/lib/db/client';
-import { follows, profiles } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { createFollowService, FollowService } from '../../src/lib/followService';
+import type { 
+  FollowCreateInput, FollowUpdateInput, FollowType, FollowStatus,
+  DrizzleFollow, ServiceResult 
+} from '../../src/lib/data';
 
-// Mock database
-vi.mock('@/lib/db/client', () => ({
-  db: {
-    insert: vi.fn(),
-    select: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn()
-  }
-}));
+// Mock Supabase client
+const mockSupabaseClient = {
+  from: vi.fn(),
+  storage: {
+    from: vi.fn()
+  },
+  auth: {
+    getUser: vi.fn()
+  },
+  rpc: vi.fn()
+};
 
-describe('Follow Service', () => {
+// Mock database client  
+const mockDb = {
+  select: vi.fn(),
+  insert: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  query: {
+    follows: {
+      findMany: vi.fn(),
+      findFirst: vi.fn()
+    },
+    profiles: {
+      findFirst: vi.fn(),
+      findMany: vi.fn()
+    }
+  },
+  transaction: vi.fn()
+};
+
+describe('FollowService - フォロー作成機能', () => {
+  let followService: FollowService;
+  const mockFollowerId = 'user-123';
+  const mockFolloweeId = 'user-456';
+
   beforeEach(() => {
     vi.clearAllMocks();
+    followService = createFollowService(mockSupabaseClient as any, mockDb as any);
   });
 
-  describe('createFollow', () => {
-    describe('ファミリーフォロー', () => {
-      it('理由ありの場合、正常にフォローが作成される', async () => {
-        const mockFollow = {
-          id: 'follow-id',
-          followerId: 'user1',
-          followeeId: 'user2',
-          followType: 'family',
-          status: 'active',
-          followReason: 'とても価値のあるコンテンツを提供してくれるから',
-          createdAt: new Date()
-        };
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
-        vi.mocked(db.insert).mockReturnValue({
-          values: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([mockFollow])
-          })
-        } as any);
+  describe('ファミリーフォロー', () => {
+    it('理由ありの場合、正常にフォローが作成されること', async () => {
+      const followInput: FollowCreateInput = {
+        followerId: mockFollowerId,
+        followeeId: mockFolloweeId,
+        followType: 'family' as FollowType,
+        followReason: 'とても価値のあるコンテンツを提供してくれるから'
+      };
 
-        const result = await followService.createFollow({
-          followerId: 'user1',
-          followeeId: 'user2',
-          followType: 'family',
-          followReason: 'とても価値のあるコンテンツを提供してくれるから'
-        });
+      const mockCreatedFollow = {
+        id: 'follow-123',
+        followerId: mockFollowerId,
+        followeeId: mockFolloweeId,
+        followType: 'family',
+        status: 'active',
+        followReason: followInput.followReason,
+        createdAt: new Date(),
+        unfollowedAt: null,
+        unfollowReason: null
+      };
 
-        expect(result).toEqual(mockFollow);
-        expect(db.insert).toHaveBeenCalledWith(follows);
+      // Mock existing follow check
+      mockDb.query.follows.findFirst.mockResolvedValue(null);
+
+      // Mock self-follow check (different users)
+      mockDb.insert.mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([mockCreatedFollow])
+        })
       });
 
-      it('理由なしの場合、バリデーションエラーが発生する', async () => {
-        await expect(
-          followService.createFollow({
-            followerId: 'user1',
-            followeeId: 'user2',
-            followType: 'family'
-          })
-        ).rejects.toThrow('ファミリーフォローには理由の入力が必要です');
-      });
+      const result = await followService.createFollow(followInput);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(expect.objectContaining({
+        followerId: mockFollowerId,
+        followeeId: mockFolloweeId,
+        followType: 'family',
+        followReason: followInput.followReason,
+        status: 'active'
+      }));
+      expect(result.error).toBeNull();
     });
 
-    describe('ウォッチフォロー', () => {
-      it('理由なしでも正常にフォローが作成される', async () => {
-        const mockFollow = {
-          id: 'follow-id',
-          followerId: 'user1',
-          followeeId: 'user2',
+    it('理由なしの場合、エラーが発生すること', async () => {
+      const followInput: FollowCreateInput = {
+        followerId: mockFollowerId,
+        followeeId: mockFolloweeId,
+        followType: 'family' as FollowType
+        // followReason: なし
+      };
+
+      const result = await followService.createFollow(followInput);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error!.message).toContain('Family follow requires a reason');
+      expect(result.data).toBeNull();
+    });
+  });
+
+  describe('ウォッチフォロー', () => {
+    it('理由なしの場合、正常にフォローが作成されること', async () => {
+      const followInput: FollowCreateInput = {
+        followerId: mockFollowerId,
+        followeeId: mockFolloweeId,
+        followType: 'watch' as FollowType
+      };
+
+      const mockCreatedFollow = {
+        id: 'follow-456',
+        followerId: mockFollowerId,
+        followeeId: mockFolloweeId,
+        followType: 'watch',
+        status: 'active',
+        followReason: null,
+        createdAt: new Date(),
+        unfollowedAt: null,
+        unfollowReason: null
+      };
+
+      mockDb.query.follows.findFirst.mockResolvedValue(null);
+      mockDb.insert.mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([mockCreatedFollow])
+        })
+      });
+
+      const result = await followService.createFollow(followInput);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(expect.objectContaining({
+        followerId: mockFollowerId,
+        followeeId: mockFolloweeId,
+        followType: 'watch',
+        followReason: null,
+        status: 'active'
+      }));
+      expect(result.error).toBeNull();
+    });
+
+    it('理由ありの場合でも正常にフォローが作成されること', async () => {
+      const followInput: FollowCreateInput = {
+        followerId: mockFollowerId,
+        followeeId: mockFolloweeId,
+        followType: 'watch' as FollowType,
+        followReason: '興味深い内容が多いから'
+      };
+
+      const mockCreatedFollow = {
+        id: 'follow-789',
+        followerId: mockFollowerId,
+        followeeId: mockFolloweeId,
+        followType: 'watch',
+        status: 'active',
+        followReason: followInput.followReason,
+        createdAt: new Date(),
+        unfollowedAt: null,
+        unfollowReason: null
+      };
+
+      mockDb.query.follows.findFirst.mockResolvedValue(null);
+      mockDb.insert.mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([mockCreatedFollow])
+        })
+      });
+
+      const result = await followService.createFollow(followInput);
+
+      expect(result.success).toBe(true);
+      expect(result.data!.followReason).toBe(followInput.followReason);
+      expect(result.error).toBeNull();
+    });
+  });
+
+  describe('フォロー作成異常系', () => {
+    it('重複フォローの場合、エラーが発生すること', async () => {
+      const followInput: FollowCreateInput = {
+        followerId: mockFollowerId,
+        followeeId: mockFolloweeId,
+        followType: 'watch' as FollowType
+      };
+
+      const existingFollow = {
+        id: 'existing-follow',
+        followerId: mockFollowerId,
+        followeeId: mockFolloweeId,
+        followType: 'watch',
+        status: 'active',
+        followReason: null,
+        createdAt: new Date(),
+        unfollowedAt: null,
+        unfollowReason: null
+      };
+
+      mockDb.query.follows.findFirst.mockResolvedValue(existingFollow);
+
+      const result = await followService.createFollow(followInput);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error!.message).toContain('Already following this user');
+      expect(result.data).toBeNull();
+    });
+
+    it('自分自身をフォローしようとした場合、エラーが発生すること', async () => {
+      const selfFollowInput: FollowCreateInput = {
+        followerId: mockFollowerId,
+        followeeId: mockFollowerId, // 同じユーザーID
+        followType: 'watch' as FollowType
+      };
+
+      const result = await followService.createFollow(selfFollowInput);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error!.message).toContain('Cannot follow yourself');
+      expect(result.data).toBeNull();
+    });
+  });
+});
+
+describe('FollowService - アンフォロー機能', () => {
+  let followService: FollowService;
+  const mockFollowerId = 'user-123';
+  const mockFollowId = 'follow-123';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    followService = createFollowService(mockSupabaseClient as any, mockDb as any);
+  });
+
+  describe('アンフォロー正常系', () => {
+    it('理由ありアンフォローが正常に実行されること', async () => {
+      const unfollowReason = '投稿内容が合わなくなったため';
+      const existingFollow = {
+        id: mockFollowId,
+        followerId: mockFollowerId,
+        followeeId: 'user-456',
+        followType: 'family',
+        status: 'active',
+        followReason: '以前の理由',
+        createdAt: new Date(),
+        unfollowedAt: null,
+        unfollowReason: null
+      };
+
+      mockDb.query.follows.findFirst.mockResolvedValue(existingFollow);
+      mockDb.update.mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue({ rowCount: 1 })
+        })
+      });
+
+      const result = await followService.unfollow(mockFollowId, mockFollowerId, unfollowReason);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBe(true);
+      expect(result.error).toBeNull();
+    });
+
+    it('理由なしアンフォローが正常に実行されること', async () => {
+      const existingFollow = {
+        id: mockFollowId,
+        followerId: mockFollowerId,
+        followeeId: 'user-456',
+        followType: 'watch',
+        status: 'active',
+        followReason: null,
+        createdAt: new Date(),
+        unfollowedAt: null,
+        unfollowReason: null
+      };
+
+      mockDb.query.follows.findFirst.mockResolvedValue(existingFollow);
+      mockDb.update.mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue({ rowCount: 1 })
+        })
+      });
+
+      const result = await followService.unfollow(mockFollowId, mockFollowerId);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBe(true);
+      expect(result.error).toBeNull();
+    });
+  });
+
+  describe('アンフォロー異常系', () => {
+    it('存在しないフォローのアンフォローでエラーが発生すること', async () => {
+      mockDb.query.follows.findFirst.mockResolvedValue(null);
+
+      const result = await followService.unfollow('non-existent-follow', mockFollowerId);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error!.message).toContain('Follow relationship not found');
+      expect(result.data).toBeNull();
+    });
+
+    it('他ユーザーのフォロー関係のアンフォローでエラーが発生すること', async () => {
+      const otherUserFollow = {
+        id: mockFollowId,
+        followerId: 'other-user-789', // 別のユーザー
+        followeeId: 'user-456',
+        followType: 'watch',
+        status: 'active',
+        followReason: null,
+        createdAt: new Date(),
+        unfollowedAt: null,
+        unfollowReason: null
+      };
+
+      mockDb.query.follows.findFirst.mockResolvedValue(otherUserFollow);
+
+      const result = await followService.unfollow(mockFollowId, mockFollowerId);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error!.message).toContain('You can only unfollow your own follows');
+      expect(result.data).toBeNull();
+    });
+  });
+});
+
+describe('FollowService - フォロワー/フォロー中一覧', () => {
+  let followService: FollowService;
+  const mockUserId = 'user-123';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    followService = createFollowService(mockSupabaseClient as any, mockDb as any);
+  });
+
+  describe('フォロワー一覧取得', () => {
+    it('ページネーション付きフォロワー一覧を正常に取得できること', async () => {
+      const mockFollowers = [
+        {
+          id: 'follow-1',
+          followerId: 'user-1',
+          followeeId: mockUserId,
+          followType: 'family',
+          status: 'active',
+          followReason: '理由1',
+          createdAt: new Date('2024-01-01'),
+          unfollowedAt: null,
+          unfollowReason: null
+        },
+        {
+          id: 'follow-2',
+          followerId: 'user-2',
+          followeeId: mockUserId,
           followType: 'watch',
           status: 'active',
           followReason: null,
-          createdAt: new Date()
-        };
+          createdAt: new Date('2024-01-02'),
+          unfollowedAt: null,
+          unfollowReason: null
+        }
+      ];
 
-        vi.mocked(db.insert).mockReturnValue({
-          values: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([mockFollow])
-          })
-        } as any);
+      mockDb.query.follows.findMany.mockResolvedValue(mockFollowers);
 
-        const result = await followService.createFollow({
-          followerId: 'user1',
-          followeeId: 'user2',
-          followType: 'watch'
-        });
+      const result = await followService.getFollowers(mockUserId, 20);
 
-        expect(result).toEqual(mockFollow);
-      });
+      expect(result.success).toBe(true);
+      expect(result.data).toHaveLength(2);
+      expect(result.data![0].followType).toBe('family');
+      expect(result.data![1].followType).toBe('watch');
+      expect(result.error).toBeNull();
+    });
 
-      it('理由ありでも正常にフォローが作成される', async () => {
-        const mockFollow = {
-          id: 'follow-id',
-          followerId: 'user1',
-          followeeId: 'user2',
+    it('フォロワーがいないユーザーの一覧取得で空配列が返されること', async () => {
+      mockDb.query.follows.findMany.mockResolvedValue([]);
+
+      const result = await followService.getFollowers('user-no-followers', 20);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual([]);
+      expect(result.error).toBeNull();
+    });
+  });
+
+  describe('フォロー中一覧取得', () => {
+    it('フォロー中一覧を正常に取得できること', async () => {
+      const mockFollowing = [
+        {
+          id: 'follow-3',
+          followerId: mockUserId,
+          followeeId: 'user-3',
+          followType: 'family',
+          status: 'active',
+          followReason: '素晴らしいコンテンツ',
+          createdAt: new Date('2024-01-03'),
+          unfollowedAt: null,
+          unfollowReason: null
+        },
+        {
+          id: 'follow-4',
+          followerId: mockUserId,
+          followeeId: 'user-4',
           followType: 'watch',
           status: 'active',
-          followReason: '参考になるコンテンツ',
-          createdAt: new Date()
-        };
+          followReason: null,
+          createdAt: new Date('2024-01-04'),
+          unfollowedAt: null,
+          unfollowReason: null
+        }
+      ];
 
-        vi.mocked(db.insert).mockReturnValue({
-          values: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([mockFollow])
-          })
-        } as any);
+      mockDb.query.follows.findMany.mockResolvedValue(mockFollowing);
 
-        const result = await followService.createFollow({
-          followerId: 'user1',
-          followeeId: 'user2',
+      const result = await followService.getFollowing(mockUserId);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toHaveLength(2);
+      expect(result.data![0].followeeId).toBe('user-3');
+      expect(result.data![1].followeeId).toBe('user-4');
+      expect(result.error).toBeNull();
+    });
+
+    it('フォロータイプでフィルタリングできること', async () => {
+      const mockFamilyFollows = [
+        {
+          id: 'follow-5',
+          followerId: mockUserId,
+          followeeId: 'user-5',
+          followType: 'family',
+          status: 'active',
+          followReason: 'ファミリー理由',
+          createdAt: new Date('2024-01-05'),
+          unfollowedAt: null,
+          unfollowReason: null
+        }
+      ];
+
+      mockDb.query.follows.findMany.mockResolvedValue(mockFamilyFollows);
+
+      const result = await followService.getFollowing(mockUserId, 'family');
+
+      expect(result.success).toBe(true);
+      expect(result.data).toHaveLength(1);
+      expect(result.data![0].followType).toBe('family');
+      expect(result.error).toBeNull();
+    });
+  });
+
+  describe('相互フォロー確認', () => {
+    it('相互フォロー状態を正常に確認できること', async () => {
+      const userId1 = 'user-1';
+      const userId2 = 'user-2';
+
+      // user1 -> user2, user2 -> user1 の双方向フォロー
+      mockDb.query.follows.findFirst
+        .mockResolvedValueOnce({ // user1 follows user2
+          id: 'follow-a',
+          followerId: userId1,
+          followeeId: userId2,
+          followType: 'family',
+          status: 'active'
+        })
+        .mockResolvedValueOnce({ // user2 follows user1
+          id: 'follow-b',
+          followerId: userId2,
+          followeeId: userId1,
           followType: 'watch',
-          followReason: '参考になるコンテンツ'
+          status: 'active'
         });
 
-        expect(result).toEqual(mockFollow);
+      const result = await followService.checkMutualFollow(userId1, userId2);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual({
+        isMutual: true,
+        user1FollowsUser2: true,
+        user2FollowsUser1: true
       });
+      expect(result.error).toBeNull();
     });
 
-    describe('異常系', () => {
-      it('既にフォローしている場合、エラーが発生する', async () => {
-        vi.mocked(db.select).mockReturnValue({
-          from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([{ id: 'existing-follow' }])
-          })
-        } as any);
+    it('一方向フォローの場合、相互フォローでないことが確認できること', async () => {
+      const userId1 = 'user-1';
+      const userId2 = 'user-2';
 
-        await expect(
-          followService.createFollow({
-            followerId: 'user1',
-            followeeId: 'user2',
-            followType: 'family',
-            followReason: '理由'
-          })
-        ).rejects.toThrow('すでにフォローしています');
+      // user1 -> user2 のみ（user2 -> user1 なし）
+      mockDb.query.follows.findFirst
+        .mockResolvedValueOnce({ // user1 follows user2
+          id: 'follow-a',
+          followerId: userId1,
+          followeeId: userId2,
+          followType: 'watch',
+          status: 'active'
+        })
+        .mockResolvedValueOnce(null); // user2 does not follow user1
+
+      const result = await followService.checkMutualFollow(userId1, userId2);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual({
+        isMutual: false,
+        user1FollowsUser2: true,
+        user2FollowsUser1: false
       });
-
-      it('自分自身をフォローしようとした場合、エラーが発生する', async () => {
-        await expect(
-          followService.createFollow({
-            followerId: 'user1',
-            followeeId: 'user1',
-            followType: 'watch'
-          })
-        ).rejects.toThrow('自分自身をフォローすることはできません');
-      });
-
-      it('短時間で多数のフォローを行った場合、レート制限エラーが発生する', async () => {
-        // 最初の20回は成功
-        for (let i = 0; i < 20; i++) {
-          vi.mocked(db.select).mockReturnValueOnce({
-            from: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue([])
-            })
-          } as any);
-
-          vi.mocked(db.insert).mockReturnValueOnce({
-            values: vi.fn().mockReturnValue({
-              returning: vi.fn().mockResolvedValue([{ id: `follow-${i}` }])
-            })
-          } as any);
-
-          await followService.createFollow({
-            followerId: 'user1',
-            followeeId: `user${i + 2}`,
-            followType: 'watch'
-          });
-        }
-
-        // 21回目でレート制限エラー
-        await expect(
-          followService.createFollow({
-            followerId: 'user1',
-            followeeId: 'user22',
-            followType: 'watch'
-          })
-        ).rejects.toThrow('RATE_LIMIT_EXCEEDED');
-      });
-    });
-  });
-
-  describe('unfollowUser', () => {
-    it('理由ありでアンフォローできる', async () => {
-      const mockFollow = {
-        id: 'follow-id',
-        followerId: 'user1',
-        followeeId: 'user2',
-        status: 'active'
-      };
-
-      vi.mocked(db.select).mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([mockFollow])
-        })
-      } as any);
-
-      vi.mocked(db.update).mockReturnValue({
-        set: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{ ...mockFollow, status: 'unfollowed' }])
-        })
-      } as any);
-
-      await followService.unfollowUser({
-        followId: 'follow-id',
-        userId: 'user1',
-        unfollowReason: 'コンテンツの方向性が変わったため'
-      });
-
-      expect(db.update).toHaveBeenCalledWith(follows);
-    });
-
-    it('理由なしでもアンフォローできる', async () => {
-      const mockFollow = {
-        id: 'follow-id',
-        followerId: 'user1',
-        followeeId: 'user2',
-        status: 'active'
-      };
-
-      vi.mocked(db.select).mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([mockFollow])
-        })
-      } as any);
-
-      vi.mocked(db.update).mockReturnValue({
-        set: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{ ...mockFollow, status: 'unfollowed' }])
-        })
-      } as any);
-
-      await followService.unfollowUser({
-        followId: 'follow-id',
-        userId: 'user1'
-      });
-
-      expect(db.update).toHaveBeenCalledWith(follows);
-    });
-
-    it('存在しないフォローIDの場合、エラーが発生する', async () => {
-      vi.mocked(db.select).mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([])
-        })
-      } as any);
-
-      await expect(
-        followService.unfollowUser({
-          followId: 'non-existent',
-          userId: 'user1'
-        })
-      ).rejects.toThrow('RESOURCE_NOT_FOUND');
-    });
-
-    it('他ユーザーのフォロー関係を操作しようとした場合、エラーが発生する', async () => {
-      const mockFollow = {
-        id: 'follow-id',
-        followerId: 'user2',
-        followeeId: 'user3',
-        status: 'active'
-      };
-
-      vi.mocked(db.select).mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([mockFollow])
-        })
-      } as any);
-
-      await expect(
-        followService.unfollowUser({
-          followId: 'follow-id',
-          userId: 'user1'
-        })
-      ).rejects.toThrow('他のユーザーのフォロー関係は操作できません');
-    });
-  });
-
-  describe('getFollowers', () => {
-    it('ページネーション付きでフォロワー一覧を取得できる', async () => {
-      const mockFollowers = [
-        {
-          id: 'follow1',
-          followerId: 'user2',
-          followeeId: 'user1',
-          followType: 'family',
-          followReason: '素晴らしいコンテンツ',
-          createdAt: new Date(),
-          follower: {
-            id: 'user2',
-            displayName: 'User 2',
-            profileImageUrl: 'https://example.com/user2.jpg'
-          }
-        }
-      ];
-
-      vi.mocked(db.select).mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          leftJoin: vi.fn().mockReturnValue({
-            where: vi.fn().mockReturnValue({
-              orderBy: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue(mockFollowers)
-              })
-            })
-          })
-        })
-      } as any);
-
-      const result = await followService.getFollowers({
-        userId: 'user1',
-        limit: 20
-      });
-
-      expect(result.followers).toHaveLength(1);
-      expect(result.followers[0].follower.displayName).toBe('User 2');
-      expect(result.nextCursor).toBeDefined();
-    });
-
-    it('フォロワーがいない場合、空の配列を返す', async () => {
-      vi.mocked(db.select).mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          leftJoin: vi.fn().mockReturnValue({
-            where: vi.fn().mockReturnValue({
-              orderBy: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue([])
-              })
-            })
-          })
-        })
-      } as any);
-
-      const result = await followService.getFollowers({
-        userId: 'user1',
-        limit: 20
-      });
-
-      expect(result.followers).toHaveLength(0);
-      expect(result.nextCursor).toBeNull();
-    });
-  });
-
-  describe('getFollowing', () => {
-    it('最新投稿付きでフォロー中一覧を取得できる', async () => {
-      const mockFollowing = [
-        {
-          id: 'follow1',
-          followerId: 'user1',
-          followeeId: 'user2',
-          followType: 'family',
-          createdAt: new Date(),
-          followee: {
-            id: 'user2',
-            displayName: 'User 2',
-            profileImageUrl: 'https://example.com/user2.jpg'
-          },
-          latestPost: {
-            id: 'post1',
-            content: '最新の投稿です',
-            contentType: 'text',
-            createdAt: new Date()
-          }
-        }
-      ];
-
-      vi.mocked(db.select).mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          leftJoin: vi.fn().mockReturnValue({
-            where: vi.fn().mockReturnValue({
-              orderBy: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue(mockFollowing)
-              })
-            })
-          })
-        })
-      } as any);
-
-      const result = await followService.getFollowing({
-        userId: 'user1'
-      });
-
-      expect(result.following).toHaveLength(1);
-      expect(result.following[0].followee.displayName).toBe('User 2');
-      expect(result.following[0].latestPost?.content).toBe('最新の投稿です');
-    });
-
-    it('フォロータイプでフィルタリングできる', async () => {
-      const mockFollowing = [
-        {
-          id: 'follow1',
-          followerId: 'user1',
-          followeeId: 'user2',
-          followType: 'family',
-          createdAt: new Date(),
-          followee: {
-            id: 'user2',
-            displayName: 'Family User',
-            profileImageUrl: 'https://example.com/user2.jpg'
-          }
-        }
-      ];
-
-      vi.mocked(db.select).mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          leftJoin: vi.fn().mockReturnValue({
-            where: vi.fn().mockReturnValue({
-              orderBy: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue(mockFollowing)
-              })
-            })
-          })
-        })
-      } as any);
-
-      const result = await followService.getFollowing({
-        userId: 'user1',
-        type: 'family'
-      });
-
-      expect(result.following).toHaveLength(1);
-      expect(result.following[0].followType).toBe('family');
+      expect(result.error).toBeNull();
     });
   });
 });

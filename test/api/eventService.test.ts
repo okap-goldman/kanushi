@@ -10,6 +10,14 @@ vi.mock('@/lib/supabase', () => ({
   },
 }));
 
+vi.mock('@/lib/stripeService', () => ({
+  stripeService: {
+    createPaymentIntent: vi.fn(),
+    getPaymentIntent: vi.fn(),
+    createRefund: vi.fn()
+  }
+}));
+
 // テスト用のユーザー
 const testUser = {
   id: '00000000-0000-0000-0000-000000000001',
@@ -257,6 +265,580 @@ describe('EventService - イベント作成API', () => {
       expect(result.error).toBeTruthy();
       expect(result.error?.message).toContain('定員は1人以上である必要があります');
       expect(supabase.from).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('イベント参加API', () => {
+    it('無料イベントへの参加成功', async () => {
+      const joinData = {
+        eventId: 'event-1'
+      };
+
+      const mockEvent = {
+        id: 'event-1',
+        creator_user_id: 'other-user',
+        event_type: 'offline',
+        starts_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        ends_at: new Date(Date.now() + 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+        fee: null
+      };
+
+      const mockParticipant = {
+        id: 'participant-1',
+        event_id: 'event-1',
+        user_id: testUser.id,
+        status: 'confirmed',
+        payment_status: 'free'
+      };
+
+      // Event fetch mock
+      const eventChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+      };
+
+      // Existing participant check mock
+      const existingParticipantChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      // New participant insert mock
+      const insertChain = {
+        insert: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null })
+      };
+
+      (supabase.from as any)
+        .mockReturnValueOnce(eventChain) // For event fetch
+        .mockReturnValueOnce(existingParticipantChain) // For existing participant check
+        .mockReturnValueOnce(insertChain); // For participant insert
+
+      const result = await eventServiceDrizzle.joinEvent(joinData, testUser.id);
+      
+      expect(result.data).toBeTruthy();
+      expect(result.error).toBeNull();
+      expect(result.data?.participantId).toBe('participant-1');
+      expect(result.data?.paymentRequired).toBe(false);
+    });
+
+    it('有料イベントへの参加（決済待ち）', async () => {
+      const joinData = {
+        eventId: 'event-2'
+      };
+
+      const mockEvent = {
+        id: 'event-2',
+        creator_user_id: 'other-user',
+        event_type: 'online',
+        starts_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        ends_at: new Date(Date.now() + 48 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
+        fee: '3000',
+        currency: 'JPY'
+      };
+
+      const mockPaymentIntent = {
+        id: 'pi_test_456',
+        client_secret: 'pi_test_456_secret',
+        amount: 3000,
+        currency: 'jpy'
+      };
+
+      const mockParticipant = {
+        id: 'participant-2',
+        event_id: 'event-2',
+        user_id: testUser.id,
+        status: 'pending',
+        payment_status: 'pending',
+        stores_payment_id: 'pi_test_456'
+      };
+
+      // Event fetch mock
+      const eventChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+      };
+
+      // Existing participant check mock
+      const existingParticipantChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      // New participant insert mock
+      const insertChain = {
+        insert: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null })
+      };
+
+      (supabase.from as any)
+        .mockReturnValueOnce(eventChain)
+        .mockReturnValueOnce(existingParticipantChain)
+        .mockReturnValueOnce(insertChain);
+
+      // Stripe mock
+      const { stripeService } = await import('../../src/lib/stripeService');
+      vi.mocked(stripeService.createPaymentIntent).mockResolvedValue({
+        data: mockPaymentIntent,
+        error: null
+      });
+
+      const result = await eventServiceDrizzle.joinEvent(joinData, testUser.id);
+
+      expect(result.data).toBeTruthy();
+      expect(result.error).toBeNull();
+      expect(result.data?.paymentRequired).toBe(true);
+      expect(result.data?.paymentIntentClientSecret).toBe('pi_test_456_secret');
+    });
+
+    it('定員に達したワークショップへの参加エラー', async () => {
+      const joinData = {
+        eventId: 'workshop-event-1'
+      };
+
+      const mockEvent = {
+        id: 'workshop-event-1',
+        event_type: 'voice_workshop',
+        starts_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
+        ends_at: new Date(Date.now() + 72 * 60 * 60 * 1000 + 90 * 60 * 1000).toISOString(),
+        fee: '5000',
+        event_voice_workshop: [{
+          max_participants: 10
+        }]
+      };
+
+      // Event fetch mock
+      const eventChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+      };
+
+      // Existing participant check mock
+      const existingParticipantChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      // Participant count check mock
+      const countChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis()
+      };
+      // Simulate the result after the second eq()
+      countChain.eq.mockReturnValueOnce(countChain).mockReturnValueOnce({ count: 10 });
+
+      (supabase.from as any)
+        .mockReturnValueOnce(eventChain) // For event fetch
+        .mockReturnValueOnce(existingParticipantChain) // For existing participant check  
+        .mockReturnValueOnce(countChain); // For participant count
+
+      const result = await eventServiceDrizzle.joinEvent(joinData, testUser.id);
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBeTruthy();
+      expect(result.error?.message).toContain('定員に達しています');
+    });
+  });
+
+  describe('アーカイブアクセス制御API', () => {
+    it('参加者によるアーカイブアクセス成功', async () => {
+      const eventId = 'workshop-event-1';
+
+      const mockEvent = {
+        id: eventId,
+        creator_user_id: 'other-user',
+        event_type: 'voice_workshop',
+        event_voice_workshop: [{
+          is_recorded: true,
+          recording_url: 'https://example.com/recording.mp3',
+          archive_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        }]
+      };
+
+      const mockParticipant = {
+        id: 'participant-1',
+        event_id: eventId,
+        user_id: testUser.id,
+        status: 'confirmed'
+      };
+
+      const mockSupabaseChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn()
+          .mockResolvedValueOnce({ data: mockEvent, error: null })
+          .mockResolvedValueOnce({ data: mockParticipant, error: null })
+      };
+
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
+
+      const result = await eventServiceDrizzle.getArchiveAccess(eventId, testUser.id);
+
+      expect(result.data).toBeTruthy();
+      expect(result.error).toBeNull();
+      expect(result.data?.url).toBe('https://example.com/recording.mp3');
+      expect(result.data?.expiresAt).toBeTruthy();
+    });
+
+    it('録画されていないワークショップでエラー', async () => {
+      const eventId = 'workshop-event-2';
+
+      const mockEvent = {
+        id: eventId,
+        event_type: 'voice_workshop',
+        event_voice_workshop: [{
+          is_recorded: false,
+          recording_url: null
+        }]
+      };
+
+      const mockSupabaseChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+      };
+
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
+
+      const result = await eventServiceDrizzle.getArchiveAccess(eventId, testUser.id);
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBeTruthy();
+      expect(result.error?.message).toContain('録画はありません');
+    });
+  });
+
+  describe('ワークショップ入室制御API', () => {
+    it('参加者の入室許可（開始30分前）', async () => {
+      const eventId = 'workshop-event-1';
+      const startsIn25Minutes = new Date(Date.now() + 25 * 60 * 1000);
+      const endsIn115Minutes = new Date(Date.now() + 115 * 60 * 1000);
+
+      const mockEvent = {
+        id: eventId,
+        creator_user_id: 'other-user',
+        event_type: 'voice_workshop',
+        live_room_id: 'room-123',
+        starts_at: startsIn25Minutes.toISOString(),
+        ends_at: endsIn115Minutes.toISOString()
+      };
+
+      const mockParticipant = {
+        id: 'participant-1',
+        event_id: eventId,
+        user_id: testUser.id,
+        status: 'confirmed'
+      };
+
+      const mockSupabaseChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn()
+          .mockResolvedValueOnce({ data: mockEvent, error: null })
+          .mockResolvedValueOnce({ data: mockParticipant, error: null })
+      };
+
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
+
+      const result = await eventServiceDrizzle.getWorkshopRoomAccess(eventId, testUser.id);
+
+      expect(result.data).toBeTruthy();
+      expect(result.error).toBeNull();
+      expect(result.data?.liveRoomId).toBe('room-123');
+      expect(result.data?.role).toBe('listener');
+    });
+
+    it('作成者はモデレーターロール', async () => {
+      const eventId = 'workshop-event-2';
+      const userId = 'creator-user-id';
+
+      const mockEvent = {
+        id: eventId,
+        creator_user_id: userId,
+        event_type: 'voice_workshop',
+        live_room_id: 'room-456',
+        starts_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+        ends_at: new Date(Date.now() + 100 * 60 * 1000).toISOString()
+      };
+
+      const mockSupabaseChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+      };
+
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
+
+      const result = await eventServiceDrizzle.getWorkshopRoomAccess(eventId, userId);
+
+      expect(result.data).toBeTruthy();
+      expect(result.error).toBeNull();
+      expect(result.data?.role).toBe('moderator');
+    });
+
+    it('開始前31分以上でエラー', async () => {
+      const eventId = 'workshop-event-3';
+      const startsIn35Minutes = new Date(Date.now() + 35 * 60 * 1000);
+
+      const mockEvent = {
+        id: eventId,
+        event_type: 'voice_workshop',
+        live_room_id: 'room-789',
+        starts_at: startsIn35Minutes.toISOString(),
+        ends_at: new Date(startsIn35Minutes.getTime() + 90 * 60 * 1000).toISOString()
+      };
+
+      const mockSupabaseChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+      };
+
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
+
+      const result = await eventServiceDrizzle.getWorkshopRoomAccess(eventId, testUser.id);
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBeTruthy();
+      expect(result.error?.message).toContain('30分前から入室可能');
+    });
+  });
+
+  describe('Stripe決済統合', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('有料イベント参加時に決済インテントを作成', async () => {
+      const joinData = {
+        eventId: 'paid-event-1'
+      };
+
+      const mockEvent = {
+        id: 'paid-event-1',
+        creator_user_id: 'other-user',
+        event_type: 'online',
+        starts_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        ends_at: new Date(Date.now() + 48 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
+        fee: '5000',
+        currency: 'JPY'
+      };
+
+      const mockPaymentIntent = {
+        id: 'pi_test_123',
+        client_secret: 'pi_test_123_secret',
+        amount: 5000,
+        currency: 'jpy'
+      };
+
+      const mockParticipant = {
+        id: 'participant-3',
+        event_id: 'paid-event-1',
+        user_id: testUser.id,
+        status: 'pending',
+        payment_status: 'pending',
+        stores_payment_id: 'pi_test_123'
+      };
+
+      // Mocks setup
+      const eventChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+      };
+
+      const existingParticipantChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      const insertChain = {
+        insert: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null })
+      };
+
+      (supabase.from as any)
+        .mockReturnValueOnce(eventChain)
+        .mockReturnValueOnce(existingParticipantChain)
+        .mockReturnValueOnce(insertChain);
+
+      // Stripe mock
+      const { stripeService } = await import('../../src/lib/stripeService');
+      vi.mocked(stripeService.createPaymentIntent).mockResolvedValue({
+        data: mockPaymentIntent,
+        error: null
+      });
+
+      const result = await eventServiceDrizzle.joinEvent(joinData, testUser.id);
+
+      expect(result.data).toBeTruthy();
+      expect(result.error).toBeNull();
+      expect(result.data?.paymentRequired).toBe(true);
+      expect(result.data?.paymentIntentClientSecret).toBe('pi_test_123_secret');
+      expect(stripeService.createPaymentIntent).toHaveBeenCalledWith({
+        amount: 5000,
+        currency: 'JPY',
+        metadata: {
+          eventId: 'paid-event-1',
+          userId: testUser.id,
+          type: 'event_participation'
+        }
+      });
+    });
+
+    it('決済確認でイベント参加ステータスを更新', async () => {
+      const participantId = 'participant-1';
+      const paymentIntentId = 'pi_test_123';
+
+      const mockParticipant = {
+        id: participantId,
+        status: 'pending',
+        event: { fee: '3000' }
+      };
+
+      const mockPaymentIntent = {
+        id: paymentIntentId,
+        status: 'succeeded',
+        amount: 3000
+      };
+
+      // Supabase mocks
+      const selectChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null })
+      };
+
+      const updateChain = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ error: null })
+      };
+
+      (supabase.from as any)
+        .mockReturnValueOnce(selectChain) // For participant fetch
+        .mockReturnValueOnce(updateChain); // For participant update
+
+      // Stripe mock
+      const { stripeService } = await import('../../src/lib/stripeService');
+      vi.mocked(stripeService.getPaymentIntent).mockResolvedValue({
+        data: mockPaymentIntent,
+        error: null
+      });
+
+      const result = await eventServiceDrizzle.confirmEventPayment(participantId, paymentIntentId);
+
+      expect(result.data).toBeTruthy();
+      expect(result.error).toBeNull();
+      expect(result.data?.status).toBe('confirmed');
+      expect(updateChain.update).toHaveBeenCalledWith({
+        status: 'confirmed',
+        payment_status: 'completed',
+        stores_payment_id: paymentIntentId
+      });
+    });
+
+    it('返金可能期間内のキャンセルで返金処理', async () => {
+      const participantId = 'participant-1';
+
+      const mockParticipant = {
+        id: participantId,
+        user_id: testUser.id,
+        stores_payment_id: 'pi_test_123',
+        payment_status: 'completed',
+        event: {
+          starts_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48時間後
+          refund_policy: 'イベント開始24時間前まで全額返金'
+        }
+      };
+
+      const mockRefund = {
+        id: 're_test_123',
+        amount: 3000,
+        status: 'succeeded'
+      };
+
+      // Supabase mocks
+      const selectChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null })
+      };
+
+      const deleteChain = {
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ error: null })
+      };
+
+      (supabase.from as any)
+        .mockReturnValueOnce(selectChain) // For participant fetch
+        .mockReturnValueOnce(deleteChain); // For participant delete
+
+      // Stripe mock
+      const { stripeService } = await import('../../src/lib/stripeService');
+      vi.mocked(stripeService.createRefund).mockResolvedValue({
+        data: mockRefund,
+        error: null
+      });
+
+      const result = await eventServiceDrizzle.cancelEventParticipation(participantId, testUser.id);
+
+      expect(result.data).toBeTruthy();
+      expect(result.error).toBeNull();
+      expect(result.data?.refunded).toBe(true);
+      expect(stripeService.createRefund).toHaveBeenCalledWith({
+        paymentIntentId: 'pi_test_123',
+        reason: 'requested_by_customer'
+      });
+    });
+
+    it('返金期限を過ぎたキャンセルでは返金なし', async () => {
+      const participantId = 'participant-2';
+
+      const mockParticipant = {
+        id: participantId,
+        user_id: testUser.id,
+        stores_payment_id: 'pi_test_456',
+        payment_status: 'completed',
+        event: {
+          starts_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(), // 12時間後
+          refund_policy: 'イベント開始24時間前まで全額返金'
+        }
+      };
+
+      // Supabase mocks
+      const selectChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null })
+      };
+
+      const deleteChain = {
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ error: null })
+      };
+
+      (supabase.from as any)
+        .mockReturnValueOnce(selectChain)
+        .mockReturnValueOnce(deleteChain);
+
+      const { stripeService } = await import('../../src/lib/stripeService');
+
+      const result = await eventServiceDrizzle.cancelEventParticipation(participantId, testUser.id);
+
+      expect(result.data).toBeTruthy();
+      expect(result.error).toBeNull();
+      expect(result.data?.refunded).toBe(false);
+      expect(stripeService.createRefund).not.toHaveBeenCalled();
     });
   });
 });

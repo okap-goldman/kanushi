@@ -16,8 +16,9 @@ import { useNavigation } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
+import { ja } from "date-fns/locale";
 import { useAuth } from "../../context/AuthContext";
-import { eventService, CreateEventRequest } from "../../lib/eventService";
+import { eventServiceDrizzle, CreateEventRequest, CreateVoiceWorkshopRequest } from "../../lib/eventServiceDrizzle";
 import { Picker } from "@react-native-picker/picker";
 
 interface CreateEventDialogProps {
@@ -25,27 +26,11 @@ interface CreateEventDialogProps {
   onClose: () => void;
 }
 
-const CATEGORIES = [
-  "social",
-  "conference",
-  "workshop",
-  "concert",
-  "sports",
-  "fitness",
-  "food",
-  "art",
-  "culture",
-  "business",
-  "tech",
-  "education",
-  "family",
-  "other",
-];
-
-const PRIVACY_LEVELS = [
-  { value: "public", label: "Public (Anyone can see and join)" },
-  { value: "friends", label: "Friends (Only your connections can see and join)" },
-  { value: "private", label: "Private (By invitation only)" },
+const EVENT_TYPES = [
+  { value: "offline", label: "オフライン" },
+  { value: "online", label: "オンライン" },
+  { value: "hybrid", label: "ハイブリッド" },
+  { value: "voice_workshop", label: "音声ワークショップ" },
 ];
 
 export default function CreateEventDialog({ visible, onClose }: CreateEventDialogProps) {
@@ -54,39 +39,39 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form fields
-  const [title, setTitle] = useState("");
+  const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [eventType, setEventType] = useState<"offline" | "online" | "hybrid" | "voice_workshop">("offline");
+  const [location, setLocation] = useState("");
   const [startDate, setStartDate] = useState(new Date());
   const [startTime, setStartTime] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
-  const [isOnline, setIsOnline] = useState(false);
-  const [location, setLocation] = useState("");
-  const [onlineUrl, setOnlineUrl] = useState("");
-  const [maxParticipants, setMaxParticipants] = useState("");
-  const [price, setPrice] = useState("0");
+  const [fee, setFee] = useState("");
   const [currency] = useState("JPY");
-  const [category, setCategory] = useState("");
-  const [privacyLevel, setPrivacyLevel] = useState("public");
-  const [registrationDeadline, setRegistrationDeadline] = useState<Date | null>(null);
-  const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [refundPolicy, setRefundPolicy] = useState("イベント開始24時間前まで全額返金");
+  
+  // Voice workshop specific fields
+  const [maxParticipants, setMaxParticipants] = useState("");
+  const [isRecorded, setIsRecorded] = useState(false);
+  const [archiveExpiresAt, setArchiveExpiresAt] = useState<Date | null>(null);
 
   // Date picker states
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-  const [showRegistrationDatePicker, setShowRegistrationDatePicker] = useState(false);
+  const [showArchiveDatePicker, setShowArchiveDatePicker] = useState(false);
 
   const handleSubmit = async () => {
     if (!user) {
-      Alert.alert("Error", "You must be logged in to create an event");
+      Alert.alert("エラー", "ログインが必要です");
       return;
     }
 
     // Validate required fields
-    if (!title.trim()) {
-      Alert.alert("Error", "Please enter an event title");
+    if (!name.trim()) {
+      Alert.alert("エラー", "イベント名を入力してください");
       return;
     }
 
@@ -102,58 +87,69 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
 
       // Basic validation for dates
       if (endDateTime <= startDateTime) {
-        Alert.alert("Invalid date/time", "End date/time must be after start date/time");
+        Alert.alert("日時エラー", "終了日時は開始日時より後に設定してください");
         setIsSubmitting(false);
         return;
       }
 
-      const eventData: CreateEventRequest = {
-        title,
-        description: description || undefined,
-        start_datetime: startDateTime.toISOString(),
-        end_datetime: endDateTime.toISOString(),
-        is_online: isOnline,
-        price: parseInt(price, 10) || 0,
-        currency,
-        category: category || undefined,
-        privacy_level: privacyLevel as "public" | "friends" | "private",
-        registration_deadline: registrationDeadline?.toISOString(),
-        cover_image_url: coverImageUrl || undefined,
-      };
+      let result;
 
-      // Add location or online URL based on event type
-      if (isOnline) {
-        eventData.online_url = onlineUrl || undefined;
+      if (eventType === 'voice_workshop') {
+        // Create voice workshop
+        const workshopData: CreateVoiceWorkshopRequest = {
+          name,
+          description: description || undefined,
+          location: location || 'オンライン',
+          startsAt: startDateTime,
+          endsAt: endDateTime,
+          fee: fee ? parseInt(fee, 10) : undefined,
+          currency,
+          refundPolicy: refundPolicy || undefined,
+          maxParticipants: maxParticipants ? parseInt(maxParticipants, 10) : 10,
+          isRecorded,
+          archiveExpiresAt: archiveExpiresAt || undefined,
+        };
+
+        result = await eventServiceDrizzle.createVoiceWorkshop(workshopData, user.id);
       } else {
-        eventData.location = location || undefined;
+        // Create regular event
+        const eventData: CreateEventRequest = {
+          name,
+          description: description || undefined,
+          eventType,
+          location: location || undefined,
+          startsAt: startDateTime,
+          endsAt: endDateTime,
+          fee: fee ? parseInt(fee, 10) : undefined,
+          currency,
+          refundPolicy: refundPolicy || undefined,
+        };
+
+        result = await eventServiceDrizzle.createEvent(eventData, user.id);
       }
 
-      if (maxParticipants) {
-        eventData.max_participants = parseInt(maxParticipants, 10);
-      }
-
-      // Create the event
-      const { event, error } = await eventService.createEvent(eventData);
+      const { data, error } = result;
 
       if (error) {
         throw new Error(error.message);
       }
 
-      Alert.alert("Success", "Your event has been created successfully", [
+      Alert.alert("成功", "イベントが作成されました", [
         {
           text: "OK",
           onPress: () => {
             onClose();
-            if (event?.id) {
-              navigation.navigate("EventDetail", { eventId: event.id });
+            resetForm();
+            if (data?.id) {
+              navigation.navigate("EventDetail", { eventId: data.id });
             }
           },
         },
       ]);
     } catch (error) {
       Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to create event"
+        "エラー",
+        error instanceof Error ? error.message : "イベントの作成に失敗しました"
       );
     } finally {
       setIsSubmitting(false);
@@ -161,21 +157,19 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
   };
 
   const resetForm = () => {
-    setTitle("");
+    setName("");
     setDescription("");
+    setEventType("offline");
+    setLocation("");
     setStartDate(new Date());
     setStartTime(new Date());
     setEndDate(new Date());
     setEndTime(new Date());
-    setIsOnline(false);
-    setLocation("");
-    setOnlineUrl("");
+    setFee("");
+    setRefundPolicy("イベント開始24時間前まで全額返金");
     setMaxParticipants("");
-    setPrice("0");
-    setCategory("");
-    setPrivacyLevel("public");
-    setRegistrationDeadline(null);
-    setCoverImageUrl("");
+    setIsRecorded(false);
+    setArchiveExpiresAt(null);
   };
 
   return (
@@ -190,7 +184,7 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create New Event</Text>
+          <Text style={styles.headerTitle}>新規イベント作成</Text>
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={isSubmitting}
@@ -199,229 +193,203 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
             {isSubmitting ? (
               <ActivityIndicator size="small" color="#007AFF" />
             ) : (
-              <Text style={styles.submitButtonText}>Create</Text>
+              <Text style={styles.submitButtonText}>作成</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Title */}
+          {/* Event Type */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Event Title*</Text>
+            <Text style={styles.label}>イベント種別*</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={eventType}
+                onValueChange={setEventType}
+                style={styles.picker}
+              >
+                {EVENT_TYPES.map((type) => (
+                  <Picker.Item
+                    key={type.value}
+                    label={type.label}
+                    value={type.value}
+                  />
+                ))}
+              </Picker>
+            </View>
+            {eventType === 'voice_workshop' && (
+              <Text style={styles.helperText}>
+                音声での対話型ワークショップです。録音・アーカイブ機能があります。
+              </Text>
+            )}
+          </View>
+
+          {/* Name */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>イベント名*</Text>
             <TextInput
               style={styles.input}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Give your event a name"
+              value={name}
+              onChangeText={setName}
+              placeholder="イベント名を入力してください"
               placeholderTextColor="#999"
             />
           </View>
 
           {/* Description */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Description</Text>
+            <Text style={styles.label}>説明</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={description}
               onChangeText={setDescription}
-              placeholder="Describe your event..."
+              placeholder="イベントの詳細を記入してください..."
               placeholderTextColor="#999"
               multiline
               numberOfLines={4}
             />
           </View>
 
-          {/* Category */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Category</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={category}
-                onValueChange={setCategory}
-                style={styles.picker}
-              >
-                <Picker.Item label="Select a category" value="" />
-                {CATEGORIES.map((cat) => (
-                  <Picker.Item
-                    key={cat}
-                    label={cat.charAt(0).toUpperCase() + cat.slice(1)}
-                    value={cat}
-                  />
-                ))}
-              </Picker>
+          {/* Location */}
+          {eventType !== 'online' && (
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>場所</Text>
+              <TextInput
+                style={styles.input}
+                value={location}
+                onChangeText={setLocation}
+                placeholder={eventType === 'voice_workshop' ? "オンライン（省略可）" : "例: 東京都渋谷区"}
+                placeholderTextColor="#999"
+              />
             </View>
-          </View>
+          )}
 
           {/* Start Date & Time */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Start Date & Time*</Text>
+            <Text style={styles.label}>開始日時*</Text>
             <View style={styles.dateTimeRow}>
               <TouchableOpacity
                 style={[styles.dateTimeButton, { flex: 1 }]}
                 onPress={() => setShowStartDatePicker(true)}
               >
                 <Ionicons name="calendar-outline" size={20} color="#666" />
-                <Text style={styles.dateTimeText}>{format(startDate, "PPP")}</Text>
+                <Text style={styles.dateTimeText}>{format(startDate, "PPP", { locale: ja })}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.dateTimeButton}
                 onPress={() => setShowStartTimePicker(true)}
               >
                 <Ionicons name="time-outline" size={20} color="#666" />
-                <Text style={styles.dateTimeText}>{format(startTime, "p")}</Text>
+                <Text style={styles.dateTimeText}>{format(startTime, "p", { locale: ja })}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* End Date & Time */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>End Date & Time*</Text>
+            <Text style={styles.label}>終了日時*</Text>
             <View style={styles.dateTimeRow}>
               <TouchableOpacity
                 style={[styles.dateTimeButton, { flex: 1 }]}
                 onPress={() => setShowEndDatePicker(true)}
               >
                 <Ionicons name="calendar-outline" size={20} color="#666" />
-                <Text style={styles.dateTimeText}>{format(endDate, "PPP")}</Text>
+                <Text style={styles.dateTimeText}>{format(endDate, "PPP", { locale: ja })}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.dateTimeButton}
                 onPress={() => setShowEndTimePicker(true)}
               >
                 <Ionicons name="time-outline" size={20} color="#666" />
-                <Text style={styles.dateTimeText}>{format(endTime, "p")}</Text>
+                <Text style={styles.dateTimeText}>{format(endTime, "p", { locale: ja })}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Online Event Toggle */}
+          {/* Price */}
           <View style={styles.formGroup}>
-            <View style={styles.toggleRow}>
-              <View>
-                <Text style={styles.label}>Online Event</Text>
-                <Text style={styles.helperText}>
-                  Enable if this event will be held online
-                </Text>
-              </View>
-              <Switch value={isOnline} onValueChange={setIsOnline} />
-            </View>
+            <Text style={styles.label}>参加費 ({currency})</Text>
+            <TextInput
+              style={styles.input}
+              value={fee}
+              onChangeText={setFee}
+              placeholder="無料の場合は空欄"
+              placeholderTextColor="#999"
+              keyboardType="numeric"
+            />
+            <Text style={styles.helperText}>
+              参加費を設定する場合は金額を入力してください
+            </Text>
           </View>
 
-          {/* Location or Online URL */}
-          {isOnline ? (
+          {/* Refund Policy */}
+          {fee && parseInt(fee) > 0 && (
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Online URL</Text>
+              <Text style={styles.label}>返金ポリシー</Text>
               <TextInput
-                style={styles.input}
-                value={onlineUrl}
-                onChangeText={setOnlineUrl}
-                placeholder="e.g., https://zoom.us/j/123456789"
+                style={[styles.input, styles.textArea]}
+                value={refundPolicy}
+                onChangeText={setRefundPolicy}
+                placeholder="返金に関する規定を記載してください"
                 placeholderTextColor="#999"
-                autoCapitalize="none"
+                multiline
+                numberOfLines={2}
               />
-              <Text style={styles.helperText}>
-                Provide a link where participants can join your event
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Location</Text>
-              <TextInput
-                style={styles.input}
-                value={location}
-                onChangeText={setLocation}
-                placeholder="e.g., Tokyo, Shibuya"
-                placeholderTextColor="#999"
-              />
-              <Text style={styles.helperText}>Provide the location of your event</Text>
             </View>
           )}
 
-          {/* Max Participants */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Maximum Participants</Text>
-            <TextInput
-              style={styles.input}
-              value={maxParticipants}
-              onChangeText={setMaxParticipants}
-              placeholder="Leave empty for unlimited"
-              placeholderTextColor="#999"
-              keyboardType="numeric"
-            />
-            <Text style={styles.helperText}>
-              Set a limit on the number of participants, or leave empty for unlimited
-            </Text>
-          </View>
+          {/* Voice Workshop Specific Fields */}
+          {eventType === 'voice_workshop' && (
+            <>
+              {/* Max Participants */}
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>定員</Text>
+                <TextInput
+                  style={styles.input}
+                  value={maxParticipants}
+                  onChangeText={setMaxParticipants}
+                  placeholder="10（デフォルト）"
+                  placeholderTextColor="#999"
+                  keyboardType="numeric"
+                />
+                <Text style={styles.helperText}>
+                  同時参加できる最大人数（1〜1000人）
+                </Text>
+              </View>
 
-          {/* Price */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Price ({currency})</Text>
-            <TextInput
-              style={styles.input}
-              value={price}
-              onChangeText={setPrice}
-              placeholder="0 for free events"
-              placeholderTextColor="#999"
-              keyboardType="numeric"
-            />
-            <Text style={styles.helperText}>
-              Set a price for your event, or 0 for free events
-            </Text>
-          </View>
+              {/* Recording Toggle */}
+              <View style={styles.formGroup}>
+                <View style={styles.toggleRow}>
+                  <View>
+                    <Text style={styles.label}>録音する</Text>
+                    <Text style={styles.helperText}>
+                      ワークショップを録音してアーカイブとして提供
+                    </Text>
+                  </View>
+                  <Switch value={isRecorded} onValueChange={setIsRecorded} />
+                </View>
+              </View>
 
-          {/* Privacy Level */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Privacy Level</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={privacyLevel}
-                onValueChange={setPrivacyLevel}
-                style={styles.picker}
-              >
-                {PRIVACY_LEVELS.map((level) => (
-                  <Picker.Item
-                    key={level.value}
-                    label={level.label}
-                    value={level.value}
-                  />
-                ))}
-              </Picker>
-            </View>
-            <Text style={styles.helperText}>Control who can see and join your event</Text>
-          </View>
-
-          {/* Registration Deadline */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Registration Deadline</Text>
-            <TouchableOpacity
-              style={styles.dateTimeButton}
-              onPress={() => setShowRegistrationDatePicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={20} color="#666" />
-              <Text style={styles.dateTimeText}>
-                {registrationDeadline ? format(registrationDeadline, "PPP") : "Optional"}
-              </Text>
-            </TouchableOpacity>
-            <Text style={styles.helperText}>
-              Last day for participants to register (optional)
-            </Text>
-          </View>
-
-          {/* Cover Image URL */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Cover Image URL</Text>
-            <TextInput
-              style={styles.input}
-              value={coverImageUrl}
-              onChangeText={setCoverImageUrl}
-              placeholder="URL to event cover image"
-              placeholderTextColor="#999"
-              autoCapitalize="none"
-            />
-            <Text style={styles.helperText}>
-              Provide a URL for an image that represents your event
-            </Text>
-          </View>
+              {/* Archive Expiration */}
+              {isRecorded && (
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>アーカイブ有効期限</Text>
+                  <TouchableOpacity
+                    style={styles.dateTimeButton}
+                    onPress={() => setShowArchiveDatePicker(true)}
+                  >
+                    <Ionicons name="calendar-outline" size={20} color="#666" />
+                    <Text style={styles.dateTimeText}>
+                      {archiveExpiresAt ? format(archiveExpiresAt, "PPP", { locale: ja }) : "無期限"}
+                    </Text>
+                  </TouchableOpacity>
+                  <Text style={styles.helperText}>
+                    録画の公開期限（省略可）
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
         </ScrollView>
 
         {/* Date Pickers */}
@@ -475,14 +443,14 @@ export default function CreateEventDialog({ visible, onClose }: CreateEventDialo
           />
         )}
 
-        {showRegistrationDatePicker && (
+        {showArchiveDatePicker && (
           <DateTimePicker
-            value={registrationDeadline || new Date()}
+            value={archiveExpiresAt || new Date()}
             mode="date"
             display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={(event, date) => {
-              setShowRegistrationDatePicker(false);
-              if (date) setRegistrationDeadline(date);
+              setShowArchiveDatePicker(false);
+              if (date) setArchiveExpiresAt(date);
             }}
             minimumDate={new Date()}
           />

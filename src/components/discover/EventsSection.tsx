@@ -43,85 +43,85 @@ export function EventsSection() {
   ];
 
   return (
-    <ScrollView className="flex-1">
-      <View className="space-y-6 p-4">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center gap-2">
+    <ScrollView style={{ flex: 1 }}>
+      <View style={{ padding: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Calendar size={20} color="#000" />
-            <Text className="text-lg font-semibold">イベント</Text>
+            <Text style={{ fontSize: 18, fontWeight: '600' }}>イベント</Text>
           </View>
           
-          <View className="flex-row gap-2">
-            <TouchableOpacity className="p-2 border border-gray-300 rounded-md">
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity style={{ padding: 8, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6 }}>
               <Filter size={16} color="#000" />
             </TouchableOpacity>
             
             <TouchableOpacity 
-              className="flex-row items-center px-3 py-2 bg-black rounded-md"
+              style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#000', borderRadius: 6 }}
               onPress={() => setShowCreateDialog(true)}
             >
               <Plus size={16} color="#fff" />
-              <Text className="text-white ml-1 text-sm">イベントを企画</Text>
+              <Text style={{ color: '#fff', marginLeft: 4, fontSize: 14 }}>イベントを企画</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View className="flex-row items-center bg-gray-100 rounded-md px-3 py-2">
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 24 }}>
           <Search size={16} color="#666" />
           <TextInput
-            className="flex-1 ml-2"
+            style={{ flex: 1, marginLeft: 8 }}
             placeholder="イベントを検索"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
         </View>
 
-        <View className="bg-white rounded-lg shadow-sm p-4">
-          <Text className="font-medium mb-3">注目のイベント</Text>
-          <View className="aspect-video rounded-lg overflow-hidden mb-3">
+        <View style={{ backgroundColor: '#fff', borderRadius: 8, padding: 16, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 }}>
+          <Text style={{ fontWeight: '500', marginBottom: 12 }}>注目のイベント</Text>
+          <View style={{ aspectRatio: 16/9, borderRadius: 8, overflow: 'hidden', marginBottom: 12 }}>
             <Image
               source={{ uri: "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=800" }}
-              className="w-full h-full"
+              style={{ width: '100%', height: '100%' }}
               resizeMode="cover"
             />
           </View>
-          <Text className="font-medium">シアターワーク体験会</Text>
-          <Text className="text-sm text-gray-600 mt-1">2024年4月20日 14:00-16:00</Text>
-          <Text className="mt-2">青梅市文化会館</Text>
-          <View className="flex-row gap-2 mt-3">
-            <View className="px-2 py-1 bg-gray-100 rounded">
-              <Text className="text-sm">参加費無料</Text>
+          <Text style={{ fontWeight: '500' }}>シアターワーク体験会</Text>
+          <Text style={{ fontSize: 14, color: '#4B5563', marginTop: 4 }}>2024年4月20日 14:00-16:00</Text>
+          <Text style={{ marginTop: 8 }}>青梅市文化会館</Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+            <View style={{ paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#F3F4F6', borderRadius: 4 }}>
+              <Text style={{ fontSize: 14 }}>参加費無料</Text>
             </View>
-            <View className="px-2 py-1 bg-gray-100 rounded">
-              <Text className="text-sm">定員20名</Text>
+            <View style={{ paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#F3F4F6', borderRadius: 4 }}>
+              <Text style={{ fontSize: 14 }}>定員20名</Text>
             </View>
           </View>
         </View>
 
-        <View className="space-y-4">
+        <View style={{ gap: 16 }}>
           {events.map((event, i) => (
             <TouchableOpacity 
               key={i}
-              className="bg-white rounded-lg shadow-sm overflow-hidden"
+              style={{ backgroundColor: '#fff', borderRadius: 8, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 }}
               onPress={() => setSelectedEvent(event.title)}
             >
-              <View className="aspect-video">
+              <View style={{ aspectRatio: 16/9 }}>
                 <Image
                   source={{ uri: event.image }}
-                  className="w-full h-full"
+                  style={{ width: '100%', height: '100%' }}
                   resizeMode="cover"
                 />
               </View>
-              <View className="p-4">
-                <Text className="font-medium">{event.title}</Text>
-                <Text className="text-sm text-gray-600 mt-1">{event.date}</Text>
-                <Text className="mt-2">{event.location}</Text>
-                <View className="flex-row gap-2 mt-3">
-                  <View className="px-2 py-1 bg-gray-100 rounded">
-                    <Text className="text-sm">{event.price}</Text>
+              <View style={{ padding: 16 }}>
+                <Text style={{ fontWeight: '500' }}>{event.title}</Text>
+                <Text style={{ fontSize: 14, color: '#4B5563', marginTop: 4 }}>{event.date}</Text>
+                <Text style={{ marginTop: 8 }}>{event.location}</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#F3F4F6', borderRadius: 4 }}>
+                    <Text style={{ fontSize: 14 }}>{event.price}</Text>
                   </View>
-                  <View className="px-2 py-1 bg-gray-100 rounded">
-                    <Text className="text-sm">{event.capacity}</Text>
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#F3F4F6', borderRadius: 4 }}>
+                    <Text style={{ fontSize: 14 }}>{event.capacity}</Text>
                   </View>
                 </View>
               </View>
@@ -136,57 +136,57 @@ export function EventsSection() {
           transparent={true}
           onRequestClose={() => setShowCreateDialog(false)}
         >
-          <View className="flex-1 bg-black/50">
-            <View className="flex-1 mt-20 bg-white rounded-t-3xl">
-              <ScrollView className="flex-1 p-6">
-                <Text className="text-xl font-bold mb-6">新しいイベントを企画</Text>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+            <View style={{ flex: 1, marginTop: 80, backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+              <ScrollView style={{ flex: 1, padding: 24 }}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 24 }}>新しいイベントを企画</Text>
                 
-                <View className="space-y-4">
+                <View style={{ gap: 16 }}>
                   <View>
-                    <Text className="text-sm font-medium mb-1">イベント名</Text>
-                    <TextInput className="border border-gray-300 rounded-md px-3 py-2" />
+                    <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: 4 }}>イベント名</Text>
+                    <TextInput style={{ borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8 }} />
                   </View>
                   
                   <View>
-                    <Text className="text-sm font-medium mb-1">コンテンツ</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: 4 }}>コンテンツ</Text>
                     <TextInput 
-                      className="border border-gray-300 rounded-md px-3 py-2 h-24"
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8, height: 96 }}
                       multiline
                       textAlignVertical="top"
                     />
                   </View>
                   
-                  <View className="flex-row gap-4">
-                    <View className="flex-1">
-                      <Text className="text-sm font-medium mb-1">人数</Text>
+                  <View style={{ flexDirection: 'row', gap: 16 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: 4 }}>人数</Text>
                       <TextInput 
-                        className="border border-gray-300 rounded-md px-3 py-2"
+                        style={{ borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8 }}
                         keyboardType="numeric"
                       />
                     </View>
-                    <View className="flex-1">
-                      <Text className="text-sm font-medium mb-1">金額</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: 4 }}>金額</Text>
                       <TextInput 
-                        className="border border-gray-300 rounded-md px-3 py-2"
+                        style={{ borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8 }}
                         keyboardType="numeric"
                       />
                     </View>
                   </View>
                   
                   <View>
-                    <Text className="text-sm font-medium mb-1">開催場所</Text>
-                    <TextInput className="border border-gray-300 rounded-md px-3 py-2" />
+                    <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: 4 }}>開催場所</Text>
+                    <TextInput style={{ borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8 }} />
                   </View>
                   
-                  <View className="flex-row gap-2 pt-4">
+                  <View style={{ flexDirection: 'row', gap: 8, paddingTop: 16 }}>
                     <TouchableOpacity 
-                      className="flex-1 py-3 border border-gray-300 rounded-md"
+                      style={{ flex: 1, paddingVertical: 12, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6 }}
                       onPress={() => setShowCreateDialog(false)}
                     >
-                      <Text className="text-center">キャンセル</Text>
+                      <Text style={{ textAlign: 'center' }}>キャンセル</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity className="flex-1 py-3 bg-black rounded-md">
-                      <Text className="text-center text-white">作成</Text>
+                    <TouchableOpacity style={{ flex: 1, paddingVertical: 12, backgroundColor: '#000', borderRadius: 6 }}>
+                      <Text style={{ textAlign: 'center', color: '#fff' }}>作成</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -202,56 +202,56 @@ export function EventsSection() {
           transparent={true}
           onRequestClose={() => setSelectedEvent(null)}
         >
-          <View className="flex-1 bg-black/50">
-            <View className="flex-1 mt-20 bg-white rounded-t-3xl">
-              <ScrollView className="flex-1 p-6">
-                <Text className="text-xl font-bold mb-4">{selectedEvent}</Text>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+            <View style={{ flex: 1, marginTop: 80, backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+              <ScrollView style={{ flex: 1, padding: 24 }}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>{selectedEvent}</Text>
                 
-                <View className="aspect-video rounded-lg overflow-hidden mb-4">
+                <View style={{ aspectRatio: 16/9, borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
                   <Image
                     source={{ uri: "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=800" }}
-                    className="w-full h-full"
+                    style={{ width: '100%', height: '100%' }}
                     resizeMode="cover"
                   />
                 </View>
                 
-                <View className="space-y-4">
+                <View style={{ gap: 16 }}>
                   <View>
-                    <Text className="font-medium mb-1">イベント詳細</Text>
-                    <Text className="text-sm text-gray-600">
+                    <Text style={{ fontWeight: '500', marginBottom: 4 }}>イベント詳細</Text>
+                    <Text style={{ fontSize: 14, color: '#4B5563' }}>
                       瞑想を通じて、心の平安とマインドフルネスを体験するワークショップです。
                       初心者の方も安心してご参加いただけます。
                     </Text>
                   </View>
                   
-                  <View className="space-y-3">
+                  <View style={{ gap: 12 }}>
                     <View>
-                      <Text className="text-sm font-medium">開催日時</Text>
-                      <Text className="text-sm text-gray-600">2024年4月20日 14:00-16:00</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '500' }}>開催日時</Text>
+                      <Text style={{ fontSize: 14, color: '#4B5563' }}>2024年4月20日 14:00-16:00</Text>
                     </View>
                     <View>
-                      <Text className="text-sm font-medium">場所</Text>
-                      <Text className="text-sm text-gray-600">渋谷区瞑想センター</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '500' }}>場所</Text>
+                      <Text style={{ fontSize: 14, color: '#4B5563' }}>渋谷区瞑想センター</Text>
                     </View>
                     <View>
-                      <Text className="text-sm font-medium">参加費</Text>
-                      <Text className="text-sm text-gray-600">¥3,000</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '500' }}>参加費</Text>
+                      <Text style={{ fontSize: 14, color: '#4B5563' }}>¥3,000</Text>
                     </View>
                     <View>
-                      <Text className="text-sm font-medium">定員</Text>
-                      <Text className="text-sm text-gray-600">15名</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '500' }}>定員</Text>
+                      <Text style={{ fontSize: 14, color: '#4B5563' }}>15名</Text>
                     </View>
                   </View>
                   
-                  <View className="flex-row gap-2 pt-4">
+                  <View style={{ flexDirection: 'row', gap: 8, paddingTop: 16 }}>
                     <TouchableOpacity 
-                      className="flex-1 py-3 border border-gray-300 rounded-md"
+                      style={{ flex: 1, paddingVertical: 12, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6 }}
                       onPress={() => setSelectedEvent(null)}
                     >
-                      <Text className="text-center">閉じる</Text>
+                      <Text style={{ textAlign: 'center' }}>閉じる</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity className="flex-1 py-3 bg-black rounded-md">
-                      <Text className="text-center text-white">参加する</Text>
+                    <TouchableOpacity style={{ flex: 1, paddingVertical: 12, backgroundColor: '#000', borderRadius: 6 }}>
+                      <Text style={{ textAlign: 'center', color: '#fff' }}>参加する</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

@@ -1,10 +1,10 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link';
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
-interface ButtonProps {
+export interface ButtonProps {
   children: React.ReactNode;
   onPress: () => void;
   variant?: ButtonVariant;
@@ -14,6 +14,7 @@ interface ButtonProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   fullWidth?: boolean;
+  testID?: string;
 }
 
 export function Button({
@@ -26,6 +27,7 @@ export function Button({
   style,
   textStyle,
   fullWidth = false,
+  testID,
 }: ButtonProps) {
   const buttonStyles = [
     styles.button,
@@ -49,11 +51,12 @@ export function Button({
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.7}
+      testID={testID}
     >
       {loading ? (
         <ActivityIndicator 
           size="small" 
-          color={variant === 'primary' ? '#FFFFFF' : '#0070F3'} 
+          color={variant === 'primary' || variant === 'destructive' ? '#FFFFFF' : '#0070F3'} 
         />
       ) : (
         <Text style={textStyles}>{children}</Text>
@@ -122,6 +125,15 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#0070F3',
     textDecorationLine: 'underline',
+  },
+  
+  destructive: {
+    backgroundColor: '#DC2626',
+    borderWidth: 1,
+    borderColor: '#DC2626',
+  },
+  destructiveText: {
+    color: '#FFFFFF',
   },
   
   // Sizes

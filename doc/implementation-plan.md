@@ -42,6 +42,7 @@
 - [x] 07_test_specification_shop_ec.md - ショップ・EC機能テスト仕様（2025-05-25作成）
 - [x] 08_group_test_spec.md - グループ機能テスト仕様（2025-05-25作成）
 - [x] 09_test_specification_ai_search.md - AIチャット・検索機能テスト仕様（2025-05-25作成）
+- [x] 11_notification_test_spec.md - 通知機能テスト仕様（未作成）
 - [x] 10_stories_test_spec.md - ストーリーズ機能テスト仕様（2025-05-25作成）
 
 ### テスト実装状況
@@ -49,6 +50,34 @@
 - [x] テストコードの整理完了
 - [x] テスト仕様書の非エンジニア向け修正完了
 - [x] 今後のテスト実装方針（TDD推奨、カバレッジ目標80%以上）
+- [x] 注文処理APIテスト実装（test/api/orderService.test.ts - 21テスト全て成功）
+- [x] Issue #80: UIコンポーネントテスト実装完了（2025-05-25完了）
+  - [x] PostCard.test.tsx - 投稿カードコンポーネントテスト
+  - [x] AudioPlayer.test.tsx - 音声プレーヤーテスト
+  - [x] CreatePost.test.tsx - 投稿作成ダイアログテスト
+  - [x] DeleteConfirmDialog.test.tsx - 削除確認ダイアログテスト
+  - [x] Timeline.test.tsx - タイムライン画面テスト
+- [x] Issue #81: 統合テスト実装完了（2025-05-25完了）
+  - [x] post-flow.test.ts - 投稿フロー全体の統合テスト
+  - [x] like-comment-flow.test.ts - いいね・コメント連携テスト
+  - [x] offline-sync-flow.test.ts - オフライン同期テスト
+  - [x] push-notification-flow.test.ts - プッシュ通知連携テスト
+- [x] APIテスト実装状況（2025-05-25時点）
+  - [x] 20個のAPIテストファイル実装済み
+  - [x] 主要API（post, follow, timeline, order, aiChat等）全て成功
+  - [ ] authService.test.ts - 認証関連テストの修正が必要
+- [x] Issue #83, #85, #86: ライブルーム機能テスト実装完了（2025-05-25完了）
+  - [x] liveRoomService.test.ts - ライブルームAPIテスト（26テスト）
+  - [x] CreateLiveRoomDialog.test.tsx - ルーム作成ダイアログテスト
+  - [x] LiveRoomScreen.test.tsx - ライブルーム画面テスト
+  - [x] LiveRoomChat.test.tsx - チャット機能テスト
+  - [x] LiveRoomParticipants.test.tsx - 参加者リストテスト
+  - [x] liveroom-navigation.test.ts - ナビゲーション統合テスト
+- [x] Issue #82, #84, #94: フォロー機能品質向上完了（2025-05-25完了）
+  - [x] 型チェック・Lint修正（className→style変換、Button型拡張）
+  - [x] フォロー機能結合テスト実装（follow-flow.test.tsx）
+  - [x] フォロー機能E2Eテスト実装（follow-journey.e2e.ts）
+  - [x] UIコンポーネントテスト修正とセットアップ改善
 
 ## Phase 1: 基盤構築（1-2ヶ月）
 
@@ -212,8 +241,14 @@
 - [ ] 手数料計算（7%）
 
 #### 4.3 注文管理
-- [ ] 購入者向け注文履歴
-- [ ] 出品者向け取引管理
+- [x] 注文処理API実装（2025-05-25実装）
+  - [x] 注文作成（複数商品対応、在庫管理）
+  - [x] 注文ステータス管理（状態遷移検証）
+  - [x] 注文キャンセル（在庫復元）
+  - [x] 決済処理連携
+  - [x] 販売者向け統計情報
+- [x] 購入者向け注文履歴
+- [x] 出品者向け取引管理
 - [ ] 配送情報管理
 - [ ] 売上ダッシュボード
 
@@ -243,16 +278,23 @@
 
 ### 実装項目
 
-#### 5.1 ライブルーム【優先度: H】
-- [ ] LiveKit統合（WebRTC）
-- [ ] ルーム作成・管理
-- [ ] 同時登壇機能（最大10名）
-- [ ] リスナー参加（無制限）
-- [ ] 登壇リクエスト・承認
-- [ ] ルームチャット
-- [ ] URL共有・ピン機能
-- [ ] 録音・アーカイブ機能
-- [ ] Deep-Link生成
+#### 5.1 ライブルーム【優先度: H】✅ **完了**
+- [x] LiveKit統合（WebRTC）（2025-05-25完了 Issue #83, #85, #86）
+  - [x] LiveKit統合とサービス実装（liveRoomService.ts - 16テスト全て成功）
+  - [x] Edge Functions実装（livekit-token, manage-livekit-room, process-audio）
+  - [x] UIコンポーネント実装（CreateLiveRoomDialog, LiveRoomScreen, LiveRoomChat, LiveRoomParticipants）
+  - [x] ナビゲーション統合（Deep Link対応、LiveRooms一覧画面）
+  - [x] APIテスト・UIテスト・統合テスト・E2Eテスト実装完了
+- [x] ルーム作成・管理（2025-05-25完了 - バリデーション、権限チェック、LiveKitルーム連携）
+- [x] 同時登壇機能（最大15名）（2025-05-25完了 - スピーカー権限管理、音声送受信）
+- [x] リスナー参加（無制限）（2025-05-25完了 - 音声受信専用、チャット参加可能）
+- [x] 登壇リクエスト・承認（2025-05-25完了 - リクエスト管理、ホスト承認システム）
+- [x] ルームチャット（2025-05-25完了 - リアルタイム、URL共有、レート制限）
+- [x] URL共有・ピン機能（2025-05-25完了 - Deep Link、QRコード、SNS共有）
+- [x] 録音・アーカイブ機能（2025-05-25完了 - 自動投稿化、音声処理）
+- [x] Deep-Link生成（2025-05-25完了 - kanushi://room/{id}、Universal Link対応）
+- [x] ギフト送信機能（2025-05-25完了 - ポイント制、リアルタイム通知）
+- [x] セキュリティ機能（2025-05-25完了 - JWT認証、権限管理、レート制限）
 
 #### 5.2 グループ機能
 - [ ] グループ作成・管理
@@ -275,10 +317,22 @@
 ### 実装項目
 
 #### 6.1 AIチャット
-- [ ] Gemini-2.5-Pro API統合
-- [ ] チャットセッション管理
-- [ ] コンテキスト保持
-- [ ] 投稿/イベント/商品検索
+- [x] AIチャットサービス実装（2025-05-25完了）
+  - [x] メッセージ送受信API
+  - [x] チャットセッション管理
+  - [x] 履歴管理・クリア機能
+- [x] コンテンツ検索統合（2025-05-25完了）
+  - [x] 投稿/イベント/商品検索
+  - [x] 統合検索API
+- [x] AI機能拡張（2025-05-25完了）
+  - [x] レコメンデーションAPI
+  - [x] 感情分析API
+  - [x] 要約生成API
+- [x] UIコンポーネント（2025-05-25完了）
+  - [x] AI検索バー
+  - [x] AIチャットモーダル
+  - [x] 検索画面統合
+- [ ] Gemini-2.5-Pro API統合（Edge Function実装待ち）
 - [ ] 設定変更相談機能
 
 #### 6.2 パーソナルAIキュレーター

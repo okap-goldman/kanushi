@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,27 +6,23 @@ import {
   FlatList,
   TouchableOpacity,
   SafeAreaView,
-  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Post } from '../components/post/Post';
 import { CreatePostDialog } from '../components/CreatePostDialog';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 
 export default function Home() {
-  const [posts, setPosts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [timelineType, setTimelineType] = useState<'family' | 'watch'>('family');
   const [showCreatePost, setShowCreatePost] = useState(false);
   
   const { user } = useAuth();
 
-  const fetchPosts = async () => {
+  const fetchPostsData = useCallback(async (page: number, pageSize: number) => {
     try {
-      setLoading(true);
-      
       // Using different queries based on timeline type
       let query;
       
@@ -41,7 +37,8 @@ export default function Home() {
               tags (id, name)
             )
           `)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
       } else {
         // Watch timeline: shows all posts
         query = supabase
@@ -53,7 +50,8 @@ export default function Home() {
               tags (id, name)
             )
           `)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
       }
 
       const { data, error } = await query;
@@ -81,23 +79,43 @@ export default function Home() {
           })) || [],
         }));
         
-        setPosts(formattedPosts);
+        return formattedPosts;
       }
+      
+      return [];
     } catch (error) {
       console.error('Error fetching posts:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      throw error;
     }
-  };
-
-  useEffect(() => {
-    fetchPosts();
   }, [timelineType]);
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchPosts();
+  const {
+    data: posts,
+    loading,
+    loadingMore,
+    hasNextPage,
+    loadMore,
+    refresh,
+    refreshing
+  } = useInfiniteScroll({
+    fetchData: fetchPostsData,
+    pageSize: 10
+  });
+
+  // Refresh data when timeline type changes
+  useEffect(() => {
+    refresh();
+  }, [timelineType]);
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    
+    return (
+      <View style={styles.loadingMore} testID="loading-more-indicator">
+        <ActivityIndicator size="small" color="#0070F3" />
+        <Text style={styles.loadingText}>読み込み中...</Text>
+      </View>
+    );
   };
 
   return (
@@ -141,6 +159,7 @@ export default function Home() {
       </View>
 
       <FlatList
+        testID="posts-flatlist"
         data={posts}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -153,9 +172,11 @@ export default function Home() {
             tags={item.tags}
           />
         )}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        onEndReached={hasNextPage && !loadingMore ? loadMore : undefined}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={renderFooter}
+        refreshing={refreshing}
+        onRefresh={refresh}
         style={styles.list}
         contentContainerStyle={styles.listContent}
       />
@@ -172,7 +193,7 @@ export default function Home() {
         onClose={() => setShowCreatePost(false)}
         onSuccess={() => {
           setShowCreatePost(false);
-          fetchPosts();
+          refresh();
         }}
       />
     </SafeAreaView>
@@ -234,5 +255,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     boxShadow: '0px 2px 3.84px rgba(0, 0, 0, 0.25)',
     elevation: 5,
+  },
+  loadingMore: {
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#64748B',
   },
 });

@@ -1,258 +1,430 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getTimelinePosts } from '@/lib/timelineService';
-import { supabase } from '@/lib/supabase';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { createTimelineService, type TimelineService, SimpleCache } from '../../src/lib/timelineService';
+import type { 
+  TimelineType, DrizzlePost, ServiceResult, PaginatedResult 
+} from '../../src/lib/data';
 
-// モックの設定
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(),
-    auth: {
-      getUser: vi.fn(),
-    },
+// Mock Supabase client
+const mockSupabaseClient = {
+  from: vi.fn(),
+  storage: {
+    from: vi.fn()
   },
-}));
+  auth: {
+    getUser: vi.fn()
+  },
+  rpc: vi.fn()
+};
 
-describe('Timeline Service Tests', () => {
+// Mock database client  
+const mockDb = {
+  select: vi.fn(),
+  insert: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  query: {
+    follows: {
+      findMany: vi.fn(),
+      findFirst: vi.fn()
+    },
+    posts: {
+      findMany: vi.fn(),
+      findFirst: vi.fn()
+    },
+    profiles: {
+      findFirst: vi.fn(),
+      findMany: vi.fn()
+    }
+  },
+  transaction: vi.fn()
+};
+
+describe('TimelineService - タイムライン取得機能', () => {
+  let timelineService: TimelineService;
+  let mockCache: SimpleCache;
+  const mockUserId = 'user-123';
+
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCache = new SimpleCache();
+    timelineService = createTimelineService(mockSupabaseClient as any, mockDb as any, mockCache);
   });
 
-  describe('getTimelinePosts - タイムライン取得', () => {
-    it('ファミリータイムラインの投稿を時系列順に取得できる', async () => {
-      // Arrange
-      const userId = 'test-user-id';
-      const mockFollows = [
-        { followee_id: 'family-user1' },
-        { followee_id: 'family-user2' },
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('ファミリータイムライン', () => {
+    it('ファミリーフォローの投稿を時系列順に取得できること', async () => {
+      // Mock family follows
+      const mockFamilyFollows = [
+        {
+          id: 'follow-1',
+          followerId: mockUserId,
+          followeeId: 'family-user-1',
+          followType: 'family',
+          status: 'active',
+          followReason: '素晴らしい内容',
+          createdAt: new Date()
+        },
+        {
+          id: 'follow-2',
+          followerId: mockUserId,
+          followeeId: 'family-user-2',
+          followType: 'family',
+          status: 'active',
+          followReason: '共感できる投稿',
+          createdAt: new Date()
+        }
       ];
+
+      // Mock posts from followed users
       const mockPosts = [
         {
-          id: 'post1',
-          user_id: 'family-user1',
-          content_type: 'text',
-          text_content: '投稿1',
-          created_at: '2024-01-02T00:00:00Z',
-          likes_count: 5,
-          comments_count: 2,
-          author: [{ id: 'family-user1', name: 'ユーザー1', image: 'https://example.com/user1.jpg' }],
-          tags: [],
+          id: 'post-1',
+          userId: 'family-user-1',
+          contentType: 'text',
+          textContent: '今日の気づきをシェアします',
+          createdAt: new Date('2024-01-02T10:00:00Z'),
+          updatedAt: new Date('2024-01-02T10:00:00Z'),
+          deletedAt: null,
+          mediaUrl: null,
+          previewUrl: null,
+          waveformUrl: null,
+          durationSeconds: null,
+          youtubeVideoId: null,
+          eventId: null,
+          groupId: null,
+          aiMetadata: null
         },
         {
-          id: 'post2',
-          user_id: 'family-user2',
-          content_type: 'text',
-          text_content: '投稿2',
-          created_at: '2024-01-01T00:00:00Z',
-          likes_count: 3,
-          comments_count: 1,
-          author: [{ id: 'family-user2', name: 'ユーザー2', image: 'https://example.com/user2.jpg' }],
-          tags: [],
-        },
+          id: 'post-2',
+          userId: 'family-user-2',
+          contentType: 'audio',
+          textContent: '瞑想の音声です',
+          mediaUrl: 'https://storage.b2.com/audio/meditation.mp3',
+          durationSeconds: 600,
+          createdAt: new Date('2024-01-02T08:00:00Z'),
+          updatedAt: new Date('2024-01-02T08:00:00Z'),
+          deletedAt: null,
+          previewUrl: null,
+          waveformUrl: 'https://storage.b2.com/waveform/meditation.png',
+          youtubeVideoId: null,
+          eventId: null,
+          groupId: null,
+          aiMetadata: null
+        }
       ];
 
-      // フォロー関係のモック - 最後のeqでデータを返す
-      const mockFollowsChain = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockImplementation(function(this: any) {
-          // 3回目のeq呼び出し（status チェック）でデータを返す
-          if (this.eq.mock.calls.length === 3) {
-            return { data: mockFollows, error: null };
-          }
-          return this;
-        }),
-      };
+      mockDb.query.follows.findMany.mockResolvedValue(mockFamilyFollows);
+      mockDb.query.posts.findMany.mockResolvedValue(mockPosts);
 
-      // 投稿データのモック - limitでデータを返す  
-      const mockPostsChain = {
-        select: vi.fn().mockReturnThis(),
-        in: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockReturnValue({ data: mockPosts, error: null }),
-      };
+      const result = await timelineService.getTimeline(mockUserId, 'family', 20);
 
-      (supabase.from as any).mockImplementation((table: string) => {
-        if (table === 'follows') {
-          return mockFollowsChain;
-        } else if (table === 'posts') {
-          return mockPostsChain;
-        }
-      });
-
-      // Act
-      const result = await getTimelinePosts(userId, 'family');
-
-      // Assert
+      expect(result.success).toBe(true);
+      expect(result.data!.items).toHaveLength(2);
+      expect(result.data!.items[0].id).toBe('post-1'); // 新しい投稿が先
+      expect(result.data!.items[1].id).toBe('post-2');
       expect(result.error).toBeNull();
-      expect(result.data?.posts).toHaveLength(2);
-      expect(result.data?.posts[0].id).toBe('post1');
-      expect(result.data?.posts[0].created_at > result.data?.posts[1].created_at).toBe(true);
-      expect(supabase.from).toHaveBeenCalledWith('follows');
-      expect(mockFollowsChain.eq).toHaveBeenCalledWith('follower_id', userId);
-      expect(mockFollowsChain.eq).toHaveBeenCalledWith('follow_type', 'family');
     });
 
-    it('ページネーションが動作する', async () => {
-      // Arrange
-      const userId = 'test-user-id';
-      const mockFollows = [{ followee_id: 'user1' }];
-      const mockPosts = Array.from({ length: 20 }, (_, i) => ({
-        id: `post${i}`,
-        user_id: 'user1',
-        content_type: 'text',
-        text_content: `投稿${i}`,
-        created_at: new Date(2024, 0, 20 - i).toISOString(),
-        author: [{ id: 'user1', name: 'ユーザー1', image: 'https://example.com/user1.jpg' }],
-        tags: [],
-      }));
+    it('フォローしているユーザーがいない場合、空の配列が返されること', async () => {
+      mockDb.query.follows.findMany.mockResolvedValue([]);
 
-      const mockFollowsChain = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockImplementation(function(this: any) {
-          if (this.eq.mock.calls.length === 3) {
-            return { data: mockFollows, error: null };
-          }
-          return this;
-        }),
-      };
+      const result = await timelineService.getTimeline(mockUserId, 'family', 20);
 
-      const mockPostsChain = {
-        select: vi.fn().mockReturnThis(),
-        in: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockImplementation(function(this: any) {
-          // limit チェーンを作成して返す
-          const limitChain = {
-            ...this,
-            lt: vi.fn().mockReturnValue({ data: mockPosts, error: null }),
-          };
-          // lt を呼ばない場合はそのままデータを返す
-          Object.defineProperty(limitChain, 'data', { value: mockPosts });
-          Object.defineProperty(limitChain, 'error', { value: null });
-          return limitChain;
-        }),
-      };
-
-      (supabase.from as any).mockImplementation((table: string) => {
-        if (table === 'follows') {
-          return mockFollowsChain;
-        } else if (table === 'posts') {
-          return mockPostsChain;
-        }
-      });
-
-      // Act
-      const result = await getTimelinePosts(userId, 'family', 20, '2024-01-21T00:00:00Z');
-
-      // Assert
+      expect(result.success).toBe(true);
+      expect(result.data!.items).toEqual([]);
+      expect(result.data!.hasMore).toBe(false);
+      expect(result.data!.nextCursor).toBeNull();
       expect(result.error).toBeNull();
-      expect(result.data?.posts).toHaveLength(20);
-      expect(result.data?.hasMore).toBeDefined();
-      // limitが呼ばれていることを確認
-      expect(mockPostsChain.limit).toHaveBeenCalledWith(21);
     });
 
-    it('フォローしているユーザーがいない場合は空の配列を返す', async () => {
-      // Arrange
-      const userId = 'test-user-id';
-      const mockFollowsChain = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockImplementation(function(this: any) {
-          if (this.eq.mock.calls.length === 3) {
-            return { data: [], error: null }; // フォローなし
-          }
-          return this;
-        }),
-      };
+    it('削除された投稿は除外されること', async () => {
+      const mockFamilyFollows = [
+        {
+          id: 'follow-1',
+          followerId: mockUserId,
+          followeeId: 'family-user-1',
+          followType: 'family',
+          status: 'active'
+        }
+      ];
 
-      (supabase.from as any).mockReturnValue(mockFollowsChain);
+      const mockPostsWithDeleted = [
+        {
+          id: 'post-1',
+          userId: 'family-user-1',
+          contentType: 'text',
+          textContent: '通常の投稿',
+          deletedAt: null,
+          createdAt: new Date('2024-01-02T10:00:00Z')
+        },
+        {
+          id: 'post-2',
+          userId: 'family-user-1',
+          contentType: 'text',
+          textContent: '削除された投稿',
+          deletedAt: new Date('2024-01-02T11:00:00Z'), // 削除済み
+          createdAt: new Date('2024-01-02T09:00:00Z')
+        }
+      ];
 
-      // Act
-      const result = await getTimelinePosts(userId, 'family');
+      mockDb.query.follows.findMany.mockResolvedValue(mockFamilyFollows);
+      mockDb.query.posts.findMany.mockResolvedValue(
+        mockPostsWithDeleted.filter(p => p.deletedAt === null)
+      );
 
-      // Assert
+      const result = await timelineService.getTimeline(mockUserId, 'family', 20);
+
+      expect(result.success).toBe(true);
+      expect(result.data!.items).toHaveLength(1);
+      expect(result.data!.items[0].id).toBe('post-1');
       expect(result.error).toBeNull();
-      expect(result.data?.posts).toEqual([]);
     });
   });
 
   describe('ウォッチタイムライン', () => {
-    it('ウォッチフォローの投稿を取得できる', async () => {
-      // Arrange
-      const userId = 'test-user-id';
-      const mockFollows = [
-        { followee_id: 'watch-user1' },
-        { followee_id: 'watch-user2' },
+    it('ウォッチフォローの投稿を時系列順に取得できること', async () => {
+      const mockWatchFollows = [
+        {
+          id: 'follow-3',
+          followerId: mockUserId,
+          followeeId: 'watch-user-1',
+          followType: 'watch',
+          status: 'active',
+          followReason: null
+        },
+        {
+          id: 'follow-4',
+          followerId: mockUserId,
+          followeeId: 'watch-user-2',
+          followType: 'watch',
+          status: 'active',
+          followReason: null
+        }
       ];
+
       const mockPosts = [
         {
-          id: 'post1',
-          user_id: 'watch-user1',
-          content_type: 'text',
-          text_content: 'ウォッチ投稿1',
-          created_at: '2024-01-02T00:00:00Z',
-          author: [{ id: 'watch-user1', name: 'ウォッチユーザー1', image: 'https://example.com/watch1.jpg' }],
-          tags: [],
+          id: 'post-3',
+          userId: 'watch-user-1',
+          contentType: 'image',
+          textContent: '美しい朝焼け',
+          mediaUrl: 'https://storage.b2.com/images/sunrise.jpg',
+          previewUrl: 'https://storage.b2.com/images/sunrise_thumb.jpg',
+          createdAt: new Date('2024-01-03T06:00:00Z'),
+          deletedAt: null
         },
+        {
+          id: 'post-4',
+          userId: 'watch-user-2',
+          contentType: 'text',
+          textContent: '今日の学び',
+          createdAt: new Date('2024-01-03T07:00:00Z'),
+          deletedAt: null
+        }
       ];
 
-      const mockFollowsChain = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockImplementation(function(this: any) {
-          if (this.eq.mock.calls.length === 3) {
-            return { data: mockFollows, error: null };
-          }
-          return this;
-        }),
-      };
+      mockDb.query.follows.findMany.mockResolvedValue(mockWatchFollows);
+      mockDb.query.posts.findMany.mockResolvedValue(mockPosts.reverse()); // 新しい順
 
-      const mockPostsChain = {
-        select: vi.fn().mockReturnThis(),
-        in: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockReturnValue({ data: mockPosts, error: null }),
-      };
+      const result = await timelineService.getTimeline(mockUserId, 'watch', 20);
 
-      (supabase.from as any).mockImplementation((table: string) => {
-        if (table === 'follows') {
-          return mockFollowsChain;
-        } else if (table === 'posts') {
-          return mockPostsChain;
-        }
-      });
-
-      // Act
-      const result = await getTimelinePosts(userId, 'watch');
-
-      // Assert
+      expect(result.success).toBe(true);
+      expect(result.data!.items).toHaveLength(2);
+      expect(result.data!.items[0].id).toBe('post-4'); // 新しい投稿が先
+      expect(result.data!.items[1].id).toBe('post-3');
       expect(result.error).toBeNull();
-      expect(result.data?.posts).toHaveLength(1);
-      expect(mockFollowsChain.eq).toHaveBeenCalledWith('follow_type', 'watch');
+    });
+  });
+
+  describe('ページネーション', () => {
+    it('指定されたlimit数だけ投稿を取得できること', async () => {
+      const mockFollows = [
+        {
+          id: 'follow-1',
+          followerId: mockUserId,
+          followeeId: 'user-1',
+          followType: 'family',
+          status: 'active'
+        }
+      ];
+
+      // 25件の投稿を作成
+      const mockPosts = Array.from({ length: 25 }, (_, i) => ({
+        id: `post-${i}`,
+        userId: 'user-1',
+        contentType: 'text',
+        textContent: `投稿 ${i}`,
+        createdAt: new Date(`2024-01-01T${String(i).padStart(2, '0')}:00:00Z`),
+        deletedAt: null
+      }));
+
+      mockDb.query.follows.findMany.mockResolvedValue(mockFollows);
+      mockDb.query.posts.findMany.mockResolvedValue(mockPosts.slice(0, 21).reverse()); // limit + 1
+
+      const result = await timelineService.getTimeline(mockUserId, 'family', 20);
+
+      expect(result.success).toBe(true);
+      expect(result.data!.items).toHaveLength(20);
+      expect(result.data!.hasMore).toBe(true);
+      expect(result.data!.nextCursor).toBeDefined();
+      expect(result.error).toBeNull();
+    });
+
+    it('カーソルを使用して次のページを取得できること', async () => {
+      const mockFollows = [
+        {
+          id: 'follow-1',
+          followerId: mockUserId,
+          followeeId: 'user-1',
+          followType: 'family',
+          status: 'active'
+        }
+      ];
+
+      // 次のページの投稿
+      const mockNextPagePosts = Array.from({ length: 10 }, (_, i) => ({
+        id: `post-page2-${i}`,
+        userId: 'user-1',
+        contentType: 'text',
+        textContent: `ページ2の投稿 ${i}`,
+        createdAt: new Date(`2024-01-02T${String(i).padStart(2, '0')}:00:00Z`),
+        deletedAt: null
+      }));
+
+      mockDb.query.follows.findMany.mockResolvedValue(mockFollows);
+      mockDb.query.posts.findMany.mockResolvedValue(mockNextPagePosts.reverse());
+
+      const cursor = Buffer.from(JSON.stringify({ 
+        createdAt: '2024-01-01T19:00:00Z' 
+      })).toString('base64');
+
+      const result = await timelineService.getTimeline(mockUserId, 'family', 20, cursor);
+
+      expect(result.success).toBe(true);
+      expect(result.data!.items).toHaveLength(10);
+      expect(result.data!.hasMore).toBe(false);
+      expect(result.error).toBeNull();
+    });
+  });
+
+  describe('プルトゥリフレッシュ', () => {
+    it('最新の投稿を取得できること', async () => {
+      const mockFollows = [
+        {
+          id: 'follow-1',
+          followerId: mockUserId,
+          followeeId: 'user-1',
+          followType: 'family',
+          status: 'active'
+        }
+      ];
+
+      const latestPosts = [
+        {
+          id: 'latest-post-1',
+          userId: 'user-1',
+          contentType: 'text',
+          textContent: '最新の投稿',
+          createdAt: new Date('2024-01-05T12:00:00Z'),
+          deletedAt: null
+        }
+      ];
+
+      mockDb.query.follows.findMany.mockResolvedValue(mockFollows);
+      mockDb.query.posts.findMany.mockResolvedValue(latestPosts);
+
+      const result = await timelineService.refreshTimeline(mockUserId, 'family');
+
+      expect(result.success).toBe(true);
+      expect(result.data!.items).toHaveLength(1);
+      expect(result.data!.items[0].id).toBe('latest-post-1');
+      expect(result.error).toBeNull();
     });
   });
 
   describe('エラーハンドリング', () => {
-    it('データベースエラーを適切に処理する', async () => {
-      // Arrange
-      const userId = 'test-user-id';
-      const mockError = new Error('Database error');
-      const mockFollowsChain = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockImplementation(function(this: any) {
-          if (this.eq.mock.calls.length === 3) {
-            return { data: null, error: mockError };
+    it('データベースエラーが適切に処理されること', async () => {
+      mockDb.query.follows.findMany.mockRejectedValue(new Error('Database connection error'));
+
+      const result = await timelineService.getTimeline(mockUserId, 'family', 20);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error!.message).toContain('Database connection error');
+      expect(result.data).toBeNull();
+    });
+  });
+
+  describe('キャッシュ機能', () => {
+    it('キャッシュからタイムラインを取得できること', async () => {
+      const cachedTimeline = {
+        items: [
+          {
+            id: 'cached-post-1',
+            userId: 'user-1',
+            contentType: 'text',
+            textContent: 'キャッシュされた投稿',
+            createdAt: new Date('2024-01-01T10:00:00Z')
           }
-          return this;
-        }),
+        ],
+        hasMore: false,
+        nextCursor: null,
+        cachedAt: new Date()
       };
 
-      (supabase.from as any).mockReturnValue(mockFollowsChain);
+      // Spy on cache get method
+      const mockCacheGet = vi.spyOn(mockCache, 'get').mockReturnValue(cachedTimeline);
 
-      // Act
-      const result = await getTimelinePosts(userId, 'family');
+      const result = await timelineService.getCachedTimeline(mockUserId, 'family');
 
-      // Assert
-      expect(result.error).toBe(mockError);
-      expect(result.data).toBeNull();
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(cachedTimeline);
+      expect(mockCacheGet).toHaveBeenCalledWith(`timeline:${mockUserId}:family`);
+    });
+
+    it('タイムライン取得後にキャッシュに保存されること', async () => {
+      const mockFollows = [
+        {
+          id: 'follow-1',
+          followerId: mockUserId,
+          followeeId: 'user-1',
+          followType: 'family',
+          status: 'active'
+        }
+      ];
+
+      const mockPosts = [
+        {
+          id: 'post-1',
+          userId: 'user-1',
+          contentType: 'text',
+          textContent: '新しい投稿',
+          createdAt: new Date(),
+          deletedAt: null
+        }
+      ];
+
+      // Spy on cache set method
+      const mockCacheSet = vi.spyOn(mockCache, 'set');
+
+      mockDb.query.follows.findMany.mockResolvedValue(mockFollows);
+      mockDb.query.posts.findMany.mockResolvedValue(mockPosts);
+
+      await timelineService.getTimeline(mockUserId, 'family', 20);
+
+      expect(mockCacheSet).toHaveBeenCalledWith(
+        `timeline:${mockUserId}:family`,
+        expect.objectContaining({
+          items: expect.any(Array),
+          hasMore: expect.any(Boolean),
+          nextCursor: expect.any(Object),
+          cachedAt: expect.any(Date)
+        }),
+        300 // 5分のTTL
+      );
     });
   });
 });

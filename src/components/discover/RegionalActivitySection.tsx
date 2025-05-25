@@ -24,29 +24,29 @@ export function RegionalActivitySection() {
   };
 
   return (
-    <ScrollView className="flex-1">
-      <View className="space-y-4 p-4">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center gap-2">
+    <ScrollView style={{ flex: 1 }}>
+      <View style={{ padding: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <MapPin size={20} color="#000" />
-            <Text className="text-lg font-semibold">地域毎の活動状況</Text>
+            <Text style={{ fontSize: 18, fontWeight: '600' }}>地域毎の活動状況</Text>
           </View>
           
           <TouchableOpacity 
-            className="flex-row items-center px-3 py-2 border border-gray-300 rounded-md"
+            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6 }}
             onPress={() => setShowDropdown(!showDropdown)}
           >
-            <Text className="mr-2">{selectedRegion || "地域を選択"}</Text>
+            <Text style={{ marginRight: 8 }}>{selectedRegion || "地域を選択"}</Text>
             <ChevronDown size={16} color="#000" />
           </TouchableOpacity>
         </View>
 
         {showDropdown && (
-          <View className="absolute right-4 top-12 z-10 bg-white border border-gray-300 rounded-md shadow-lg">
+          <View style={{ position: 'absolute', right: 16, top: 48, zIndex: 10, backgroundColor: '#fff', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 }}>
             {REGIONS.map((region) => (
               <TouchableOpacity
                 key={region}
-                className="px-4 py-2 border-b border-gray-100"
+                style={{ paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}
                 onPress={() => handleRegionSelect(region)}
               >
                 <Text>{region}</Text>
@@ -56,31 +56,31 @@ export function RegionalActivitySection() {
         )}
 
         {showIntro && (
-          <View className="p-6 mb-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-            <Text className="font-medium text-lg mb-2">地域を選択してください</Text>
-            <Text className="text-sm text-gray-600">
+          <View style={{ padding: 24, marginBottom: 16, backgroundColor: '#EFF6FF', borderWidth: 2, borderColor: '#BFDBFE', borderRadius: 8 }}>
+            <Text style={{ fontWeight: '500', fontSize: 18, marginBottom: 8 }}>地域を選択してください</Text>
+            <Text style={{ fontSize: 14, color: '#4B5563' }}>
               地域を選択すると、その地域の詳細情報が表示されます。
               下の地域一覧から選択するか、上部のドロップダウンメニューからお選びください。
             </Text>
           </View>
         )}
 
-        <View className="space-y-4">
+        <View style={{ gap: 16 }}>
           {REGIONS.map((region) => (
             <TouchableOpacity
               key={region}
-              className="bg-white p-4 rounded-lg shadow-sm"
+              style={{ backgroundColor: '#fff', padding: 16, borderRadius: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 }}
               onPress={() => handleRegionSelect(region)}
             >
-              <View className="flex-row justify-between items-center">
-                <Text className="font-medium">{region}</Text>
-                <View className="px-2 py-1 bg-gray-100 rounded">
-                  <Text className="text-sm">
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ fontWeight: '500' }}>{region}</Text>
+                <View style={{ paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#F3F4F6', borderRadius: 4 }}>
+                  <Text style={{ fontSize: 14 }}>
                     {region === "関東" ? "活発" : "普通"}
                   </Text>
                 </View>
               </View>
-              <Text className="text-sm text-gray-600 mt-2">
+              <Text style={{ fontSize: 14, color: '#4B5563', marginTop: 8 }}>
                 {region === "関東" 
                   ? "多くのコミュニティ活動が行われています"
                   : "いくつかのコミュニティ活動が進行中です"}

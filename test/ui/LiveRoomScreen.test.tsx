@@ -1,198 +1,274 @@
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { LiveRoomScreen } from '@/components/liveroom/LiveRoomScreen';
+import { liveRoomService } from '@/lib/liveRoomService';
+import { useRoute, useNavigation } from '@react-navigation/native';
 
-// Mock components and hooks
-jest.mock('@/components/ui/Button', () => 'Button');
-jest.mock('@/components/ui/Text', () => 'Text');
-jest.mock('@/components/ui/View', () => 'View');
-jest.mock('@/components/ui/Avatar', () => 'Avatar');
-jest.mock('@livekit/react-native', () => ({
-  useRoom: jest.fn().mockReturnValue({
-    connect: jest.fn().mockResolvedValue({}),
-    disconnect: jest.fn(),
-    participants: new Map(),
-    localParticipant: {
-      publishTrack: jest.fn().mockResolvedValue({}),
-      setMicrophoneEnabled: jest.fn()
-    }
-  }),
-  useParticipant: jest.fn().mockReturnValue({
-    isSpeaking: false,
-    isMuted: false,
-    metadata: JSON.stringify({ role: 'host' })
-  }),
-  AudioTrack: 'AudioTrack',
-  VideoTrack: 'VideoTrack'
-}));
+jest.mock('@/lib/liveRoomService');
+jest.mock('@react-navigation/native');
 
-import LiveRoomScreen from '@/components/LiveRoomScreen';
-import { liveRoomService } from '@/services/liveRoomService';
+describe('LiveRoomScreen', () => {
+  const mockNavigation = {
+    goBack: jest.fn(),
+    navigate: jest.fn()
+  };
 
-// Mock liveRoomService
-jest.mock('@/services/liveRoomService', () => ({
-  liveRoomService: {
-    joinRoom: jest.fn().mockResolvedValue({
-      token: 'mock-token',
-      room: {
-        id: 'room-123',
-        title: '目醒めトーク',
-        hostUser: {
-          id: 'host-123',
-          displayName: 'ホストユーザー'
-        },
-        status: 'active',
-        participantCount: 5
-      }
-    }),
-    endRoom: jest.fn().mockResolvedValue({}),
-    leaveRoom: jest.fn().mockResolvedValue({})
-  }
-}));
+  const mockRoom = {
+    id: 'room-123',
+    host_user_id: 'host-123',
+    title: '目醒めトーク',
+    status: 'active',
+    max_speakers: 10,
+    is_recording: true,
+    participant_count: 5,
+    livekit_room_name: 'livekit-room-123',
+    created_at: new Date().toISOString()
+  };
 
-describe('LiveRoomScreen Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (useNavigation as jest.Mock).mockReturnValue(mockNavigation);
   });
 
   test('ルーム情報の表示', async () => {
-    // Given
-    const props = {
-      roomId: 'room-123',
-      userId: 'user-456',
-      role: 'listener'
-    };
+    (useRoute as jest.Mock).mockReturnValue({
+      params: {
+        roomId: 'room-123',
+        userId: 'user-123',
+        role: 'listener'
+      }
+    });
 
-    // When
-    render(<LiveRoomScreen {...props} />);
-    
-    // Then - ローディング後にルーム情報が表示される
-    await screen.findByText('目醒めトーク');
-    expect(screen.getByText('ホストユーザー')).toBeOnTheScreen();
-    expect(screen.getByText('参加者: 5')).toBeOnTheScreen();
+    (liveRoomService.joinRoom as jest.Mock).mockResolvedValue({
+      token: 'mock-token',
+      room: mockRoom
+    });
+
+    const { getByText, getByTestId } = render(<LiveRoomScreen />);
+
+    await waitFor(() => {
+      expect(getByText('目醒めトーク')).toBeTruthy();
+      expect(getByTestId('participant-count').props.children).toContain('5');
+      expect(getByTestId('recording-indicator')).toBeTruthy();
+    });
   });
 
   test('リスナーとしての参加', async () => {
-    // Given
-    const props = {
-      roomId: 'room-123',
-      userId: 'user-456',
-      role: 'listener'
-    };
+    (useRoute as jest.Mock).mockReturnValue({
+      params: {
+        roomId: 'room-123',
+        userId: 'user-123',
+        role: 'listener'
+      }
+    });
 
-    // When
-    render(<LiveRoomScreen {...props} />);
-    
-    // Then
-    await screen.findByText('目醒めトーク');
-    
-    // リスナーとして参加したので、登壇リクエストボタンが表示される
-    expect(screen.getByText('登壇をリクエスト')).toBeOnTheScreen();
-    
-    // マイクのミュートボタンは表示されない
-    expect(screen.queryByTestId('mute-button')).toBeNull();
+    (liveRoomService.joinRoom as jest.Mock).mockResolvedValue({
+      token: 'mock-token',
+      room: mockRoom
+    });
+
+    const { getByText, queryByTestId } = render(<LiveRoomScreen />);
+
+    await waitFor(() => {
+      // リスナー専用UI
+      expect(getByText('登壇リクエスト')).toBeTruthy();
+      expect(queryByTestId('mic-button')).toBeNull();
+    });
   });
 
   test('スピーカーとしての参加', async () => {
-    // Given
-    const props = {
-      roomId: 'room-123',
-      userId: 'host-123', // ホストユーザー
-      role: 'speaker'
-    };
+    (useRoute as jest.Mock).mockReturnValue({
+      params: {
+        roomId: 'room-123',
+        userId: 'speaker-123',
+        role: 'speaker'
+      }
+    });
 
-    // When
-    render(<LiveRoomScreen {...props} />);
-    
-    // Then
-    await screen.findByText('目醒めトーク');
-    
-    // スピーカーとして参加したので、マイクのミュートボタンが表示される
-    expect(screen.getByTestId('mute-button')).toBeOnTheScreen();
-    
-    // 登壇リクエストボタンは表示されない
-    expect(screen.queryByText('登壇をリクエスト')).toBeNull();
+    (liveRoomService.joinRoom as jest.Mock).mockResolvedValue({
+      token: 'mock-token',
+      room: mockRoom
+    });
+
+    const { getByTestId, queryByText } = render(<LiveRoomScreen />);
+
+    await waitFor(() => {
+      // スピーカー専用UI
+      expect(getByTestId('mic-button')).toBeTruthy();
+      expect(queryByText('登壇リクエスト')).toBeNull();
+    });
   });
 
   test('マイクのミュート切り替え', async () => {
-    // Given
-    const props = {
-      roomId: 'room-123',
-      userId: 'host-123',
-      role: 'speaker'
-    };
-
-    // When
-    render(<LiveRoomScreen {...props} />);
-    
-    // スピーカーUIが表示されるまで待機
-    await screen.findByTestId('mute-button');
-    
-    // マイクボタンをタップ
-    await act(() => {
-      fireEvent.press(screen.getByTestId('mute-button'));
+    (useRoute as jest.Mock).mockReturnValue({
+      params: {
+        roomId: 'room-123',
+        userId: 'speaker-123',
+        role: 'speaker'
+      }
     });
+
+    (liveRoomService.joinRoom as jest.Mock).mockResolvedValue({
+      token: 'mock-token',
+      room: mockRoom
+    });
+
+    const { getByTestId } = render(<LiveRoomScreen />);
+
+    await waitFor(() => {
+      const micButton = getByTestId('mic-button');
+      expect(micButton).toBeTruthy();
+    });
+
+    const micButton = getByTestId('mic-button');
     
-    // Then
-    expect(screen.getByTestId('mute-button')).toHaveAccessibilityState({ selected: true });
+    // 初期状態はミュート解除
+    expect(micButton.props.accessibilityLabel).toBe('マイクオン');
+
+    // ミュート切り替え
+    fireEvent.press(micButton);
+    expect(micButton.props.accessibilityLabel).toBe('マイクオフ');
+
+    // 再度切り替え
+    fireEvent.press(micButton);
+    expect(micButton.props.accessibilityLabel).toBe('マイクオン');
   });
 
   test('ホストによるルーム終了', async () => {
-    // Given
-    const props = {
-      roomId: 'room-123',
-      userId: 'host-123', // ホストユーザー
-      role: 'speaker',
-      onRoomEnded: jest.fn()
-    };
+    (useRoute as jest.Mock).mockReturnValue({
+      params: {
+        roomId: 'room-123',
+        userId: 'host-123',
+        role: 'speaker'
+      }
+    });
 
-    // When
-    render(<LiveRoomScreen {...props} />);
-    
-    // ルーム情報が表示されるまで待機
-    await screen.findByText('目醒めトーク');
-    
-    // メニューボタンをタップ
-    await act(() => {
-      fireEvent.press(screen.getByTestId('room-menu-button'));
+    (liveRoomService.joinRoom as jest.Mock).mockResolvedValue({
+      token: 'mock-token',
+      room: { ...mockRoom, host_user_id: 'host-123' }
     });
-    
-    // 「ルームを終了」をタップ
-    await act(() => {
-      fireEvent.press(screen.getByText('ルームを終了'));
+
+    (liveRoomService.endRoom as jest.Mock).mockResolvedValue({
+      status: 'ended',
+      endedAt: new Date().toISOString(),
+      postId: null
     });
-    
-    // 確認ダイアログの「終了」をタップ
-    await act(() => {
-      fireEvent.press(screen.getByText('終了する'));
+
+    const { getByTestId, getByText } = render(<LiveRoomScreen />);
+
+    await waitFor(() => {
+      expect(getByTestId('room-menu')).toBeTruthy();
     });
+
+    // メニューを開く
+    fireEvent.press(getByTestId('room-menu'));
     
-    // Then
-    expect(liveRoomService.endRoom).toHaveBeenCalledWith('room-123');
-    expect(props.onRoomEnded).toHaveBeenCalled();
+    // ルーム終了を選択
+    fireEvent.press(getByText('ルームを終了'));
+
+    // 確認ダイアログ
+    await waitFor(() => {
+      expect(getByText('ルームを終了しますか？')).toBeTruthy();
+    });
+
+    // 確定
+    fireEvent.press(getByText('終了する'));
+
+    await waitFor(() => {
+      expect(liveRoomService.endRoom).toHaveBeenCalledWith('room-123', false);
+      expect(mockNavigation.goBack).toHaveBeenCalled();
+    });
   });
 
   test('参加者によるルーム退出', async () => {
-    // Given
-    const props = {
-      roomId: 'room-123',
-      userId: 'user-456', // 一般参加者
-      role: 'listener',
-      onLeaveRoom: jest.fn()
-    };
-
-    // When
-    render(<LiveRoomScreen {...props} />);
-    
-    // ルーム情報が表示されるまで待機
-    await screen.findByText('目醒めトーク');
-    
-    // 退出ボタンをタップ
-    await act(() => {
-      fireEvent.press(screen.getByTestId('leave-room-button'));
+    (useRoute as jest.Mock).mockReturnValue({
+      params: {
+        roomId: 'room-123',
+        userId: 'user-123',
+        role: 'listener'
+      }
     });
-    
-    // Then
-    expect(liveRoomService.leaveRoom).toHaveBeenCalledWith('room-123', 'user-456');
-    expect(props.onLeaveRoom).toHaveBeenCalled();
+
+    (liveRoomService.joinRoom as jest.Mock).mockResolvedValue({
+      token: 'mock-token',
+      room: mockRoom
+    });
+
+    const { getByTestId, getByText } = render(<LiveRoomScreen />);
+
+    await waitFor(() => {
+      expect(getByTestId('leave-button')).toBeTruthy();
+    });
+
+    // 退出ボタンをタップ
+    fireEvent.press(getByTestId('leave-button'));
+
+    // 確認ダイアログ
+    await waitFor(() => {
+      expect(getByText('ルームを退出しますか？')).toBeTruthy();
+    });
+
+    // 確定
+    fireEvent.press(getByText('退出する'));
+
+    await waitFor(() => {
+      expect(mockNavigation.goBack).toHaveBeenCalled();
+    });
+  });
+
+  test('登壇リクエスト送信', async () => {
+    (useRoute as jest.Mock).mockReturnValue({
+      params: {
+        roomId: 'room-123',
+        userId: 'user-123',
+        role: 'listener'
+      }
+    });
+
+    (liveRoomService.joinRoom as jest.Mock).mockResolvedValue({
+      token: 'mock-token',
+      room: mockRoom
+    });
+
+    (liveRoomService.requestToSpeak as jest.Mock).mockResolvedValue({
+      id: 'request-123',
+      status: 'pending'
+    });
+
+    const { getByText } = render(<LiveRoomScreen />);
+
+    await waitFor(() => {
+      expect(getByText('登壇リクエスト')).toBeTruthy();
+    });
+
+    // リクエスト送信
+    fireEvent.press(getByText('登壇リクエスト'));
+
+    await waitFor(() => {
+      expect(liveRoomService.requestToSpeak).toHaveBeenCalledWith('room-123');
+      expect(getByText('リクエスト送信済み')).toBeTruthy();
+    });
+  });
+
+  test('エラーハンドリング - ルーム参加失敗', async () => {
+    (useRoute as jest.Mock).mockReturnValue({
+      params: {
+        roomId: 'room-123',
+        userId: 'user-123',
+        role: 'listener'
+      }
+    });
+
+    (liveRoomService.joinRoom as jest.Mock).mockRejectedValue(
+      new Error('このルームは終了しています')
+    );
+
+    const { getByText } = render(<LiveRoomScreen />);
+
+    await waitFor(() => {
+      expect(getByText('このルームは終了しています')).toBeTruthy();
+      expect(mockNavigation.goBack).toHaveBeenCalled();
+    });
   });
 });
+EOF < /dev/null

@@ -179,17 +179,17 @@ export function RegionDetailView({ open, onClose, region }: RegionDetailViewProp
       transparent={true}
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-black/50">
-        <View className="flex-1 mt-20 bg-gray-50 rounded-t-3xl">
-          <View className="p-6 flex-row items-center justify-between bg-white rounded-t-3xl">
-            <Text className="text-xl font-bold">{region}の目醒め情報</Text>
-            <TouchableOpacity onPress={onClose} className="p-2">
+      <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+        <View style={{ flex: 1, marginTop: 80, backgroundColor: '#F9FAFB', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+          <View style={{ padding: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+            <Text style={{ fontSize: 20, fontWeight: 'bold' }}>{region}の目醒め情報</Text>
+            <TouchableOpacity onPress={onClose} style={{ padding: 8 }}>
               <X size={24} color="#000" />
             </TouchableOpacity>
           </View>
           
-          <ScrollView className="flex-1">
-            <View className="p-6 space-y-6">
+          <ScrollView style={{ flex: 1 }}>
+            <View style={{ padding: 24, gap: 24 }}>
               <RegionCharacteristics characteristics={regionData.features.characteristics} />
               <RegionEvents />
               <RegionPeople people={regionData.features.people} />

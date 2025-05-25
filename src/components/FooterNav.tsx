@@ -8,11 +8,11 @@ export function FooterNav() {
   const route = useRoute();
 
   const navItems = [
-    { name: 'Home', icon: 'home', route: 'Home' },
-    { name: 'Search', icon: 'search', route: 'Search' },
-    { name: 'Discover', icon: 'compass', route: 'Discover' },
-    { name: 'Messages', icon: 'message-circle', route: 'Messages' },
-    { name: 'Profile', icon: 'user', route: 'Profile' },
+    { name: 'Home', icon: 'home', route: 'Home', testId: 'nav-home' },
+    { name: 'Search', icon: 'search', route: 'Search', testId: 'nav-search' },
+    { name: 'Discover', icon: 'compass', route: 'Discover', testId: 'nav-discover' },
+    { name: 'Messages', icon: 'message-circle', route: 'Messages', testId: 'nav-messages' },
+    { name: 'Profile', icon: 'user', route: 'Profile', testId: 'nav-profile' },
   ];
 
   // Check if the current route matches the nav item
@@ -27,6 +27,7 @@ export function FooterNav() {
           key={item.name}
           style={styles.navItem}
           onPress={() => navigation.navigate(item.route)}
+          testID={item.testId}
         >
           <Feather
             name={item.icon as any}

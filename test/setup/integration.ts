@@ -1,10 +1,9 @@
 // Integration test setup
-import '@testing-library/jest-native/extend-expect';
-import 'react-native-gesture-handler/jestSetup';
+import { vi } from 'vitest';
 
 // Mock necessary modules for integration testing
-jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
-jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
+vi.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+vi.mock('react-native-reanimated', () => ({}));
 
 // Setup test database
 process.env.SUPABASE_URL = 'https://test.supabase.co';

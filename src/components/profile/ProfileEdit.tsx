@@ -15,12 +15,12 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Audio from 'expo-av';
 import { ArrowLeft, Save, Upload, Mic, Square, Play, Pause } from 'lucide-react-native';
-import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
-import { Avatar } from '@/components/ui/Avatar';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { useToast } from '../../hooks/use-toast';
+import { Avatar } from '../ui/avatar';
+import { Button } from '../ui/button';
+import { Card } from '../ui/card';
 
 export function ProfileEdit() {
   const navigation = useNavigation();

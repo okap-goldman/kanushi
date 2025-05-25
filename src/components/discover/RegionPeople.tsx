@@ -13,14 +13,14 @@ interface RegionPeopleProps {
 
 export function RegionPeople({ people }: RegionPeopleProps) {
   return (
-    <View className="bg-white rounded-lg shadow-sm p-6">
-      <Text className="text-lg font-semibold mb-4">活動する人々</Text>
-      <View className="space-y-4">
+    <View style={{ backgroundColor: '#fff', borderRadius: 8, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 }}>
+      <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16 }}>活動する人々</Text>
+      <View style={{ gap: 16 }}>
         {people.map((person, index) => (
-          <View key={index} className="border border-gray-200 rounded-lg p-4">
-            <Text className="font-medium">{person.name}</Text>
-            <Text className="text-sm text-blue-600">{person.role}</Text>
-            <Text className="text-sm text-gray-600 mt-2">
+          <View key={index} style={{ borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 16 }}>
+            <Text style={{ fontWeight: '500' }}>{person.name}</Text>
+            <Text style={{ fontSize: 14, color: '#2563EB' }}>{person.role}</Text>
+            <Text style={{ fontSize: 14, color: '#4B5563', marginTop: 8 }}>
               {person.description}
             </Text>
           </View>
