@@ -1,116 +1,230 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
-import { Message } from "@/lib/messageService";
-import { formatRelativeTime } from "@/lib/utils";
+import React, { useState, useEffect } from "react";
+import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
+import { Avatar } from "../ui/Avatar";
+import { Message } from "../../lib/messageService";
+import { formatRelativeTime } from "../../lib/utils";
+import { Video, Audio } from 'expo-av';
 
 interface MessageItemProps {
   message: Message;
   isCurrentUser: boolean;
 }
 
+const { width: screenWidth } = Dimensions.get('window');
+
 export function MessageItem({ message, isCurrentUser }: MessageItemProps) {
   const [formattedContent, setFormattedContent] = useState(message.content);
   
-  // Process message to handle markdown formatting
+  // Process message to handle markdown formatting (simplified for React Native)
   useEffect(() => {
-    // Basic Markdown-like formatting
-    let formatted = message.content
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-      .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
-      .replace(/`(.*?)`/g, '<code>$1</code>') // Inline code
-      .replace(/\n/g, '<br/>'); // Line breaks
-    
-    setFormattedContent(formatted);
+    // For React Native, we'll keep it simple - just preserve the original message
+    // You could use a markdown library like react-native-markdown-display for full support
+    setFormattedContent(message.content);
   }, [message.content]);
 
   return (
-    <div className={cn(
-      "flex gap-2 max-w-[80%] mb-2",
-      isCurrentUser ? "ml-auto flex-row-reverse" : "mr-auto"
-    )}>
+    <View style={[
+      styles.container,
+      isCurrentUser ? styles.currentUserContainer : styles.otherUserContainer
+    ]}>
       {!isCurrentUser && (
-        <Avatar className="h-8 w-8 mt-1">
-          <AvatarImage src={message.sender?.image} />
-          <AvatarFallback>
-            {message.sender?.name.substring(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <Avatar
+          size={32}
+          source={message.sender?.image || undefined}
+          fallbackText={message.sender?.name?.substring(0, 2).toUpperCase()}
+          style={styles.avatar}
+        />
       )}
       
-      <div className="flex flex-col">
-        <div className={cn(
-          "px-3 py-2 rounded-xl text-sm",
-          isCurrentUser 
-            ? "bg-blue-500 text-white rounded-tr-none" 
-            : "bg-gray-200 text-gray-900 rounded-tl-none"
-        )}>
+      <View style={styles.messageWrapper}>
+        <View style={[
+          styles.messageBubble,
+          isCurrentUser ? styles.currentUserBubble : styles.otherUserBubble
+        ]}>
           {message.content_type === 'text' && (
-            <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
+            <Text style={[
+              styles.messageText,
+              isCurrentUser ? styles.currentUserText : styles.otherUserText
+            ]}>
+              {formattedContent}
+            </Text>
           )}
           
           {message.content_type === 'image' && (
-            <div className="flex flex-col gap-2">
-              <img 
-                src={message.media_url || ''} 
-                alt="Image message" 
-                className="max-w-full rounded-md"
+            <View style={styles.mediaContainer}>
+              <Image 
+                source={{ uri: message.media_url || '' }}
+                style={styles.messageImage}
+                resizeMode="cover"
               />
               {message.content && (
-                <div className="mt-1" dangerouslySetInnerHTML={{ __html: formattedContent }} />
+                <Text style={[
+                  styles.messageText,
+                  styles.mediaCaption,
+                  isCurrentUser ? styles.currentUserText : styles.otherUserText
+                ]}>
+                  {formattedContent}
+                </Text>
               )}
-            </div>
+            </View>
           )}
           
           {message.content_type === 'audio' && (
-            <div className="flex flex-col gap-2">
-              <audio controls className="max-w-full">
-                <source src={message.media_url || ''} type="audio/mpeg" />
-                Your browser does not support the audio element.
-              </audio>
+            <View style={styles.mediaContainer}>
+              <View style={styles.audioPlayer}>
+                <Text style={styles.audioText}>🎵 Audio message</Text>
+              </View>
               {message.content && (
-                <div className="mt-1" dangerouslySetInnerHTML={{ __html: formattedContent }} />
+                <Text style={[
+                  styles.messageText,
+                  styles.mediaCaption,
+                  isCurrentUser ? styles.currentUserText : styles.otherUserText
+                ]}>
+                  {formattedContent}
+                </Text>
               )}
-            </div>
+            </View>
           )}
           
           {message.content_type === 'video' && (
-            <div className="flex flex-col gap-2">
-              <video controls className="max-w-full rounded-md">
-                <source src={message.media_url || ''} type="video/mp4" />
-                Your browser does not support the video element.
-              </video>
+            <View style={styles.mediaContainer}>
+              <View style={styles.videoPlayer}>
+                <Text style={styles.videoText}>🎥 Video message</Text>
+              </View>
               {message.content && (
-                <div className="mt-1" dangerouslySetInnerHTML={{ __html: formattedContent }} />
+                <Text style={[
+                  styles.messageText,
+                  styles.mediaCaption,
+                  isCurrentUser ? styles.currentUserText : styles.otherUserText
+                ]}>
+                  {formattedContent}
+                </Text>
               )}
-            </div>
+            </View>
           )}
-        </div>
+        </View>
         
-        <div className="flex items-center gap-2 mt-1 px-1">
-          <span className="text-xs text-gray-500">
+        <View style={styles.messageInfo}>
+          <Text style={styles.timestamp}>
             {formatRelativeTime(new Date(message.created_at))}
-          </span>
+          </Text>
           
           {message.is_read && isCurrentUser && (
-            <span className="text-xs text-blue-500">Read</span>
+            <Text style={styles.readStatus}>Read</Text>
           )}
           
           {message.reactions && message.reactions.length > 0 && (
-            <div className="flex gap-1">
+            <View style={styles.reactions}>
               {message.reactions.map(reaction => (
-                <span 
+                <Text 
                   key={reaction.id} 
-                  className="text-sm" 
-                  title={reaction.user?.name}
+                  style={styles.reaction}
                 >
                   {reaction.reaction}
-                </span>
+                </Text>
               ))}
-            </div>
+            </View>
           )}
-        </div>
-      </div>
-    </div>
+        </View>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    marginBottom: 8,
+    paddingHorizontal: 16,
+  },
+  currentUserContainer: {
+    justifyContent: "flex-end",
+  },
+  otherUserContainer: {
+    justifyContent: "flex-start",
+  },
+  avatar: {
+    marginTop: 4,
+    marginRight: 8,
+  },
+  messageWrapper: {
+    maxWidth: screenWidth * 0.8,
+  },
+  messageBubble: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  currentUserBubble: {
+    backgroundColor: "#007AFF",
+    borderTopRightRadius: 4,
+  },
+  otherUserBubble: {
+    backgroundColor: "#E5E5EA",
+    borderTopLeftRadius: 4,
+  },
+  messageText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  currentUserText: {
+    color: "#FFFFFF",
+  },
+  otherUserText: {
+    color: "#000000",
+  },
+  mediaContainer: {
+    gap: 8,
+  },
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 8,
+  },
+  audioPlayer: {
+    backgroundColor: "rgba(0,0,0,0.1)",
+    padding: 12,
+    borderRadius: 8,
+    width: 200,
+  },
+  audioText: {
+    fontSize: 14,
+  },
+  videoPlayer: {
+    backgroundColor: "rgba(0,0,0,0.1)",
+    padding: 20,
+    borderRadius: 8,
+    width: 200,
+    height: 150,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  videoText: {
+    fontSize: 16,
+  },
+  mediaCaption: {
+    marginTop: 4,
+  },
+  messageInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
+    paddingHorizontal: 4,
+  },
+  timestamp: {
+    fontSize: 12,
+    color: "#8E8E93",
+  },
+  readStatus: {
+    fontSize: 12,
+    color: "#007AFF",
+  },
+  reactions: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  reaction: {
+    fontSize: 14,
+  },
+});

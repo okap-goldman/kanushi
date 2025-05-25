@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="700" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .screen {
+      fill: #f8f9fa;
+      stroke: #dee2e6;
+      stroke-width: 2;
+      rx: 10;
+      ry: 10;
+    }
+    .header {
+      fill: #343a40;
+      rx: 8;
+      ry: 8;
+    }
+    .text {
+      font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+      fill: #212529;
+    }
+    .header-text {
+      font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+      fill: white;
+      font-weight: bold;
+    }
+    .button {
+      fill: #6c63ff;
+      stroke: #5a56e9;
+      stroke-width: 1;
+      rx: 6;
+      ry: 6;
+    }
+    .button-secondary {
+      fill: #6c757d;
+      stroke: #5a6268;
+      stroke-width: 1;
+      rx: 6;
+      ry: 6;
+    }
+    .button-success {
+      fill: #28a745;
+      stroke: #218838;
+      stroke-width: 1;
+      rx: 6;
+      ry: 6;
+    }
+    .button-danger {
+      fill: #dc3545;
+      stroke: #c82333;
+      stroke-width: 1;
+      rx: 6;
+      ry: 6;
+    }
+    .button-text {
+      font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+      fill: white;
+      font-weight: bold;
+      text-anchor: middle;
+    }
+    .card {
+      fill: white;
+      stroke: #ced4da;
+      stroke-width: 1;
+      rx: 8;
+      ry: 8;
+    }
+    .section {
+      fill: #f8f9fa;
+      stroke: #dee2e6;
+      stroke-width: 1;
+      rx: 6;
+      ry: 6;
+    }
+    .table-header {
+      fill: #e9ecef;
+      stroke: #dee2e6;
+      stroke-width: 1;
+    }
+    .table-row {
+      fill: white;
+      stroke: #dee2e6;
+      stroke-width: 1;
+    }
+    .status-badge {
+      rx: 10;
+      ry: 10;
+      height: 24;
+    }
+    .status-text {
+      font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+      font-size: 12;
+      font-weight: bold;
+      text-anchor: middle;
+      fill: white;
+    }
+    .status-pending {
+      fill: #6c757d;
+    }
+    .status-paid {
+      fill: #17a2b8;
+    }
+    .status-shipped {
+      fill: #28a745;
+    }
+    .status-completed {
+      fill: #20c997;
+    }
+    .status-refunded {
+      fill: #dc3545;
+    }
+    .status-cancelled {
+      fill: #dc3545;
+    }
+    .select-field {
+      fill: white;
+      stroke: #ced4da;
+      stroke-width: 1;
+      rx: 4;
+      ry: 4;
+    }
+    .product-image {
+      fill: #e9ecef;
+      stroke: #dee2e6;
+      stroke-width: 1;
+      rx: 6;
+      ry: 6;
+    }
+    .divider {
+      stroke: #dee2e6;
+      stroke-width: 1;
+    }
+    .info-text {
+      font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+      fill: #17a2b8;
+      font-size: 12;
+    }
+    .product-type-badge {
+      rx: 4;
+      ry: 4;
+      height: 20;
+    }
+    .product-type-physical {
+      fill: #6c63ff;
+    }
+    .product-type-service {
+      fill: #20c997;
+    }
+    .product-type-text {
+      font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+      font-size: 11;
+      font-weight: bold;
+      text-anchor: middle;
+      fill: white;
+    }
+  </style>
+  
+  <!-- 注文詳細画面 -->
+  <rect x="50" y="50" width="700" height="600" class="screen" />
+  <rect x="50" y="50" width="700" height="60" class="header" />
+  <text x="400" y="88" class="header-text" text-anchor="middle" font-size="20">注文詳細</text>
+  
+  <!-- 戻るボタン -->
+  <rect x="70" y="130" width="100" height="40" class="button-secondary" />
+  <text x="120" y="155" class="button-text" font-size="14">一覧に戻る</text>
+  
+  <!-- 注文ID・ステータス表示 -->
+  <text x="200" y="155" class="text" font-size="18" font-weight="bold">注文ID: ORD98765432</text>
+  <rect x="420" y="135" width="100" height="24" class="status-badge status-paid" />
+  <text x="470" y="151" class="status-text">支払済み</text>
+  <text x="540" y="155" class="text" font-size="14">注文日: 2023/04/25</text>
+  
+  <!-- 注文情報セクション -->
+  <rect x="70" y="190" width="660" height="130" class="section" />
+  <text x="100" y="220" class="text" font-size="16" font-weight="bold">購入者情報</text>
+  
+  <text x="100" y="250" class="text" font-size="14" font-weight="bold">氏名:</text>
+  <text x="170" y="250" class="text" font-size="14">山田太郎</text>
+  
+  <text x="100" y="280" class="text" font-size="14" font-weight="bold">メール:</text>
+  <text x="170" y="280" class="text" font-size="14">yamada@example.com</text>
+  
+  <text x="400" y="250" class="text" font-size="14" font-weight="bold">電話:</text>
+  <text x="470" y="250" class="text" font-size="14">090-1234-5678</text>
+  
+  <text x="400" y="280" class="text" font-size="14" font-weight="bold">会員ID:</text>
+  <text x="470" y="280" class="text" font-size="14">USR12345678</text>
+  
+  <!-- 配送先情報 -->
+  <rect x="70" y="340" width="660" height="100" class="section" />
+  <text x="100" y="370" class="text" font-size="16" font-weight="bold">配送先</text>
+  
+  <text x="100" y="400" class="text" font-size="14" font-weight="bold">住所:</text>
+  <text x="170" y="400" class="text" font-size="14">〒100-0001 東京都千代田区1-1-1 マンション101</text>
+  
+  <text x="100" y="430" class="text" font-size="14" font-weight="bold">配送方法:</text>
+  <text x="170" y="430" class="text" font-size="14">ヤマト宅急便</text>
+  
+  <text x="400" y="430" class="text" font-size="14" font-weight="bold">追跡番号:</text>
+  <text x="470" y="430" class="text" font-size="14">未発送</text>
+  
+  <!-- 注文商品情報 -->
+  <rect x="70" y="460" width="660" height="140" class="section" />
+  <text x="100" y="490" class="text" font-size="16" font-weight="bold">注文商品</text>
+  
+  <!-- 商品表示 -->
+  <rect x="100" y="510" width="600" height="70" class="card" />
+  <rect x="110" y="520" width="50" height="50" class="product-image" />
+  <text x="180" y="535" class="text" font-size="14" font-weight="bold">瞑想ガイドブック</text>
+  <text x="180" y="555" class="text" font-size="14" fill="#6c757d">商品ID: PRD12345678</text>
+  <rect x="310" y="530" width="70" height="20" class="product-type-badge product-type-physical" />
+  <text x="345" y="544" class="product-type-text">物理商品</text>
+  <text x="400" y="535" class="text" font-size="14">数量: 1</text>
+  <text x="400" y="555" class="text" font-size="14" font-weight="bold">金額: ¥2,800</text>
+  
+  <!-- 金額表示 -->
+  <rect x="350" y="590" width="350" height="24" class="table-header" />
+  <text x="370" y="607" class="text" font-size="14">小計:</text>
+  <text x="650" y="607" class="text" font-size="14" text-anchor="end">¥2,800</text>
+  
+  <rect x="350" y="614" width="350" height="24" class="table-header" />
+  <text x="370" y="631" class="text" font-size="14">送料:</text>
+  <text x="650" y="631" class="text" font-size="14" text-anchor="end">¥700</text>
+  
+  <rect x="350" y="638" width="350" height="24" class="table-header" />
+  <text x="370" y="655" class="text" font-size="14" font-weight="bold">合計 (税込):</text>
+  <text x="650" y="655" class="text" font-size="14" font-weight="bold" text-anchor="end">¥3,500</text>
+  
+  <!-- アクションボタン -->
+  <rect x="70" y="625" width="660" height="20" class="info-text" />
+  <text x="400" y="638" class="info-text" text-anchor="middle">注文キャンセルすると、自動的に返金処理が行われます。売上が発生するのは、購入者が受取完了を確認した後です。</text>
+  
+  <rect x="120" y="665" width="180" height="42" class="button-success" />
+  <text x="210" y="690" class="button-text" font-size="14">発送通知を送信</text>
+  
+  <rect x="330" y="665" width="180" height="42" class="button" />
+  <text x="420" y="690" class="button-text" font-size="14">ユーザーに連絡</text>
+  
+  <rect x="540" y="665" width="180" height="42" class="button-danger" />
+  <text x="630" y="690" class="button-text" font-size="14">注文キャンセル</text>
+</svg>

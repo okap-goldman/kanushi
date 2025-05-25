@@ -1,59 +1,87 @@
-import { useState, useCallback } from 'react';
-import { sendChatRequest, Message, ChatOptions } from '@/lib/chatService';
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useMutation } from '@tanstack/react-query'
+import { sendAIChatMessage, getAIChatMessages } from '../lib/chatService'
+import type { Message, ChatMessage } from '../lib/chatService'
 
-interface UseChatOptions extends ChatOptions {
-  onError?: (error: Error) => void;
-}
+export function useChat(chatId: string) {
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const messagesEndRef = useRef<any>(null)
 
-export function useChat(options: UseChatOptions = {}) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  // Load messages on mount
+  useEffect(() => {
+    loadMessages()
+  }, [chatId])
 
-  // Send a message to the AI
-  const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim()) return;
-    
-    // Add the user message to the chat
-    const userMessage: Message = { role: 'user', content };
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
-    setError(null);
-    
+  const loadMessages = async () => {
     try {
-      // Send request to the AI
-      const response = await sendChatRequest(
-        [...messages, userMessage], 
-        options
-      );
-      
-      // Add the AI response to the chat
-      const assistantMessage: Message = { role: 'assistant', content: response };
-      setMessages(prev => [...prev, assistantMessage]);
-      
-      return assistantMessage;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('An unknown error occurred');
-      setError(error);
-      if (options.onError) {
-        options.onError(error);
-      }
+      setIsLoading(true)
+      const data = await getAIChatMessages(chatId)
+      const formattedMessages: Message[] = data.map((msg: ChatMessage) => ({
+        id: msg.id,
+        content: msg.content,
+        role: msg.role as 'user' | 'assistant',
+        createdAt: new Date(msg.created_at),
+      }))
+      setMessages(formattedMessages)
+    } catch (error) {
+      console.error('Failed to load messages:', error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  }, [messages, options]);
+  }
 
-  // Reset the chat
-  const resetChat = useCallback(() => {
-    setMessages([]);
-    setError(null);
-  }, []);
+  const sendMessageMutation = useMutation({
+    mutationFn: async (content: string) => {
+      return sendAIChatMessage(chatId, content)
+    },
+    onSuccess: (response) => {
+      // Add user message
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        content: input,
+        role: 'user',
+        createdAt: new Date(),
+      }
+      
+      // Add AI response
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: response.content,
+        role: 'assistant',
+        createdAt: new Date(),
+      }
+      
+      setMessages(prev => [...prev, userMessage, aiMessage])
+      setInput('')
+    },
+  })
+
+  const handleSubmit = useCallback((e?: any) => {
+    if (e) {
+      e.preventDefault()
+    }
+    
+    if (!input.trim() || sendMessageMutation.isPending) return
+    
+    sendMessageMutation.mutate(input)
+  }, [input, sendMessageMutation])
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   return {
     messages,
-    isLoading,
-    error,
-    sendMessage,
-    resetChat
-  };
+    input,
+    setInput,
+    handleSubmit,
+    isLoading: isLoading || sendMessageMutation.isPending,
+    messagesEndRef,
+  }
 }

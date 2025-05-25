@@ -1,61 +1,69 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import * as SecureStore from 'expo-secure-store';
+import 'react-native-url-polyfill/auto';
+import { Platform } from 'react-native';
 
-// 環境変数からSupabaseの設定を取得
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Fallback values are included for development
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://dpmrgzjvljaacdwggnaf.supabase.co';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbXJnemp2bGphYWNkd2dnbmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwMTY0MTMsImV4cCI6MjA2MzU5MjQxM30.myHmmx_dc3NQkPS5rnfw6sEFH24gFmt878K526bgPPY';
 
-console.log('Using Supabase URL:', supabaseUrl || '未定義');
-console.log('Supabase Key Available:', !!supabaseAnonKey);
+// Web platform fallback using localStorage
+const webStorage = {
+  getItem: (key: string) => {
+    const item = localStorage.getItem(key);
+    return Promise.resolve(item);
+  },
+  setItem: (key: string, value: string) => {
+    localStorage.setItem(key, value);
+    return Promise.resolve();
+  },
+  removeItem: (key: string) => {
+    localStorage.removeItem(key);
+    return Promise.resolve();
+  },
+};
 
-// フォールバック値を設定（開発用、本番環境では環境変数を必ず設定すること）
-const fallbackUrl = 'https://warvcshagxuijfqlgxxc.supabase.co';
-const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhcnZjc2hhZ3h1aWpmcWxneHhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MjE0OTksImV4cCI6MjA2MTE5NzQ5OX0.BTwBRQXmFRYzvs3GyLqzv_h8PSqtOkft1YdddStgYzQ';
+// Custom storage implementation using SecureStore for native platforms and localStorage for web
+const ExpoSecureStoreAdapter = Platform.OS === 'web' 
+  ? webStorage 
+  : {
+      getItem: (key: string) => {
+        return SecureStore.getItemAsync(key);
+      },
+      setItem: (key: string, value: string) => {
+        return SecureStore.setItemAsync(key, value);
+      },
+      removeItem: (key: string) => {
+        return SecureStore.deleteItemAsync(key);
+      },
+    };
 
-// 環境変数が未定義の場合は警告を表示
-if (!supabaseUrl) {
-  console.warn('警告: Supabase URLが環境変数から読み込めませんでした。フォールバック値を使用します。');
-}
-
-if (!supabaseAnonKey) {
-  console.warn('警告: Supabase Anon Keyが環境変数から読み込めませんでした。フォールバック値を使用します。');
-}
-
-// 環境変数またはフォールバック値を使用してSupabaseクライアントを作成
-export const supabase = createClient(supabaseUrl || fallbackUrl, supabaseAnonKey || fallbackKey, {
+// Create Supabase client
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
+    storage: ExpoSecureStoreAdapter as any,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce'
-  }
+    detectSessionInUrl: false,
+  },
 });
 
-// 投稿データの型定義
-export interface PostData {
-  user_id: string;
-  content_type: string;
-  text_content: string;
-  media_url?: string | null;
-  audio_url?: string | null;
-  thumbnail_url?: string | null;
-  tags?: string[]; // タグの配列
-}
-
-// ファイルアップロード関数
+// File upload function
 export const uploadFile = async (
-  file: File,
+  file: any,
   bucket: string = 'media',
   folder: string = 'uploads'
 ): Promise<{ url: string | null; error: Error | null }> => {
   try {
-    // ファイル名の一意性を確保するため、タイムスタンプを追加
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    // For React Native, we need to get file from URI
+    const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${file.name.split('.').pop()}`;
     
-    // ファイルをアップロード
+    // Upload file
     const { error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(fileName, file, {
+        contentType: file.type,
         cacheControl: '3600',
         upsert: false
       });
@@ -64,7 +72,7 @@ export const uploadFile = async (
       throw uploadError;
     }
 
-    // アップロードしたファイルの公開URLを取得
+    // Get public URL
     const { data } = supabase.storage
       .from(bucket)
       .getPublicUrl(fileName);
@@ -76,20 +84,19 @@ export const uploadFile = async (
   }
 };
 
-// 音声Blobをアップロードする関数
+// Audio blob upload function for voice messages
 export const uploadAudioBlob = async (
-  audioBlob: Blob,
+  blob: Blob,
   bucket: string = 'media',
-  folder: string = 'audio'
+  folder: string = 'audio-messages'
 ): Promise<{ url: string | null; error: Error | null }> => {
   try {
-    // 一意のファイル名を生成
     const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 15)}.wav`;
     
-    // Blobをアップロード
+    // Upload blob
     const { error: uploadError } = await supabase.storage
       .from(bucket)
-      .upload(fileName, audioBlob, {
+      .upload(fileName, blob, {
         contentType: 'audio/wav',
         cacheControl: '3600',
         upsert: false
@@ -99,7 +106,7 @@ export const uploadAudioBlob = async (
       throw uploadError;
     }
 
-    // アップロードしたファイルの公開URLを取得
+    // Get public URL
     const { data } = supabase.storage
       .from(bucket)
       .getPublicUrl(fileName);
@@ -111,12 +118,23 @@ export const uploadAudioBlob = async (
   }
 };
 
-// 投稿を保存する関数
+// Post data interface
+export interface PostData {
+  user_id: string;
+  content_type: string;
+  text_content: string;
+  media_url?: string | null;
+  audio_url?: string | null;
+  thumbnail_url?: string | null;
+  tags?: string[];
+}
+
+// Save post function
 export const savePost = async (
   postData: PostData
 ): Promise<{ success: boolean; error: Error | null; data: any }> => {
   try {
-    // メディアURLが配列の場合は最初の要素を使用し、残りはJSON文字列として保存
+    // Handle media URL if it's an array
     let primaryMediaUrl = null;
     if (Array.isArray(postData.media_url) && postData.media_url.length > 0) {
       primaryMediaUrl = postData.media_url[0];
@@ -124,7 +142,7 @@ export const savePost = async (
       primaryMediaUrl = postData.media_url;
     }
 
-    // 投稿データをpostsテーブルに挿入
+    // Insert post
     const { data, error } = await supabase
       .from('posts')
       .insert({
@@ -133,20 +151,20 @@ export const savePost = async (
         text_content: postData.text_content,
         media_url: Array.isArray(postData.media_url) ? JSON.stringify(postData.media_url) : postData.media_url,
         audio_url: postData.audio_url,
-        thumbnail_url: postData.thumbnail_url || primaryMediaUrl, // サムネイルがなければ最初のメディアを使用
+        thumbnail_url: postData.thumbnail_url || primaryMediaUrl,
         created_at: new Date().toISOString()
       })
       .select();
 
     if (error) throw error;
 
-    // タグの処理
+    // Handle tags
     if (postData.tags && postData.tags.length > 0 && data && data.length > 0) {
       const postId = data[0].id;
       
-      // 各タグを処理
+      // Process each tag
       for (const tagName of postData.tags) {
-        // まず、既存のタグを探す
+        // Find existing tag
         const { data: existingTag, error: findError } = await supabase
           .from('tags')
           .select('id')
@@ -160,7 +178,7 @@ export const savePost = async (
         
         let tagId;
         
-        // タグが存在しなければ作成
+        // Create tag if it doesn't exist
         if (!existingTag) {
           const { data: newTag, error: createError } = await supabase
             .from('tags')
@@ -178,7 +196,7 @@ export const savePost = async (
           tagId = existingTag.id;
         }
         
-        // タグを投稿に関連付け
+        // Link tag to post
         const { error: linkError } = await supabase
           .from('post_tags')
           .insert({

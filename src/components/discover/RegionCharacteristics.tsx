@@ -1,4 +1,5 @@
-import { Card } from "@/components/ui/card";
+import React from 'react';
+import { View, Text } from 'react-native';
 
 interface RegionCharacteristicsProps {
   characteristics: string;
@@ -6,9 +7,9 @@ interface RegionCharacteristicsProps {
 
 export function RegionCharacteristics({ characteristics }: RegionCharacteristicsProps) {
   return (
-    <Card className="p-6">
-      <h3 className="text-lg font-semibold mb-4">地域の特色</h3>
-      <p className="text-muted-foreground">{characteristics}</p>
-    </Card>
+    <View className="bg-white rounded-lg shadow-sm p-6">
+      <Text className="text-lg font-semibold mb-4">地域の特色</Text>
+      <Text className="text-gray-600">{characteristics}</Text>
+    </View>
   );
 }

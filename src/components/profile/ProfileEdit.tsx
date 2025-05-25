@@ -1,201 +1,228 @@
-import { useState, useRef, useEffect } from "react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
-import { Mic, Square, Play, Pause, Save, ArrowLeft, Upload } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { Label } from "@/components/ui/label";
-import { useAuth } from "@/context/AuthContext";
-import { supabase, uploadFile } from "@/lib/supabase";
-import { useToast } from "@/hooks/use-toast";
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  Alert,
+  Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import * as Audio from 'expo-av';
+import { ArrowLeft, Save, Upload, Mic, Square, Play, Pause } from 'lucide-react-native';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
+import { Avatar } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 
 export function ProfileEdit() {
-  const navigate = useNavigate();
+  const navigation = useNavigation();
   const { user, profile, refreshProfile } = useAuth();
   const { toast } = useToast();
-  const [avatar, setAvatar] = useState<string>("");
-  const [name, setName] = useState<string>("");
-  const [username, setUsername] = useState<string>("");
-  const [bio, setBio] = useState<string>("");
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  
+  const [avatar, setAvatar] = useState<string>('');
+  const [name, setName] = useState<string>('');
+  const [username, setUsername] = useState<string>('');
+  const [bio, setBio] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
   // Audio recording states
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [recordedAudio, setRecordedAudio] = useState<string | null>(null);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [recordedAudioUri, setRecordedAudioUri] = useState<string | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
 
-  // Handle avatar file upload
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
   useEffect(() => {
     if (profile) {
-      setAvatar(profile.image || "");
-      setName(profile.name || "");
-      setUsername(profile.username || "");
-      setBio(profile.bio || "");
+      setAvatar(profile.image || '');
+      setName(profile.name || '');
+      setUsername(profile.username || '');
+      setBio(profile.bio || '');
     }
   }, [profile]);
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAvatarFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          setAvatar(e.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'We need camera roll permissions to upload your avatar.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setAvatar(result.assets[0].uri);
     }
   };
 
-  // Start recording voice
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'We need microphone permissions to record audio.');
+        return;
+      }
 
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
 
-      mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        setAudioBlob(blob);
-        const audioUrl = URL.createObjectURL(blob);
-        setRecordedAudio(audioUrl);
-        
-        // Release microphone access
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorderRef.current.start();
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      
+      setRecording(recording);
       setIsRecording(true);
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
+    } catch (err) {
+      console.error('Failed to start recording', err);
       toast({
-        title: "エラー",
-        description: "マイクへのアクセスが許可されていません。ブラウザの設定を確認してください。",
-        variant: "destructive",
+        title: 'エラー',
+        description: '録音の開始に失敗しました',
+        variant: 'destructive',
       });
     }
   };
 
-  // Stop recording voice
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+  const stopRecording = async () => {
+    if (!recording) return;
+
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      setRecordedAudioUri(uri);
+      setRecording(null);
       setIsRecording(false);
+    } catch (err) {
+      console.error('Failed to stop recording', err);
     }
   };
 
-  // Play recorded audio
-  const playRecordedAudio = () => {
-    if (recordedAudio) {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(recordedAudio);
-        audioRef.current.onended = () => {
-          setIsPlaying(false);
-        };
-      } else {
-        audioRef.current.src = recordedAudio;
-      }
+  const playRecordedAudio = async () => {
+    if (!recordedAudioUri) return;
 
-      if (!isPlaying) {
-        audioRef.current.play();
-        setIsPlaying(true);
-      } else {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+    try {
+      if (sound && isPlaying) {
+        await sound.pauseAsync();
         setIsPlaying(false);
+      } else {
+        if (sound) {
+          await sound.unloadAsync();
+        }
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri: recordedAudioUri },
+          { shouldPlay: true }
+        );
+        setSound(newSound);
+        setIsPlaying(true);
+
+        newSound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded && status.didJustFinish) {
+            setIsPlaying(false);
+          }
+        });
       }
+    } catch (err) {
+      console.error('Failed to play audio', err);
     }
   };
 
-  // Save profile changes
+  const uploadFile = async (uri: string, folder: string): Promise<{ url?: string; error?: Error }> => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      const fileExt = uri.split('.').pop() || 'jpg';
+      
+      const { data, error } = await supabase.storage
+        .from('media')
+        .upload(`${folder}/${fileName}.${fileExt}`, blob);
+
+      if (error) throw error;
+
+      const { data: publicUrl } = supabase.storage
+        .from('media')
+        .getPublicUrl(data.path);
+
+      return { url: publicUrl.publicUrl };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
   const saveProfile = async () => {
     if (!user) return;
-    
+
     try {
       setIsLoading(true);
+
+      let imageUrl = profile?.image || '';
       
-      let imageUrl = profile?.image || "";
-      
-      // Upload the avatar file if it exists
-      if (avatarFile) {
-        const result = await uploadFile(avatarFile, 'avatars');
-        if (result.error) {
-          throw result.error;
-        }
-        if (result.url) {
-          imageUrl = result.url;
-        }
+      // Upload avatar if changed
+      if (avatar && avatar !== profile?.image && avatar.startsWith('file://')) {
+        const result = await uploadFile(avatar, 'avatars');
+        if (result.error) throw result.error;
+        if (result.url) imageUrl = result.url;
       }
 
-      // Audio upload
-      let audioUrl = profile?.audio_url || "";
-      if (audioBlob) {
-        const result = await supabase.storage
-          .from('media')
-          .upload(`audio/${Date.now()}_profile.wav`, audioBlob, {
-            contentType: 'audio/wav',
-            cacheControl: '3600',
-            upsert: false
-          });
-          
-        if (result.error) {
-          throw result.error;
-        }
-        
-        const { data } = supabase.storage
-          .from('media')
-          .getPublicUrl(result.data.path);
-        
-        audioUrl = data.publicUrl;
+      // Upload audio if recorded
+      let audioUrl = profile?.audio_url || '';
+      if (recordedAudioUri) {
+        const result = await uploadFile(recordedAudioUri, 'audio');
+        if (result.error) throw result.error;
+        if (result.url) audioUrl = result.url;
       }
 
-      // Update the profile in Supabase
+      // Update profile in Supabase
       const { error } = await supabase
         .from('profiles')
         .update({
-          name: name,
-          username: username,
-          bio: bio,
+          name,
+          username,
+          bio,
           image: imageUrl,
           audio_url: audioUrl,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       await refreshProfile();
       
       toast({
-        title: "保存完了",
-        description: "プロフィールが更新されました",
+        title: '保存完了',
+        description: 'プロフィールが更新されました',
       });
       
-      navigate("/profile");
-    } catch (error: any) {
-      console.error("Error saving profile:", error);
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error saving profile:', error);
       toast({
-        title: "エラー",
-        description: error.message || "プロフィールの保存中にエラーが発生しました",
-        variant: "destructive",
+        title: 'エラー',
+        description: 'プロフィールの保存中にエラーが発生しました',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -203,141 +230,228 @@ export function ProfileEdit() {
   };
 
   return (
-    <div className="container mx-auto px-4 pt-16 pb-24">
-      <div className="flex items-center justify-between mb-6">
-        <Button variant="ghost" onClick={() => navigate("/profile")}>
-          <ArrowLeft className="h-5 w-5 mr-2" />
-          戻る
-        </Button>
-        <h1 className="text-xl font-bold">プロフィール編集</h1>
-        <Button onClick={saveProfile} disabled={isLoading}>
-          <Save className="h-5 w-5 mr-2" />
-          {isLoading ? "保存中..." : "保存"}
-        </Button>
-      </div>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <ArrowLeft size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>プロフィール編集</Text>
+        <TouchableOpacity onPress={saveProfile} disabled={isLoading}>
+          <Save size={24} color={isLoading ? '#ccc' : '#6366f1'} />
+        </TouchableOpacity>
+      </View>
 
-      <div className="flex flex-col items-center space-y-6">
-        <div className="relative">
-          <Avatar className="h-24 w-24">
-            <AvatarImage src={avatar} />
-            <AvatarFallback>{name?.[0] || user?.email?.[0] || 'U'}</AvatarFallback>
-          </Avatar>
-          <Button 
-            size="icon" 
-            className="absolute bottom-0 right-0 rounded-full h-8 w-8"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
-          >
-            <Upload className="h-4 w-4" />
-          </Button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept="image/*"
-            onChange={handleAvatarUpload} 
-          />
-        </div>
-
-        <div className="w-full max-w-md space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">名前</Label>
-            <Input 
-              id="name" 
-              value={name} 
-              onChange={(e) => setName(e.target.value)} 
-              placeholder="名前を入力" 
-              disabled={isLoading}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.avatarSection}>
+          <TouchableOpacity onPress={pickImage} disabled={isLoading}>
+            <Avatar
+              source={{ uri: avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}` }}
+              style={styles.avatar}
+              fallback={name?.[0] || user?.email?.[0] || 'U'}
             />
-          </div>
+            <View style={styles.uploadButton}>
+              <Upload size={16} color="#fff" />
+            </View>
+          </TouchableOpacity>
+        </View>
 
-          <div className="space-y-2">
-            <Label htmlFor="username">ユーザーネーム</Label>
-            <Input 
-              id="username" 
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)} 
+        <View style={styles.formSection}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>名前</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="名前を入力"
+              editable={!isLoading}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>ユーザーネーム</Text>
+            <TextInput
+              style={styles.input}
+              value={username}
+              onChangeText={setUsername}
               placeholder="ユーザーネームを入力"
-              disabled={isLoading}
+              editable={!isLoading}
             />
-          </div>
+          </View>
 
-          <div className="space-y-2">
-            <Label htmlFor="userId">ユーザーID</Label>
-            <Input 
-              id="userId" 
-              value={user?.id || ""} 
-              placeholder="ユーザーIDを入力"
-              disabled 
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>ユーザーID</Text>
+            <TextInput
+              style={[styles.input, styles.disabledInput]}
+              value={user?.id || ''}
+              editable={false}
             />
-            <p className="text-xs text-muted-foreground">ユーザーIDは変更できません</p>
-          </div>
+            <Text style={styles.helpText}>ユーザーIDは変更できません</Text>
+          </View>
 
-          <div className="space-y-2">
-            <Label htmlFor="bio">自己紹介</Label>
-            <Textarea 
-              id="bio" 
-              value={bio} 
-              onChange={(e) => setBio(e.target.value)} 
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>自己紹介</Text>
+            <TextInput
+              style={[styles.input, styles.textarea]}
+              value={bio}
+              onChangeText={setBio}
               placeholder="自己紹介を入力"
-              rows={4}
-              disabled={isLoading}
+              multiline
+              numberOfLines={4}
+              editable={!isLoading}
             />
-          </div>
+          </View>
 
-          <Card className="p-4">
-            <h3 className="font-medium mb-2">自己紹介音声</h3>
-            <p className="text-sm text-muted-foreground mb-4">
+          <Card style={styles.audioCard}>
+            <Text style={styles.audioTitle}>自己紹介音声</Text>
+            <Text style={styles.audioDescription}>
               プロフィールに表示される自己紹介音声を録音します
-            </p>
+            </Text>
             
-            <div className="flex items-center gap-2">
+            <View style={styles.audioButtons}>
               {!isRecording ? (
                 <Button
                   variant="outline"
-                  onClick={startRecording}
-                  disabled={isRecording || isLoading}
+                  onPress={startRecording}
+                  disabled={isLoading}
                 >
-                  <Mic className="h-4 w-4 mr-2" />
+                  <Mic size={16} color="#6366f1" style={{ marginRight: 8 }} />
                   録音開始
                 </Button>
               ) : (
                 <Button
                   variant="destructive"
-                  onClick={stopRecording}
+                  onPress={stopRecording}
                   disabled={isLoading}
                 >
-                  <Square className="h-4 w-4 mr-2" />
+                  <Square size={16} color="#fff" style={{ marginRight: 8 }} />
                   録音停止
                 </Button>
               )}
               
-              {recordedAudio && (
+              {recordedAudioUri && (
                 <Button
                   variant="outline"
-                  onClick={playRecordedAudio}
+                  onPress={playRecordedAudio}
                   disabled={isRecording || isLoading}
                 >
                   {isPlaying ? (
-                    <Pause className="h-4 w-4 mr-2" />
+                    <Pause size={16} color="#6366f1" style={{ marginRight: 8 }} />
                   ) : (
-                    <Play className="h-4 w-4 mr-2" />
+                    <Play size={16} color="#6366f1" style={{ marginRight: 8 }} />
                   )}
-                  {isPlaying ? "再生停止" : "再生"}
+                  {isPlaying ? '再生停止' : '再生'}
                 </Button>
               )}
-            </div>
+            </View>
             
-            {(recordedAudio || profile?.audio_url) && (
-              <div className="mt-2">
-                <p className="text-xs text-muted-foreground">
-                  ✅ 録音済み
-                </p>
-              </div>
+            {(recordedAudioUri || profile?.audio_url) && (
+              <Text style={styles.audioStatus}>✅ 録音済み</Text>
             )}
           </Card>
-        </div>
-      </div>
-    </div>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e5e5',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  content: {
+    flex: 1,
+  },
+  avatarSection: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  avatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+  },
+  uploadButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#6366f1',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+  formSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
+  textarea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  disabledInput: {
+    backgroundColor: '#f5f5f5',
+    color: '#999',
+  },
+  helpText: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+  },
+  audioCard: {
+    padding: 16,
+    marginTop: 8,
+  },
+  audioTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  audioDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+  },
+  audioButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  audioStatus: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 8,
+  },
+});

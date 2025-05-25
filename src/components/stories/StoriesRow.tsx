@@ -1,8 +1,14 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import {
+  View,
+  ScrollView,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+} from "react-native";
+import { Plus } from "lucide-react-native";
 import StoryCircle from "./StoryCircle";
 import StoryViewer from "./StoryViewer";
-import { Button } from "../ui/button";
-import { Plus } from "lucide-react";
 
 interface Story {
   id: string;
@@ -36,7 +42,7 @@ export default function StoriesRow({
   currentUserId,
   currentUserImage,
   onCreateStory,
-  onStoryView
+  onStoryView,
 }: StoriesRowProps) {
   const [storyViewerOpen, setStoryViewerOpen] = useState(false);
   const [selectedUserIndex, setSelectedUserIndex] = useState(0);
@@ -47,23 +53,24 @@ export default function StoriesRow({
   };
 
   return (
-    <div className="w-full overflow-x-auto pb-2">
-      <div className="flex items-center px-2 py-3 gap-2">
+    <View style={styles.container}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Create Story Button */}
-        <div className="flex flex-col items-center justify-center mx-2 min-w-[60px]">
-          <div className="rounded-full bg-gray-100 p-[2px] mb-1">
-            <div className="rounded-full bg-primary p-[2px]">
-              <Button
-                onClick={onCreateStory}
-                variant="ghost"
-                className="h-14 w-14 rounded-full p-0 flex items-center justify-center"
-              >
-                <Plus className="h-8 w-8 text-white" />
-              </Button>
-            </div>
-          </div>
-          <span className="text-xs text-center font-medium">ストーリー作成</span>
-        </div>
+        <View style={styles.storyItem}>
+          <View style={styles.createStoryCircle}>
+            <TouchableOpacity
+              onPress={onCreateStory}
+              style={styles.createStoryButton}
+            >
+              <Plus size={32} color="#fff" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.username}>ストーリー作成</Text>
+        </View>
 
         {/* User Stories */}
         {userStories.length > 0 ? (
@@ -74,15 +81,15 @@ export default function StoriesRow({
               username={userStory.username}
               profileImage={userStory.profileImage}
               hasUnviewedStory={userStory.hasUnviewedStory}
-              onClick={() => handleStoryCircleClick(index)}
+              onPress={() => handleStoryCircleClick(index)}
             />
           ))
         ) : (
-          <div className="flex-1 text-center text-sm text-muted-foreground py-2">
-            ストーリーがありません
-          </div>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>ストーリーがありません</Text>
+          </View>
         )}
-      </div>
+      </ScrollView>
 
       {/* Story Viewer Modal */}
       <StoryViewer
@@ -93,6 +100,54 @@ export default function StoriesRow({
         onOpenChange={setStoryViewerOpen}
         onStoryView={onStoryView}
       />
-    </div>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    width: "100%",
+    paddingVertical: 8,
+  },
+  scrollContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    gap: 8,
+  },
+  storyItem: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 8,
+    minWidth: 60,
+  },
+  createStoryCircle: {
+    borderRadius: 30,
+    backgroundColor: "#f3f4f6",
+    padding: 2,
+    marginBottom: 4,
+  },
+  createStoryButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  username: {
+    fontSize: 12,
+    textAlign: "center",
+    fontWeight: "500",
+  },
+  emptyContainer: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+  },
+});

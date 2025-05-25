@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .screen {
+      fill: #f8f9fa;
+      stroke: #dee2e6;
+      stroke-width: 2;
+      rx: 10;
+      ry: 10;
+    }
+    .header {
+      fill: #343a40;
+      rx: 8;
+      ry: 8;
+    }
+    .text {
+      font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+      fill: #212529;
+    }
+    .header-text {
+      font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+      fill: white;
+      font-weight: bold;
+    }
+    .button {
+      fill: #6c63ff;
+      stroke: #5a56e9;
+      stroke-width: 1;
+      rx: 6;
+      ry: 6;
+    }
+    .button-text {
+      font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+      fill: white;
+      font-weight: bold;
+      text-anchor: middle;
+    }
+    .input {
+      fill: white;
+      stroke: #ced4da;
+      stroke-width: 1;
+      rx: 4;
+      ry: 4;
+    }
+    .arrow {
+      stroke: #6c757d;
+      stroke-width: 2;
+      fill: none;
+      marker-end: url(#arrowhead);
+    }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6c757d" />
+    </marker>
+  </defs>
+  
+  <!-- スプラッシュ画面 -->
+  <rect x="50" y="50" width="200" height="350" class="screen" />
+  <rect x="50" y="50" width="200" height="40" class="header" />
+  <text x="150" y="75" class="header-text" text-anchor="middle">スプラッシュ</text>
+  <circle cx="150" cy="200" r="50" fill="#6c63ff" />
+  <text x="150" y="205" class="header-text" text-anchor="middle" font-size="14">目醒め人SNS</text>
+  
+  <!-- Googleアカウント連携画面 -->
+  <rect x="300" y="50" width="200" height="350" class="screen" />
+  <rect x="300" y="50" width="200" height="40" class="header" />
+  <text x="400" y="75" class="header-text" text-anchor="middle">アカウント連携</text>
+  <rect x="325" y="150" width="150" height="40" fill="#ffffff" stroke="#dddddd" rx="4" ry="4" />
+  <text x="400" y="175" text-anchor="middle" font-size="14" fill="#444444">Googleでログイン</text>
+  
+  <!-- プロフィール設定画面 -->
+  <rect x="550" y="50" width="200" height="350" class="screen" />
+  <rect x="550" y="50" width="200" height="40" class="header" />
+  <text x="650" y="75" class="header-text" text-anchor="middle">プロフィール設定</text>
+  <text x="570" y="120" class="text" font-size="12">表示名</text>
+  <rect x="570" y="130" width="160" height="30" class="input" />
+  <text x="570" y="180" class="text" font-size="12">自己紹介文</text>
+  <rect x="570" y="190" width="160" height="60" class="input" />
+  <rect x="610" y="270" width="80" height="30" class="button" />
+  <text x="650" y="290" class="button-text" font-size="14">次へ</text>
+  
+  <!-- 自己紹介音声録音画面 -->
+  <rect x="300" y="450" width="200" height="100" class="screen" />
+  <rect x="300" y="450" width="200" height="40" class="header" />
+  <text x="400" y="475" class="header-text" text-anchor="middle">音声録音</text>
+  <circle cx="400" cy="500" r="20" fill="#ff6b6b" />
+  
+  <!-- 外部リンク設定画面 -->
+  <rect x="550" y="450" width="200" height="100" class="screen" />
+  <rect x="550" y="450" width="200" height="40" class="header" />
+  <text x="650" y="475" class="header-text" text-anchor="middle">外部リンク設定</text>
+  <rect x="570" y="500" width="160" height="30" class="input" />
+  
+  <!-- 矢印 -->
+  <path d="M 250 200 L 300 200" class="arrow" />
+  <path d="M 500 200 L 550 200" class="arrow" />
+  <path d="M 650 320 L 650 400 L 400 400 L 400 450" class="arrow" />
+  <path d="M 400 550 L 400 600 L 650 600 L 650 550" class="arrow" />
+</svg>

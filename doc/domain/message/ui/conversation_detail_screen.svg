@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="800" viewBox="0 0 360 800">
+  <!-- 背景 -->
+  <rect width="360" height="800" fill="#FFFFFF"/>
+  
+  <!-- ステータスバー -->
+  <rect width="360" height="24" fill="#F5F5F5"/>
+  <text x="16" y="17" font-family="Roboto" font-size="12" fill="#212121">9:41</text>
+  <text x="320" y="17" font-family="Roboto" font-size="12" fill="#212121">100%</text>
+  
+  <!-- アプリバー -->
+  <rect y="24" width="360" height="56" fill="#7E57C2"/>
+  <circle cx="36" cy="52" r="20" fill="white" opacity="0.9"/>
+  <text x="36" y="58" font-family="Roboto" font-size="18" fill="#7E57C2" text-anchor="middle">←</text>
+  
+  <!-- 会話ヘッダー -->
+  <circle cx="92" cy="52" r="20" fill="#E1BEE7"/>
+  <text x="92" y="58" font-family="Roboto" font-size="18" fill="#212121" text-anchor="middle">山田</text>
+  <text x="128" y="52" font-family="Roboto" font-size="18" font-weight="500" fill="white">山田太郎</text>
+  <text x="128" y="70" font-family="Roboto" font-size="12" fill="white" opacity="0.8">オンライン</text>
+  <circle cx="328" cy="52" r="16" fill="white" opacity="0.9"/>
+  <text x="328" y="58" font-family="Roboto" font-size="18" fill="#7E57C2" text-anchor="middle">⋮</text>
+  
+  <!-- メッセージ - 相手1 -->
+  <rect x="16" y="96" width="220" height="60" rx="18" fill="#F5F5F5"/>
+  <text x="32" y="124" font-family="Roboto" font-size="14" fill="#212121">
+    <tspan x="32" dy="0">こんにちは！</tspan>
+    <tspan x="32" dy="20">今日の打ち合わせについて相談したいです</tspan>
+  </text>
+  <text x="236" y="168" font-family="Roboto" font-size="12" fill="#9E9E9E">9:30</text>
+  
+  <!-- メッセージ - 自分1 -->
+  <rect x="124" y="196" width="220" height="40" rx="18" fill="#7E57C2"/>
+  <text x="144" y="220" font-family="Roboto" font-size="14" fill="white">
+    <tspan x="144" dy="0">はい、どうぞ！</tspan>
+  </text>
+  <text x="124" y="248" font-family="Roboto" font-size="12" fill="#9E9E9E">9:31</text>
+  <text x="154" y="248" font-family="Roboto" font-size="12" fill="#9E9E9E">既読</text>
+  
+  <!-- メッセージ - 相手2 -->
+  <rect x="16" y="276" width="250" height="80" rx="18" fill="#F5F5F5"/>
+  <text x="32" y="304" font-family="Roboto" font-size="14" fill="#212121">
+    <tspan x="32" dy="0">明日の14時から16時で予定したいと</tspan>
+    <tspan x="32" dy="20">思っています。ご都合はいかがでしょうか？</tspan>
+    <tspan x="32" dy="20">場所は本社会議室を考えています。</tspan>
+  </text>
+  <text x="266" y="368" font-family="Roboto" font-size="12" fill="#9E9E9E">9:35</text>
+  
+  <!-- メッセージ - 自分2（引用返信） -->
+  <rect x="134" y="396" width="210" height="110" rx="18" fill="#7E57C2"/>
+  <rect x="144" y="406" width="190" height="40" rx="8" fill="rgba(255,255,255,0.2)"/>
+  <text x="154" y="424" font-family="Roboto" font-size="12" fill="white" opacity="0.8">
+    <tspan x="154" dy="0">明日の14時から16時で予定したいと</tspan>
+    <tspan x="154" dy="16">思っています。ご都合はいかがでしょうか？</tspan>
+  </text>
+  <text x="154" y="454" font-family="Roboto" font-size="14" fill="white">
+    <tspan x="154" dy="16">14時で問題ありません。</tspan>
+    <tspan x="154" dy="20">資料は事前に共有していただけますか？</tspan>
+  </text>
+  <text x="134" y="518" font-family="Roboto" font-size="12" fill="#9E9E9E">9:40</text>
+  <text x="164" y="518" font-family="Roboto" font-size="12" fill="#9E9E9E">既読</text>
+  
+  <!-- メッセージ - 相手3（画像添付） -->
+  <rect x="16" y="546" width="200" height="170" rx="18" fill="#F5F5F5"/>
+  <rect x="26" y="556" width="180" height="120" rx="8" fill="#D1C4E9"/>
+  <text x="116" y="616" font-family="Roboto" font-size="14" fill="#212121" text-anchor="middle">[画像]</text>
+  <text x="32" y="696" font-family="Roboto" font-size="14" fill="#212121">
+    <tspan x="32" dy="0">はい、資料を添付します。</tspan>
+  </text>
+  <text x="216" y="728" font-family="Roboto" font-size="12" fill="#9E9E9E">10:30</text>
+  
+  <!-- メッセージ入力エリア -->
+  <rect y="745" width="360" height="55" fill="white"/>
+  <rect x="16" y="755" width="270" height="36" rx="18" fill="#F5F5F5"/>
+  <text x="32" y="777" font-family="Roboto" font-size="14" fill="#9E9E9E">メッセージを入力...</text>
+  <circle cx="304" cy="773" r="18" fill="#7E57C2"/>
+  <text x="304" y="779" font-family="Roboto" font-size="18" fill="white" text-anchor="middle">↑</text>
+  <line x1="0" y1="745" x2="360" y2="745" stroke="#E0E0E0" stroke-width="1"/>
+  
+  <!-- メディアボタン -->
+  <circle cx="324" cy="710" r="18" fill="#E0E0E0"/>
+  <text x="324" y="716" font-family="Roboto" font-size="14" fill="#616161" text-anchor="middle">+</text>
+</svg>

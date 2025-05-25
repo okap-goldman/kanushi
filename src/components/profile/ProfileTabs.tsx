@@ -1,393 +1,324 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Post } from "@/components/Post";
-import { SAMPLE_POSTS } from "@/lib/data";
-import { Play, Pause, Flame, Quote } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Dimensions,
+  ActivityIndicator,
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { supabase } from '../../lib/supabase';
+
+type Tab = 'posts' | 'highlights' | 'likes';
 
 interface ProfileTabsProps {
-  selectedTab: string;
-  setSelectedPost: (post: any) => void;
-  setSelectedShopItem?: (item: any) => void;
+  userId: string;
+  activeTab: Tab;
+  onChangeTab: (tab: Tab) => void;
 }
 
-interface AudioPlayerState {
-  isPlaying: boolean;
-  currentAudioIndex: number;
-  continuousPlay: boolean;
-}
+export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps) {
+  const [posts, setPosts] = useState<any[]>([]);
+  const [highlights, setHighlights] = useState<any[]>([]);
+  const [likes, setLikes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-// Define the post type to match the data structure
-type PostType = {
-  author: {
-    name: string;
-    image: string;
-    id: string;
-  };
-  content: string;
-  caption?: string;
-  mediaType: "text" | "image" | "video" | "audio";
-  postId?: string;
-  tags?: { id: string; name: string }[];
-};
-
-// Define the highlight comment type
-type HighlightComment = {
-  postId: string;
-  text: string;
-  date: string;
-};
-
-// Format time for audio display
-const formatTime = (time: number) => {
-  const minutes = Math.floor(time / 60);
-  const seconds = Math.floor(time % 60);
-  return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-};
-
-export function ProfileTabs({ selectedTab, setSelectedPost }: ProfileTabsProps) {
-  // Audio player state
-  const [audioState, setAudioState] = useState<AudioPlayerState>({
-    isPlaying: false,
-    currentAudioIndex: -1,
-    continuousPlay: false,
-  });
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  
-  // Sample highlight comments (これは後でSupabaseから取得するようにします)
-  const [highlightComments, setHighlightComments] = useState<HighlightComment[]>([
-    {
-      postId: "1",
-      text: "この投稿の言葉が心に深く響きました。特に「青梅に来て生まれ変わった」という部分に共感します。環境が変わることで人は本当に変われるのですね。",
-      date: "2024年5月10日"
-    },
-    {
-      postId: "2",
-      text: "瞑想の音声がとても落ち着きます。毎日の習慣にしたいと思います。",
-      date: "2024年5月8日"
-    },
-    {
-      postId: "3",
-      text: "美しい風景ですね。私も瞑想する特別な場所を見つけたいと思います。",
-      date: "2024年5月5日"
-    }
-  ]);
-  
-  // Get all audio posts
-  const audioPosts = SAMPLE_POSTS.filter((post: PostType) => post.mediaType === "audio");
-
-  // Handle main play button click
-  const handleMainPlayClick = () => {
-    if (audioPosts.length === 0) return;
-    
-    const newIndex = audioState.currentAudioIndex === -1 ? 0 : audioState.currentAudioIndex;
-    
-    if (audioState.isPlaying) {
-      audioRef.current?.pause();
-      setAudioState(prev => ({ ...prev, isPlaying: false }));
-    } else {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(audioPosts[newIndex].content);
-        setupAudioEvents();
-      }
-      audioRef.current.play();
-      setAudioState(prev => ({ 
-        ...prev, 
-        isPlaying: true,
-        currentAudioIndex: newIndex
-      }));
-    }
-  };
-
-  // Handle individual track play
-  const handleTrackPlay = (index: number) => {
-    if (audioState.currentAudioIndex === index) {
-      // Toggle play/pause on current track
-      if (audioState.isPlaying) {
-        audioRef.current?.pause();
-        setAudioState(prev => ({ ...prev, isPlaying: false }));
-      } else {
-        audioRef.current?.play();
-        setAudioState(prev => ({ ...prev, isPlaying: true }));
-      }
-    } else {
-      // Switch to new track
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      audioRef.current = new Audio(audioPosts[index].content);
-      setupAudioEvents();
-      audioRef.current.play();
-      setAudioState(prev => ({ 
-        ...prev, 
-        isPlaying: true,
-        currentAudioIndex: index 
-      }));
-    }
-  };
-
-  // Setup audio events
-  const setupAudioEvents = () => {
-    if (!audioRef.current) return;
-    
-    audioRef.current.addEventListener('timeupdate', updateProgress);
-    audioRef.current.addEventListener('loadedmetadata', () => {
-      setDuration(audioRef.current?.duration || 0);
-    });
-    audioRef.current.addEventListener('ended', handleAudioEnded);
-    
-    // Initial duration setup
-    if (audioRef.current.duration) {
-      setDuration(audioRef.current.duration);
-    }
-  };
-
-  // Handle audio ended
-  const handleAudioEnded = () => {
-    if (audioState.continuousPlay && audioState.currentAudioIndex < audioPosts.length - 1) {
-      // Load next track but don't autoplay
-      const nextIndex = audioState.currentAudioIndex + 1;
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      audioRef.current = new Audio(audioPosts[nextIndex].content);
-      setupAudioEvents();
-      // Don't autoplay the next track, just prepare it
-      setAudioState(prev => ({ 
-        ...prev, 
-        isPlaying: false,
-        currentAudioIndex: nextIndex 
-      }));
-    } else {
-      // Stop playing
-      setAudioState(prev => ({ ...prev, isPlaying: false }));
-    }
-  };
-
-  // Update progress
-  const updateProgress = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
-    }
-  };
-  
-  // Handle progress bar change
-  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>, trackIndex?: number) => {
-    if (!audioRef.current) return;
-    
-    const newTime = parseFloat(e.target.value);
-    audioRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-    
-    // If we're adjusting progress for a different track than currently playing
-    if (trackIndex !== undefined && trackIndex !== audioState.currentAudioIndex) {
-      handleTrackPlay(trackIndex);
-    }
-  };
-
-  // Toggle continuous play
-  const toggleContinuousPlay = () => {
-    setAudioState(prev => ({ ...prev, continuousPlay: !prev.continuousPlay }));
-  };
-
-  // Clean up audio when component unmounts
   useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.removeEventListener('timeupdate', updateProgress);
-        audioRef.current.removeEventListener('ended', handleAudioEnded);
+    if (activeTab === 'posts') {
+      fetchPosts();
+    } else if (activeTab === 'highlights') {
+      fetchHighlights();
+    } else if (activeTab === 'likes') {
+      fetchLikes();
+    }
+  }, [activeTab, userId]);
+
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      if (data) {
+        setPosts(data);
       }
-    };
-  }, []);
-  return (
-    <Tabs defaultValue={selectedTab} className="mt-8">
-      <TabsList className="grid w-full grid-cols-5">
-        <TabsTrigger value="media">メディア</TabsTrigger>
-        <TabsTrigger value="audio">音声</TabsTrigger>
-        <TabsTrigger value="text">テキスト</TabsTrigger>
-        <TabsTrigger value="highlights">ハイライト</TabsTrigger>
-        <TabsTrigger value="events">イベント</TabsTrigger>
-      </TabsList>
+    } catch (err) {
+      console.error('Error fetching posts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      <TabsContent value="media" className="mt-4">
-        <div className="grid grid-cols-3 gap-1">
-          {SAMPLE_POSTS.filter((post: PostType) => post.mediaType === "image").map((post, index) => (
-            <Card 
-              key={index} 
-              className="aspect-square overflow-hidden cursor-pointer"
-              onClick={() => setSelectedPost(post)}
-            >
-              <img
-                src={post.content}
-                alt=""
-                className="w-full h-full object-cover"
+  const fetchHighlights = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('highlights')
+        .select('*, posts!inner(*)')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      if (data) {
+        setHighlights(data);
+      }
+    } catch (err) {
+      console.error('Error fetching highlights:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLikes = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('likes')
+        .select('*, posts!inner(*)')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      if (data) {
+        setLikes(data);
+      }
+    } catch (err) {
+      console.error('Error fetching likes:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderTabContent = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0070F3" />
+        </View>
+      );
+    }
+
+    if (activeTab === 'posts' && posts.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Feather name="image" size={48} color="#CBD5E0" />
+          <Text style={styles.emptyText}>No posts yet</Text>
+        </View>
+      );
+    }
+
+    if (activeTab === 'highlights' && highlights.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Feather name="star" size={48} color="#CBD5E0" />
+          <Text style={styles.emptyText}>No highlights yet</Text>
+        </View>
+      );
+    }
+
+    if (activeTab === 'likes' && likes.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Feather name="heart" size={48} color="#CBD5E0" />
+          <Text style={styles.emptyText}>No likes yet</Text>
+        </View>
+      );
+    }
+
+    let data = [];
+    if (activeTab === 'posts') {
+      data = posts;
+    } else if (activeTab === 'highlights') {
+      data = highlights.map(h => h.posts);
+    } else if (activeTab === 'likes') {
+      data = likes.map(l => l.posts);
+    }
+
+    return (
+      <FlatList
+        data={data}
+        keyExtractor={(item) => item.id}
+        numColumns={3}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.gridItem}>
+            {item.content_type === 'image' ? (
+              <Image
+                source={{ uri: item.media_url || item.thumbnail_url }}
+                style={styles.gridImage}
+                contentFit="cover"
               />
-            </Card>
-          ))}
-        </div>
-      </TabsContent>
-
-      <TabsContent value="audio" className="mt-4">
-        <div className="space-y-6">
-          {/* Main audio controls */}
-          <Card className="p-4 bg-muted/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-12 w-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-                  onClick={handleMainPlayClick}
-                  disabled={audioPosts.length === 0}
-                >
-                  {audioState.isPlaying ? (
-                    <Pause className="h-6 w-6" />
-                  ) : (
-                    <Play className="h-6 w-6 ml-0.5" />
-                  )}
-                  <span className="sr-only">すべての音声を{audioState.isPlaying ? '一時停止' : '再生'}</span>
-                </Button>
-                <div className="font-medium">
-                  {audioState.currentAudioIndex >= 0 && audioState.isPlaying ? 
-                    `再生中: ${audioPosts[audioState.currentAudioIndex].author.name}` : 
-                    'すべての音声'}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox 
-                  id="continuousPlay" 
-                  checked={audioState.continuousPlay} 
-                  onCheckedChange={toggleContinuousPlay} 
+            ) : item.content_type === 'video' ? (
+              <View style={styles.gridItem}>
+                <Image
+                  source={{ uri: item.thumbnail_url || 'https://via.placeholder.com/150' }}
+                  style={styles.gridImage}
+                  contentFit="cover"
                 />
-                <label htmlFor="continuousPlay" className="text-sm cursor-pointer">
-                  連続再生
-                </label>
-              </div>
-            </div>
-          </Card>
+                <View style={styles.videoIndicator}>
+                  <Feather name="play" size={16} color="#FFFFFF" />
+                </View>
+              </View>
+            ) : item.content_type === 'audio' ? (
+              <View style={styles.audioGridItem}>
+                <Feather name="mic" size={24} color="#FFFFFF" />
+                <Text style={styles.audioText} numberOfLines={2}>
+                  {item.text_content || 'Audio'}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.textGridItem}>
+                <Text style={styles.textContent} numberOfLines={4}>
+                  {item.text_content}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
+      />
+    );
+  };
 
-          {/* Audio tracks list */}
-          <div className="space-y-2">
-            {audioPosts.map((post, index) => (
-              <Card 
-                key={index} 
-                className={`p-4 transition-colors ${audioState.currentAudioIndex === index ? 'bg-muted/50' : ''}`}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full hover:bg-primary hover:text-primary-foreground"
-                    onClick={() => handleTrackPlay(index)}
-                  >
-                    {audioState.isPlaying && audioState.currentAudioIndex === index ? (
-                      <Pause className="h-4 w-4" />
-                    ) : (
-                      <Play className="h-4 w-4 ml-0.5" />
-                    )}
-                    <span className="sr-only">音声を{audioState.isPlaying && audioState.currentAudioIndex === index ? '一時停止' : '再生'}</span>
-                  </Button>
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{post.author.name}</div>
-                    {post.caption && <div className="text-xs text-muted-foreground truncate">{post.caption}</div>}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {audioState.currentAudioIndex === index ? 
-                      `${formatTime(currentTime)} / ${formatTime(duration)}` : 
-                      '-- / --'}
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full">
-                  <input 
-                    type="range" 
-                    min={0} 
-                    max={audioState.currentAudioIndex === index ? duration || 100 : 100} 
-                    value={audioState.currentAudioIndex === index ? currentTime : 0} 
-                    onChange={(e) => handleProgressChange(e, index)}
-                    className="w-full h-1.5 accent-primary cursor-pointer" 
-                  />
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </TabsContent>
-
-      <TabsContent value="text" className="mt-4">
-        <div className="space-y-4">
-          {SAMPLE_POSTS.filter((post: PostType) => post.mediaType === "text").map((post, index) => (
-            <div key={index} onClick={() => setSelectedPost(post)}>
-              <Post {...post} />
-            </div>
-          ))}
-        </div>
-      </TabsContent>
-
-      <TabsContent value="highlights" className="mt-4">
-        <div className="space-y-6">
-          {SAMPLE_POSTS.map((post, index) => {
-            // 投稿に対応するハイライトコメントを探す
-            const highlightComment = highlightComments.find(comment => comment.postId === String(index + 1));
-            
-            // ハイライトコメントがある場合のみ表示
-            return highlightComment ? (
-              <Card key={index} className="overflow-hidden">
-                <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b">
-                  <div className="flex items-start gap-3">
-                    <div className="min-w-8 mt-1">
-                      <Avatar className="h-8 w-8 border-2 border-orange-200">
-                        <AvatarImage src={post.author.image} />
-                        <AvatarFallback>{post.author.name[0]}</AvatarFallback>
-                      </Avatar>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Quote className="h-4 w-4 text-orange-500" />
-                        <p className="text-sm font-medium text-orange-700">
-                          私のハイライト
-                        </p>
-                      </div>
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                        {highlightComment.text}
-                      </p>
-                      <div className="mt-2 flex items-center justify-between">
-                        <div className="text-xs text-muted-foreground">{highlightComment.date}</div>
-                        <div className="flex items-center gap-1.5">
-                          <Flame className="h-4 w-4 text-orange-500 fill-orange-500" />
-                          <span className="text-xs font-medium text-orange-700">ハイライト</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-2">
-                  <Post 
-                    postId={String(index + 1)}
-                    key={index} 
-                    {...post} 
-                  />
-                </div>
-              </Card>
-            ) : null;
-          }).filter(Boolean)}
-        </div>
-      </TabsContent>
-
-      <TabsContent value="events" className="mt-4">
-        <Card className="p-4">
-          <h3 className="font-medium">瞑想ワークショップ</h3>
-          <p className="text-sm text-muted-foreground">2024年4月1日 14:00-16:00</p>
-          <p className="mt-2">心の平安を見つける瞑想の基礎を学びましょう。</p>
-        </Card>
-      </TabsContent>
-    </Tabs>
+  return (
+    <View style={styles.container}>
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
+          onPress={() => onChangeTab('posts')}
+        >
+          <Feather
+            name="grid"
+            size={20}
+            color={activeTab === 'posts' ? '#0070F3' : '#64748B'}
+          />
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'highlights' && styles.activeTab]}
+          onPress={() => onChangeTab('highlights')}
+        >
+          <Feather
+            name="star"
+            size={20}
+            color={activeTab === 'highlights' ? '#0070F3' : '#64748B'}
+          />
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'likes' && styles.activeTab]}
+          onPress={() => onChangeTab('likes')}
+        >
+          <Feather
+            name="heart"
+            size={20}
+            color={activeTab === 'likes' ? '#0070F3' : '#64748B'}
+          />
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.tabContent}>
+        {renderTabContent()}
+      </View>
+    </View>
   );
 }
+
+const { width } = Dimensions.get('window');
+const itemSize = width / 3;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: '#0070F3',
+  },
+  tabContent: {
+    flex: 1,
+  },
+  gridItem: {
+    width: itemSize,
+    height: itemSize,
+    position: 'relative',
+  },
+  gridImage: {
+    width: '100%',
+    height: '100%',
+  },
+  videoIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  audioGridItem: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#0070F3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
+  },
+  audioText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  textGridItem: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#F1F5F9',
+    padding: 8,
+    justifyContent: 'center',
+  },
+  textContent: {
+    fontSize: 12,
+    color: '#1E293B',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#94A3B8',
+  },
+});

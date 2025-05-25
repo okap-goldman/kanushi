@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { v4 as uuidv4 } from 'uuid';
+import * as Crypto from 'expo-crypto';
 
 export interface Story {
   id: string;
@@ -68,7 +68,9 @@ export async function getStories(): Promise<UserStories[]> {
     const userStoriesMap = new Map<string, UserStories>();
     
     stories.forEach(story => {
-      const profile = story.profiles;
+      const profile = Array.isArray(story.profiles) ? story.profiles[0] : story.profiles;
+      if (!profile) return; // Skip if no profile
+      
       const userId = profile.id;
       
       const storyObj: Story = {
@@ -136,7 +138,7 @@ export async function viewStory(storyId: string): Promise<void> {
     const { error } = await supabase
       .from('story_views')
       .upsert({
-        id: uuidv4(),
+        id: Crypto.randomUUID(),
         story_id: storyId,
         user_id: currentUser.user.id,
         viewed_at: new Date().toISOString()
@@ -152,7 +154,8 @@ export async function viewStory(storyId: string): Promise<void> {
 
 // ストーリーの投稿
 export async function createStory(
-  file: File,
+  fileUri: string,
+  fileType: string,
   caption?: string,
   contentType: 'image' | 'video' = 'image'
 ): Promise<Story | null> {
@@ -164,14 +167,19 @@ export async function createStory(
     }
     
     // 一意のファイル名を生成
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExt}`;
+    const fileExt = fileType.split('/')[1] || 'jpg';
+    const fileName = `${Crypto.randomUUID()}.${fileExt}`;
     const filePath = `stories/${currentUser.user.id}/${fileName}`;
+    
+    // ファイルを読み込んでBlobに変換
+    const response = await fetch(fileUri);
+    const blob = await response.blob();
     
     // ファイルをアップロード
     const { error: uploadError } = await supabase.storage
       .from('media')
-      .upload(filePath, file, {
+      .upload(filePath, blob, {
+        contentType: fileType,
         cacheControl: '3600',
         upsert: false
       });
