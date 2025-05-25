@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Text,
-  ActivityIndicator,
-  RefreshControl,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
 import { ConversationItem } from '@/components/chat/ConversationItem';
+import { useAuth } from '@/context/AuthContext';
 import { dmService } from '@/lib/dmService';
 import type { DmThread } from '@/lib/dmService';
-import { useAuth } from '@/context/AuthContext';
+import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import React, { useState, useEffect } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function MessagesV2() {
   const [threads, setThreads] = useState<DmThread[]>([]);
@@ -46,8 +46,8 @@ export default function MessagesV2() {
   };
 
   const handleThreadPress = (thread: DmThread) => {
-    const otherParticipant = thread.participants.find(p => p.id !== authUser?.id);
-    
+    const otherParticipant = thread.participants.find((p) => p.id !== authUser?.id);
+
     navigation.navigate('MessageDetail' as any, {
       threadId: thread.id,
       user: {
@@ -59,8 +59,8 @@ export default function MessagesV2() {
   };
 
   const renderThread = ({ item }: { item: DmThread }) => {
-    const otherParticipant = item.participants.find(p => p.id !== authUser?.id);
-    
+    const otherParticipant = item.participants.find((p) => p.id !== authUser?.id);
+
     if (!otherParticipant) return null;
 
     // Format last message time
@@ -69,7 +69,7 @@ export default function MessagesV2() {
       const date = new Date(item.lastMessage.createdAt);
       const now = new Date();
       const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-      
+
       if (diffInDays === 0) {
         lastMessageTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       } else if (diffInDays === 1) {
@@ -102,14 +102,16 @@ export default function MessagesV2() {
               id: otherParticipant.id,
               name: otherParticipant.displayName || 'User',
               avatar: otherParticipant.profileImage || undefined,
-            }
+            },
           ],
-          lastMessage: item.lastMessage ? {
-            id: item.lastMessage.id,
-            content: lastMessagePreview,
-            timestamp: item.lastMessage.createdAt.toISOString(),
-            senderId: item.lastMessage.senderId,
-          } : undefined,
+          lastMessage: item.lastMessage
+            ? {
+                id: item.lastMessage.id,
+                content: lastMessagePreview,
+                timestamp: item.lastMessage.createdAt.toISOString(),
+                senderId: item.lastMessage.senderId,
+              }
+            : undefined,
           lastMessageTime,
           unreadCount: item.unreadCount || 0,
         }}
@@ -122,10 +124,8 @@ export default function MessagesV2() {
     <View style={styles.emptyContainer}>
       <Feather name="message-circle" size={64} color="#CBD5E0" />
       <Text style={styles.emptyTitle}>No conversations yet</Text>
-      <Text style={styles.emptySubtitle}>
-        Start a new conversation to connect with others
-      </Text>
-      <TouchableOpacity 
+      <Text style={styles.emptySubtitle}>Start a new conversation to connect with others</Text>
+      <TouchableOpacity
         style={styles.newMessageButton}
         onPress={() => navigation.navigate('NewMessage' as any)}
       >
@@ -151,18 +151,18 @@ export default function MessagesV2() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Messages</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.newMessageIcon}
           onPress={() => navigation.navigate('NewMessage' as any)}
         >
           <Feather name="edit" size={24} color="#0070F3" />
         </TouchableOpacity>
       </View>
-      
+
       <FlatList
         data={threads}
         renderItem={renderThread}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={threads.length === 0 ? styles.emptyListContainer : undefined}
         ListEmptyComponent={renderEmptyState}
         refreshControl={

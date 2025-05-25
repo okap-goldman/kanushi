@@ -1,7 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eventServiceDrizzle } from '../../src/lib/eventServiceDrizzle';
+import type {
+  CreateEventRequest,
+  CreateVoiceWorkshopRequest,
+} from '../../src/lib/eventServiceDrizzle';
 import { supabase } from '../../src/lib/supabase';
-import type { CreateEventRequest, CreateVoiceWorkshopRequest } from '../../src/lib/eventServiceDrizzle';
 
 // モックの設定
 vi.mock('@/lib/supabase', () => ({
@@ -14,8 +17,8 @@ vi.mock('@/lib/stripeService', () => ({
   stripeService: {
     createPaymentIntent: vi.fn(),
     getPaymentIntent: vi.fn(),
-    createRefund: vi.fn()
-  }
+    createRefund: vi.fn(),
+  },
 }));
 
 // テスト用のユーザー
@@ -25,7 +28,7 @@ const testUser = {
   app_metadata: {},
   user_metadata: {},
   aud: 'authenticated',
-  created_at: new Date().toISOString()
+  created_at: new Date().toISOString(),
 };
 
 describe('EventService - イベント作成API', () => {
@@ -48,7 +51,7 @@ describe('EventService - イベント作成API', () => {
         endsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // 2時間後
         fee: 3000,
         currency: 'JPY',
-        refundPolicy: 'イベント開始24時間前まで全額返金'
+        refundPolicy: 'イベント開始24時間前まで全額返金',
       };
 
       const mockEvent = {
@@ -63,13 +66,13 @@ describe('EventService - イベント作成API', () => {
         fee: String(eventData.fee),
         currency: eventData.currency,
         refund_policy: eventData.refundPolicy,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       const mockSupabaseChain = {
         insert: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
       };
 
       (supabase.from as any).mockReturnValue(mockSupabaseChain);
@@ -94,7 +97,7 @@ describe('EventService - イベント作成API', () => {
       const invalidEventData = {
         description: '説明のみ',
         location: '東京都',
-        fee: 1000
+        fee: 1000,
       } as CreateEventRequest;
 
       const result = await eventServiceDrizzle.createEvent(invalidEventData, testUser.id);
@@ -110,7 +113,7 @@ describe('EventService - イベント作成API', () => {
         name: '過去のイベント',
         eventType: 'online',
         startsAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1日前
-        endsAt: new Date(Date.now() - 23 * 60 * 60 * 1000)
+        endsAt: new Date(Date.now() - 23 * 60 * 60 * 1000),
       };
 
       const result = await eventServiceDrizzle.createEvent(eventData, testUser.id);
@@ -134,7 +137,7 @@ describe('EventService - イベント作成API', () => {
         currency: 'JPY',
         refundPolicy: '開始24時間前まで全額返金',
         maxParticipants: 20,
-        isRecorded: false
+        isRecorded: false,
       };
 
       const mockEvent = {
@@ -148,7 +151,7 @@ describe('EventService - イベント作成API', () => {
         ends_at: workshopData.endsAt.toISOString(),
         fee: String(workshopData.fee),
         currency: workshopData.currency,
-        refund_policy: workshopData.refundPolicy
+        refund_policy: workshopData.refundPolicy,
       };
 
       const mockWorkshop = {
@@ -157,16 +160,18 @@ describe('EventService - イベント作成API', () => {
         max_participants: workshopData.maxParticipants,
         is_recorded: workshopData.isRecorded,
         recording_url: null,
-        archive_expires_at: null
+        archive_expires_at: null,
       };
 
       const mockSupabaseChain = {
         insert: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValueOnce({ data: mockEvent, error: null })
+        single: vi
+          .fn()
+          .mockResolvedValueOnce({ data: mockEvent, error: null })
           .mockResolvedValueOnce({ data: mockWorkshop, error: null }),
         delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis()
+        eq: vi.fn().mockReturnThis(),
       };
 
       (supabase.from as any).mockReturnValue(mockSupabaseChain);
@@ -193,7 +198,7 @@ describe('EventService - イベント作成API', () => {
         currency: 'JPY',
         maxParticipants: 50,
         isRecorded: true,
-        archiveExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30日後
+        archiveExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30日後
       };
 
       const mockEvent = {
@@ -206,7 +211,7 @@ describe('EventService - イベント作成API', () => {
         starts_at: workshopData.startsAt.toISOString(),
         ends_at: workshopData.endsAt.toISOString(),
         fee: String(workshopData.fee),
-        currency: workshopData.currency
+        currency: workshopData.currency,
       };
 
       const mockWorkshop = {
@@ -215,14 +220,16 @@ describe('EventService - イベント作成API', () => {
         max_participants: workshopData.maxParticipants,
         is_recorded: true,
         recording_url: null,
-        archive_expires_at: workshopData.archiveExpiresAt?.toISOString()
+        archive_expires_at: workshopData.archiveExpiresAt?.toISOString(),
       };
 
       const mockSupabaseChain = {
         insert: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValueOnce({ data: mockEvent, error: null })
-          .mockResolvedValueOnce({ data: mockWorkshop, error: null })
+        single: vi
+          .fn()
+          .mockResolvedValueOnce({ data: mockEvent, error: null })
+          .mockResolvedValueOnce({ data: mockWorkshop, error: null }),
       };
 
       (supabase.from as any).mockReturnValue(mockSupabaseChain);
@@ -240,7 +247,7 @@ describe('EventService - イベント作成API', () => {
         name: '無効な定員のワークショップ',
         startsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000),
-        maxParticipants: 1500 // 最大1000人を超える
+        maxParticipants: 1500, // 最大1000人を超える
       };
 
       const result = await eventServiceDrizzle.createVoiceWorkshop(workshopData, testUser.id);
@@ -256,7 +263,7 @@ describe('EventService - イベント作成API', () => {
         name: '負の定員のワークショップ',
         startsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000),
-        maxParticipants: -5
+        maxParticipants: -5,
       };
 
       const result = await eventServiceDrizzle.createVoiceWorkshop(workshopData, testUser.id);
@@ -271,7 +278,7 @@ describe('EventService - イベント作成API', () => {
   describe('イベント参加API', () => {
     it('無料イベントへの参加成功', async () => {
       const joinData = {
-        eventId: 'event-1'
+        eventId: 'event-1',
       };
 
       const mockEvent = {
@@ -280,7 +287,7 @@ describe('EventService - イベント作成API', () => {
         event_type: 'offline',
         starts_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         ends_at: new Date(Date.now() + 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
-        fee: null
+        fee: null,
       };
 
       const mockParticipant = {
@@ -288,28 +295,28 @@ describe('EventService - イベント作成API', () => {
         event_id: 'event-1',
         user_id: testUser.id,
         status: 'confirmed',
-        payment_status: 'free'
+        payment_status: 'free',
       };
 
       // Event fetch mock
       const eventChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
       };
 
       // Existing participant check mock
       const existingParticipantChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null })
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
       };
 
       // New participant insert mock
       const insertChain = {
         insert: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null }),
       };
 
       (supabase.from as any)
@@ -318,7 +325,7 @@ describe('EventService - イベント作成API', () => {
         .mockReturnValueOnce(insertChain); // For participant insert
 
       const result = await eventServiceDrizzle.joinEvent(joinData, testUser.id);
-      
+
       expect(result.data).toBeTruthy();
       expect(result.error).toBeNull();
       expect(result.data?.participantId).toBe('participant-1');
@@ -327,7 +334,7 @@ describe('EventService - イベント作成API', () => {
 
     it('有料イベントへの参加（決済待ち）', async () => {
       const joinData = {
-        eventId: 'event-2'
+        eventId: 'event-2',
       };
 
       const mockEvent = {
@@ -337,14 +344,14 @@ describe('EventService - イベント作成API', () => {
         starts_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
         ends_at: new Date(Date.now() + 48 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
         fee: '3000',
-        currency: 'JPY'
+        currency: 'JPY',
       };
 
       const mockPaymentIntent = {
         id: 'pi_test_456',
         client_secret: 'pi_test_456_secret',
         amount: 3000,
-        currency: 'jpy'
+        currency: 'jpy',
       };
 
       const mockParticipant = {
@@ -353,28 +360,28 @@ describe('EventService - イベント作成API', () => {
         user_id: testUser.id,
         status: 'pending',
         payment_status: 'pending',
-        stores_payment_id: 'pi_test_456'
+        stores_payment_id: 'pi_test_456',
       };
 
       // Event fetch mock
       const eventChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
       };
 
       // Existing participant check mock
       const existingParticipantChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null })
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
       };
 
       // New participant insert mock
       const insertChain = {
         insert: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null }),
       };
 
       (supabase.from as any)
@@ -386,7 +393,7 @@ describe('EventService - イベント作成API', () => {
       const { stripeService } = await import('../../src/lib/stripeService');
       vi.mocked(stripeService.createPaymentIntent).mockResolvedValue({
         data: mockPaymentIntent,
-        error: null
+        error: null,
       });
 
       const result = await eventServiceDrizzle.joinEvent(joinData, testUser.id);
@@ -399,7 +406,7 @@ describe('EventService - イベント作成API', () => {
 
     it('定員に達したワークショップへの参加エラー', async () => {
       const joinData = {
-        eventId: 'workshop-event-1'
+        eventId: 'workshop-event-1',
       };
 
       const mockEvent = {
@@ -408,36 +415,38 @@ describe('EventService - イベント作成API', () => {
         starts_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
         ends_at: new Date(Date.now() + 72 * 60 * 60 * 1000 + 90 * 60 * 1000).toISOString(),
         fee: '5000',
-        event_voice_workshop: [{
-          max_participants: 10
-        }]
+        event_voice_workshop: [
+          {
+            max_participants: 10,
+          },
+        ],
       };
 
       // Event fetch mock
       const eventChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
       };
 
       // Existing participant check mock
       const existingParticipantChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null })
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
       };
 
       // Participant count check mock
       const countChain = {
         select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis()
+        eq: vi.fn().mockReturnThis(),
       };
       // Simulate the result after the second eq()
       countChain.eq.mockReturnValueOnce(countChain).mockReturnValueOnce({ count: 10 });
 
       (supabase.from as any)
         .mockReturnValueOnce(eventChain) // For event fetch
-        .mockReturnValueOnce(existingParticipantChain) // For existing participant check  
+        .mockReturnValueOnce(existingParticipantChain) // For existing participant check
         .mockReturnValueOnce(countChain); // For participant count
 
       const result = await eventServiceDrizzle.joinEvent(joinData, testUser.id);
@@ -456,26 +465,29 @@ describe('EventService - イベント作成API', () => {
         id: eventId,
         creator_user_id: 'other-user',
         event_type: 'voice_workshop',
-        event_voice_workshop: [{
-          is_recorded: true,
-          recording_url: 'https://example.com/recording.mp3',
-          archive_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-        }]
+        event_voice_workshop: [
+          {
+            is_recorded: true,
+            recording_url: 'https://example.com/recording.mp3',
+            archive_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          },
+        ],
       };
 
       const mockParticipant = {
         id: 'participant-1',
         event_id: eventId,
         user_id: testUser.id,
-        status: 'confirmed'
+        status: 'confirmed',
       };
 
       const mockSupabaseChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn()
+        single: vi
+          .fn()
           .mockResolvedValueOnce({ data: mockEvent, error: null })
-          .mockResolvedValueOnce({ data: mockParticipant, error: null })
+          .mockResolvedValueOnce({ data: mockParticipant, error: null }),
       };
 
       (supabase.from as any).mockReturnValue(mockSupabaseChain);
@@ -494,16 +506,18 @@ describe('EventService - イベント作成API', () => {
       const mockEvent = {
         id: eventId,
         event_type: 'voice_workshop',
-        event_voice_workshop: [{
-          is_recorded: false,
-          recording_url: null
-        }]
+        event_voice_workshop: [
+          {
+            is_recorded: false,
+            recording_url: null,
+          },
+        ],
       };
 
       const mockSupabaseChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
       };
 
       (supabase.from as any).mockReturnValue(mockSupabaseChain);
@@ -528,22 +542,23 @@ describe('EventService - イベント作成API', () => {
         event_type: 'voice_workshop',
         live_room_id: 'room-123',
         starts_at: startsIn25Minutes.toISOString(),
-        ends_at: endsIn115Minutes.toISOString()
+        ends_at: endsIn115Minutes.toISOString(),
       };
 
       const mockParticipant = {
         id: 'participant-1',
         event_id: eventId,
         user_id: testUser.id,
-        status: 'confirmed'
+        status: 'confirmed',
       };
 
       const mockSupabaseChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn()
+        single: vi
+          .fn()
           .mockResolvedValueOnce({ data: mockEvent, error: null })
-          .mockResolvedValueOnce({ data: mockParticipant, error: null })
+          .mockResolvedValueOnce({ data: mockParticipant, error: null }),
       };
 
       (supabase.from as any).mockReturnValue(mockSupabaseChain);
@@ -566,13 +581,13 @@ describe('EventService - イベント作成API', () => {
         event_type: 'voice_workshop',
         live_room_id: 'room-456',
         starts_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-        ends_at: new Date(Date.now() + 100 * 60 * 1000).toISOString()
+        ends_at: new Date(Date.now() + 100 * 60 * 1000).toISOString(),
       };
 
       const mockSupabaseChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
       };
 
       (supabase.from as any).mockReturnValue(mockSupabaseChain);
@@ -593,13 +608,13 @@ describe('EventService - イベント作成API', () => {
         event_type: 'voice_workshop',
         live_room_id: 'room-789',
         starts_at: startsIn35Minutes.toISOString(),
-        ends_at: new Date(startsIn35Minutes.getTime() + 90 * 60 * 1000).toISOString()
+        ends_at: new Date(startsIn35Minutes.getTime() + 90 * 60 * 1000).toISOString(),
       };
 
       const mockSupabaseChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
       };
 
       (supabase.from as any).mockReturnValue(mockSupabaseChain);
@@ -619,7 +634,7 @@ describe('EventService - イベント作成API', () => {
 
     it('有料イベント参加時に決済インテントを作成', async () => {
       const joinData = {
-        eventId: 'paid-event-1'
+        eventId: 'paid-event-1',
       };
 
       const mockEvent = {
@@ -629,14 +644,14 @@ describe('EventService - イベント作成API', () => {
         starts_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
         ends_at: new Date(Date.now() + 48 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
         fee: '5000',
-        currency: 'JPY'
+        currency: 'JPY',
       };
 
       const mockPaymentIntent = {
         id: 'pi_test_123',
         client_secret: 'pi_test_123_secret',
         amount: 5000,
-        currency: 'jpy'
+        currency: 'jpy',
       };
 
       const mockParticipant = {
@@ -645,26 +660,26 @@ describe('EventService - イベント作成API', () => {
         user_id: testUser.id,
         status: 'pending',
         payment_status: 'pending',
-        stores_payment_id: 'pi_test_123'
+        stores_payment_id: 'pi_test_123',
       };
 
       // Mocks setup
       const eventChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null }),
       };
 
       const existingParticipantChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null })
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
       };
 
       const insertChain = {
         insert: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null }),
       };
 
       (supabase.from as any)
@@ -676,7 +691,7 @@ describe('EventService - イベント作成API', () => {
       const { stripeService } = await import('../../src/lib/stripeService');
       vi.mocked(stripeService.createPaymentIntent).mockResolvedValue({
         data: mockPaymentIntent,
-        error: null
+        error: null,
       });
 
       const result = await eventServiceDrizzle.joinEvent(joinData, testUser.id);
@@ -691,8 +706,8 @@ describe('EventService - イベント作成API', () => {
         metadata: {
           eventId: 'paid-event-1',
           userId: testUser.id,
-          type: 'event_participation'
-        }
+          type: 'event_participation',
+        },
       });
     });
 
@@ -703,25 +718,25 @@ describe('EventService - イベント作成API', () => {
       const mockParticipant = {
         id: participantId,
         status: 'pending',
-        event: { fee: '3000' }
+        event: { fee: '3000' },
       };
 
       const mockPaymentIntent = {
         id: paymentIntentId,
         status: 'succeeded',
-        amount: 3000
+        amount: 3000,
       };
 
       // Supabase mocks
       const selectChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null }),
       };
 
       const updateChain = {
         update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({ error: null })
+        eq: vi.fn().mockResolvedValue({ error: null }),
       };
 
       (supabase.from as any)
@@ -732,7 +747,7 @@ describe('EventService - イベント作成API', () => {
       const { stripeService } = await import('../../src/lib/stripeService');
       vi.mocked(stripeService.getPaymentIntent).mockResolvedValue({
         data: mockPaymentIntent,
-        error: null
+        error: null,
       });
 
       const result = await eventServiceDrizzle.confirmEventPayment(participantId, paymentIntentId);
@@ -743,7 +758,7 @@ describe('EventService - イベント作成API', () => {
       expect(updateChain.update).toHaveBeenCalledWith({
         status: 'confirmed',
         payment_status: 'completed',
-        stores_payment_id: paymentIntentId
+        stores_payment_id: paymentIntentId,
       });
     });
 
@@ -757,26 +772,26 @@ describe('EventService - イベント作成API', () => {
         payment_status: 'completed',
         event: {
           starts_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48時間後
-          refund_policy: 'イベント開始24時間前まで全額返金'
-        }
+          refund_policy: 'イベント開始24時間前まで全額返金',
+        },
       };
 
       const mockRefund = {
         id: 're_test_123',
         amount: 3000,
-        status: 'succeeded'
+        status: 'succeeded',
       };
 
       // Supabase mocks
       const selectChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null }),
       };
 
       const deleteChain = {
         delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({ error: null })
+        eq: vi.fn().mockResolvedValue({ error: null }),
       };
 
       (supabase.from as any)
@@ -787,7 +802,7 @@ describe('EventService - イベント作成API', () => {
       const { stripeService } = await import('../../src/lib/stripeService');
       vi.mocked(stripeService.createRefund).mockResolvedValue({
         data: mockRefund,
-        error: null
+        error: null,
       });
 
       const result = await eventServiceDrizzle.cancelEventParticipation(participantId, testUser.id);
@@ -797,7 +812,7 @@ describe('EventService - イベント作成API', () => {
       expect(result.data?.refunded).toBe(true);
       expect(stripeService.createRefund).toHaveBeenCalledWith({
         paymentIntentId: 'pi_test_123',
-        reason: 'requested_by_customer'
+        reason: 'requested_by_customer',
       });
     });
 
@@ -811,25 +826,23 @@ describe('EventService - イベント作成API', () => {
         payment_status: 'completed',
         event: {
           starts_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(), // 12時間後
-          refund_policy: 'イベント開始24時間前まで全額返金'
-        }
+          refund_policy: 'イベント開始24時間前まで全額返金',
+        },
       };
 
       // Supabase mocks
       const selectChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockParticipant, error: null }),
       };
 
       const deleteChain = {
         delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({ error: null })
+        eq: vi.fn().mockResolvedValue({ error: null }),
       };
 
-      (supabase.from as any)
-        .mockReturnValueOnce(selectChain)
-        .mockReturnValueOnce(deleteChain);
+      (supabase.from as any).mockReturnValueOnce(selectChain).mockReturnValueOnce(deleteChain);
 
       const { stripeService } = await import('../../src/lib/stripeService');
 

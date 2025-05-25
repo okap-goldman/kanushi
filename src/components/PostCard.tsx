@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Card } from './ui/Card';
+import React, { useState } from 'react';
+import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import AudioPlayer from './AudioPlayer';
 import DeleteConfirmDialog from './DeleteConfirmDialog';
+import { Card } from './ui/Card';
 
 interface PostCardProps {
   post: {
@@ -35,13 +35,13 @@ interface PostCardProps {
   onDelete?: (postId: string) => void;
 }
 
-export function PostCard({ 
-  post, 
-  currentUserId, 
-  onLike, 
-  onHighlight, 
-  onComment, 
-  onDelete 
+export function PostCard({
+  post,
+  currentUserId,
+  onLike,
+  onHighlight,
+  onComment,
+  onDelete,
 }: PostCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showHighlightDialog, setShowHighlightDialog] = useState(false);
@@ -81,21 +81,11 @@ export function PostCard({
   const renderContent = () => {
     switch (post.contentType) {
       case 'text':
-        return (
-          <Text style={styles.textContent}>
-            {post.textContent}
-          </Text>
-        );
-      
+        return <Text style={styles.textContent}>{post.textContent}</Text>;
+
       case 'image':
-        return (
-          <Image
-            source={{ uri: post.mediaUrl }}
-            style={styles.image}
-            resizeMode="cover"
-          />
-        );
-      
+        return <Image source={{ uri: post.mediaUrl }} style={styles.image} resizeMode="cover" />;
+
       case 'audio':
         return (
           <AudioPlayer
@@ -108,7 +98,7 @@ export function PostCard({
             }}
           />
         );
-      
+
       default:
         return null;
     }
@@ -120,23 +110,16 @@ export function PostCard({
       <View style={styles.header}>
         <View style={styles.userInfo}>
           {post.user.profileImageUrl ? (
-            <Image
-              source={{ uri: post.user.profileImageUrl }}
-              style={styles.avatar}
-            />
+            <Image source={{ uri: post.user.profileImageUrl }} style={styles.avatar} />
           ) : (
             <View style={[styles.avatar, styles.avatarPlaceholder]}>
               <Feather name="user" size={20} color="#64748B" />
             </View>
           )}
-          
+
           <View style={styles.userDetails}>
-            <Text style={styles.displayName}>
-              {post.user.displayName}
-            </Text>
-            <Text style={styles.timestamp}>
-              {new Date(post.createdAt).toLocaleDateString()}
-            </Text>
+            <Text style={styles.displayName}>{post.user.displayName}</Text>
+            <Text style={styles.timestamp}>{new Date(post.createdAt).toLocaleDateString()}</Text>
           </View>
         </View>
 
@@ -152,49 +135,27 @@ export function PostCard({
       </View>
 
       {/* Content */}
-      <View style={styles.content}>
-        {renderContent()}
-      </View>
+      <View style={styles.content}>{renderContent()}</View>
 
       {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity
           onPress={handleLike}
-          style={[
-            styles.actionButton,
-            post.isLiked && styles.likedButton
-          ]}
+          style={[styles.actionButton, post.isLiked && styles.likedButton]}
           testID="like-button"
         >
-          <Feather 
-            name="heart" 
-            size={20} 
-            color={post.isLiked ? '#EF4444' : '#64748B'} 
-          />
-          <Text 
-            style={[
-              styles.actionText,
-              post.isLiked && styles.likedText
-            ]}
-            testID="like-count"
-          >
+          <Feather name="heart" size={20} color={post.isLiked ? '#EF4444' : '#64748B'} />
+          <Text style={[styles.actionText, post.isLiked && styles.likedText]} testID="like-count">
             {post.likes}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={handleHighlight}
-          style={[
-            styles.actionButton,
-            post.isHighlighted && styles.highlightedButton
-          ]}
+          style={[styles.actionButton, post.isHighlighted && styles.highlightedButton]}
           testID="highlight-button"
         >
-          <Feather 
-            name="star" 
-            size={20} 
-            color={post.isHighlighted ? '#F59E0B' : '#64748B'} 
-          />
+          <Feather name="star" size={20} color={post.isHighlighted ? '#F59E0B' : '#64748B'} />
         </TouchableOpacity>
 
         <TouchableOpacity

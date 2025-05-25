@@ -1,5 +1,5 @@
+import type { ApiResponse } from './data';
 import { supabase } from './supabase';
-import { ApiResponse } from './data';
 
 export interface UserProfile {
   id: string;
@@ -152,7 +152,9 @@ export const eventService = {
   // Create a new event
   async createEvent(eventData: CreateEventRequest): Promise<ApiResponse<ExtendedEvent>> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -180,7 +182,7 @@ export const eventService = {
           category: eventData.category,
           privacy_level: eventData.privacy_level || 'public',
           refund_policy: eventData.refund_policy,
-          event_hash: generateEventHash()
+          event_hash: generateEventHash(),
         })
         .select()
         .single();
@@ -209,7 +211,9 @@ export const eventService = {
       if (error) throw error;
 
       // Check if the current user is participating
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user && data) {
         const { data: participationData } = await supabase
           .from('event_participants')
@@ -219,7 +223,10 @@ export const eventService = {
           .single();
 
         if (participationData) {
-          (data as ExtendedEvent).user_participation_status = participationData.status as 'attending' | 'interested' | 'declined';
+          (data as ExtendedEvent).user_participation_status = participationData.status as
+            | 'attending'
+            | 'interested'
+            | 'declined';
         }
       }
 
@@ -234,7 +241,7 @@ export const eventService = {
         ...data,
         organizer: data.organizer || { id: '', name: 'Unknown', username: '' },
         attendees_count: count || 0,
-        participant_count: count || 0
+        participant_count: count || 0,
       } as ExtendedEvent;
 
       return { data: formattedEvent, error: null };
@@ -266,10 +273,13 @@ export const eventService = {
   },
 
   // Update an event
-  async updateEvent(eventId: string, updates: Partial<CreateEventRequest>): Promise<ApiResponse<ExtendedEvent>> {
+  async updateEvent(
+    eventId: string,
+    updates: Partial<CreateEventRequest>
+  ): Promise<ApiResponse<ExtendedEvent>> {
     try {
       const updateData: any = {};
-      
+
       // Map fields that might have different names
       if (updates.title !== undefined) updateData.title = updates.title;
       if (updates.description !== undefined) updateData.description = updates.description;
@@ -277,16 +287,20 @@ export const eventService = {
       if (updates.end_date !== undefined) updateData.end_date = updates.end_date;
       if (updates.location !== undefined) updateData.location = updates.location;
       if (updates.image_url !== undefined) updateData.image_url = updates.image_url;
-      if (updates.cover_image_url !== undefined) updateData.cover_image_url = updates.cover_image_url;
-      
+      if (updates.cover_image_url !== undefined)
+        updateData.cover_image_url = updates.cover_image_url;
+
       // Extended fields
-      if (updates.location_details !== undefined) updateData.location_details = updates.location_details;
+      if (updates.location_details !== undefined)
+        updateData.location_details = updates.location_details;
       if (updates.is_online !== undefined) updateData.is_online = updates.is_online;
       if (updates.online_url !== undefined) updateData.online_url = updates.online_url;
-      if (updates.max_participants !== undefined) updateData.max_participants = updates.max_participants;
+      if (updates.max_participants !== undefined)
+        updateData.max_participants = updates.max_participants;
       if (updates.price !== undefined) updateData.price = updates.price;
       if (updates.currency !== undefined) updateData.currency = updates.currency;
-      if (updates.registration_deadline !== undefined) updateData.registration_deadline = updates.registration_deadline;
+      if (updates.registration_deadline !== undefined)
+        updateData.registration_deadline = updates.registration_deadline;
       if (updates.is_published !== undefined) updateData.is_published = updates.is_published;
       if (updates.category !== undefined) updateData.category = updates.category;
       if (updates.privacy_level !== undefined) updateData.privacy_level = updates.privacy_level;
@@ -311,10 +325,7 @@ export const eventService = {
   // Delete an event
   async deleteEvent(eventId: string): Promise<ApiResponse<boolean>> {
     try {
-      const { error } = await supabase
-        .from('events')
-        .delete()
-        .eq('id', eventId);
+      const { error } = await supabase.from('events').delete().eq('id', eventId);
 
       if (error) throw error;
 
@@ -326,44 +337,47 @@ export const eventService = {
   },
 
   // Get a list of events
-  async getEvents(filters: EventsFilter = {}): Promise<ApiResponse<{ events: ExtendedEvent[]; count: number | null }>> {
+  async getEvents(
+    filters: EventsFilter = {}
+  ): Promise<ApiResponse<{ events: ExtendedEvent[]; count: number | null }>> {
     try {
-      let query = supabase
-        .from('events')
-        .select(`
+      let query = supabase.from('events').select(
+        `
           *,
           organizer:profiles!events_organizer_id_fkey(id, username, image, name)
-        `, { count: 'exact' });
+        `,
+        { count: 'exact' }
+      );
 
       // Apply filters
       if (filters.search) {
         query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
       }
-      
+
       if (filters.category) {
         query = query.eq('category', filters.category);
       }
-      
+
       if (filters.is_online !== undefined) {
         query = query.eq('is_online', filters.is_online);
       }
-      
+
       if (filters.start_date) {
         query = query.gte('start_date', filters.start_date);
       }
-      
+
       if (filters.end_date) {
         query = query.lte('end_date', filters.end_date);
       }
-      
+
       if (filters.location) {
         query = query.ilike('location', `%${filters.location}%`);
       }
-      
+
       if (filters.price_range) {
         query = query.gte('price', filters.price_range[0]).lte('price', filters.price_range[1]);
       }
-      
+
       if (filters.created_by_user_id) {
         query = query.eq('organizer_id', filters.created_by_user_id);
       }
@@ -372,18 +386,17 @@ export const eventService = {
       const page = filters.page || 1;
       const limit = filters.limit || 10;
       const offset = (page - 1) * limit;
-      
-      query = query.order('start_date', { ascending: true })
-        .range(offset, offset + limit - 1);
+
+      query = query.order('start_date', { ascending: true }).range(offset, offset + limit - 1);
 
       const { data, error, count } = await query;
 
       if (error) throw error;
 
-      const formattedEvents = (data || []).map(event => ({
+      const formattedEvents = (data || []).map((event) => ({
         ...event,
         organizer: event.organizer || { id: '', name: 'Unknown', username: '' },
-        attendees_count: 0
+        attendees_count: 0,
       })) as ExtendedEvent[];
 
       return { data: { events: formattedEvents, count }, error: null };
@@ -394,7 +407,7 @@ export const eventService = {
   },
 
   // Get upcoming events
-  async getUpcomingEvents(limit: number = 10): Promise<ApiResponse<ExtendedEvent[]>> {
+  async getUpcomingEvents(limit = 10): Promise<ApiResponse<ExtendedEvent[]>> {
     try {
       const now = new Date().toISOString();
       const { data, error } = await supabase
@@ -409,10 +422,10 @@ export const eventService = {
 
       if (error) throw error;
 
-      const formattedEvents = (data || []).map(event => ({
+      const formattedEvents = (data || []).map((event) => ({
         ...event,
         organizer: event.organizer || { id: '', name: 'Unknown', username: '' },
-        attendees_count: 0
+        attendees_count: 0,
       })) as ExtendedEvent[];
 
       return { data: formattedEvents, error: null };
@@ -423,7 +436,10 @@ export const eventService = {
   },
 
   // Get events by user (either created or participating)
-  async getUserEvents(userId: string, type: 'created' | 'attending' | 'interested' = 'attending'): Promise<ApiResponse<ExtendedEvent[]>> {
+  async getUserEvents(
+    userId: string,
+    type: 'created' | 'attending' | 'interested' = 'attending'
+  ): Promise<ApiResponse<ExtendedEvent[]>> {
     try {
       if (type === 'created') {
         const { data, error } = await supabase
@@ -437,10 +453,10 @@ export const eventService = {
 
         if (error) throw error;
 
-        const formattedEvents = (data || []).map(event => ({
+        const formattedEvents = (data || []).map((event) => ({
           ...event,
           organizer: event.organizer || { id: '', name: 'Unknown', username: '' },
-          attendees_count: 0
+          attendees_count: 0,
         })) as ExtendedEvent[];
 
         return { data: formattedEvents, error: null };
@@ -458,10 +474,10 @@ export const eventService = {
 
         if (error) throw error;
 
-        const formattedEvents = (data || []).map(item => ({
+        const formattedEvents = (data || []).map((item) => ({
           ...item.event,
           organizer: item.event?.organizer || { id: '', name: 'Unknown', username: '' },
-          attendees_count: 0
+          attendees_count: 0,
         })) as ExtendedEvent[];
 
         return { data: formattedEvents, error: null };
@@ -473,9 +489,14 @@ export const eventService = {
   },
 
   // Join an event
-  async joinEvent(eventId: string, status: 'attending' | 'interested' = 'attending'): Promise<ApiResponse<EventParticipant>> {
+  async joinEvent(
+    eventId: string,
+    status: 'attending' | 'interested' = 'attending'
+  ): Promise<ApiResponse<EventParticipant>> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -507,7 +528,7 @@ export const eventService = {
           .insert({
             event_id: eventId,
             user_id: user.id,
-            status
+            status,
           })
           .select()
           .single();
@@ -525,7 +546,9 @@ export const eventService = {
   // Leave an event
   async leaveEvent(eventId: string): Promise<ApiResponse<boolean>> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -546,7 +569,10 @@ export const eventService = {
   },
 
   // Get event participants
-  async getEventParticipants(eventId: string, status?: 'attending' | 'interested'): Promise<ApiResponse<EventParticipant[]>> {
+  async getEventParticipants(
+    eventId: string,
+    status?: 'attending' | 'interested'
+  ): Promise<ApiResponse<EventParticipant[]>> {
     try {
       let query = supabase
         .from('event_participants')
@@ -561,16 +587,18 @@ export const eventService = {
       }
 
       const { data, error } = await query;
-      
+
       if (error) throw error;
 
-      const formattedParticipants = (data || []).map(participant => ({
+      const formattedParticipants = (data || []).map((participant) => ({
         ...participant,
-        profile: participant.profile ? {
-          username: participant.profile.username || '',
-          avatar_url: participant.profile.image,
-          display_name: participant.profile.name
-        } : undefined
+        profile: participant.profile
+          ? {
+              username: participant.profile.username || '',
+              avatar_url: participant.profile.image,
+              display_name: participant.profile.name,
+            }
+          : undefined,
       })) as EventParticipant[];
 
       return { data: formattedParticipants, error: null };
@@ -590,7 +618,7 @@ export const eventService = {
         .order('name', { ascending: true });
 
       if (!tagError && tagData) {
-        return { data: tagData.map(tag => tag.name), error: null };
+        return { data: tagData.map((tag) => tag.name), error: null };
       }
 
       // Otherwise, get unique categories from events
@@ -603,12 +631,12 @@ export const eventService = {
       if (error) throw error;
 
       // Get unique categories
-      const categories = [...new Set((data || []).map(event => event.category))].filter(Boolean);
+      const categories = [...new Set((data || []).map((event) => event.category))].filter(Boolean);
 
       return { data: categories, error: null };
     } catch (error) {
       console.error('Error fetching event categories:', error);
       return { data: null, error: error as Error };
     }
-  }
+  },
 };

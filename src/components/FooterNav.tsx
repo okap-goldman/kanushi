@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export function FooterNav() {
   const navigation = useNavigation<any>();
@@ -34,12 +34,7 @@ export function FooterNav() {
             size={22}
             color={isActive(item.route) ? '#0070F3' : '#64748B'}
           />
-          <Text
-            style={[
-              styles.navText,
-              isActive(item.route) ? styles.activeText : null,
-            ]}
-          >
+          <Text style={[styles.navText, isActive(item.route) ? styles.activeText : null]}>
             {item.name}
           </Text>
         </TouchableOpacity>

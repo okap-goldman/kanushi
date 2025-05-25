@@ -1,16 +1,16 @@
+import { Feather } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
+  Dimensions,
   FlatList,
   SafeAreaView,
-  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Image } from 'expo-image';
-import { Feather } from '@expo/vector-icons';
 import { Card } from '../components/ui/Card';
 
 // Sample data for the discover page
@@ -98,24 +98,20 @@ export default function Discover() {
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
-          
+
           <FlatList
             horizontal
             data={REGIONS}
             renderItem={({ item }) => (
               <TouchableOpacity style={styles.regionCard}>
-                <Image
-                  source={{ uri: item.image }}
-                  style={styles.regionImage}
-                  contentFit="cover"
-                />
+                <Image source={{ uri: item.image }} style={styles.regionImage} contentFit="cover" />
                 <View style={styles.regionInfo}>
                   <Text style={styles.regionName}>{item.name}</Text>
                   <Text style={styles.regionCount}>{item.count} posts</Text>
                 </View>
               </TouchableOpacity>
             )}
-            keyExtractor={item => item.id}
+            keyExtractor={(item) => item.id}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.regionList}
             snapToInterval={regionCardWidth + 15}
@@ -127,16 +123,16 @@ export default function Discover() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Explore</Text>
           <View style={styles.categoriesContainer}>
-            {TRENDING_CATEGORIES.map(category => (
+            {TRENDING_CATEGORIES.map((category) => (
               <TouchableOpacity
                 key={category.id}
                 style={[
                   styles.categoryButton,
                   selectedCategory === category.id && styles.categoryButtonSelected,
                 ]}
-                onPress={() => setSelectedCategory(
-                  selectedCategory === category.id ? null : category.id
-                )}
+                onPress={() =>
+                  setSelectedCategory(selectedCategory === category.id ? null : category.id)
+                }
               >
                 <Feather
                   name={category.icon as any}
@@ -164,30 +160,23 @@ export default function Discover() {
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
-          
-          {TRENDING_POSTS.map(post => (
+
+          {TRENDING_POSTS.map((post) => (
             <Card key={post.id} style={styles.postCard}>
               <View style={styles.postHeader}>
-                <Image
-                  source={{ uri: post.user.avatarUrl }}
-                  style={styles.postAvatar}
-                />
+                <Image source={{ uri: post.user.avatarUrl }} style={styles.postAvatar} />
                 <View>
                   <Text style={styles.postUserName}>{post.user.name}</Text>
                   <Text style={styles.postUsername}>@{post.user.username}</Text>
                 </View>
               </View>
-              
+
               <Text style={styles.postContent} numberOfLines={2}>
                 {post.content}
               </Text>
-              
-              <Image
-                source={{ uri: post.images[0] }}
-                style={styles.postImage}
-                contentFit="cover"
-              />
-              
+
+              <Image source={{ uri: post.images[0] }} style={styles.postImage} contentFit="cover" />
+
               <View style={styles.postStats}>
                 <View style={styles.postStat}>
                   <Feather name="heart" size={16} color="#4A5568" />

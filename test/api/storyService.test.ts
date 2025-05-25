@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { storyService } from '../../src/lib/storyService';
 
 // Mock Supabase
@@ -46,7 +46,7 @@ describe('Story Service - API Unit Tests', () => {
       const mockImage = new File(['image content'], 'test.jpg', { type: 'image/jpeg' });
       const mockCaption = 'Beautiful sunset';
       const mockLocation = 'Tokyo, Japan';
-      
+
       // Mock auth
       vi.mocked(mockSupabase.auth.getUser).mockResolvedValue({
         data: { user: { id: mockUserId } },

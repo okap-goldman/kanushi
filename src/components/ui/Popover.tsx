@@ -1,11 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { 
-  View, 
-  Modal, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
   Dimensions,
-  TouchableWithoutFeedback
+  Modal,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 
 interface PopoverProps {
@@ -30,14 +30,14 @@ const PopoverContext = React.createContext<{
   triggerRef: React.createRef(),
 });
 
-export function Popover({ 
-  children, 
-  open: controlledOpen, 
-  onOpenChange 
+export function Popover({
+  children,
+  open: controlledOpen,
+  onOpenChange,
 }: Omit<PopoverProps, 'trigger'>) {
   const [internalOpen, setInternalOpen] = useState(false);
   const triggerRef = useRef<View>(null);
-  
+
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = (newOpen: boolean) => {
     if (controlledOpen === undefined) {
@@ -81,12 +81,7 @@ export function PopoverContent({ children, style }: PopoverContentProps) {
   if (!open) return null;
 
   return (
-    <Modal
-      transparent
-      visible={open}
-      animationType="fade"
-      onRequestClose={() => setOpen(false)}
-    >
+    <Modal transparent visible={open} animationType="fade" onRequestClose={() => setOpen(false)}>
       <TouchableWithoutFeedback onPress={() => setOpen(false)}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>

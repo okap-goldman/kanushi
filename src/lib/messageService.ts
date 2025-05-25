@@ -1,5 +1,5 @@
+import type { ApiResponse } from './data';
 import { supabase } from './supabase';
-import { ApiResponse } from './data';
 
 // Define types for the messaging feature
 export interface Conversation {
@@ -84,7 +84,7 @@ export const getConversations = async (
       return { data: [], error: null };
     }
 
-    const conversationIds = participantData.map(p => p.conversation_id);
+    const conversationIds = participantData.map((p) => p.conversation_id);
     const lastReadMap = participantData.reduce((acc: Record<string, string>, p) => {
       acc[p.conversation_id] = p.last_read_at;
       return acc;
@@ -144,8 +144,8 @@ export const getConversations = async (
           user: participant.user[0] || {
             id: 'unknown',
             name: 'Unknown User',
-            image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown'
-          }
+            image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown',
+          },
         }));
 
         // Find other participants (not the current user)
@@ -154,16 +154,17 @@ export const getConversations = async (
         );
 
         // Format the last message if it exists
-        const lastMessage = messagesData && messagesData.length > 0
-          ? {
-              ...messagesData[0],
-              sender: messagesData[0].sender[0] || {
-                id: 'unknown',
-                name: 'Unknown User',
-                image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown'
+        const lastMessage =
+          messagesData && messagesData.length > 0
+            ? {
+                ...messagesData[0],
+                sender: messagesData[0].sender[0] || {
+                  id: 'unknown',
+                  name: 'Unknown User',
+                  image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown',
+                },
               }
-            }
-          : undefined;
+            : undefined;
 
         return {
           ...conversation,
@@ -171,12 +172,14 @@ export const getConversations = async (
           last_message: lastMessage,
           unread_count: count || 0,
           // For display in the UI, use other participant's name/image for 1:1 chats
-          display_name: otherParticipants.length === 1 
-            ? otherParticipants[0].user.name 
-            : formattedParticipants.map((p: any) => p.user.name).join(', '),
-          display_image: otherParticipants.length === 1 
-            ? otherParticipants[0].user.image
-            : 'https://api.dicebear.com/7.x/avataaars/svg?seed=group'
+          display_name:
+            otherParticipants.length === 1
+              ? otherParticipants[0].user.name
+              : formattedParticipants.map((p: any) => p.user.name).join(', '),
+          display_image:
+            otherParticipants.length === 1
+              ? otherParticipants[0].user.image
+              : 'https://api.dicebear.com/7.x/avataaars/svg?seed=group',
         };
       })
     );
@@ -198,7 +201,7 @@ export const getConversations = async (
 export const getConversation = async (
   conversation_id: string,
   current_user_id: string,
-  limit: number = 50,
+  limit = 50,
   before_timestamp?: string
 ): Promise<ApiResponse<{ conversation: Conversation; messages: Message[]; has_more: boolean }>> => {
   try {
@@ -225,8 +228,8 @@ export const getConversation = async (
       user: participant.user[0] || {
         id: 'unknown',
         name: 'Unknown User',
-        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown'
-      }
+        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown',
+      },
     }));
 
     // Build the query for messages
@@ -261,7 +264,12 @@ export const getConversation = async (
       .from('messages')
       .select('id', { count: 'exact', head: true })
       .eq('conversation_id', conversation_id)
-      .lt('created_at', before_timestamp || messagesData[messagesData.length - 1]?.created_at || new Date().toISOString())
+      .lt(
+        'created_at',
+        before_timestamp ||
+          messagesData[messagesData.length - 1]?.created_at ||
+          new Date().toISOString()
+      )
       .limit(1);
 
     // Determine if there are more messages to load
@@ -274,25 +282,24 @@ export const getConversation = async (
         sender: message.sender[0] || {
           id: 'unknown',
           name: 'Unknown User',
-          image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown'
+          image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown',
         },
         reactions: message.reactions.map((reaction: any) => ({
           ...reaction,
           user: reaction.user[0] || {
             id: 'unknown',
             name: 'Unknown User',
-            image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown'
-          }
-        }))
+            image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown',
+          },
+        })),
       }))
       .reverse(); // Reverse to get chronological order
 
     // Mark all messages as read for the current user
-    const { error: readError } = await supabase
-      .rpc('mark_conversation_as_read', { 
-        conversation_id_param: conversation_id,
-        user_id_param: current_user_id
-      });
+    const { error: readError } = await supabase.rpc('mark_conversation_as_read', {
+      conversation_id_param: conversation_id,
+      user_id_param: current_user_id,
+    });
 
     if (readError) {
       console.error('Error marking messages as read:', readError);
@@ -309,21 +316,23 @@ export const getConversation = async (
       participants: formattedParticipants,
       unread_count: 0, // We've just read all messages
       // For display in the UI, use other participant's name/image for 1:1 chats
-      display_name: otherParticipants.length === 1 
-        ? otherParticipants[0].user.name 
-        : formattedParticipants.map((p: any) => p.user.name).join(', '),
-      display_image: otherParticipants.length === 1 
-        ? otherParticipants[0].user.image
-        : 'https://api.dicebear.com/7.x/avataaars/svg?seed=group'
+      display_name:
+        otherParticipants.length === 1
+          ? otherParticipants[0].user.name
+          : formattedParticipants.map((p: any) => p.user.name).join(', '),
+      display_image:
+        otherParticipants.length === 1
+          ? otherParticipants[0].user.image
+          : 'https://api.dicebear.com/7.x/avataaars/svg?seed=group',
     };
 
-    return { 
-      data: { 
-        conversation: conversation as Conversation, 
+    return {
+      data: {
+        conversation: conversation as Conversation,
         messages: formattedMessages as Message[],
-        has_more: hasMore
-      }, 
-      error: null 
+        has_more: hasMore,
+      },
+      error: null,
     };
   } catch (error) {
     console.error('Error fetching conversation:', error);
@@ -347,7 +356,7 @@ export const sendMessage = async (
         content: message.content,
         content_type: message.content_type,
         media_url: message.media_url,
-        is_read: false
+        is_read: false,
       })
       .select(`
         *,
@@ -365,9 +374,9 @@ export const sendMessage = async (
       sender: data.sender[0] || {
         id: 'unknown',
         name: 'Unknown User',
-        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown'
+        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown',
       },
-      reactions: []
+      reactions: [],
     } as Message;
 
     return { data: formattedMessage, error: null };
@@ -388,11 +397,10 @@ export const createDirectConversation = async (
 ): Promise<ApiResponse<{ conversation_id: string }>> => {
   try {
     // Use the Supabase function to create or get existing conversation
-    const { data, error } = await supabase
-      .rpc('create_direct_conversation', { 
-        user1_id, 
-        user2_id 
-      });
+    const { data, error } = await supabase.rpc('create_direct_conversation', {
+      user1_id,
+      user2_id,
+    });
 
     if (error) {
       throw error;
@@ -450,7 +458,7 @@ export const reactToMessage = async (
       .insert({
         message_id,
         user_id,
-        reaction
+        reaction,
       })
       .select(`
         *,
@@ -468,8 +476,8 @@ export const reactToMessage = async (
       user: data.user[0] || {
         id: 'unknown',
         name: 'Unknown User',
-        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown'
-      }
+        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown',
+      },
     } as MessageReaction;
 
     return { data: formattedReaction, error: null };
@@ -507,13 +515,15 @@ export const createGroupConversation = async (
       {
         conversation_id,
         user_id: creator_id,
-        is_admin: true
+        is_admin: true,
       },
-      ...participant_ids.filter(id => id !== creator_id).map(user_id => ({
-        conversation_id,
-        user_id,
-        is_admin: false
-      }))
+      ...participant_ids
+        .filter((id) => id !== creator_id)
+        .map((user_id) => ({
+          conversation_id,
+          user_id,
+          is_admin: false,
+        })),
     ];
 
     const { error: participantsError } = await supabase
@@ -583,20 +593,18 @@ export const getAvailableUsers = async (
   current_user_id?: string
 ): Promise<ApiResponse<ConversationParticipant['user'][]>> => {
   try {
-    let query = supabase
-      .from('profiles')
-      .select('id, name, image, username');
-    
+    let query = supabase.from('profiles').select('id, name, image, username');
+
     // Filter out the current user if provided
     if (current_user_id) {
       query = query.neq('id', current_user_id);
     }
-    
+
     // Apply search filter if provided
     if (search_term) {
       query = query.or(`name.ilike.%${search_term}%,username.ilike.%${search_term}%`);
     }
-    
+
     const { data, error } = await query.order('name');
 
     if (error) {

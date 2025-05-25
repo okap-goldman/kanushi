@@ -19,7 +19,9 @@ interface UploadResponse {
 export async function uploadToB2(file: File, path?: string): Promise<UploadResponse> {
   try {
     // Get the current session
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) {
       throw new Error('User must be authenticated to upload files');
     }
@@ -33,12 +35,12 @@ export async function uploadToB2(file: File, path?: string): Promise<UploadRespo
 
     // Get the Supabase URL from the client
     const supabaseUrl = (supabase as any).supabaseUrl;
-    
+
     // Call the Edge Function
     const response = await fetch(`${supabaseUrl}/functions/v1/upload-to-b2`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${session.access_token}`,
       },
       body: formData,
     });
@@ -66,7 +68,7 @@ export async function uploadToB2(file: File, path?: string): Promise<UploadRespo
  * @returns Promise with array of upload results
  */
 export async function uploadMultipleToB2(files: File[], path?: string): Promise<UploadResponse[]> {
-  const uploadPromises = files.map(file => uploadToB2(file, path));
+  const uploadPromises = files.map((file) => uploadToB2(file, path));
   return Promise.all(uploadPromises);
 }
 
@@ -77,27 +79,27 @@ export async function uploadMultipleToB2(files: File[], path?: string): Promise<
  */
 export function getUploadConstraints(path: string): { accept: string; maxSize: number } {
   const constraints: Record<string, { accept: string; maxSize: number }> = {
-    'avatars': {
+    avatars: {
       accept: 'image/jpeg,image/jpg,image/png,image/gif,image/webp',
       maxSize: 5 * 1024 * 1024, // 5MB
     },
-    'posts': {
+    posts: {
       accept: 'image/jpeg,image/jpg,image/png,image/gif,image/webp,video/mp4,video/quicktime',
       maxSize: 100 * 1024 * 1024, // 100MB
     },
-    'stories': {
+    stories: {
       accept: 'image/jpeg,image/jpg,image/png,image/gif,image/webp,video/mp4',
       maxSize: 50 * 1024 * 1024, // 50MB
     },
-    'products': {
+    products: {
       accept: 'image/jpeg,image/jpg,image/png,image/webp',
       maxSize: 10 * 1024 * 1024, // 10MB
     },
-    'messages': {
+    messages: {
       accept: 'image/jpeg,image/jpg,image/png,image/gif,image/webp,video/mp4,application/pdf',
       maxSize: 25 * 1024 * 1024, // 25MB
     },
-    'default': {
+    default: {
       accept: '*',
       maxSize: 50 * 1024 * 1024, // 50MB
     },
@@ -114,7 +116,7 @@ export function getUploadConstraints(path: string): { accept: string; maxSize: n
  */
 export function validateFile(file: File, path: string): { isValid: boolean; error?: string } {
   const constraints = getUploadConstraints(path);
-  
+
   // Check file size
   if (file.size > constraints.maxSize) {
     return {

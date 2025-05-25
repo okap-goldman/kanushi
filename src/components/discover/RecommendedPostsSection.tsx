@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
 import { ThumbsUp } from 'lucide-react-native';
+import React from 'react';
+import { ScrollView, Text, View } from 'react-native';
 import { Post } from '../post/Post';
 
 // Sample data to be replaced with actual data from API/context
@@ -10,7 +10,8 @@ const SAMPLE_POSTS = [
     author: {
       id: '@kazu993_ascensionlife',
       name: 'かずぴー⭐︎ 【泉谷 和久】',
-      image: 'https://scontent-nrt1-2.cdninstagram.com/v/t51.2885-19/468126137_550646691160354_2965217826538139290_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_ht=scontent-nrt1-2.cdninstagram.com&_nc_cat=110&_nc_ohc=nAY3A92S-3AQ7kNvgE1YaUJ&_nc_gid=90caed4e6a1e4fa9972be8df42bad836&edm=AHzjunoBAAAA&ccb=7-5&oh=00_AYDfpayQHQFTDFpZ9AnPyDzebobzVOYneF01XEEOUM055g&oe=6776458A&_nc_sid=ba8368',
+      image:
+        'https://scontent-nrt1-2.cdninstagram.com/v/t51.2885-19/468126137_550646691160354_2965217826538139290_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_ht=scontent-nrt1-2.cdninstagram.com&_nc_cat=110&_nc_ohc=nAY3A92S-3AQ7kNvgE1YaUJ&_nc_gid=90caed4e6a1e4fa9972be8df42bad836&edm=AHzjunoBAAAA&ccb=7-5&oh=00_AYDfpayQHQFTDFpZ9AnPyDzebobzVOYneF01XEEOUM055g&oe=6776458A&_nc_sid=ba8368',
     },
     content: `11/22は婚姻のみの予定でしたが、
 なんと風の時代学校の仲間達がサプライズセレモニーを開いてくださりました😭✨
@@ -37,7 +38,8 @@ const SAMPLE_POSTS = [
     author: {
       id: '@kazu993_ascensionlife',
       name: 'かずぴー⭐︎ 【泉谷 和久】',
-      image: 'https://scontent-nrt1-2.cdninstagram.com/v/t51.2885-19/468126137_550646691160354_2965217826538139290_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_ht=scontent-nrt1-2.cdninstagram.com&_nc_cat=110&_nc_ohc=nAY3A92S-3AQ7kNvgE1YaUJ&_nc_gid=90caed4e6a1e4fa9972be8df42bad836&edm=AHzjunoBAAAA&ccb=7-5&oh=00_AYDfpayQHQFTDFpZ9AnPyDzebobzVOYneF01XEEOUM055g&oe=6776458A&_nc_sid=ba8368',
+      image:
+        'https://scontent-nrt1-2.cdninstagram.com/v/t51.2885-19/468126137_550646691160354_2965217826538139290_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_ht=scontent-nrt1-2.cdninstagram.com&_nc_cat=110&_nc_ohc=nAY3A92S-3AQ7kNvgE1YaUJ&_nc_gid=90caed4e6a1e4fa9972be8df42bad836&edm=AHzjunoBAAAA&ccb=7-5&oh=00_AYDfpayQHQFTDFpZ9AnPyDzebobzVOYneF01XEEOUM055g&oe=6776458A&_nc_sid=ba8368',
     },
     content: 'https://mcdn.podbean.com/mf/web/5i9agca8msffjcfv/6b592.m4a',
     caption: '今日の瞑想音声です。心の平安を見つける瞑想の基礎について解説しています。',
@@ -51,7 +53,8 @@ const SAMPLE_POSTS = [
     author: {
       id: '@kazu993_ascensionlife',
       name: 'かずぴー⭐︎ 【泉谷 和久】',
-      image: 'https://scontent-nrt1-2.cdninstagram.com/v/t51.2885-19/468126137_550646691160354_2965217826538139290_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_ht=scontent-nrt1-2.cdninstagram.com&_nc_cat=110&_nc_ohc=nAY3A92S-3AQ7kNvgE1YaUJ&_nc_gid=90caed4e6a1e4fa9972be8df42bad836&edm=AHzjunoBAAAA&ccb=7-5&oh=00_AYDfpayQHQFTDFpZ9AnPyDzebobzVOYneF01XEEOUM055g&oe=6776458A&_nc_sid=ba8368',
+      image:
+        'https://scontent-nrt1-2.cdninstagram.com/v/t51.2885-19/468126137_550646691160354_2965217826538139290_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_ht=scontent-nrt1-2.cdninstagram.com&_nc_cat=110&_nc_ohc=nAY3A92S-3AQ7kNvgE1YaUJ&_nc_gid=90caed4e6a1e4fa9972be8df42bad836&edm=AHzjunoBAAAA&ccb=7-5&oh=00_AYDfpayQHQFTDFpZ9AnPyDzebobzVOYneF01XEEOUM055g&oe=6776458A&_nc_sid=ba8368',
     },
     content: 'https://images.unsplash.com/photo-1532798442725-41036acc7489',
     caption: `今日の瞑想風景🌟 
@@ -66,13 +69,21 @@ const SAMPLE_POSTS = [
     created_at: new Date().toISOString(),
     likes_count: 0,
     comments_count: 0,
-  }
+  },
 ];
 
 export function RecommendedPostsSection() {
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, paddingHorizontal: 16 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 16,
+          paddingHorizontal: 16,
+        }}
+      >
         <ThumbsUp size={20} color="#000" />
         <Text style={{ fontSize: 18, fontWeight: '600' }}>おすすめ投稿</Text>
       </View>

@@ -1,6 +1,6 @@
-import { Profile, Account } from './db/schema/profile';
+import type { AuthError, User } from '@supabase/supabase-js';
+import type { Account, Profile } from './db/schema/profile';
 import { supabase } from './supabase';
-import { AuthError, User } from '@supabase/supabase-js';
 
 // 認証サービスのレスポンス型
 export type AuthResponse = {
@@ -21,31 +21,31 @@ export type AccountInfo = {
 export interface IAuthService {
   // Google OAuth認証
   signInWithGoogle(idToken: string): Promise<AuthResponse>;
-  
+
   // Apple Sign-In認証
   signInWithApple(identityToken: string | null): Promise<AuthResponse>;
-  
+
   // Email + Passkey認証
   signUpWithPasskey(email: string, credential: any): Promise<AuthResponse>;
   signInWithPasskey(email: string, credential: any): Promise<AuthResponse>;
-  
+
   // Alias for registerWithPasskey (used in tests)
   registerWithPasskey(email: string, credential: any): Promise<AuthResponse>;
-  
+
   // リフレッシュトークンでアクセストークンを更新
   refreshToken(refreshToken: string): Promise<AuthResponse>;
-  
+
   // 現在のユーザー情報を取得
   getCurrentUser(): Promise<AuthResponse>;
-  
+
   // ログアウト
   signOut(): Promise<{ error: AuthError | null }>;
-  
+
   // 複数アカウント管理
   getAccounts(): Promise<{ accounts: AccountInfo[]; error: Error | null }>;
   switchAccount(accountId: string): Promise<AuthResponse>;
   addAccount(authData: any): Promise<AuthResponse>;
-  
+
   // 開発環境用自動ログイン
   checkAutoLogin(): Promise<{ shouldAutoLogin: boolean }>;
   performAutoLogin(): Promise<AuthResponse>;
@@ -58,17 +58,18 @@ export class AuthService implements IAuthService {
   // 開発環境の自動ログイン判定
   async checkAutoLogin(): Promise<{ shouldAutoLogin: boolean }> {
     const isAuthTest = process.env.TEST_FILE?.includes('auth') || false;
-    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local';
+    const isDevelopment =
+      process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local';
     const isDisabled = process.env.DISABLE_AUTO_LOGIN === 'true';
     const shouldAutoLogin = isDevelopment && !isAuthTest && !isDisabled;
-    
+
     return { shouldAutoLogin };
   }
 
   // 開発環境用の自動ログイン実行
   async performAutoLogin(): Promise<AuthResponse> {
     const { shouldAutoLogin } = await this.checkAutoLogin();
-    
+
     if (!shouldAutoLogin) {
       return {
         user: null,
@@ -83,7 +84,7 @@ export class AuthService implements IAuthService {
       id: 'dev-test-user-id',
       email: 'testuser@kanushi.love',
       app_metadata: {},
-      user_metadata: { 
+      user_metadata: {
         name: '開発テストユーザー',
         avatar_url: null,
       },
@@ -534,7 +535,10 @@ export class AuthService implements IAuthService {
   // 現在のユーザー情報を取得
   async getCurrentUser(): Promise<AuthResponse> {
     try {
-      const { data: { user }, error } = await this.supabase.auth.getUser();
+      const {
+        data: { user },
+        error,
+      } = await this.supabase.auth.getUser();
 
       if (error || !user) {
         throw new Error('UNAUTHORIZED');
@@ -598,7 +602,7 @@ export class AuthService implements IAuthService {
     // TODO: 実装
     throw new Error('Not implemented');
   }
-  
+
   // Alias for registerWithPasskey (used in tests)
   async registerWithPasskey(email: string, credential: any): Promise<AuthResponse> {
     return this.signUpWithPasskey(email, credential);

@@ -1,10 +1,10 @@
 import Stripe from 'stripe';
-import { env } from './env';
 import type { ApiResponse } from './data';
+import { env } from './env';
 
 // Stripeクライアントの初期化
 const stripe = new Stripe(env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia'
+  apiVersion: '2024-12-18.acacia',
 });
 
 export interface CreatePaymentIntentRequest {
@@ -31,7 +31,9 @@ export interface RefundRequest {
 
 export const stripeService = {
   // 決済インテントの作成
-  async createPaymentIntent(request: CreatePaymentIntentRequest): Promise<ApiResponse<Stripe.PaymentIntent>> {
+  async createPaymentIntent(
+    request: CreatePaymentIntentRequest
+  ): Promise<ApiResponse<Stripe.PaymentIntent>> {
     try {
       if (!env.STRIPE_SECRET_KEY) {
         return { data: null, error: new Error('Stripe API key is not configured') };
@@ -101,7 +103,7 @@ export const stripeService = {
       const refund = await stripe.refunds.create({
         payment_intent: request.paymentIntentId,
         amount: request.amount,
-        reason: request.reason || 'requested_by_customer'
+        reason: request.reason || 'requested_by_customer',
       });
 
       return { data: refund, error: null };
@@ -126,7 +128,10 @@ export const stripeService = {
   },
 
   // 決済メソッドのアタッチ
-  async attachPaymentMethod(paymentMethodId: string, customerId: string): Promise<ApiResponse<Stripe.PaymentMethod>> {
+  async attachPaymentMethod(
+    paymentMethodId: string,
+    customerId: string
+  ): Promise<ApiResponse<Stripe.PaymentMethod>> {
     try {
       if (!env.STRIPE_SECRET_KEY) {
         return { data: null, error: new Error('Stripe API key is not configured') };
@@ -144,7 +149,10 @@ export const stripeService = {
   },
 
   // カスタマーの作成
-  async createCustomer(email: string, metadata?: Record<string, string>): Promise<ApiResponse<Stripe.Customer>> {
+  async createCustomer(
+    email: string,
+    metadata?: Record<string, string>
+  ): Promise<ApiResponse<Stripe.Customer>> {
     try {
       if (!env.STRIPE_SECRET_KEY) {
         return { data: null, error: new Error('Stripe API key is not configured') };
@@ -152,7 +160,7 @@ export const stripeService = {
 
       const customer = await stripe.customers.create({
         email,
-        metadata: metadata || {}
+        metadata: metadata || {},
       });
 
       return { data: customer, error: null };
@@ -160,5 +168,5 @@ export const stripeService = {
       console.error('Error creating customer:', error);
       return { data: null, error: error as Error };
     }
-  }
+  },
 };

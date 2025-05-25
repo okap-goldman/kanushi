@@ -1,7 +1,7 @@
-import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
 import Timeline from '@/screens/Timeline';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // モックの設定
 vi.mock('@/context/AuthContext', () => ({
@@ -14,20 +14,24 @@ vi.mock('@/components/PostCard', () => ({
   default: ({ post, onLike, onHighlight, onComment, onDelete }: any) => (
     <div testID={`post-${post.id}`}>
       <span>{post.textContent || post.contentType}</span>
-      <button onClick={() => onLike?.(post.id)} testID={`like-${post.id}`}>Like</button>
-      <button onClick={() => onHighlight?.(post.id, 'test')} testID={`highlight-${post.id}`}>Highlight</button>
-      <button onClick={() => onComment?.(post.id)} testID={`comment-${post.id}`}>Comment</button>
-      <button onClick={() => onDelete?.(post.id)} testID={`delete-${post.id}`}>Delete</button>
+      <button onClick={() => onLike?.(post.id)} testID={`like-${post.id}`}>
+        Like
+      </button>
+      <button onClick={() => onHighlight?.(post.id, 'test')} testID={`highlight-${post.id}`}>
+        Highlight
+      </button>
+      <button onClick={() => onComment?.(post.id)} testID={`comment-${post.id}`}>
+        Comment
+      </button>
+      <button onClick={() => onDelete?.(post.id)} testID={`delete-${post.id}`}>
+        Delete
+      </button>
     </div>
   ),
 }));
 
 vi.mock('@/components/ui/Tabs', () => ({
-  Tabs: ({ children, value, onValueChange }: any) => (
-    <div testID="tabs">
-      {children}
-    </div>
-  ),
+  Tabs: ({ children, value, onValueChange }: any) => <div testID="tabs">{children}</div>,
   TabsList: ({ children }: any) => <div>{children}</div>,
   TabsTrigger: ({ children, value, onClick }: any) => (
     <button onClick={onClick} testID={`tab-${value}`}>
@@ -43,7 +47,7 @@ describe('Timeline Screen', () => {
 
   it('初期ローディング状態が表示される', () => {
     const { getByTestId } = render(<Timeline />);
-    
+
     expect(getByTestId('loading-indicator')).toBeTruthy();
   });
 
@@ -128,14 +132,17 @@ describe('Timeline Screen', () => {
     });
 
     const refreshControl = getByTestId('refresh-control');
-    
+
     // RefreshControlのonRefreshをシミュレート
     fireEvent(refreshControl, 'refresh');
 
     // リフレッシュが完了するまで待つ
-    await waitFor(() => {
-      expect(getByTestId('timeline-list')).toBeTruthy();
-    }, { timeout: 1000 });
+    await waitFor(
+      () => {
+        expect(getByTestId('timeline-list')).toBeTruthy();
+      },
+      { timeout: 1000 }
+    );
   });
 
   it('無限スクロールでさらに投稿を読み込む', async () => {
@@ -146,14 +153,17 @@ describe('Timeline Screen', () => {
     });
 
     const flatList = getByTestId('timeline-list');
-    
+
     // スクロールエンドに到達をシミュレート
     fireEvent(flatList, 'endReached');
 
     // 追加の投稿が読み込まれるのを待つ
-    await waitFor(() => {
-      expect(getByTestId('post-post-1-more-0')).toBeTruthy();
-    }, { timeout: 2000 });
+    await waitFor(
+      () => {
+        expect(getByTestId('post-post-1-more-0')).toBeTruthy();
+      },
+      { timeout: 2000 }
+    );
   });
 
   it('コメントボタンが動作する', async () => {
@@ -169,13 +179,13 @@ describe('Timeline Screen', () => {
     fireEvent.press(commentButton);
 
     expect(consoleLogSpy).toHaveBeenCalledWith('Comment on post:', 'post-1');
-    
+
     consoleLogSpy.mockRestore();
   });
 
   it('エラー時にも適切に処理される', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     // エラーをシミュレートするため、一時的にsetTimeoutをモック
     const originalSetTimeout = global.setTimeout;
     global.setTimeout = vi.fn((callback) => {

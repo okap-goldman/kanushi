@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
+import React, { useState, useEffect } from 'react';
+import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { ShareModal } from '../ShareModal';
+import { supabase } from '../../lib/supabase';
 
 interface PostActionsProps {
   postId: string;
@@ -28,7 +28,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     // Check if the user has liked this post
     const checkLikeStatus = async () => {
       if (!user) return;
-      
+
       try {
         const { data, error } = await supabase
           .from('likes')
@@ -36,7 +36,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           .eq('post_id', postId)
           .eq('user_id', user.id)
           .maybeSingle();
-          
+
         if (error) throw error;
         setLiked(!!data);
       } catch (err) {
@@ -47,7 +47,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     // Check if the user has highlighted this post
     const checkHighlightStatus = async () => {
       if (!user) return;
-      
+
       try {
         const { data, error } = await supabase
           .from('highlights')
@@ -55,7 +55,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           .eq('post_id', postId)
           .eq('user_id', user.id)
           .maybeSingle();
-          
+
         if (error) throw error;
         setHighlighted(!!data);
       } catch (err) {
@@ -66,7 +66,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     // Check if the user has bookmarked this post
     const checkBookmarkStatus = async () => {
       if (!user) return;
-      
+
       try {
         const { data, error } = await supabase
           .from('bookmarks')
@@ -74,7 +74,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           .eq('post_id', postId)
           .eq('user_id', user.id)
           .maybeSingle();
-          
+
         if (error) throw error;
         setBookmarked(!!data);
       } catch (err) {
@@ -89,7 +89,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           .from('likes')
           .select('*', { count: 'exact', head: true })
           .eq('post_id', postId);
-          
+
         if (error) throw error;
         setLikeCount(count || 0);
       } catch (err) {
@@ -104,7 +104,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           .from('comments')
           .select('*', { count: 'exact', head: true })
           .eq('post_id', postId);
-          
+
         if (error) throw error;
         setCommentCount(count || 0);
       } catch (err) {
@@ -119,7 +119,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           .from('highlights')
           .select('*', { count: 'exact', head: true })
           .eq('post_id', postId);
-          
+
         if (error) throw error;
         setHighlightCount(count || 0);
       } catch (err) {
@@ -137,7 +137,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
 
   const handleLike = async () => {
     if (!user) return;
-    
+
     try {
       if (liked) {
         // Unlike
@@ -146,23 +146,21 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
-          
+
         if (error) throw error;
         setLiked(false);
-        setLikeCount(prev => Math.max(0, prev - 1));
+        setLikeCount((prev) => Math.max(0, prev - 1));
       } else {
         // Like
-        const { error } = await supabase
-          .from('likes')
-          .insert({
-            post_id: postId,
-            user_id: user.id,
-            created_at: new Date().toISOString(),
-          });
-          
+        const { error } = await supabase.from('likes').insert({
+          post_id: postId,
+          user_id: user.id,
+          created_at: new Date().toISOString(),
+        });
+
         if (error) throw error;
         setLiked(true);
-        setLikeCount(prev => prev + 1);
+        setLikeCount((prev) => prev + 1);
       }
     } catch (err) {
       console.error('Error toggling like:', err);
@@ -192,26 +190,24 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
-          
+
         if (error) throw error;
         setHighlighted(false);
-        setHighlightCount(prev => Math.max(0, prev - 1));
+        setHighlightCount((prev) => Math.max(0, prev - 1));
       } else {
         // Add highlight
-        const { error } = await supabase
-          .from('highlights')
-          .insert({
-            post_id: postId,
-            user_id: user.id,
-            reason: highlightReason,
-            created_at: new Date().toISOString(),
-          });
-          
+        const { error } = await supabase.from('highlights').insert({
+          post_id: postId,
+          user_id: user.id,
+          reason: highlightReason,
+          created_at: new Date().toISOString(),
+        });
+
         if (error) throw error;
         setHighlighted(true);
-        setHighlightCount(prev => prev + 1);
+        setHighlightCount((prev) => prev + 1);
       }
-      
+
       setShowHighlightDialog(false);
       if (onHighlight) onHighlight();
     } catch (err) {
@@ -222,7 +218,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
 
   const handleBookmark = async () => {
     if (!user) return;
-    
+
     try {
       if (bookmarked) {
         // Remove bookmark
@@ -231,19 +227,17 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
-          
+
         if (error) throw error;
         setBookmarked(false);
       } else {
         // Add bookmark
-        const { error } = await supabase
-          .from('bookmarks')
-          .insert({
-            post_id: postId,
-            user_id: user.id,
-            created_at: new Date().toISOString(),
-          });
-          
+        const { error } = await supabase.from('bookmarks').insert({
+          post_id: postId,
+          user_id: user.id,
+          created_at: new Date().toISOString(),
+        });
+
         if (error) throw error;
         setBookmarked(true);
       }
@@ -259,59 +253,43 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
   return (
     <View style={styles.container}>
       <View style={styles.actionsRow}>
-        <TouchableOpacity 
-          onPress={handleLike} 
-          style={styles.actionButton}
-          testID="like-button"
-        >
-          <Feather 
-            name={liked ? 'heart' : 'heart'} 
-            size={22} 
-            color={liked ? '#E53E3E' : '#64748B'} 
+        <TouchableOpacity onPress={handleLike} style={styles.actionButton} testID="like-button">
+          <Feather
+            name={liked ? 'heart' : 'heart'}
+            size={22}
+            color={liked ? '#E53E3E' : '#64748B'}
             style={liked ? styles.filledHeart : undefined}
           />
           <Text style={styles.actionText}>{likeCount > 0 ? likeCount : ''}</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          onPress={onComment} 
-          style={styles.actionButton}
-          testID="comment-button"
-        >
+
+        <TouchableOpacity onPress={onComment} style={styles.actionButton} testID="comment-button">
           <Feather name="message-circle" size={22} color="#64748B" />
           <Text style={styles.actionText}>{commentCount > 0 ? commentCount : ''}</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          onPress={handleHighlight} 
+
+        <TouchableOpacity
+          onPress={handleHighlight}
           style={styles.actionButton}
           testID="highlight-button"
         >
-          <Feather 
-            name="star" 
-            size={22} 
-            color={highlighted ? '#F59E0B' : '#64748B'} 
-          />
+          <Feather name="star" size={22} color={highlighted ? '#F59E0B' : '#64748B'} />
           <Text style={styles.actionText}>{highlightCount > 0 ? highlightCount : ''}</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          onPress={handleBookmark} 
+
+        <TouchableOpacity
+          onPress={handleBookmark}
           style={styles.actionButton}
           testID="bookmark-button"
         >
-          <Feather 
-            name={bookmarked ? 'bookmark' : 'bookmark'} 
-            size={22} 
-            color={bookmarked ? '#3B82F6' : '#64748B'} 
+          <Feather
+            name={bookmarked ? 'bookmark' : 'bookmark'}
+            size={22}
+            color={bookmarked ? '#3B82F6' : '#64748B'}
           />
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          onPress={handleShare} 
-          style={styles.actionButton}
-          testID="share-button"
-        >
+
+        <TouchableOpacity onPress={handleShare} style={styles.actionButton} testID="share-button">
           <Feather name="share" size={22} color="#64748B" />
         </TouchableOpacity>
       </View>
@@ -336,10 +314,8 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
               maxLength={200}
               testID="highlight-reason-input"
             />
-            {highlightError ? (
-              <Text style={styles.errorText}>{highlightError}</Text>
-            ) : null}
-            
+            {highlightError ? <Text style={styles.errorText}>{highlightError}</Text> : null}
+
             <View style={styles.dialogButtons}>
               <TouchableOpacity
                 style={[styles.dialogButton, styles.cancelButton]}
@@ -347,7 +323,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
               >
                 <Text style={styles.cancelButtonText}>キャンセル</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[styles.dialogButton, styles.submitButton]}
                 onPress={submitHighlight}

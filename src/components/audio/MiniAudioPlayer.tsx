@@ -1,12 +1,7 @@
-import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
+import type React from 'react';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAudio } from '../../hooks/useAudio';
 
 interface MiniAudioPlayerProps {
@@ -49,17 +44,8 @@ export function MiniAudioPlayer({
   showPlaybackRate = false,
   minimizable = false,
 }: MiniAudioPlayerProps) {
-  const {
-    isLoading,
-    isPlaying,
-    duration,
-    position,
-    error,
-    play,
-    pause,
-    seek,
-    setRate,
-  } = useAudio(audioUrl);
+  const { isLoading, isPlaying, duration, position, error, play, pause, seek, setRate } =
+    useAudio(audioUrl);
 
   const [isMinimized, setIsMinimized] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1.0);
@@ -79,22 +65,25 @@ export function MiniAudioPlayer({
     }
   }, [isPlaying, play, pause]);
 
-  const handleWaveformTap = useCallback((event: any) => {
-    if (!duration) return;
+  const handleWaveformTap = useCallback(
+    (event: any) => {
+      if (!duration) return;
 
-    const { locationX } = event.nativeEvent;
-    const waveformWidth = 300; // Assuming fixed width
-    const progress = locationX / waveformWidth;
-    const seekPosition = progress * duration;
-    
-    seek(seekPosition);
-  }, [duration, seek]);
+      const { locationX } = event.nativeEvent;
+      const waveformWidth = 300; // Assuming fixed width
+      const progress = locationX / waveformWidth;
+      const seekPosition = progress * duration;
+
+      seek(seekPosition);
+    },
+    [duration, seek]
+  );
 
   const handlePlaybackRateToggle = useCallback(async () => {
     const rates = [1.0, 1.25, 1.5, 2.0];
     const currentIndex = rates.indexOf(playbackRate);
     const nextRate = rates[(currentIndex + 1) % rates.length];
-    
+
     setPlaybackRate(nextRate);
     await setRate(nextRate);
   }, [playbackRate, setRate]);
@@ -131,12 +120,11 @@ export function MiniAudioPlayer({
         testID="mini-player-minimized"
       >
         <View style={styles.minimizedContent}>
-          <TouchableOpacity onPress={handlePlayPause} testID={isPlaying ? 'pause-button' : 'play-button'}>
-            <Feather
-              name={isPlaying ? 'pause' : 'play'}
-              size={20}
-              color="#FFFFFF"
-            />
+          <TouchableOpacity
+            onPress={handlePlayPause}
+            testID={isPlaying ? 'pause-button' : 'play-button'}
+          >
+            <Feather name={isPlaying ? 'pause' : 'play'} size={20} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.minimizedTitle} numberOfLines={1}>
             {title}
@@ -186,24 +174,14 @@ export function MiniAudioPlayer({
             {waveformData.map((height, index) => {
               const barProgress = index / waveformData.length;
               const isActive = barProgress <= progress;
-              
-              return (
-                <WaveformBar
-                  key={index}
-                  height={height}
-                  isActive={isActive}
-                  index={index}
-                />
-              );
+
+              return <WaveformBar key={index} height={height} isActive={isActive} index={index} />;
             })}
           </View>
-          
+
           {/* Progress indicator */}
           <View
-            style={[
-              styles.progressIndicator,
-              { left: `${progress * 100}%` },
-            ]}
+            style={[styles.progressIndicator, { left: `${progress * 100}%` }]}
             testID="waveform-progress"
           />
         </TouchableOpacity>
@@ -214,7 +192,7 @@ export function MiniAudioPlayer({
           <Text style={styles.timeText}>{formatTime(position)}</Text>
           <Text style={styles.timeText}>{formatTime(duration)}</Text>
         </View>
-        
+
         <View style={styles.playbackControls}>
           {showPlaybackRate && (
             <TouchableOpacity
@@ -225,7 +203,7 @@ export function MiniAudioPlayer({
               <Text style={styles.rateText}>{playbackRate}x</Text>
             </TouchableOpacity>
           )}
-          
+
           <TouchableOpacity
             onPress={handlePlayPause}
             style={styles.playButton}
@@ -235,11 +213,7 @@ export function MiniAudioPlayer({
             {isLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" testID="loading-indicator" />
             ) : (
-              <Feather
-                name={isPlaying ? 'pause' : 'play'}
-                size={24}
-                color="#FFFFFF"
-              />
+              <Feather name={isPlaying ? 'pause' : 'play'} size={24} color="#FFFFFF" />
             )}
           </TouchableOpacity>
         </View>

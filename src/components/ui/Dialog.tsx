@@ -1,16 +1,16 @@
+import { X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { X } from 'lucide-react-native';
 
 interface DialogProps {
   open: boolean;
@@ -54,16 +54,12 @@ const DialogContext = React.createContext<{
 });
 
 export function Dialog({ open, onOpenChange, children }: DialogProps) {
-  return (
-    <DialogContext.Provider value={{ open, onOpenChange }}>
-      {children}
-    </DialogContext.Provider>
-  );
+  return <DialogContext.Provider value={{ open, onOpenChange }}>{children}</DialogContext.Provider>;
 }
 
 export function DialogTrigger({ children, asChild, onPress }: DialogTriggerProps) {
   const { onOpenChange } = React.useContext(DialogContext);
-  
+
   const handlePress = () => {
     onOpenChange(true);
     onPress?.();
@@ -75,11 +71,7 @@ export function DialogTrigger({ children, asChild, onPress }: DialogTriggerProps
     });
   }
 
-  return (
-    <TouchableOpacity onPress={handlePress}>
-      {children}
-    </TouchableOpacity>
-  );
+  return <TouchableOpacity onPress={handlePress}>{children}</TouchableOpacity>;
 }
 
 export function DialogContent({ children, showCloseButton = true }: DialogContentProps) {
@@ -98,17 +90,11 @@ export function DialogContent({ children, showCloseButton = true }: DialogConten
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
       >
-        <Pressable
-          style={styles.overlay}
-          onPress={() => onOpenChange(false)}
-        >
+        <Pressable style={styles.overlay} onPress={() => onOpenChange(false)}>
           <Pressable style={styles.contentContainer} onPress={(e) => e.stopPropagation()}>
             <View style={styles.content}>
               {showCloseButton && (
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => onOpenChange(false)}
-                >
+                <TouchableOpacity style={styles.closeButton} onPress={() => onOpenChange(false)}>
                   <X size={20} color="#666" />
                 </TouchableOpacity>
               )}

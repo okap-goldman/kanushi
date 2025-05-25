@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { and, eq, inArray } from 'drizzle-orm';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Mock } from 'vitest';
 import { db } from '../../src/lib/db/client';
+import { cartItems, carts, orderItems, orders, products } from '../../src/lib/db/schema';
 import * as orderService from '../../src/lib/orderService';
-import { orders, orderItems, products, carts, cartItems } from '../../src/lib/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
 
 // Mock database client
 vi.mock('../../src/lib/db/client', () => ({
@@ -22,7 +22,7 @@ vi.mock('../../src/lib/db/client', () => ({
     delete: vi.fn().mockReturnThis(),
     transaction: vi.fn(),
     execute: vi.fn(),
-  }
+  },
 }));
 
 describe('Order Service', () => {
@@ -77,13 +77,15 @@ describe('Order Service', () => {
         const tx = {
           insert: vi.fn().mockReturnThis(),
           values: vi.fn().mockReturnThis(),
-          returning: vi.fn().mockResolvedValueOnce([mockOrder])
+          returning: vi
+            .fn()
+            .mockResolvedValueOnce([mockOrder])
             .mockResolvedValueOnce([mockOrderItem]),
           update: vi.fn().mockReturnThis(),
           set: vi.fn().mockReturnThis(),
           where: vi.fn().mockReturnThis(),
         };
-        
+
         // Set up chain for update
         tx.update.mockReturnValue({
           set: vi.fn().mockReturnValue({
@@ -92,7 +94,7 @@ describe('Order Service', () => {
             }),
           }),
         });
-        
+
         return callback(tx);
       });
 
@@ -167,14 +169,15 @@ describe('Order Service', () => {
         const tx = {
           insert: vi.fn().mockReturnThis(),
           values: vi.fn().mockReturnThis(),
-          returning: vi.fn()
+          returning: vi
+            .fn()
             .mockResolvedValueOnce([mockOrder])
             .mockResolvedValueOnce(mockOrderItems),
           update: vi.fn().mockReturnThis(),
           set: vi.fn().mockReturnThis(),
           where: vi.fn().mockReturnThis(),
         };
-        
+
         // Set up chain for update
         let updateCount = 0;
         tx.update.mockReturnValue({
@@ -191,7 +194,7 @@ describe('Order Service', () => {
             }),
           }),
         });
-        
+
         return callback(tx);
       });
 
@@ -216,8 +219,7 @@ describe('Order Service', () => {
         where: vi.fn().mockResolvedValueOnce([]),
       });
 
-      await expect(orderService.createOrder(userId, input))
-        .rejects.toThrow('商品が見つかりません');
+      await expect(orderService.createOrder(userId, input)).rejects.toThrow('商品が見つかりません');
     });
 
     it('should throw error if insufficient stock', async () => {
@@ -240,8 +242,9 @@ describe('Order Service', () => {
         where: vi.fn().mockResolvedValueOnce([mockProduct]),
       });
 
-      await expect(orderService.createOrder(userId, input))
-        .rejects.toThrow('在庫が不足しています: prod123');
+      await expect(orderService.createOrder(userId, input)).rejects.toThrow(
+        '在庫が不足しています: prod123'
+      );
     });
 
     it('should clear cart after successful order creation', async () => {
@@ -293,7 +296,8 @@ describe('Order Service', () => {
         const tx = {
           insert: vi.fn().mockReturnThis(),
           values: vi.fn().mockReturnThis(),
-          returning: vi.fn()
+          returning: vi
+            .fn()
             .mockResolvedValueOnce([mockOrder])
             .mockResolvedValueOnce([mockOrderItem]),
           update: vi.fn().mockReturnThis(),
@@ -303,7 +307,7 @@ describe('Order Service', () => {
           from: vi.fn().mockReturnThis(),
           delete: vi.fn().mockReturnThis(),
         };
-        
+
         // Set up chain for update
         tx.update.mockReturnValue({
           set: vi.fn().mockReturnValue({
@@ -378,9 +382,9 @@ describe('Order Service', () => {
       (db.update as Mock).mockReturnValueOnce({
         set: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
-        returning: vi.fn().mockResolvedValueOnce([
-          { ...mockOrder, status: newStatus, updatedAt: new Date() },
-        ]),
+        returning: vi
+          .fn()
+          .mockResolvedValueOnce([{ ...mockOrder, status: newStatus, updatedAt: new Date() }]),
       });
 
       const result = await orderService.updateOrderStatus(orderId, newStatus, userId);
@@ -443,12 +447,7 @@ describe('Order Service', () => {
         ]),
       });
 
-      const result = await orderService.updateOrderStatus(
-        orderId,
-        newStatus,
-        userId,
-        trackingInfo
-      );
+      const result = await orderService.updateOrderStatus(orderId, newStatus, userId, trackingInfo);
 
       expect(result.status).toBe(newStatus);
       expect(result.trackingNumber).toBe(trackingInfo.trackingNumber);
@@ -466,8 +465,9 @@ describe('Order Service', () => {
         where: vi.fn().mockResolvedValueOnce([]),
       });
 
-      await expect(orderService.updateOrderStatus(orderId, newStatus, userId))
-        .rejects.toThrow('注文が見つかりません');
+      await expect(orderService.updateOrderStatus(orderId, newStatus, userId)).rejects.toThrow(
+        '注文が見つかりません'
+      );
     });
 
     it('should throw error if user is not the seller', async () => {
@@ -506,8 +506,9 @@ describe('Order Service', () => {
         ]),
       });
 
-      await expect(orderService.updateOrderStatus(orderId, newStatus, userId))
-        .rejects.toThrow('この注文のステータスを更新する権限がありません');
+      await expect(orderService.updateOrderStatus(orderId, newStatus, userId)).rejects.toThrow(
+        'この注文のステータスを更新する権限がありません'
+      );
     });
 
     it('should validate status transition rules', async () => {
@@ -546,8 +547,9 @@ describe('Order Service', () => {
       });
 
       // Try invalid transition from pending to shipped
-      await expect(orderService.updateOrderStatus(orderId, 'shipped', userId))
-        .rejects.toThrow('無効なステータス遷移です');
+      await expect(orderService.updateOrderStatus(orderId, 'shipped', userId)).rejects.toThrow(
+        '無効なステータス遷移です'
+      );
     });
   });
 
@@ -589,10 +591,12 @@ describe('Order Service', () => {
 
       expect(result).toEqual({
         ...mockOrderData.orders,
-        items: [{
-          ...mockOrderData.order_item,
-          product: mockOrderData.product,
-        }],
+        items: [
+          {
+            ...mockOrderData.order_item,
+            product: mockOrderData.product,
+          },
+        ],
       });
     });
 
@@ -633,10 +637,12 @@ describe('Order Service', () => {
 
       expect(result).toEqual({
         ...mockOrderData.orders,
-        items: [{
-          ...mockOrderData.order_item,
-          product: mockOrderData.product,
-        }],
+        items: [
+          {
+            ...mockOrderData.order_item,
+            product: mockOrderData.product,
+          },
+        ],
       });
     });
 
@@ -651,8 +657,9 @@ describe('Order Service', () => {
         where: vi.fn().mockResolvedValueOnce([]),
       });
 
-      await expect(orderService.getOrderById(orderId, userId))
-        .rejects.toThrow('注文が見つかりません');
+      await expect(orderService.getOrderById(orderId, userId)).rejects.toThrow(
+        '注文が見つかりません'
+      );
     });
 
     it('should throw error if user has no access', async () => {
@@ -688,8 +695,9 @@ describe('Order Service', () => {
         where: vi.fn().mockResolvedValueOnce([mockOrderData]),
       });
 
-      await expect(orderService.getOrderById(orderId, userId))
-        .rejects.toThrow('この注文を表示する権限がありません');
+      await expect(orderService.getOrderById(orderId, userId)).rejects.toThrow(
+        'この注文を表示する権限がありません'
+      );
     });
   });
 
@@ -737,10 +745,12 @@ describe('Order Service', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         ...mockOrdersData[0].orders,
-        items: [{
-          ...mockOrdersData[0].order_item,
-          product: mockOrdersData[0].product,
-        }],
+        items: [
+          {
+            ...mockOrdersData[0].order_item,
+            product: mockOrdersData[0].product,
+          },
+        ],
       });
     });
 
@@ -787,10 +797,12 @@ describe('Order Service', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         ...mockOrdersData[0].orders,
-        items: [{
-          ...mockOrdersData[0].order_item,
-          product: mockOrdersData[0].product,
-        }],
+        items: [
+          {
+            ...mockOrdersData[0].order_item,
+            product: mockOrdersData[0].product,
+          },
+        ],
       });
     });
 
@@ -900,7 +912,7 @@ describe('Order Service', () => {
           select: vi.fn().mockReturnThis(),
           from: vi.fn().mockReturnThis(),
         };
-        
+
         // Set up chain for first update (order status)
         let updateCallCount = 0;
         tx.update.mockImplementation(() => {
@@ -967,8 +979,9 @@ describe('Order Service', () => {
         where: vi.fn().mockResolvedValueOnce([mockOrder]),
       });
 
-      await expect(orderService.cancelOrder(orderId, userId))
-        .rejects.toThrow('発送済みの注文はキャンセルできません');
+      await expect(orderService.cancelOrder(orderId, userId)).rejects.toThrow(
+        '発送済みの注文はキャンセルできません'
+      );
     });
   });
 
@@ -1035,8 +1048,9 @@ describe('Order Service', () => {
         where: vi.fn().mockResolvedValueOnce([mockOrder]),
       });
 
-      await expect(orderService.processPayment(orderId, userId, paymentData))
-        .rejects.toThrow('この注文は既に支払い済みです');
+      await expect(orderService.processPayment(orderId, userId, paymentData)).rejects.toThrow(
+        'この注文は既に支払い済みです'
+      );
     });
   });
 
@@ -1119,8 +1133,9 @@ describe('Order Service', () => {
         where: vi.fn().mockResolvedValueOnce([]),
       });
 
-      await expect(orderService.updateShippingInfo(orderId, userId, shippingData))
-        .rejects.toThrow('注文が見つかりません');
+      await expect(orderService.updateShippingInfo(orderId, userId, shippingData)).rejects.toThrow(
+        '注文が見つかりません'
+      );
     });
 
     it('should throw error if user is not the seller', async () => {
@@ -1162,8 +1177,9 @@ describe('Order Service', () => {
         ]),
       });
 
-      await expect(orderService.updateShippingInfo(orderId, userId, shippingData))
-        .rejects.toThrow('この注文の配送情報を更新する権限がありません');
+      await expect(orderService.updateShippingInfo(orderId, userId, shippingData)).rejects.toThrow(
+        'この注文の配送情報を更新する権限がありません'
+      );
     });
 
     it('should throw error if order status is not valid for shipping', async () => {
@@ -1205,8 +1221,9 @@ describe('Order Service', () => {
         ]),
       });
 
-      await expect(orderService.updateShippingInfo(orderId, userId, shippingData))
-        .rejects.toThrow('この注文はまだ発送準備ができていません');
+      await expect(orderService.updateShippingInfo(orderId, userId, shippingData)).rejects.toThrow(
+        'この注文はまだ発送準備ができていません'
+      );
     });
   });
 
@@ -1215,10 +1232,7 @@ describe('Order Service', () => {
       const userId = 'seller123';
       const period = 'month';
 
-      const mockProducts = [
-        { id: 'prod123' },
-        { id: 'prod456' },
-      ];
+      const mockProducts = [{ id: 'prod123' }, { id: 'prod456' }];
 
       const mockOrderStats = [
         {

@@ -1,22 +1,24 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { createTimelineService, type TimelineService, SimpleCache } from '../../src/lib/timelineService';
-import type { 
-  TimelineType, DrizzlePost, ServiceResult, PaginatedResult 
-} from '../../src/lib/data';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { DrizzlePost, PaginatedResult, ServiceResult, TimelineType } from '../../src/lib/data';
+import {
+  SimpleCache,
+  type TimelineService,
+  createTimelineService,
+} from '../../src/lib/timelineService';
 
 // Mock Supabase client
 const mockSupabaseClient = {
   from: vi.fn(),
   storage: {
-    from: vi.fn()
+    from: vi.fn(),
   },
   auth: {
-    getUser: vi.fn()
+    getUser: vi.fn(),
   },
-  rpc: vi.fn()
+  rpc: vi.fn(),
 };
 
-// Mock database client  
+// Mock database client
 const mockDb = {
   select: vi.fn(),
   insert: vi.fn(),
@@ -25,18 +27,18 @@ const mockDb = {
   query: {
     follows: {
       findMany: vi.fn(),
-      findFirst: vi.fn()
+      findFirst: vi.fn(),
     },
     posts: {
       findMany: vi.fn(),
-      findFirst: vi.fn()
+      findFirst: vi.fn(),
     },
     profiles: {
       findFirst: vi.fn(),
-      findMany: vi.fn()
-    }
+      findMany: vi.fn(),
+    },
   },
-  transaction: vi.fn()
+  transaction: vi.fn(),
 };
 
 describe('TimelineService - タイムライン取得機能', () => {
@@ -65,7 +67,7 @@ describe('TimelineService - タイムライン取得機能', () => {
           followType: 'family',
           status: 'active',
           followReason: '素晴らしい内容',
-          createdAt: new Date()
+          createdAt: new Date(),
         },
         {
           id: 'follow-2',
@@ -74,8 +76,8 @@ describe('TimelineService - タイムライン取得機能', () => {
           followType: 'family',
           status: 'active',
           followReason: '共感できる投稿',
-          createdAt: new Date()
-        }
+          createdAt: new Date(),
+        },
       ];
 
       // Mock posts from followed users
@@ -95,7 +97,7 @@ describe('TimelineService - タイムライン取得機能', () => {
           youtubeVideoId: null,
           eventId: null,
           groupId: null,
-          aiMetadata: null
+          aiMetadata: null,
         },
         {
           id: 'post-2',
@@ -112,8 +114,8 @@ describe('TimelineService - タイムライン取得機能', () => {
           youtubeVideoId: null,
           eventId: null,
           groupId: null,
-          aiMetadata: null
-        }
+          aiMetadata: null,
+        },
       ];
 
       mockDb.query.follows.findMany.mockResolvedValue(mockFamilyFollows);
@@ -147,8 +149,8 @@ describe('TimelineService - タイムライン取得機能', () => {
           followerId: mockUserId,
           followeeId: 'family-user-1',
           followType: 'family',
-          status: 'active'
-        }
+          status: 'active',
+        },
       ];
 
       const mockPostsWithDeleted = [
@@ -158,7 +160,7 @@ describe('TimelineService - タイムライン取得機能', () => {
           contentType: 'text',
           textContent: '通常の投稿',
           deletedAt: null,
-          createdAt: new Date('2024-01-02T10:00:00Z')
+          createdAt: new Date('2024-01-02T10:00:00Z'),
         },
         {
           id: 'post-2',
@@ -166,13 +168,13 @@ describe('TimelineService - タイムライン取得機能', () => {
           contentType: 'text',
           textContent: '削除された投稿',
           deletedAt: new Date('2024-01-02T11:00:00Z'), // 削除済み
-          createdAt: new Date('2024-01-02T09:00:00Z')
-        }
+          createdAt: new Date('2024-01-02T09:00:00Z'),
+        },
       ];
 
       mockDb.query.follows.findMany.mockResolvedValue(mockFamilyFollows);
       mockDb.query.posts.findMany.mockResolvedValue(
-        mockPostsWithDeleted.filter(p => p.deletedAt === null)
+        mockPostsWithDeleted.filter((p) => p.deletedAt === null)
       );
 
       const result = await timelineService.getTimeline(mockUserId, 'family', 20);
@@ -193,7 +195,7 @@ describe('TimelineService - タイムライン取得機能', () => {
           followeeId: 'watch-user-1',
           followType: 'watch',
           status: 'active',
-          followReason: null
+          followReason: null,
         },
         {
           id: 'follow-4',
@@ -201,8 +203,8 @@ describe('TimelineService - タイムライン取得機能', () => {
           followeeId: 'watch-user-2',
           followType: 'watch',
           status: 'active',
-          followReason: null
-        }
+          followReason: null,
+        },
       ];
 
       const mockPosts = [
@@ -214,7 +216,7 @@ describe('TimelineService - タイムライン取得機能', () => {
           mediaUrl: 'https://storage.b2.com/images/sunrise.jpg',
           previewUrl: 'https://storage.b2.com/images/sunrise_thumb.jpg',
           createdAt: new Date('2024-01-03T06:00:00Z'),
-          deletedAt: null
+          deletedAt: null,
         },
         {
           id: 'post-4',
@@ -222,8 +224,8 @@ describe('TimelineService - タイムライン取得機能', () => {
           contentType: 'text',
           textContent: '今日の学び',
           createdAt: new Date('2024-01-03T07:00:00Z'),
-          deletedAt: null
-        }
+          deletedAt: null,
+        },
       ];
 
       mockDb.query.follows.findMany.mockResolvedValue(mockWatchFollows);
@@ -247,8 +249,8 @@ describe('TimelineService - タイムライン取得機能', () => {
           followerId: mockUserId,
           followeeId: 'user-1',
           followType: 'family',
-          status: 'active'
-        }
+          status: 'active',
+        },
       ];
 
       // 25件の投稿を作成
@@ -258,7 +260,7 @@ describe('TimelineService - タイムライン取得機能', () => {
         contentType: 'text',
         textContent: `投稿 ${i}`,
         createdAt: new Date(`2024-01-01T${String(i).padStart(2, '0')}:00:00Z`),
-        deletedAt: null
+        deletedAt: null,
       }));
 
       mockDb.query.follows.findMany.mockResolvedValue(mockFollows);
@@ -280,8 +282,8 @@ describe('TimelineService - タイムライン取得機能', () => {
           followerId: mockUserId,
           followeeId: 'user-1',
           followType: 'family',
-          status: 'active'
-        }
+          status: 'active',
+        },
       ];
 
       // 次のページの投稿
@@ -291,15 +293,17 @@ describe('TimelineService - タイムライン取得機能', () => {
         contentType: 'text',
         textContent: `ページ2の投稿 ${i}`,
         createdAt: new Date(`2024-01-02T${String(i).padStart(2, '0')}:00:00Z`),
-        deletedAt: null
+        deletedAt: null,
       }));
 
       mockDb.query.follows.findMany.mockResolvedValue(mockFollows);
       mockDb.query.posts.findMany.mockResolvedValue(mockNextPagePosts.reverse());
 
-      const cursor = Buffer.from(JSON.stringify({ 
-        createdAt: '2024-01-01T19:00:00Z' 
-      })).toString('base64');
+      const cursor = Buffer.from(
+        JSON.stringify({
+          createdAt: '2024-01-01T19:00:00Z',
+        })
+      ).toString('base64');
 
       const result = await timelineService.getTimeline(mockUserId, 'family', 20, cursor);
 
@@ -318,8 +322,8 @@ describe('TimelineService - タイムライン取得機能', () => {
           followerId: mockUserId,
           followeeId: 'user-1',
           followType: 'family',
-          status: 'active'
-        }
+          status: 'active',
+        },
       ];
 
       const latestPosts = [
@@ -329,8 +333,8 @@ describe('TimelineService - タイムライン取得機能', () => {
           contentType: 'text',
           textContent: '最新の投稿',
           createdAt: new Date('2024-01-05T12:00:00Z'),
-          deletedAt: null
-        }
+          deletedAt: null,
+        },
       ];
 
       mockDb.query.follows.findMany.mockResolvedValue(mockFollows);
@@ -367,12 +371,12 @@ describe('TimelineService - タイムライン取得機能', () => {
             userId: 'user-1',
             contentType: 'text',
             textContent: 'キャッシュされた投稿',
-            createdAt: new Date('2024-01-01T10:00:00Z')
-          }
+            createdAt: new Date('2024-01-01T10:00:00Z'),
+          },
         ],
         hasMore: false,
         nextCursor: null,
-        cachedAt: new Date()
+        cachedAt: new Date(),
       };
 
       // Spy on cache get method
@@ -392,8 +396,8 @@ describe('TimelineService - タイムライン取得機能', () => {
           followerId: mockUserId,
           followeeId: 'user-1',
           followType: 'family',
-          status: 'active'
-        }
+          status: 'active',
+        },
       ];
 
       const mockPosts = [
@@ -403,8 +407,8 @@ describe('TimelineService - タイムライン取得機能', () => {
           contentType: 'text',
           textContent: '新しい投稿',
           createdAt: new Date(),
-          deletedAt: null
-        }
+          deletedAt: null,
+        },
       ];
 
       // Spy on cache set method
@@ -421,7 +425,7 @@ describe('TimelineService - タイムライン取得機能', () => {
           items: expect.any(Array),
           hasMore: expect.any(Boolean),
           nextCursor: expect.any(Object),
-          cachedAt: expect.any(Date)
+          cachedAt: expect.any(Date),
         }),
         300 // 5分のTTL
       );

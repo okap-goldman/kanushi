@@ -1,138 +1,139 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { MaterialIcons } from '@expo/vector-icons';
+import type React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Modal,
-  SafeAreaView,
-} from 'react-native'
-import { MaterialIcons } from '@expo/vector-icons'
-import { aiChatService, ChatMessage, Recommendations } from '../../lib/aiChatService'
-import { useToast } from '../../hooks/use-toast'
+  View,
+} from 'react-native';
+import { useToast } from '../../hooks/use-toast';
+import { type ChatMessage, type Recommendations, aiChatService } from '../../lib/aiChatService';
 
 interface AIChatProps {
-  isVisible: boolean
-  onClose: () => void
+  isVisible: boolean;
+  onClose: () => void;
 }
 
 interface QuickAction {
-  id: string
-  label: string
-  message: string
+  id: string;
+  label: string;
+  message: string;
 }
 
 const quickActions: QuickAction[] = [
   { id: '1', label: 'イベントを探す', message: 'イベントを探したいです' },
   { id: '2', label: 'おすすめの投稿', message: 'おすすめの投稿を教えてください' },
   { id: '3', label: '使い方を教えて', message: 'このアプリの使い方を教えてください' },
-]
+];
 
 export const AIChat: React.FC<AIChatProps> = ({ isVisible, onClose }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [inputMessage, setInputMessage] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [showRecommendations, setShowRecommendations] = useState(false)
-  const [recommendations, setRecommendations] = useState<Recommendations | null>(null)
-  const scrollViewRef = useRef<ScrollView>(null)
-  const { toast } = useToast()
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isVisible) {
-      loadChatHistory()
+      loadChatHistory();
     }
-  }, [isVisible])
+  }, [isVisible]);
 
   const loadChatHistory = async () => {
     try {
-      const history = await aiChatService.getChatHistory()
-      setMessages(history)
+      const history = await aiChatService.getChatHistory();
+      setMessages(history);
     } catch (error) {
-      console.error('Failed to load chat history:', error)
+      console.error('Failed to load chat history:', error);
     }
-  }
+  };
 
   const sendMessage = async (message: string) => {
-    if (!message.trim()) return
+    if (!message.trim()) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       content: message,
       role: 'user',
       created_at: new Date().toISOString(),
-    }
+    };
 
-    setMessages(prev => [...prev, userMessage])
-    setInputMessage('')
-    setIsLoading(true)
+    setMessages((prev) => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
 
     try {
-      const response = await aiChatService.sendMessage(message)
+      const response = await aiChatService.sendMessage(message);
       const aiMessage: ChatMessage = {
         ...response,
         role: 'assistant',
-      }
-      setMessages(prev => [...prev, aiMessage])
-      scrollToBottom()
+      };
+      setMessages((prev) => [...prev, aiMessage]);
+      scrollToBottom();
     } catch (error) {
       toast({
         title: 'メッセージの送信に失敗しました',
         variant: 'destructive',
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleSendMessage = () => {
-    sendMessage(inputMessage)
-  }
+    sendMessage(inputMessage);
+  };
 
   const handleQuickAction = (action: QuickAction) => {
-    sendMessage(action.message)
-  }
+    sendMessage(action.message);
+  };
 
   const handleClearChat = async () => {
     try {
-      await aiChatService.clearChatHistory()
-      setMessages([])
+      await aiChatService.clearChatHistory();
+      setMessages([]);
       toast({
         title: '履歴をクリアしました',
-      })
+      });
     } catch (error) {
       toast({
         title: '履歴のクリアに失敗しました',
         variant: 'destructive',
-      })
+      });
     }
-  }
+  };
 
   const handleShowRecommendations = async () => {
     try {
-      const recs = await aiChatService.getRecommendations()
-      setRecommendations(recs)
-      setShowRecommendations(true)
+      const recs = await aiChatService.getRecommendations();
+      setRecommendations(recs);
+      setShowRecommendations(true);
     } catch (error) {
       toast({
         title: 'おすすめの取得に失敗しました',
         variant: 'destructive',
-      })
+      });
     }
-  }
+  };
 
   const scrollToBottom = () => {
     setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true })
-    }, 100)
-  }
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
 
   const renderMessage = (message: ChatMessage) => {
-    const isUser = message.role === 'user'
+    const isUser = message.role === 'user';
     return (
       <View
         key={message.id}
@@ -142,18 +143,15 @@ export const AIChat: React.FC<AIChatProps> = ({ isVisible, onClose }) => {
         ]}
       >
         <View
-          style={[
-            styles.messageBubble,
-            isUser ? styles.userMessageBubble : styles.aiMessageBubble,
-          ]}
+          style={[styles.messageBubble, isUser ? styles.userMessageBubble : styles.aiMessageBubble]}
         >
           <Text style={[styles.messageText, isUser && styles.userMessageText]}>
             {message.content}
           </Text>
         </View>
       </View>
-    )
-  }
+    );
+  };
 
   return (
     <Modal
@@ -190,7 +188,7 @@ export const AIChat: React.FC<AIChatProps> = ({ isVisible, onClose }) => {
         {messages.length === 0 && (
           <View style={styles.quickActionsContainer}>
             <Text style={styles.quickActionsTitle}>よく聞かれる質問</Text>
-            {quickActions.map(action => (
+            {quickActions.map((action) => (
               <TouchableOpacity
                 key={action.id}
                 style={styles.quickActionButton}
@@ -234,9 +232,16 @@ export const AIChat: React.FC<AIChatProps> = ({ isVisible, onClose }) => {
               onPress={handleSendMessage}
               testID="send-message-button"
               disabled={!inputMessage.trim() || isLoading}
-              style={[styles.sendButton, (!inputMessage.trim() || isLoading) && styles.sendButtonDisabled]}
+              style={[
+                styles.sendButton,
+                (!inputMessage.trim() || isLoading) && styles.sendButtonDisabled,
+              ]}
             >
-              <MaterialIcons name="send" size={20} color={inputMessage.trim() && !isLoading ? '#007AFF' : '#ccc'} />
+              <MaterialIcons
+                name="send"
+                size={20}
+                color={inputMessage.trim() && !isLoading ? '#007AFF' : '#ccc'}
+              />
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -258,9 +263,15 @@ export const AIChat: React.FC<AIChatProps> = ({ isVisible, onClose }) => {
                   <MaterialIcons name="close" size={24} color="#333" />
                 </TouchableOpacity>
                 <ScrollView>
-                  <Text style={styles.recommendationSection}>投稿: {recommendations.posts.length}件</Text>
-                  <Text style={styles.recommendationSection}>ユーザー: {recommendations.users.length}人</Text>
-                  <Text style={styles.recommendationSection}>イベント: {recommendations.events.length}件</Text>
+                  <Text style={styles.recommendationSection}>
+                    投稿: {recommendations.posts.length}件
+                  </Text>
+                  <Text style={styles.recommendationSection}>
+                    ユーザー: {recommendations.users.length}人
+                  </Text>
+                  <Text style={styles.recommendationSection}>
+                    イベント: {recommendations.events.length}件
+                  </Text>
                 </ScrollView>
               </View>
             </View>
@@ -268,8 +279,8 @@ export const AIChat: React.FC<AIChatProps> = ({ isVisible, onClose }) => {
         )}
       </SafeAreaView>
     </Modal>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -412,4 +423,4 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: '#666',
   },
-})
+});

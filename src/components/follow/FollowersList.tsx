@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  TouchableOpacity, 
-  Image, 
-  ActivityIndicator,
-  StyleSheet 
-} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Users } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { followService } from '../../lib/followService';
 import { Badge } from '../ui/badge';
-import { Users } from 'lucide-react-native';
 
 interface FollowersListProps {
   userId: string;
@@ -54,11 +54,11 @@ export function FollowersList({ userId, currentUserId }: FollowersListProps) {
     try {
       const result = await followService.getFollowers({
         userId,
-        cursor
+        cursor,
       });
 
       if (cursor) {
-        setFollowers(prev => [...prev, ...result.followers]);
+        setFollowers((prev) => [...prev, ...result.followers]);
       } else {
         setFollowers(result.followers);
       }
@@ -85,12 +85,10 @@ export function FollowersList({ userId, currentUserId }: FollowersListProps) {
         source={{ uri: item.follower.profileImageUrl || 'https://via.placeholder.com/50' }}
         style={styles.profileImage}
       />
-      
+
       <View style={styles.followerInfo}>
         <View style={styles.nameRow}>
-          <Text style={styles.displayName}>
-            {item.follower.displayName}
-          </Text>
+          <Text style={styles.displayName}>{item.follower.displayName}</Text>
           {item.isFollowingBack && (
             <Users
               testID={`mutual-follow-icon-${item.id}`}
@@ -100,12 +98,8 @@ export function FollowersList({ userId, currentUserId }: FollowersListProps) {
             />
           )}
         </View>
-        
-        {item.followReason && (
-          <Text style={styles.followReason}>
-            {item.followReason}
-          </Text>
-        )}
+
+        {item.followReason && <Text style={styles.followReason}>{item.followReason}</Text>}
       </View>
 
       <Badge
@@ -119,9 +113,7 @@ export function FollowersList({ userId, currentUserId }: FollowersListProps) {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>
-        フォロワーはまだいません
-      </Text>
+      <Text style={styles.emptyText}>フォロワーはまだいません</Text>
     </View>
   );
 

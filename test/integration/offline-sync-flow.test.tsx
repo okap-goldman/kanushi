@@ -1,9 +1,9 @@
-import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import AppNavigator from '@/navigation/AppNavigator';
 import { AuthProvider } from '@/context/AuthContext';
+import AppNavigator from '@/navigation/AppNavigator';
 import NetInfo from '@react-native-community/netinfo';
+import { NavigationContainer } from '@react-navigation/native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import React from 'react';
 
 describe('オフライン→オンライン同期テスト', () => {
   it('オフライン時の投稿がオンライン復帰後に送信される', async () => {
@@ -19,7 +19,7 @@ describe('オフライン→オンライン同期テスト', () => {
     // オフラインモードをシミュレート
     jest.spyOn(NetInfo, 'fetch').mockResolvedValue({
       isConnected: false,
-      isInternetReachable: false
+      isInternetReachable: false,
     });
 
     // Act - オフラインで投稿作成
@@ -36,19 +36,22 @@ describe('オフライン→オンライン同期テスト', () => {
     // Act - オンライン復帰
     jest.spyOn(NetInfo, 'fetch').mockResolvedValue({
       isConnected: true,
-      isInternetReachable: true
+      isInternetReachable: true,
     });
 
     // オンライン復帰イベントを発火
     NetInfo.eventEmitter.emit('connectionChange', {
       isConnected: true,
-      isInternetReachable: true
+      isInternetReachable: true,
     });
 
     // Assert - 投稿が送信される
-    await waitFor(() => {
-      expect(getByText('オフライン投稿')).toBeTruthy();
-      expect(getByTestId('sync-indicator')).not.toBeTruthy();
-    }, { timeout: 10000 });
+    await waitFor(
+      () => {
+        expect(getByText('オフライン投稿')).toBeTruthy();
+        expect(getByTestId('sync-indicator')).not.toBeTruthy();
+      },
+      { timeout: 10000 }
+    );
   });
 });

@@ -1,4 +1,4 @@
-import { by, device, element, expect as detoxExpect } from 'detox';
+import { by, expect as detoxExpect, device, element } from 'detox';
 
 describe('E2E: ライブルーム機能', () => {
   beforeAll(async () => {
@@ -78,7 +78,7 @@ describe('E2E: ライブルーム機能', () => {
     // ルーム終了処理
     await element(by.id('room-menu-button')).tap();
     await element(by.text('ルームを終了')).tap();
-    
+
     // 確認ダイアログ
     await detoxExpect(element(by.text('ルームを終了しますか？'))).toBeVisible();
     await element(by.text('終了する')).tap();

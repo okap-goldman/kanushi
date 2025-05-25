@@ -1,9 +1,16 @@
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from './db/client';
-import { orders, orderItems, products, carts, cartItems } from './db/schema';
-import { eq, and, inArray, desc } from 'drizzle-orm';
+import { cartItems, carts, orderItems, orders, products } from './db/schema';
 
 // Types
-export type OrderStatus = 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+export type OrderStatus =
+  | 'pending'
+  | 'paid'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled'
+  | 'refunded';
 
 export interface OrderItem {
   productId: string;
@@ -45,23 +52,17 @@ const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 };
 
 // Create a new order
-export async function createOrder(
-  userId: string,
-  input: CreateOrderInput
-): Promise<any> {
+export async function createOrder(userId: string, input: CreateOrderInput): Promise<any> {
   // Validate products and check stock
-  const productIds = input.items.map(item => item.productId);
-  const productRecords = await db
-    .select()
-    .from(products)
-    .where(inArray(products.id, productIds));
+  const productIds = input.items.map((item) => item.productId);
+  const productRecords = await db.select().from(products).where(inArray(products.id, productIds));
 
   if (productRecords.length !== productIds.length) {
     throw new Error('商品が見つかりません');
   }
 
   // Create a map for quick lookup
-  const productMap = new Map(productRecords.map(p => [p.id, p]));
+  const productMap = new Map(productRecords.map((p) => [p.id, p]));
 
   // Check stock availability
   for (const item of input.items) {
@@ -77,7 +78,7 @@ export async function createOrder(
   // Calculate total amount
   const totalAmount = input.items.reduce((sum, item) => {
     const product = productMap.get(item.productId)!;
-    return sum + parseFloat(product.price) * item.quantity;
+    return sum + Number.parseFloat(product.price) * item.quantity;
   }, 0);
 
   // Create order in transaction
@@ -96,7 +97,7 @@ export async function createOrder(
       .returning();
 
     // Create order items
-    const orderItemsData = input.items.map(item => {
+    const orderItemsData = input.items.map((item) => {
       const product = productMap.get(item.productId)!;
       return {
         orderId: order.id,
@@ -106,10 +107,7 @@ export async function createOrder(
       };
     });
 
-    const createdItems = await tx
-      .insert(orderItems)
-      .values(orderItemsData)
-      .returning();
+    const createdItems = await tx.insert(orderItems).values(orderItemsData).returning();
 
     // Update product stock
     for (const item of input.items) {
@@ -128,17 +126,10 @@ export async function createOrder(
       const [activeCart] = await tx
         .select()
         .from(carts)
-        .where(
-          and(
-            eq(carts.buyerUserId, userId),
-            eq(carts.status, 'active')
-          )
-        );
+        .where(and(eq(carts.buyerUserId, userId), eq(carts.status, 'active')));
 
       if (activeCart) {
-        await tx
-          .delete(cartItems)
-          .where(eq(cartItems.cartId, activeCart.id));
+        await tx.delete(cartItems).where(eq(cartItems.cartId, activeCart.id));
       }
     }
 
@@ -169,13 +160,11 @@ export async function updateOrderStatus(
   }
 
   const order = orderData[0].orders;
-  const orderProducts = orderData
-    .filter(row => row.product)
-    .map(row => row.product!);
+  const orderProducts = orderData.filter((row) => row.product).map((row) => row.product!);
 
   // Check if user is seller of any product in the order
-  const isSeller = orderProducts.some(p => p.sellerUserId === userId);
-  
+  const isSeller = orderProducts.some((p) => p.sellerUserId === userId);
+
   if (!isSeller) {
     throw new Error('この注文のステータスを更新する権限がありません');
   }
@@ -183,7 +172,7 @@ export async function updateOrderStatus(
   // Validate status transition
   const currentStatus = order.status as OrderStatus;
   const validTransitions = VALID_TRANSITIONS[currentStatus];
-  
+
   if (!validTransitions.includes(newStatus)) {
     throw new Error('無効なステータス遷移です');
   }
@@ -208,10 +197,7 @@ export async function updateOrderStatus(
 }
 
 // Get order by ID
-export async function getOrderById(
-  orderId: string,
-  userId: string
-): Promise<any> {
+export async function getOrderById(orderId: string, userId: string): Promise<any> {
   const orderData = await db
     .select()
     .from(orders)
@@ -225,15 +211,15 @@ export async function getOrderById(
 
   const order = orderData[0].orders;
   const items = orderData
-    .filter(row => row.order_item)
-    .map(row => ({
+    .filter((row) => row.order_item)
+    .map((row) => ({
       ...row.order_item!,
       product: row.product,
     }));
 
   // Check if user has access (buyer or seller)
   const isBuyer = order.buyerUserId === userId;
-  const isSeller = items.some(item => item.product?.sellerUserId === userId);
+  const isSeller = items.some((item) => item.product?.sellerUserId === userId);
 
   if (!isBuyer && !isSeller) {
     throw new Error('この注文を表示する権限がありません');
@@ -246,16 +232,8 @@ export async function getOrderById(
 }
 
 // Get orders list
-export async function getOrders(
-  userId: string,
-  filters: OrderFilters = {}
-): Promise<any[]> {
-  const { 
-    status, 
-    asSeller = false, 
-    limit = 20, 
-    offset = 0 
-  } = filters;
+export async function getOrders(userId: string, filters: OrderFilters = {}): Promise<any[]> {
+  const { status, asSeller = false, limit = 20, offset = 0 } = filters;
 
   let query = db
     .select()
@@ -282,17 +260,14 @@ export async function getOrders(
     query = query.where(and(...conditions));
   }
 
-  const orderData = await query
-    .orderBy(desc(orders.createdAt))
-    .limit(limit)
-    .offset(offset);
+  const orderData = await query.orderBy(desc(orders.createdAt)).limit(limit).offset(offset);
 
   // Group by order ID
   const ordersMap = new Map<string, any>();
-  
+
   for (const row of orderData) {
     const orderId = row.orders!.id;
-    
+
     if (!ordersMap.has(orderId)) {
       ordersMap.set(orderId, {
         ...row.orders,
@@ -312,15 +287,9 @@ export async function getOrders(
 }
 
 // Cancel order
-export async function cancelOrder(
-  orderId: string,
-  userId: string
-): Promise<any> {
+export async function cancelOrder(orderId: string, userId: string): Promise<any> {
   // Get order
-  const [order] = await db
-    .select()
-    .from(orders)
-    .where(eq(orders.id, orderId));
+  const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
 
   if (!order) {
     throw new Error('注文が見つかりません');
@@ -350,10 +319,7 @@ export async function cancelOrder(
       .returning();
 
     // Get order items
-    const items = await tx
-      .select()
-      .from(orderItems)
-      .where(eq(orderItems.orderId, orderId));
+    const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, orderId));
 
     // Restore product stock
     for (const item of items) {
@@ -362,7 +328,7 @@ export async function cancelOrder(
         .select({ stock: products.stock })
         .from(products)
         .where(eq(products.id, item.productId));
-      
+
       if (product && product.stock !== null) {
         await tx
           .update(products)
@@ -384,10 +350,7 @@ export async function processPayment(
   paymentData: PaymentData
 ): Promise<any> {
   // Get order
-  const [order] = await db
-    .select()
-    .from(orders)
-    .where(eq(orders.id, orderId));
+  const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
 
   if (!order) {
     throw new Error('注文が見つかりません');
@@ -441,7 +404,7 @@ export async function getSellerOrderStats(userId: string): Promise<{
     };
   }
 
-  const productIds = sellerProducts.map(p => p.id);
+  const productIds = sellerProducts.map((p) => p.id);
 
   // Get order statistics
   const orderStats = await db
@@ -462,7 +425,7 @@ export async function getSellerOrderStats(userId: string): Promise<{
 
   for (const row of orderStats) {
     uniqueOrders.add(row.orders.id);
-    
+
     if (row.orders.status === 'paid') {
       pendingOrders++;
     } else if (row.orders.status === 'processing') {
@@ -471,7 +434,7 @@ export async function getSellerOrderStats(userId: string): Promise<{
 
     // Calculate revenue for this seller's products only
     if (productIds.includes(row.order_item.productId)) {
-      totalRevenue += parseFloat(row.order_item.price) * row.order_item.quantity;
+      totalRevenue += Number.parseFloat(row.order_item.price) * row.order_item.quantity;
     }
   }
 

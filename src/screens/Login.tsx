@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  SafeAreaView,
-} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
+import React, { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../context/AuthContext';
@@ -20,7 +20,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const navigation = useNavigation<any>();
   const { signIn } = useAuth();
 
@@ -35,7 +35,7 @@ export default function Login() {
 
     try {
       const { error } = await signIn(email, password);
-      
+
       if (error) {
         setError(error.message);
       }
@@ -69,7 +69,7 @@ export default function Login() {
 
           <View style={styles.form}>
             {error && <Text style={styles.errorText}>{error}</Text>}
-            
+
             <Input
               label="Email"
               placeholder="Enter your email"
@@ -87,12 +87,7 @@ export default function Login() {
               secureTextEntry
             />
 
-            <Button
-              onPress={handleLogin}
-              disabled={loading}
-              loading={loading}
-              fullWidth
-            >
+            <Button onPress={handleLogin} disabled={loading} loading={loading} fullWidth>
               Sign In
             </Button>
 

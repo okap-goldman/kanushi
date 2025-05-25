@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, Text } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 
 interface TypingIndicatorProps {
   userName?: string;
@@ -45,12 +45,14 @@ export function TypingIndicator({ userName, style, testID }: TypingIndicatorProp
   }, []);
 
   const dotStyle = (animValue: Animated.Value) => ({
-    transform: [{
-      translateY: animValue.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0, -5],
-      }),
-    }],
+    transform: [
+      {
+        translateY: animValue.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, -5],
+        }),
+      },
+    ],
     opacity: animValue.interpolate({
       inputRange: [0, 1],
       outputRange: [0.3, 1],
@@ -59,9 +61,7 @@ export function TypingIndicator({ userName, style, testID }: TypingIndicatorProp
 
   return (
     <View style={[styles.container, style]} testID={testID}>
-      {userName && (
-        <Text style={styles.userName}>{userName} is typing</Text>
-      )}
+      {userName && <Text style={styles.userName}>{userName} is typing</Text>}
       <View style={styles.dotsContainer}>
         <Animated.View style={[styles.dot, dotStyle(dot1Anim)]} testID="typing-dot" />
         <Animated.View style={[styles.dot, dotStyle(dot2Anim)]} testID="typing-dot" />

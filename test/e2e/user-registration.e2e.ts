@@ -71,7 +71,7 @@ describe('User Registration E2E', () => {
     await element(by.id('google-signin-button')).tap();
     await waitFor(element(by.text('表示名を入力してください'))).toBeVisible();
     await element(by.id('display-name-input')).typeText('中断テストユーザー');
-    
+
     // When - アプリをバックグラウンドに移動して再開
     await device.sendToHome();
     await sleep(2000);

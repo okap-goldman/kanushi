@@ -1,5 +1,12 @@
-import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
+import type React from 'react';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  type TextStyle,
+  TouchableOpacity,
+  type ViewStyle,
+} from 'react-native';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -38,12 +45,7 @@ export function Button({
     style,
   ];
 
-  const textStyles = [
-    styles.text,
-    styles[`${variant}Text`],
-    styles[`${size}Text`],
-    textStyle,
-  ];
+  const textStyles = [styles.text, styles[`${variant}Text`], styles[`${size}Text`], textStyle];
 
   return (
     <TouchableOpacity
@@ -54,9 +56,9 @@ export function Button({
       testID={testID}
     >
       {loading ? (
-        <ActivityIndicator 
-          size="small" 
-          color={variant === 'primary' || variant === 'destructive' ? '#FFFFFF' : '#0070F3'} 
+        <ActivityIndicator
+          size="small"
+          color={variant === 'primary' || variant === 'destructive' ? '#FFFFFF' : '#0070F3'}
         />
       ) : (
         <Text style={textStyles}>{children}</Text>
@@ -81,7 +83,7 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.5,
   },
-  
+
   // Variants
   primary: {
     backgroundColor: '#0070F3',
@@ -91,7 +93,7 @@ const styles = StyleSheet.create({
   primaryText: {
     color: '#FFFFFF',
   },
-  
+
   secondary: {
     backgroundColor: '#EEF4FF',
     borderWidth: 1,
@@ -100,7 +102,7 @@ const styles = StyleSheet.create({
   secondaryText: {
     color: '#0070F3',
   },
-  
+
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 1,
@@ -109,14 +111,14 @@ const styles = StyleSheet.create({
   outlineText: {
     color: '#1E293B',
   },
-  
+
   ghost: {
     backgroundColor: 'transparent',
   },
   ghostText: {
     color: '#1E293B',
   },
-  
+
   link: {
     backgroundColor: 'transparent',
     paddingHorizontal: 0,
@@ -126,7 +128,7 @@ const styles = StyleSheet.create({
     color: '#0070F3',
     textDecorationLine: 'underline',
   },
-  
+
   destructive: {
     backgroundColor: '#DC2626',
     borderWidth: 1,
@@ -135,7 +137,7 @@ const styles = StyleSheet.create({
   destructiveText: {
     color: '#FFFFFF',
   },
-  
+
   // Sizes
   sm: {
     paddingHorizontal: 12,
@@ -144,7 +146,7 @@ const styles = StyleSheet.create({
   smText: {
     fontSize: 14,
   },
-  
+
   md: {
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -152,7 +154,7 @@ const styles = StyleSheet.create({
   mdText: {
     fontSize: 16,
   },
-  
+
   lg: {
     paddingHorizontal: 20,
     paddingVertical: 12,

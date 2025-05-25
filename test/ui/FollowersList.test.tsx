@@ -1,5 +1,5 @@
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react-native';
 
 // Mock components
 jest.mock('@/components/ui/FlatList', () => 'FlatList');
@@ -18,24 +18,24 @@ describe('FollowersList Component', () => {
       user: {
         id: 'user-1',
         displayName: 'ユーザー1',
-        profileImageUrl: 'https://example.com/user1.jpg'
+        profileImageUrl: 'https://example.com/user1.jpg',
       },
       followType: 'family',
       followReason: 'テスト理由',
       isFollowingBack: true,
-      createdAt: '2025-05-25T10:00:00Z'
+      createdAt: '2025-05-25T10:00:00Z',
     },
     {
       user: {
         id: 'user-2',
         displayName: 'ユーザー2',
-        profileImageUrl: 'https://example.com/user2.jpg'
+        profileImageUrl: 'https://example.com/user2.jpg',
       },
       followType: 'watch',
       followReason: null,
       isFollowingBack: false,
-      createdAt: '2025-05-25T11:00:00Z'
-    }
+      createdAt: '2025-05-25T11:00:00Z',
+    },
   ];
 
   test('should render followers list', () => {
@@ -43,7 +43,7 @@ describe('FollowersList Component', () => {
     const props = {
       followers: mockFollowers,
       onLoadMore: jest.fn(),
-      onUserPress: jest.fn()
+      onUserPress: jest.fn(),
     };
 
     // When
@@ -61,7 +61,7 @@ describe('FollowersList Component', () => {
     const props = {
       followers: mockFollowers,
       onLoadMore: jest.fn(),
-      onUserPress: jest.fn()
+      onUserPress: jest.fn(),
     };
 
     // When
@@ -78,12 +78,12 @@ describe('FollowersList Component', () => {
     const props = {
       followers: mockFollowers,
       onLoadMore: jest.fn(),
-      onUserPress: mockOnUserPress
+      onUserPress: mockOnUserPress,
     };
 
     // When
     render(<FollowersList {...props} />);
-    
+
     await act(() => {
       fireEvent.press(screen.getByText('ユーザー1'));
     });
@@ -99,7 +99,7 @@ describe('FollowingList Component', () => {
       user: {
         id: 'user-1',
         displayName: 'ユーザー1',
-        profileImageUrl: 'https://example.com/user1.jpg'
+        profileImageUrl: 'https://example.com/user1.jpg',
       },
       followType: 'family',
       followReason: 'テスト理由',
@@ -107,10 +107,10 @@ describe('FollowingList Component', () => {
         id: 'post-1',
         contentType: 'audio',
         textContent: '最新の音声投稿です',
-        createdAt: '2025-05-25T12:00:00Z'
+        createdAt: '2025-05-25T12:00:00Z',
       },
-      createdAt: '2025-05-25T10:00:00Z'
-    }
+      createdAt: '2025-05-25T10:00:00Z',
+    },
   ];
 
   test('should render following list with latest posts', () => {
@@ -119,7 +119,7 @@ describe('FollowingList Component', () => {
       following: mockFollowing,
       onLoadMore: jest.fn(),
       onUserPress: jest.fn(),
-      onPostPress: jest.fn()
+      onPostPress: jest.fn(),
     };
 
     // When
@@ -135,13 +135,17 @@ describe('FollowingList Component', () => {
     // Given
     const mixedFollowing = [
       { ...mockFollowing[0], followType: 'family' },
-      { ...mockFollowing[0], user: { ...mockFollowing[0].user, id: 'user-2' }, followType: 'watch' }
+      {
+        ...mockFollowing[0],
+        user: { ...mockFollowing[0].user, id: 'user-2' },
+        followType: 'watch',
+      },
     ];
     const props = {
       following: mixedFollowing,
       selectedFilter: 'family',
       onFilterChange: jest.fn(),
-      onLoadMore: jest.fn()
+      onLoadMore: jest.fn(),
     };
 
     // When
@@ -149,7 +153,7 @@ describe('FollowingList Component', () => {
 
     // Then
     expect(screen.getByTestId('follow-type-filter-family')).toHaveStyle({
-      backgroundColor: expect.any(String) // アクティブな色
+      backgroundColor: expect.any(String), // アクティブな色
     });
   });
 });

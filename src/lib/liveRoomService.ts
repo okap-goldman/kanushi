@@ -1,5 +1,5 @@
-import { supabase } from './supabase';
 import type { Database } from './db/schema';
+import { supabase } from './supabase';
 
 type Tables = Database['public']['Tables'];
 type LiveRoom = Tables['live_rooms']['Row'];
@@ -43,7 +43,7 @@ interface Gift {
 const GIFT_PRICES = {
   light: 300,
   star: 600,
-  diamond: 1200
+  diamond: 1200,
 };
 
 class LiveRoomService {
@@ -61,7 +61,10 @@ class LiveRoomService {
       throw new Error('最大登壇者数は1-15人の範囲で指定してください');
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       throw new Error('認証が必要です');
     }
@@ -70,14 +73,17 @@ class LiveRoomService {
 
     try {
       // LiveKit Room作成（Edge Function経由）
-      const { data: livekitRoom, error: livekitError } = await supabase.functions.invoke('manage-livekit-room', {
-        body: {
-          action: 'create',
-          roomName,
-          emptyTimeout: 300,
-          maxParticipants: data.maxSpeakers
+      const { data: livekitRoom, error: livekitError } = await supabase.functions.invoke(
+        'manage-livekit-room',
+        {
+          body: {
+            action: 'create',
+            roomName,
+            emptyTimeout: 300,
+            maxParticipants: data.maxSpeakers,
+          },
         }
-      });
+      );
 
       if (livekitError) {
         throw new Error(`LiveKit error: ${livekitError.message}`);
@@ -93,7 +99,7 @@ class LiveRoomService {
           max_speakers: data.maxSpeakers,
           is_recording: data.isRecording,
           participant_count: 0,
-          livekit_room_name: roomName
+          livekit_room_name: roomName,
         })
         .select()
         .single();
@@ -106,7 +112,7 @@ class LiveRoomService {
         id: room.id,
         hostUser: {
           id: user.id,
-          displayName: user.user_metadata?.display_name || 'Unknown'
+          displayName: user.user_metadata?.display_name || 'Unknown',
         },
         title: room.title,
         status: room.status,
@@ -114,10 +120,12 @@ class LiveRoomService {
         isRecording: room.is_recording,
         participantCount: room.participant_count,
         livekitRoomName: room.livekit_room_name,
-        createdAt: room.created_at
+        createdAt: room.created_at,
       };
     } catch (error) {
-      throw new Error(`ルーム作成に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `ルーム作成に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -137,40 +145,44 @@ class LiveRoomService {
     }
 
     // LiveKitトークン生成（Edge Function経由）
-    const { data: tokenData, error: tokenError } = await supabase.functions.invoke('livekit-token', {
-      body: {
-        action: 'join',
-        roomName: room.livekit_room_name,
-        identity,
-        permissions: {
-          canPublish: role === 'speaker',
-          canSubscribe: true
-        }
+    const { data: tokenData, error: tokenError } = await supabase.functions.invoke(
+      'livekit-token',
+      {
+        body: {
+          action: 'join',
+          roomName: room.livekit_room_name,
+          identity,
+          permissions: {
+            canPublish: role === 'speaker',
+            canSubscribe: true,
+          },
+        },
       }
-    });
+    );
 
     if (tokenError) {
       throw new Error('トークン生成に失敗しました');
     }
 
     // 参加者記録
-    await supabase
-      .from('live_room_participants')
-      .upsert({
-        room_id: roomId,
-        user_id: identity,
-        role,
-        joined_at: new Date().toISOString()
-      });
+    await supabase.from('live_room_participants').upsert({
+      room_id: roomId,
+      user_id: identity,
+      role,
+      joined_at: new Date().toISOString(),
+    });
 
     return {
       token: tokenData.token,
-      room
+      room,
     };
   }
 
   async startRoom(roomId: string) {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       throw new Error('認証が必要です');
     }
@@ -193,7 +205,7 @@ class LiveRoomService {
       .from('live_rooms')
       .update({
         status: 'active',
-        started_at: new Date().toISOString()
+        started_at: new Date().toISOString(),
       })
       .eq('id', roomId)
       .select()
@@ -205,12 +217,15 @@ class LiveRoomService {
 
     return {
       status: updatedRoom.status,
-      startedAt: updatedRoom.started_at
+      startedAt: updatedRoom.started_at,
     };
   }
 
   async endRoom(roomId: string, createPost: boolean) {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       throw new Error('認証が必要です');
     }
@@ -234,7 +249,7 @@ class LiveRoomService {
       .from('live_rooms')
       .update({
         status: 'ended',
-        ended_at: new Date().toISOString()
+        ended_at: new Date().toISOString(),
       })
       .eq('id', roomId)
       .select()
@@ -246,10 +261,10 @@ class LiveRoomService {
 
     // LiveKitルーム削除（Edge Function経由）
     await supabase.functions.invoke('manage-livekit-room', {
-      body: { 
+      body: {
         action: 'delete',
-        roomName: room.livekit_room_name 
-      }
+        roomName: room.livekit_room_name,
+      },
     });
 
     let postId = null;
@@ -262,7 +277,7 @@ class LiveRoomService {
           user_id: user.id,
           content: `ライブルーム: ${room.title}`,
           audio_url: room.recording_url,
-          is_public: true
+          is_public: true,
         })
         .select()
         .single();
@@ -275,21 +290,20 @@ class LiveRoomService {
     return {
       status: updatedRoom.status,
       endedAt: updatedRoom.ended_at,
-      postId
+      postId,
     };
   }
 
   async requestToSpeak(roomId: string) {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       throw new Error('認証が必要です');
     }
 
-    const { data: room } = await supabase
-      .from('live_rooms')
-      .select('*')
-      .eq('id', roomId)
-      .single();
+    const { data: room } = await supabase.from('live_rooms').select('*').eq('id', roomId).single();
 
     if (!room || room.status !== 'active') {
       throw new Error('アクティブなルームが見つかりません');
@@ -313,7 +327,7 @@ class LiveRoomService {
       .insert({
         room_id: roomId,
         requester_id: user.id,
-        status: 'pending'
+        status: 'pending',
       })
       .select()
       .single();
@@ -324,12 +338,15 @@ class LiveRoomService {
 
     return {
       id: request.id,
-      status: request.status
+      status: request.status,
     };
   }
 
   async handleSpeakerRequest(requestId: string, approve: boolean) {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       throw new Error('認証が必要です');
     }
@@ -371,7 +388,7 @@ class LiveRoomService {
     }
 
     return {
-      status: updatedRequest.status
+      status: updatedRequest.status,
     };
   }
 
@@ -385,16 +402,15 @@ class LiveRoomService {
       throw new Error('メッセージ送信レートが制限を超えています');
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       throw new Error('認証が必要です');
     }
 
-    const { data: room } = await supabase
-      .from('live_rooms')
-      .select('*')
-      .eq('id', roomId)
-      .single();
+    const { data: room } = await supabase.from('live_rooms').select('*').eq('id', roomId).single();
 
     if (!room || room.status !== 'active') {
       throw new Error('アクティブなルームが見つかりません');
@@ -406,7 +422,7 @@ class LiveRoomService {
       urlPreview = {
         title: 'Example Article',
         description: 'An example article',
-        image: 'https://example.com/image.jpg'
+        image: 'https://example.com/image.jpg',
       };
     }
 
@@ -417,7 +433,7 @@ class LiveRoomService {
         user_id: user.id,
         content,
         shared_url: options?.sharedUrl,
-        url_preview: urlPreview
+        url_preview: urlPreview,
       })
       .select()
       .single();
@@ -432,7 +448,7 @@ class LiveRoomService {
       userId: message.user_id,
       sharedUrl: message.shared_url,
       urlPreview: message.url_preview,
-      createdAt: message.created_at
+      createdAt: message.created_at,
     };
   }
 
@@ -452,7 +468,10 @@ class LiveRoomService {
   }
 
   async sendGift(roomId: string, recipientId: string, giftType: string, quantity: number) {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       throw new Error('認証が必要です');
     }
@@ -462,11 +481,7 @@ class LiveRoomService {
     }
 
     // ルーム確認
-    const { data: room } = await supabase
-      .from('live_rooms')
-      .select('*')
-      .eq('id', roomId)
-      .single();
+    const { data: room } = await supabase.from('live_rooms').select('*').eq('id', roomId).single();
 
     if (!room || room.status !== 'active') {
       throw new Error('アクティブなルームが見つかりません');
@@ -505,7 +520,7 @@ class LiveRoomService {
         recipient_id: recipientId,
         gift_type: giftType,
         quantity,
-        total_amount: totalAmount
+        total_amount: totalAmount,
       })
       .select()
       .single();
@@ -518,7 +533,7 @@ class LiveRoomService {
       id: gift.id,
       giftType: gift.gift_type,
       quantity: gift.quantity,
-      totalAmount: gift.total_amount
+      totalAmount: gift.total_amount,
     };
   }
 
@@ -526,12 +541,12 @@ class LiveRoomService {
   _rateLimitCheck(roomId: string, maxPerMinute: number): boolean {
     const now = Date.now();
     const timestamps = this.rateLimitMap.get(roomId) || [];
-    const recentTimestamps = timestamps.filter(t => now - t < 60000);
-    
+    const recentTimestamps = timestamps.filter((t) => now - t < 60000);
+
     if (recentTimestamps.length >= maxPerMinute) {
       return false;
     }
-    
+
     recentTimestamps.push(now);
     this.rateLimitMap.set(roomId, recentTimestamps);
     return true;

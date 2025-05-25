@@ -1,13 +1,25 @@
-import { supabase } from './supabase';
-import { db } from './db/client';
-import { posts, comments, likes, highlights, bookmarks, hashtags, postHashtags } from './db/schema';
-import { 
-  Post, ApiResponse, ContentType, Comment, Tag,
-  PostCreateInput, PostUpdateInput, DrizzlePost, DrizzleComment, 
-  DrizzleLike, DrizzleHighlight, DrizzleBookmark, DrizzleHashtag,
-  ServiceResult, MediaType, TimelineType
+import { and, desc, eq, inArray } from 'drizzle-orm';
+import {
+  type ApiResponse,
+  type Comment,
+  type ContentType,
+  type DrizzleBookmark,
+  type DrizzleComment,
+  DrizzleHashtag,
+  DrizzleHighlight,
+  DrizzleLike,
+  type DrizzlePost,
+  type MediaType,
+  type Post,
+  type PostCreateInput,
+  PostUpdateInput,
+  type ServiceResult,
+  type Tag,
+  TimelineType,
 } from './data';
-import { eq, and, desc, inArray } from 'drizzle-orm';
+import { db } from './db/client';
+import { bookmarks, comments, hashtags, highlights, likes, postHashtags, posts } from './db/schema';
+import { supabase } from './supabase';
 
 // Constants
 const MAX_TEXT_LENGTH = 10000;
@@ -32,19 +44,29 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
     async createPost(input: PostCreateInput): Promise<ServiceResult<DrizzlePost>> {
       try {
         // Validation
-        if (input.contentType === 'text' && input.textContent && input.textContent.length > MAX_TEXT_LENGTH) {
+        if (
+          input.contentType === 'text' &&
+          input.textContent &&
+          input.textContent.length > MAX_TEXT_LENGTH
+        ) {
           return {
             success: false,
             data: null,
-            error: new Error(`Text content exceeds maximum limit of ${MAX_TEXT_LENGTH} characters`)
+            error: new Error(`Text content exceeds maximum limit of ${MAX_TEXT_LENGTH} characters`),
           };
         }
 
-        if (input.contentType === 'audio' && input.durationSeconds && input.durationSeconds > MAX_AUDIO_DURATION) {
+        if (
+          input.contentType === 'audio' &&
+          input.durationSeconds &&
+          input.durationSeconds > MAX_AUDIO_DURATION
+        ) {
           return {
             success: false,
             data: null,
-            error: new Error(`Audio duration exceeds maximum limit of ${MAX_AUDIO_DURATION} seconds`)
+            error: new Error(
+              `Audio duration exceeds maximum limit of ${MAX_AUDIO_DURATION} seconds`
+            ),
           };
         }
 
@@ -52,27 +74,30 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           return {
             success: false,
             data: null,
-            error: new Error(`Maximum ${MAX_HASHTAGS} hashtags allowed`)
+            error: new Error(`Maximum ${MAX_HASHTAGS} hashtags allowed`),
           };
         }
 
         const result = await dbClient.transaction(async (tx) => {
           // Create post
-          const [createdPost] = await tx.insert(posts).values({
-            userId: input.userId,
-            contentType: input.contentType,
-            textContent: input.textContent || null,
-            mediaUrl: input.mediaUrl || null,
-            previewUrl: input.previewUrl || null,
-            waveformUrl: input.waveformUrl || null,
-            durationSeconds: input.durationSeconds || null,
-            youtubeVideoId: input.youtubeVideoId || null,
-            eventId: input.eventId || null,
-            groupId: input.groupId || null,
-            aiMetadata: null,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }).returning();
+          const [createdPost] = await tx
+            .insert(posts)
+            .values({
+              userId: input.userId,
+              contentType: input.contentType,
+              textContent: input.textContent || null,
+              mediaUrl: input.mediaUrl || null,
+              previewUrl: input.previewUrl || null,
+              waveformUrl: input.waveformUrl || null,
+              durationSeconds: input.durationSeconds || null,
+              youtubeVideoId: input.youtubeVideoId || null,
+              eventId: input.eventId || null,
+              groupId: input.groupId || null,
+              aiMetadata: null,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .returning();
 
           // Handle hashtags if present
           if (input.hashtags && input.hashtags.length > 0) {
@@ -81,20 +106,24 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
             for (const hashtagName of input.hashtags) {
               // Check if hashtag exists
               let existingHashtag = await tx.query.hashtags.findFirst({
-                where: eq(hashtags.name, hashtagName)
+                where: eq(hashtags.name, hashtagName),
               });
 
               if (!existingHashtag) {
                 // Create new hashtag
-                const [newHashtag] = await tx.insert(hashtags).values({
-                  name: hashtagName,
-                  useCount: 1,
-                  createdAt: new Date()
-                }).returning();
+                const [newHashtag] = await tx
+                  .insert(hashtags)
+                  .values({
+                    name: hashtagName,
+                    useCount: 1,
+                    createdAt: new Date(),
+                  })
+                  .returning();
                 existingHashtag = newHashtag;
               } else {
                 // Increment use count
-                await tx.update(hashtags)
+                await tx
+                  .update(hashtags)
                   .set({ useCount: existingHashtag.useCount + 1 })
                   .where(eq(hashtags.id, existingHashtag.id));
               }
@@ -103,10 +132,10 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
             }
 
             // Link hashtags to post
-            const postHashtagData = hashtagIds.map(hashtagId => ({
+            const postHashtagData = hashtagIds.map((hashtagId) => ({
               postId: createdPost.id,
               hashtagId,
-              createdAt: new Date()
+              createdAt: new Date(),
             }));
 
             await tx.insert(postHashtags).values(postHashtagData);
@@ -118,15 +147,14 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
         return {
           success: true,
           data: result,
-          error: null
+          error: null,
         };
-
       } catch (error) {
         console.error('Error creating post:', error);
         return {
           success: false,
           data: null,
-          error: error as Error
+          error: error as Error,
         };
       }
     },
@@ -135,14 +163,14 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
       try {
         // Check if post exists and user owns it
         const existingPost = await dbClient.query.posts.findFirst({
-          where: and(eq(posts.id, postId), eq(posts.deletedAt, null))
+          where: and(eq(posts.id, postId), eq(posts.deletedAt, null)),
         });
 
         if (!existingPost) {
           return {
             success: false,
             data: null,
-            error: new Error('Post not found')
+            error: new Error('Post not found'),
           };
         }
 
@@ -150,30 +178,30 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           return {
             success: false,
             data: null,
-            error: new Error('You do not have permission to delete this post')
+            error: new Error('You do not have permission to delete this post'),
           };
         }
 
         // Soft delete
-        const result = await dbClient.update(posts)
-          .set({ 
+        const result = await dbClient
+          .update(posts)
+          .set({
             deletedAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           })
           .where(eq(posts.id, postId));
 
         return {
           success: true,
           data: result.rowCount > 0,
-          error: null
+          error: null,
         };
-
       } catch (error) {
         console.error('Error deleting post:', error);
         return {
           success: false,
           data: null,
-          error: error as Error
+          error: error as Error,
         };
       }
     },
@@ -182,35 +210,34 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
       try {
         // Check if already liked
         const existingLike = await dbClient.query.likes.findFirst({
-          where: and(eq(likes.postId, postId), eq(likes.userId, userId))
+          where: and(eq(likes.postId, postId), eq(likes.userId, userId)),
         });
 
         if (existingLike) {
           return {
             success: false,
             data: null,
-            error: new Error('Already liked this post')
+            error: new Error('Already liked this post'),
           };
         }
 
         await dbClient.insert(likes).values({
           postId,
           userId,
-          createdAt: new Date()
+          createdAt: new Date(),
         });
 
         return {
           success: true,
           data: true,
-          error: null
+          error: null,
         };
-
       } catch (error) {
         console.error('Error adding like:', error);
         return {
           success: false,
           data: null,
-          error: error as Error
+          error: error as Error,
         };
       }
     },
@@ -219,56 +246,60 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
       try {
         // Check if like exists
         const existingLike = await dbClient.query.likes.findFirst({
-          where: and(eq(likes.postId, postId), eq(likes.userId, userId))
+          where: and(eq(likes.postId, postId), eq(likes.userId, userId)),
         });
 
         if (!existingLike) {
           return {
             success: false,
             data: null,
-            error: new Error('Like not found')
+            error: new Error('Like not found'),
           };
         }
 
-        const result = await dbClient.delete(likes)
+        const result = await dbClient
+          .delete(likes)
           .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
 
         return {
           success: true,
           data: result.rowCount > 0,
-          error: null
+          error: null,
         };
-
       } catch (error) {
         console.error('Error removing like:', error);
         return {
           success: false,
           data: null,
-          error: error as Error
+          error: error as Error,
         };
       }
     },
 
-    async addHighlight(postId: string, userId: string, reason: string): Promise<ServiceResult<boolean>> {
+    async addHighlight(
+      postId: string,
+      userId: string,
+      reason: string
+    ): Promise<ServiceResult<boolean>> {
       try {
         if (!reason || reason.trim() === '') {
           return {
             success: false,
             data: null,
-            error: new Error('Reason is required for highlighting')
+            error: new Error('Reason is required for highlighting'),
           };
         }
 
         // Check if already highlighted
         const existingHighlight = await dbClient.query.highlights.findFirst({
-          where: and(eq(highlights.postId, postId), eq(highlights.userId, userId))
+          where: and(eq(highlights.postId, postId), eq(highlights.userId, userId)),
         });
 
         if (existingHighlight) {
           return {
             success: false,
             data: null,
-            error: new Error('Already highlighted this post')
+            error: new Error('Already highlighted this post'),
           };
         }
 
@@ -276,54 +307,59 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           postId,
           userId,
           reason: reason.trim(),
-          createdAt: new Date()
+          createdAt: new Date(),
         });
 
         return {
           success: true,
           data: true,
-          error: null
+          error: null,
         };
-
       } catch (error) {
         console.error('Error adding highlight:', error);
         return {
           success: false,
           data: null,
-          error: error as Error
+          error: error as Error,
         };
       }
     },
 
-    async addComment(postId: string, userId: string, body: string): Promise<ServiceResult<DrizzleComment>> {
+    async addComment(
+      postId: string,
+      userId: string,
+      body: string
+    ): Promise<ServiceResult<DrizzleComment>> {
       try {
         if (!body || body.trim() === '') {
           return {
             success: false,
             data: null,
-            error: new Error('Comment body cannot be empty')
+            error: new Error('Comment body cannot be empty'),
           };
         }
 
-        const [comment] = await dbClient.insert(comments).values({
-          postId,
-          userId,
-          body: body.trim(),
-          createdAt: new Date()
-        }).returning();
+        const [comment] = await dbClient
+          .insert(comments)
+          .values({
+            postId,
+            userId,
+            body: body.trim(),
+            createdAt: new Date(),
+          })
+          .returning();
 
         return {
           success: true,
           data: comment,
-          error: null
+          error: null,
         };
-
       } catch (error) {
         console.error('Error adding comment:', error);
         return {
           success: false,
           data: null,
-          error: error as Error
+          error: error as Error,
         };
       }
     },
@@ -332,21 +368,20 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
       try {
         const commentsData = await dbClient.query.comments.findMany({
           where: eq(comments.postId, postId),
-          orderBy: [desc(comments.createdAt)]
+          orderBy: [desc(comments.createdAt)],
         });
 
         return {
           success: true,
           data: commentsData,
-          error: null
+          error: null,
         };
-
       } catch (error) {
         console.error('Error getting comments:', error);
         return {
           success: false,
           data: null,
-          error: error as Error
+          error: error as Error,
         };
       }
     },
@@ -355,35 +390,34 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
       try {
         // Check if already bookmarked
         const existingBookmark = await dbClient.query.bookmarks.findFirst({
-          where: and(eq(bookmarks.postId, postId), eq(bookmarks.userId, userId))
+          where: and(eq(bookmarks.postId, postId), eq(bookmarks.userId, userId)),
         });
 
         if (existingBookmark) {
           return {
             success: false,
             data: null,
-            error: new Error('Already bookmarked this post')
+            error: new Error('Already bookmarked this post'),
           };
         }
 
         await dbClient.insert(bookmarks).values({
           postId,
           userId,
-          createdAt: new Date()
+          createdAt: new Date(),
         });
 
         return {
           success: true,
           data: true,
-          error: null
+          error: null,
         };
-
       } catch (error) {
         console.error('Error adding bookmark:', error);
         return {
           success: false,
           data: null,
-          error: error as Error
+          error: error as Error,
         };
       }
     },
@@ -392,32 +426,32 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
       try {
         // Check if bookmark exists
         const existingBookmark = await dbClient.query.bookmarks.findFirst({
-          where: and(eq(bookmarks.postId, postId), eq(bookmarks.userId, userId))
+          where: and(eq(bookmarks.postId, postId), eq(bookmarks.userId, userId)),
         });
 
         if (!existingBookmark) {
           return {
             success: false,
             data: null,
-            error: new Error('Bookmark not found')
+            error: new Error('Bookmark not found'),
           };
         }
 
-        const result = await dbClient.delete(bookmarks)
+        const result = await dbClient
+          .delete(bookmarks)
           .where(and(eq(bookmarks.postId, postId), eq(bookmarks.userId, userId)));
 
         return {
           success: true,
           data: result.rowCount > 0,
-          error: null
+          error: null,
         };
-
       } catch (error) {
         console.error('Error removing bookmark:', error);
         return {
           success: false,
           data: null,
-          error: error as Error
+          error: error as Error,
         };
       }
     },
@@ -426,24 +460,23 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
       try {
         const bookmarksData = await dbClient.query.bookmarks.findMany({
           where: eq(bookmarks.userId, userId),
-          orderBy: [desc(bookmarks.createdAt)]
+          orderBy: [desc(bookmarks.createdAt)],
         });
 
         return {
           success: true,
           data: bookmarksData,
-          error: null
+          error: null,
         };
-
       } catch (error) {
         console.error('Error getting bookmarks:', error);
         return {
           success: false,
           data: null,
-          error: error as Error
+          error: error as Error,
         };
       }
-    }
+    },
   };
 }
 
@@ -489,7 +522,9 @@ export const getPostsByIds = async (ids: string[]): Promise<Post[]> => {
  * Fetches all posts from Supabase
  * @param timeline_type Optional filter for UI segregation (will be handled in memory)
  */
-export const getPosts = async (timeline_type?: 'family' | 'watch' | 'all'): Promise<ApiResponse<Post[]>> => {
+export const getPosts = async (
+  timeline_type?: 'family' | 'watch' | 'all'
+): Promise<ApiResponse<Post[]>> => {
   try {
     const query = supabase
       .from('posts')
@@ -524,17 +559,15 @@ export const getPosts = async (timeline_type?: 'family' | 'watch' | 'all'): Prom
       if (post.content_type !== 'text' && post.text_content) {
         caption = post.text_content;
       }
-      
+
       // Add virtual timeline_type field based on user and content
       // For demonstration, even user_ids are "family" and odd are "watch"
-      const virtual_timeline_type = 
+      const virtual_timeline_type =
         post.user_id.endsWith('1') || post.user_id.endsWith('3') ? 'watch' : 'family';
 
       // Format tags array from the nested structure returned by Supabase
       const tags = post.tags
-        ? post.tags
-            .filter((tag: any) => tag.tag !== null)
-            .map((tag: any) => tag.tag as Tag)
+        ? post.tags.filter((tag: any) => tag.tag !== null).map((tag: any) => tag.tag as Tag)
         : [];
 
       return {
@@ -543,22 +576,22 @@ export const getPosts = async (timeline_type?: 'family' | 'watch' | 'all'): Prom
         author: post.author[0] || {
           id: 'unknown',
           name: '山田健太',
-          image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=yamada'
+          image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=yamada',
         },
         media_type: post.content_type as ContentType,
         content: content,
         caption: caption,
         timeline_type: virtual_timeline_type,
-        tags: tags
+        tags: tags,
       };
     }) as Post[];
 
     // If timeline_type filter is provided, apply it in memory
     if (timeline_type && timeline_type !== 'all') {
-      const filteredPosts = formattedPosts.filter(post => post.timeline_type === timeline_type);
+      const filteredPosts = formattedPosts.filter((post) => post.timeline_type === timeline_type);
       return { data: filteredPosts, error: null };
     }
-    
+
     return { data: formattedPosts, error: null };
   } catch (error) {
     console.error('Error fetching posts:', error);
@@ -604,9 +637,7 @@ export const getPostById = async (id: string): Promise<ApiResponse<Post>> => {
 
     // Format tags array from the nested structure returned by Supabase
     const tags = data.tags
-      ? data.tags
-          .filter((tag: any) => tag.tag !== null)
-          .map((tag: any) => tag.tag as Tag)
+      ? data.tags.filter((tag: any) => tag.tag !== null).map((tag: any) => tag.tag as Tag)
       : [];
 
     const formattedPost = {
@@ -615,12 +646,12 @@ export const getPostById = async (id: string): Promise<ApiResponse<Post>> => {
       author: data.author[0] || {
         id: 'unknown',
         name: '山田健太',
-        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=yamada'
+        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=yamada',
       },
       media_type: data.content_type as ContentType,
       content: content,
       caption: caption,
-      tags: tags
+      tags: tags,
     } as Post;
 
     return { data: formattedPost, error: null };
@@ -634,14 +665,16 @@ export const getPostById = async (id: string): Promise<ApiResponse<Post>> => {
  * Creates a new post
  * @param post Post data without ID
  */
-export const createPost = async (post: Omit<Post, 'id' | 'created_at' | 'updated_at'>): Promise<ApiResponse<Post>> => {
+export const createPost = async (
+  post: Omit<Post, 'id' | 'created_at' | 'updated_at'>
+): Promise<ApiResponse<Post>> => {
   try {
     // Determine content fields based on media_type
     const contentType = post.media_type || post.content_type;
     let mediaUrl = null;
     let audioUrl = null;
     let textContent = post.caption || post.text_content || '';
-    
+
     if (contentType === 'text') {
       textContent = post.content || post.text_content || '';
       // Validate text length for text posts
@@ -658,14 +691,14 @@ export const createPost = async (post: Omit<Post, 'id' | 'created_at' | 'updated
     const { data, error } = await supabase
       .from('posts')
       .insert({
-        user_id: post.author_id || post.user_id, 
+        user_id: post.author_id || post.user_id,
         content_type: contentType,
         text_content: textContent,
         media_url: mediaUrl,
         audio_url: audioUrl,
         thumbnail_url: post.thumbnail_url,
         likes_count: 0,
-        comments_count: 0
+        comments_count: 0,
       })
       .select()
       .single();
@@ -682,52 +715,50 @@ export const createPost = async (post: Omit<Post, 'id' | 'created_at' | 'updated
         if (tag.id) {
           return tag;
         }
-        
+
         // Otherwise, try to find the tag by name or create a new one
         const { data: existingTag, error: findError } = await supabase
           .from('tags')
           .select('id, name')
           .eq('name', tag.name)
           .maybeSingle();
-          
+
         if (findError) {
           console.error('Error finding tag:', findError);
           return null;
         }
-        
+
         if (existingTag) {
           return existingTag;
         }
-        
+
         // Create new tag
         const { data: newTag, error: insertError } = await supabase
           .from('tags')
           .insert({ name: tag.name })
           .select()
           .single();
-          
+
         if (insertError) {
           console.error('Error creating tag:', insertError);
           return null;
         }
-        
+
         return newTag;
       });
-      
+
       const resolvedTags = await Promise.all(tagPromises);
-      const validTags = resolvedTags.filter(tag => tag !== null);
-      
+      const validTags = resolvedTags.filter((tag) => tag !== null);
+
       // Associate tags with the post
       if (validTags.length > 0) {
-        const postTagsData = validTags.map(tag => ({
+        const postTagsData = validTags.map((tag) => ({
           post_id: data.id,
-          tag_id: tag.id
+          tag_id: tag.id,
         }));
-        
-        const { error: linkError } = await supabase
-          .from('post_tags')
-          .insert(postTagsData);
-          
+
+        const { error: linkError } = await supabase.from('post_tags').insert(postTagsData);
+
         if (linkError) {
           console.error('Error linking tags to post:', linkError);
         }
@@ -736,21 +767,25 @@ export const createPost = async (post: Omit<Post, 'id' | 'created_at' | 'updated
 
     // Fetch the post with its tags to return the complete data
     const { data: completedPost, error: fetchError } = await getPostById(data.id);
-    
+
     if (fetchError) {
       console.error('Error fetching completed post:', fetchError);
-      
+
       // If we can't fetch the complete post, at least return what we have
       const formattedPost = {
         ...data,
         author_id: data.user_id,
         media_type: data.content_type as ContentType,
-        content: data.content_type === 'text' ? data.text_content : 
-                (data.content_type === 'audio' ? (data.audio_url || data.media_url) : data.media_url),
+        content:
+          data.content_type === 'text'
+            ? data.text_content
+            : data.content_type === 'audio'
+              ? data.audio_url || data.media_url
+              : data.media_url,
         caption: data.content_type !== 'text' ? data.text_content : undefined,
-        tags: post.tags || []
+        tags: post.tags || [],
       } as unknown as Post;
-      
+
       return { data: formattedPost, error: null };
     }
 
@@ -780,14 +815,14 @@ export const getComments = async (post_id: string): Promise<ApiResponse<Comment[
       throw error;
     }
 
-    const formattedComments = data.map(comment => ({
+    const formattedComments = data.map((comment) => ({
       ...comment,
       author_id: comment.user_id, // Mapping for API compatibility
       author: comment.author[0] || {
         id: 'unknown',
         name: '山田健太',
-        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=yamada'
-      }
+        image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=yamada',
+      },
     })) as Comment[];
 
     return { data: formattedComments, error: null };
@@ -816,7 +851,7 @@ export const createComment = async (
       .insert({
         post_id: comment.post_id,
         user_id: comment.author_id, // Mapping for API compatibility
-        content: comment.content
+        content: comment.content,
       })
       .select()
       .single();
@@ -826,8 +861,9 @@ export const createComment = async (
     }
 
     // Update comment count on the post
-    const { error: updateError } = await supabase
-      .rpc('increment_comment_count', { post_id: comment.post_id });
+    const { error: updateError } = await supabase.rpc('increment_comment_count', {
+      post_id: comment.post_id,
+    });
 
     if (updateError) {
       throw updateError;
@@ -877,25 +913,21 @@ export const toggleLike = async (
       }
 
       // Decrement like count
-      const { error: decrementError } = await supabase
-        .rpc('decrement_like_count', { post_id });
+      const { error: decrementError } = await supabase.rpc('decrement_like_count', { post_id });
 
       if (decrementError) {
         throw decrementError;
       }
     } else {
       // Like: add the like
-      const { error: likeError } = await supabase
-        .from('likes')
-        .insert({ post_id, user_id });
+      const { error: likeError } = await supabase.from('likes').insert({ post_id, user_id });
 
       if (likeError) {
         throw likeError;
       }
 
       // Increment like count
-      const { error: incrementError } = await supabase
-        .rpc('increment_like_count', { post_id });
+      const { error: incrementError } = await supabase.rpc('increment_like_count', { post_id });
 
       if (incrementError) {
         throw incrementError;

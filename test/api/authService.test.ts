@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { authService } from '../../src/lib/authService';
-import { supabase } from '../../src/lib/supabase';
-import { Profile, Account } from '../../src/lib/db/schema/profile';
 import { User } from '@supabase/supabase-js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { authService } from '../../src/lib/authService';
+import { Account, Profile } from '../../src/lib/db/schema/profile';
+import { supabase } from '../../src/lib/supabase';
 
 // モック設定
 vi.mock('../../src/lib/supabase', () => ({
@@ -93,38 +93,38 @@ const createMockAccount = (overrides = {}): Partial<Account> => ({
 const createTestUser = async (overrides = {}) => {
   const mockUser = createMockUser(overrides);
   const mockProfile = createMockProfile(overrides);
-  
+
   // Mock database call
   const mockFrom = vi.mocked(supabase.from);
   mockFrom.mockReturnValue({
     select: vi.fn().mockReturnValue({
       eq: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
-      })
+        single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+      }),
     }),
     insert: vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
-      })
+        single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+      }),
     }),
     update: vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
-    })
+      eq: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+    }),
   } as any);
-  
+
   return { ...mockUser, profile: mockProfile };
 };
 
 const createAuthenticatedUser = async (overrides = {}) => {
   const user = await createTestUser(overrides);
-  
+
   // Mock authenticated session
   const mockAuth = vi.mocked(supabase.auth);
-  mockAuth.getUser.mockResolvedValue({ 
-    data: { user: user as User }, 
-    error: null 
+  mockAuth.getUser.mockResolvedValue({
+    data: { user: user as User },
+    error: null,
   });
-  
+
   return user;
 };
 
@@ -141,7 +141,7 @@ const setupPasskeyUser = async (email: string) => {
   return {
     id: 'mock_credential_id',
     rawId: new ArrayBuffer(32),
-    type: 'public-key' as const
+    type: 'public-key' as const,
   };
 };
 
@@ -150,16 +150,16 @@ const createMockFile = (type: string, size = 1024) => {
 };
 
 const createMockImageFile = (size = 1024) => {
-  return new File(['mock image content'], 'test.jpg', { 
+  return new File(['mock image content'], 'test.jpg', {
     type: 'image/jpeg',
-    size 
+    size,
   } as any);
 };
 
 const createMockAudioFile = (duration = 60, size = 1024) => {
-  const file = new File(['mock audio content'], 'test.mp3', { 
+  const file = new File(['mock audio content'], 'test.mp3', {
     type: 'audio/mpeg',
-    size 
+    size,
   } as any);
   (file as any).duration = duration;
   return file;
@@ -170,7 +170,7 @@ const mockGoogleToken = 'mock_google_token';
 const mockCredential = {
   id: 'mock_credential_id',
   rawId: new ArrayBuffer(32),
-  type: 'public-key' as const
+  type: 'public-key' as const,
 };
 
 describe('認証バイパス機能', () => {
@@ -180,7 +180,7 @@ describe('認証バイパス機能', () => {
     delete process.env.NODE_ENV;
     delete process.env.TEST_FILE;
     delete process.env.DISABLE_AUTO_LOGIN;
-    
+
     // Reset mock services
     mockUserService.getCurrentUser.mockReset();
     mockUserService.updateProfile.mockReset();
@@ -197,14 +197,14 @@ describe('認証バイパス機能', () => {
   it('開発環境で認証バイパスが有効になること', async () => {
     process.env.NODE_ENV = 'development';
     process.env.TEST_FILE = 'post.test.ts';
-    
+
     const result = await authService.checkAutoLogin();
     expect(result.shouldAutoLogin).toBe(true);
   });
 
   it('本番環境では認証バイパスが無効になること', async () => {
     process.env.NODE_ENV = 'production';
-    
+
     const result = await authService.checkAutoLogin();
     expect(result.shouldAutoLogin).toBe(false);
   });
@@ -212,7 +212,7 @@ describe('認証バイパス機能', () => {
   it('認証テスト実行時はバイパスが無効になること', async () => {
     process.env.NODE_ENV = 'development';
     process.env.TEST_FILE = 'authService.test.ts';
-    
+
     const result = await authService.checkAutoLogin();
     expect(result.shouldAutoLogin).toBe(false);
   });
@@ -220,7 +220,7 @@ describe('認証バイパス機能', () => {
   it('認証以外のテストではバイパスが有効になること', async () => {
     process.env.NODE_ENV = 'development';
     process.env.TEST_FILE = 'postService.test.ts';
-    
+
     const result = await authService.checkAutoLogin();
     expect(result.shouldAutoLogin).toBe(true);
   });
@@ -229,7 +229,7 @@ describe('認証バイパス機能', () => {
     process.env.NODE_ENV = 'development';
     process.env.TEST_FILE = 'post.test.ts';
     process.env.DISABLE_AUTO_LOGIN = 'true';
-    
+
     const result = await authService.checkAutoLogin();
     expect(result.shouldAutoLogin).toBe(false);
   });
@@ -243,14 +243,17 @@ describe('Google OAuth Authentication', () => {
       const mockUser = createMockUser({ email: 'test@example.com' });
       const mockProfile = createMockProfile({ email: 'test@example.com' });
       const mockAccount = createMockAccount();
-      
+
       // Mock Supabase auth response
       const mockAuth = vi.mocked(supabase.auth);
       mockAuth.signInWithIdToken.mockResolvedValue({
-        data: { user: mockUser as User, session: { access_token: 'token', refresh_token: 'refresh', expires_in: 3600 } as any },
-        error: null
+        data: {
+          user: mockUser as User,
+          session: { access_token: 'token', refresh_token: 'refresh', expires_in: 3600 } as any,
+        },
+        error: null,
       });
-      
+
       // Mock database calls for new user (no existing profile)
       const mockFrom = vi.mocked(supabase.from);
       mockFrom.mockImplementation((table: string) => {
@@ -258,30 +261,30 @@ describe('Google OAuth Authentication', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: null, error: null }) // No existing profile
-              })
+                single: vi.fn().mockResolvedValue({ data: null, error: null }), // No existing profile
+              }),
             }),
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
-              })
+                single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+              }),
             }),
             update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
-            })
+              eq: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+            }),
           } as any;
         } else if (table === 'accounts') {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: null, error: null }) // No existing account
-              })
+                single: vi.fn().mockResolvedValue({ data: null, error: null }), // No existing account
+              }),
             }),
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: mockAccount, error: null })
-              })
-            })
+                single: vi.fn().mockResolvedValue({ data: mockAccount, error: null }),
+              }),
+            }),
           } as any;
         }
         return {} as any;
@@ -293,7 +296,7 @@ describe('Google OAuth Authentication', () => {
       // Then
       expect(result.user).toMatchObject({
         id: expect.any(String),
-        email: 'test@example.com'
+        email: 'test@example.com',
       });
       expect(result.profile).toBeDefined();
       expect(result.account).toBeDefined();
@@ -306,14 +309,17 @@ describe('Google OAuth Authentication', () => {
       const mockUser = createMockUser({ email: 'existing@example.com' });
       const mockProfile = createMockProfile({ email: 'existing@example.com' });
       const mockAccount = createMockAccount();
-      
+
       // Mock Supabase auth response
       const mockAuth = vi.mocked(supabase.auth);
       mockAuth.signInWithIdToken.mockResolvedValue({
-        data: { user: mockUser as User, session: { access_token: 'token', refresh_token: 'refresh', expires_in: 3600 } as any },
-        error: null
+        data: {
+          user: mockUser as User,
+          session: { access_token: 'token', refresh_token: 'refresh', expires_in: 3600 } as any,
+        },
+        error: null,
       });
-      
+
       // Mock database calls for existing user
       const mockFrom = vi.mocked(supabase.from);
       mockFrom.mockImplementation((table: string) => {
@@ -321,20 +327,20 @@ describe('Google OAuth Authentication', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }) // Existing profile
-              })
+                single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }), // Existing profile
+              }),
             }),
             update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
-            })
+              eq: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+            }),
           } as any;
         } else if (table === 'accounts') {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: mockAccount, error: null }) // Existing account
-              })
-            })
+                single: vi.fn().mockResolvedValue({ data: mockAccount, error: null }), // Existing account
+              }),
+            }),
           } as any;
         }
         return {} as any;
@@ -353,12 +359,12 @@ describe('Google OAuth Authentication', () => {
     it('無効なIDトークンでエラーが発生する', async () => {
       // Given
       const invalidToken = 'invalid_token';
-      
+
       // Mock Supabase auth error response
       const mockAuth = vi.mocked(supabase.auth);
       mockAuth.signInWithIdToken.mockResolvedValue({
         data: { user: null, session: null },
-        error: { message: 'invalid token format' } as any
+        error: { message: 'invalid token format' } as any,
       });
 
       // When
@@ -373,12 +379,12 @@ describe('Google OAuth Authentication', () => {
     it('ネットワークエラーで適切なエラーが発生する', async () => {
       // Given
       const token = 'test_token';
-      
+
       // Mock Supabase auth network error
       const mockAuth = vi.mocked(supabase.auth);
       mockAuth.signInWithIdToken.mockResolvedValue({
         data: { user: null, session: null },
-        error: { message: 'network fetch error' } as any
+        error: { message: 'network fetch error' } as any,
       });
 
       // When
@@ -398,17 +404,21 @@ describe('Google OAuth Authentication', () => {
       const mockUser = createMockUser();
       const mockProfile = createMockProfile();
       const mockAccount = createMockAccount();
-      
+
       // Mock Supabase refresh response
       const mockAuth = vi.mocked(supabase.auth);
       mockAuth.refreshSession.mockResolvedValue({
-        data: { 
-          user: mockUser as User, 
-          session: { access_token: 'new_token', refresh_token: 'new_refresh', expires_in: 3600 } as any 
+        data: {
+          user: mockUser as User,
+          session: {
+            access_token: 'new_token',
+            refresh_token: 'new_refresh',
+            expires_in: 3600,
+          } as any,
         },
-        error: null
+        error: null,
       });
-      
+
       // Mock database calls
       const mockFrom = vi.mocked(supabase.from);
       mockFrom.mockImplementation((table: string) => {
@@ -416,19 +426,19 @@ describe('Google OAuth Authentication', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
-              })
-            })
+                single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+              }),
+            }),
           } as any;
         } else if (table === 'accounts') {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({ data: mockAccount, error: null })
-                })
-              })
-            })
+                  single: vi.fn().mockResolvedValue({ data: mockAccount, error: null }),
+                }),
+              }),
+            }),
           } as any;
         }
         return {} as any;
@@ -447,12 +457,12 @@ describe('Google OAuth Authentication', () => {
     it('無効なリフレッシュトークンでエラーが発生する', async () => {
       // Given
       const invalidRefreshToken = 'invalid_refresh_token';
-      
+
       // Mock Supabase refresh error response
       const mockAuth = vi.mocked(supabase.auth);
       mockAuth.refreshSession.mockResolvedValue({
         data: { user: null, session: null },
-        error: { message: 'refresh token expired' } as any
+        error: { message: 'refresh token expired' } as any,
       });
 
       // When
@@ -474,14 +484,17 @@ describe('Apple Sign-In Authentication', () => {
       const mockUser = createMockUser({ email: 'test@example.com' });
       const mockProfile = createMockProfile({ email: 'test@example.com' });
       const mockAccount = createMockAccount({ accountType: 'apple' });
-      
+
       // Mock Supabase auth response
       const mockAuth = vi.mocked(supabase.auth);
       mockAuth.signInWithIdToken.mockResolvedValue({
-        data: { user: mockUser as User, session: { access_token: 'token', refresh_token: 'refresh', expires_in: 3600 } as any },
-        error: null
+        data: {
+          user: mockUser as User,
+          session: { access_token: 'token', refresh_token: 'refresh', expires_in: 3600 } as any,
+        },
+        error: null,
       });
-      
+
       // Mock database calls
       const mockFrom = vi.mocked(supabase.from);
       mockFrom.mockImplementation((table: string) => {
@@ -489,20 +502,20 @@ describe('Apple Sign-In Authentication', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
-              })
+                single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+              }),
             }),
             update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
-            })
+              eq: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+            }),
           } as any;
         } else if (table === 'accounts') {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: mockAccount, error: null })
-              })
-            })
+                single: vi.fn().mockResolvedValue({ data: mockAccount, error: null }),
+              }),
+            }),
           } as any;
         }
         return {} as any;
@@ -541,19 +554,22 @@ describe('Passkey Authentication', () => {
       const mockCredential = {
         id: 'credential_id',
         rawId: new ArrayBuffer(32),
-        type: 'public-key'
+        type: 'public-key',
       };
       const mockUser = createMockUser({ email });
       const mockProfile = createMockProfile({ email });
       const mockAccount = createMockAccount({ accountType: 'passkey' });
-      
+
       // Mock Supabase auth response for sign up
       const mockAuth = vi.mocked(supabase.auth);
       mockAuth.signUp.mockResolvedValue({
-        data: { user: mockUser as User, session: { access_token: 'token', refresh_token: 'refresh', expires_in: 3600 } as any },
-        error: null
+        data: {
+          user: mockUser as User,
+          session: { access_token: 'token', refresh_token: 'refresh', expires_in: 3600 } as any,
+        },
+        error: null,
       });
-      
+
       // Mock database calls for new user
       const mockFrom = vi.mocked(supabase.from);
       mockFrom.mockImplementation((table: string) => {
@@ -561,22 +577,22 @@ describe('Passkey Authentication', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: null, error: null }) // No existing profile
-              })
+                single: vi.fn().mockResolvedValue({ data: null, error: null }), // No existing profile
+              }),
             }),
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
-              })
-            })
+                single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+              }),
+            }),
           } as any;
         } else if (table === 'accounts') {
           return {
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: mockAccount, error: null })
-              })
-            })
+                single: vi.fn().mockResolvedValue({ data: mockAccount, error: null }),
+              }),
+            }),
           } as any;
         }
         return {} as any;
@@ -596,7 +612,7 @@ describe('Passkey Authentication', () => {
       // Given
       const existingEmail = 'existing@example.com';
       const existingProfile = createMockProfile({ email: existingEmail });
-      
+
       // Mock database call to return existing profile
       const mockFrom = vi.mocked(supabase.from);
       mockFrom.mockImplementation((table: string) => {
@@ -604,9 +620,9 @@ describe('Passkey Authentication', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: existingProfile, error: null })
-              })
-            })
+                single: vi.fn().mockResolvedValue({ data: existingProfile, error: null }),
+              }),
+            }),
           } as any;
         }
         return {} as any;
@@ -630,14 +646,17 @@ describe('Passkey Authentication', () => {
       const mockUser = createMockUser({ email });
       const mockProfile = createMockProfile({ email });
       const mockAccount = createMockAccount({ accountType: 'passkey' });
-      
+
       // Mock Supabase auth response for sign in
       const mockAuth = vi.mocked(supabase.auth);
       mockAuth.signInWithPassword.mockResolvedValue({
-        data: { user: mockUser as User, session: { access_token: 'token', refresh_token: 'refresh', expires_in: 3600 } as any },
-        error: null
+        data: {
+          user: mockUser as User,
+          session: { access_token: 'token', refresh_token: 'refresh', expires_in: 3600 } as any,
+        },
+        error: null,
       });
-      
+
       // Mock database calls
       const mockFrom = vi.mocked(supabase.from);
       mockFrom.mockImplementation((table: string) => {
@@ -645,20 +664,20 @@ describe('Passkey Authentication', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
-              })
+                single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+              }),
             }),
             update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
-            })
+              eq: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+            }),
           } as any;
         } else if (table === 'accounts') {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: mockAccount, error: null })
-              })
-            })
+                single: vi.fn().mockResolvedValue({ data: mockAccount, error: null }),
+              }),
+            }),
           } as any;
         }
         return {} as any;
@@ -689,7 +708,7 @@ describe('User Profile API', () => {
       expect(profile).toMatchObject({
         id: user.id,
         displayName: expect.any(String),
-        email: user.email
+        email: user.email,
       });
     });
 
@@ -698,8 +717,7 @@ describe('User Profile API', () => {
       await authService.signOut();
 
       // When & Then
-      await expect(userService.getCurrentUser())
-        .rejects.toThrow('UNAUTHORIZED');
+      await expect(userService.getCurrentUser()).rejects.toThrow('UNAUTHORIZED');
     });
   });
 
@@ -711,7 +729,7 @@ describe('User Profile API', () => {
         displayName: '新しい表示名',
         profileText: '自己紹介文',
         prefecture: '東京都',
-        city: '渋谷区'
+        city: '渋谷区',
       };
 
       // When
@@ -725,12 +743,11 @@ describe('User Profile API', () => {
       // Given
       const invalidData = {
         displayName: '', // 空文字は無効
-        profileText: 'a'.repeat(1001) // 1000文字制限超過
+        profileText: 'a'.repeat(1001), // 1000文字制限超過
       };
 
       // When & Then
-      await expect(userService.updateProfile(invalidData))
-        .rejects.toThrow('VALIDATION_ERROR');
+      await expect(userService.updateProfile(invalidData)).rejects.toThrow('VALIDATION_ERROR');
     });
 
     it('表示名の重複チェック', async () => {
@@ -739,8 +756,9 @@ describe('User Profile API', () => {
       const user = await createAuthenticatedUser();
 
       // When & Then
-      await expect(userService.updateProfile({ displayName: '既存ユーザー' }))
-        .rejects.toThrow('DISPLAY_NAME_TAKEN');
+      await expect(userService.updateProfile({ displayName: '既存ユーザー' })).rejects.toThrow(
+        'DISPLAY_NAME_TAKEN'
+      );
     });
   });
 });
@@ -765,8 +783,9 @@ describe('Media Upload API', () => {
       const invalidFile = createMockFile('text/plain');
 
       // When & Then
-      await expect(userService.uploadProfileImage(invalidFile))
-        .rejects.toThrow('INVALID_FILE_TYPE');
+      await expect(userService.uploadProfileImage(invalidFile)).rejects.toThrow(
+        'INVALID_FILE_TYPE'
+      );
     });
 
     it('ファイルサイズ制限超過でエラーが発生', async () => {
@@ -774,8 +793,7 @@ describe('Media Upload API', () => {
       const largeFile = createMockImageFile(10 * 1024 * 1024); // 10MB
 
       // When & Then
-      await expect(userService.uploadProfileImage(largeFile))
-        .rejects.toThrow('FILE_TOO_LARGE');
+      await expect(userService.uploadProfileImage(largeFile)).rejects.toThrow('FILE_TOO_LARGE');
     });
   });
 
@@ -797,8 +815,7 @@ describe('Media Upload API', () => {
       const longAudioFile = createMockAudioFile(301); // 5分1秒
 
       // When & Then
-      await expect(userService.uploadIntroAudio(longAudioFile))
-        .rejects.toThrow('AUDIO_TOO_LONG');
+      await expect(userService.uploadIntroAudio(longAudioFile)).rejects.toThrow('AUDIO_TOO_LONG');
     });
   });
 });
@@ -816,7 +833,7 @@ describe('Account Management API', () => {
       // Then
       expect(accounts).toHaveLength(2);
       expect(accounts[0].isActive).toBe(true);
-      expect(accounts.every(acc => acc.switchOrder >= 1 && acc.switchOrder <= 5)).toBe(true);
+      expect(accounts.every((acc) => acc.switchOrder >= 1 && acc.switchOrder <= 5)).toBe(true);
     });
   });
 
@@ -839,8 +856,9 @@ describe('Account Management API', () => {
       const invalidAccountId = 'non-existent-id';
 
       // When & Then
-      await expect(accountService.switchAccount(invalidAccountId))
-        .rejects.toThrow('ACCOUNT_NOT_FOUND');
+      await expect(accountService.switchAccount(invalidAccountId)).rejects.toThrow(
+        'ACCOUNT_NOT_FOUND'
+      );
     });
 
     it('他人のアカウントへの切替でエラーが発生', async () => {
@@ -849,8 +867,7 @@ describe('Account Management API', () => {
       const otherAccount = await createAccount(otherUser.id);
 
       // When & Then
-      await expect(accountService.switchAccount(otherAccount.id))
-        .rejects.toThrow('FORBIDDEN');
+      await expect(accountService.switchAccount(otherAccount.id)).rejects.toThrow('FORBIDDEN');
     });
   });
 
@@ -862,7 +879,7 @@ describe('Account Management API', () => {
       await Promise.all([
         createAdditionalAccount(user.id),
         createAdditionalAccount(user.id),
-        createAdditionalAccount(user.id)
+        createAdditionalAccount(user.id),
       ]);
 
       // When
@@ -877,11 +894,16 @@ describe('Account Management API', () => {
       // Given
       const user = await createAuthenticatedUser();
       // 既に4アカウント追加（合計5アカウント）
-      await Promise.all(Array(4).fill(null).map(() => createAdditionalAccount(user.id)));
+      await Promise.all(
+        Array(4)
+          .fill(null)
+          .map(() => createAdditionalAccount(user.id))
+      );
 
       // When & Then
-      await expect(accountService.addAccount(mockGoogleToken))
-        .rejects.toThrow('ACCOUNT_LIMIT_EXCEEDED');
+      await expect(accountService.addAccount(mockGoogleToken)).rejects.toThrow(
+        'ACCOUNT_LIMIT_EXCEEDED'
+      );
     });
   });
 });
@@ -900,7 +922,7 @@ describe('Notification Settings API', () => {
         comment: true,
         highlight: true,
         follow: true,
-        gift: true
+        gift: true,
       });
     });
   });
@@ -912,7 +934,7 @@ describe('Notification Settings API', () => {
         comment: false,
         highlight: true,
         follow: false,
-        gift: true
+        gift: true,
       };
 
       // When

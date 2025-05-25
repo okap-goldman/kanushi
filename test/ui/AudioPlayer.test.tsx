@@ -1,7 +1,7 @@
-import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
 import AudioPlayer from '@/components/AudioPlayer';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // モックの設定
 vi.mock('expo-av', () => ({
@@ -14,7 +14,7 @@ vi.mock('expo-av', () => ({
           setPositionAsync: vi.fn(),
           unloadAsync: vi.fn(),
         };
-        
+
         // 初期ステータスを送信
         setTimeout(() => {
           onPlaybackStatusUpdate?.({
@@ -24,7 +24,7 @@ vi.mock('expo-av', () => ({
             durationMillis: 180000,
           });
         }, 0);
-        
+
         return { sound: mockSound };
       }),
     },
@@ -67,17 +67,17 @@ describe('AudioPlayer Component', () => {
 
     // 波形画像が表示される
     expect(getByTestId('waveform-image')).toBeTruthy();
-    
+
     // 再生ボタンが表示される
     expect(getByTestId('play-button')).toBeTruthy();
-    
+
     // シークバーが表示される
     expect(getByTestId('seek-bar')).toBeTruthy();
-    
+
     // 時間表示（初期値は0:00と3:00）
     expect(getByText('0:00')).toBeTruthy();
     expect(getByTestId('audio-duration')).toBeTruthy();
-    
+
     // AI要約が表示される
     expect(getByText('これは音声コンテンツの要約です')).toBeTruthy();
   });
@@ -108,9 +108,9 @@ describe('AudioPlayer Component', () => {
       setPositionAsync: vi.fn(),
       unloadAsync: vi.fn(),
     };
-    
+
     (Audio.Sound.createAsync as any).mockResolvedValueOnce({ sound: mockSound });
-    
+
     const { getByTestId } = render(<AudioPlayer post={mockPost} />);
 
     // 最初は再生ボタン
@@ -126,7 +126,7 @@ describe('AudioPlayer Component', () => {
 
     // もう一度クリックすると再生される
     fireEvent.press(getByTestId('play-button'));
-    
+
     await waitFor(() => {
       expect(mockSound.playAsync).toHaveBeenCalled();
     });
@@ -140,26 +140,28 @@ describe('AudioPlayer Component', () => {
       setPositionAsync: vi.fn(),
       unloadAsync: vi.fn(),
     };
-    
-    (Audio.Sound.createAsync as any).mockImplementation(async (source, initialStatus, onPlaybackStatusUpdate) => {
-      // 音声が読み込まれた状態を通知
-      setTimeout(() => {
-        onPlaybackStatusUpdate?.({
-          isLoaded: true,
-          isPlaying: true,
-          positionMillis: 0,
-          durationMillis: 180000,
-        });
-      }, 0);
-      
-      return { sound: mockSound };
-    });
-    
+
+    (Audio.Sound.createAsync as any).mockImplementation(
+      async (source, initialStatus, onPlaybackStatusUpdate) => {
+        // 音声が読み込まれた状態を通知
+        setTimeout(() => {
+          onPlaybackStatusUpdate?.({
+            isLoaded: true,
+            isPlaying: true,
+            positionMillis: 0,
+            durationMillis: 180000,
+          });
+        }, 0);
+
+        return { sound: mockSound };
+      }
+    );
+
     const { getByTestId } = render(<AudioPlayer post={mockPost} />);
 
     // 再生ボタンをクリックして音声を読み込む
     fireEvent.press(getByTestId('play-button'));
-    
+
     await waitFor(() => {
       expect(Audio.Sound.createAsync).toHaveBeenCalled();
     });
@@ -178,9 +180,9 @@ describe('AudioPlayer Component', () => {
       ...mockPost,
       waveformUrl: undefined,
     };
-    
+
     const { queryByTestId } = render(<AudioPlayer post={postWithoutWaveform} />);
-    
+
     expect(queryByTestId('waveform-image')).toBeNull();
   });
 
@@ -189,15 +191,15 @@ describe('AudioPlayer Component', () => {
       ...mockPost,
       aiMetadata: undefined,
     };
-    
+
     const { queryByText } = render(<AudioPlayer post={postWithoutSummary} />);
-    
+
     expect(queryByText('これは音声コンテンツの要約です')).toBeNull();
   });
 
   it('時間が正しくフォーマットされる', () => {
     const { getByText, getByTestId } = render(<AudioPlayer post={mockPost} />);
-    
+
     // 初期状態の時間表示
     expect(getByText('0:00')).toBeTruthy();
     expect(getByTestId('audio-duration').props.children).toBe('3:00');
@@ -205,12 +207,12 @@ describe('AudioPlayer Component', () => {
 
   it('ローディング中はローダーアイコンが表示される', async () => {
     const { Audio } = await import('expo-av');
-    
+
     // createAsyncを遅延させる
-    (Audio.Sound.createAsync as any).mockImplementation(() => 
-      new Promise(resolve => setTimeout(resolve, 100))
+    (Audio.Sound.createAsync as any).mockImplementation(
+      () => new Promise((resolve) => setTimeout(resolve, 100))
     );
-    
+
     const { getByTestId } = render(<AudioPlayer post={mockPost} />);
 
     // 再生ボタンをクリック
@@ -223,10 +225,10 @@ describe('AudioPlayer Component', () => {
   it('エラーが発生してもクラッシュしない', async () => {
     const { Audio } = await import('expo-av');
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     // エラーを発生させる
     (Audio.Sound.createAsync as any).mockRejectedValueOnce(new Error('Failed to load audio'));
-    
+
     const { getByTestId } = render(<AudioPlayer post={mockPost} />);
 
     // 再生ボタンをクリック
@@ -247,14 +249,14 @@ describe('AudioPlayer Component', () => {
       setPositionAsync: vi.fn(),
       unloadAsync: vi.fn(),
     };
-    
+
     (Audio.Sound.createAsync as any).mockResolvedValueOnce({ sound: mockSound });
-    
+
     const { getByTestId, unmount } = render(<AudioPlayer post={mockPost} />);
 
     // 音声を読み込む
     fireEvent.press(getByTestId('play-button'));
-    
+
     await waitFor(() => {
       expect(Audio.Sound.createAsync).toHaveBeenCalled();
     });

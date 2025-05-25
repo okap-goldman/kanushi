@@ -1,23 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { MaterialIcons } from '@expo/vector-icons';
+import type React from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  FlatList,
+  Platform,
+  StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
-  Text,
-  FlatList,
-  StyleSheet,
-  Platform,
-} from 'react-native'
-import { MaterialIcons } from '@expo/vector-icons'
-import { aiChatService, SearchResults } from '../../lib/aiChatService'
-import { useToast } from '../../hooks/use-toast'
+  View,
+} from 'react-native';
+import { useToast } from '../../hooks/use-toast';
+import { type SearchResults, aiChatService } from '../../lib/aiChatService';
 
 interface AISearchBarProps {
-  onSearchResults: (results: SearchResults) => void
-  onAIChatPress: () => void
-  suggestions?: string[]
-  debounceDelay?: number
+  onSearchResults: (results: SearchResults) => void;
+  onAIChatPress: () => void;
+  suggestions?: string[];
+  debounceDelay?: number;
 }
 
 export const AISearchBar: React.FC<AISearchBarProps> = ({
@@ -26,75 +27,84 @@ export const AISearchBar: React.FC<AISearchBarProps> = ({
   suggestions = [],
   debounceDelay = 300,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null)
-  const { toast } = useToast()
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  const { toast } = useToast();
 
-  const performSearch = useCallback(async (query: string) => {
-    if (!query.trim()) return
+  const performSearch = useCallback(
+    async (query: string) => {
+      if (!query.trim()) return;
 
-    setIsLoading(true)
-    try {
-      const results = await aiChatService.searchContent(query)
-      onSearchResults(results)
-    } catch (error) {
-      toast({
-        title: '検索に失敗しました',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }, [onSearchResults, toast])
+      setIsLoading(true);
+      try {
+        const results = await aiChatService.searchContent(query);
+        onSearchResults(results);
+      } catch (error) {
+        toast({
+          title: '検索に失敗しました',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [onSearchResults, toast]
+  );
 
   const handleSearchSubmit = useCallback(() => {
     if (debounceTimer) {
-      clearTimeout(debounceTimer)
-      setDebounceTimer(null)
+      clearTimeout(debounceTimer);
+      setDebounceTimer(null);
     }
-    performSearch(searchQuery)
-    setShowSuggestions(false)
-  }, [searchQuery, debounceTimer, performSearch])
+    performSearch(searchQuery);
+    setShowSuggestions(false);
+  }, [searchQuery, debounceTimer, performSearch]);
 
-  const handleTextChange = useCallback((text: string) => {
-    setSearchQuery(text)
+  const handleTextChange = useCallback(
+    (text: string) => {
+      setSearchQuery(text);
 
-    if (debounceTimer) {
-      clearTimeout(debounceTimer)
-    }
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
 
-    if (debounceDelay > 0 && text.trim()) {
-      const timer = setTimeout(() => {
-        performSearch(text)
-      }, debounceDelay)
-      setDebounceTimer(timer)
-    }
-  }, [debounceDelay, debounceTimer, performSearch])
+      if (debounceDelay > 0 && text.trim()) {
+        const timer = setTimeout(() => {
+          performSearch(text);
+        }, debounceDelay);
+        setDebounceTimer(timer);
+      }
+    },
+    [debounceDelay, debounceTimer, performSearch]
+  );
 
   const handleClear = useCallback(() => {
-    setSearchQuery('')
-    setShowSuggestions(false)
+    setSearchQuery('');
+    setShowSuggestions(false);
     if (debounceTimer) {
-      clearTimeout(debounceTimer)
-      setDebounceTimer(null)
+      clearTimeout(debounceTimer);
+      setDebounceTimer(null);
     }
-  }, [debounceTimer])
+  }, [debounceTimer]);
 
-  const handleSuggestionPress = useCallback((suggestion: string) => {
-    setSearchQuery(suggestion)
-    setShowSuggestions(false)
-    performSearch(suggestion)
-  }, [performSearch])
+  const handleSuggestionPress = useCallback(
+    (suggestion: string) => {
+      setSearchQuery(suggestion);
+      setShowSuggestions(false);
+      performSearch(suggestion);
+    },
+    [performSearch]
+  );
 
   useEffect(() => {
     return () => {
       if (debounceTimer) {
-        clearTimeout(debounceTimer)
+        clearTimeout(debounceTimer);
       }
-    }
-  }, [debounceTimer])
+    };
+  }, [debounceTimer]);
 
   return (
     <View style={styles.container}>
@@ -128,11 +138,7 @@ export const AISearchBar: React.FC<AISearchBarProps> = ({
             style={styles.loadingIndicator}
           />
         )}
-        <TouchableOpacity
-          onPress={onAIChatPress}
-          testID="ai-chat-button"
-          style={styles.aiButton}
-        >
+        <TouchableOpacity onPress={onAIChatPress} testID="ai-chat-button" style={styles.aiButton}>
           <MaterialIcons name="chat" size={24} color="#007AFF" />
         </TouchableOpacity>
       </View>
@@ -155,8 +161,8 @@ export const AISearchBar: React.FC<AISearchBarProps> = ({
         </View>
       )}
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -231,4 +237,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
-})
+});

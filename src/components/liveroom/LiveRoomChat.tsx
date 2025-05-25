@@ -1,18 +1,18 @@
+import { liveRoomService } from '@/lib/liveRoomService';
+import { Link, Send } from 'lucide-react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  Modal,
+  View,
 } from 'react-native';
-import { liveRoomService } from '@/lib/liveRoomService';
-import { Send, Link } from 'lucide-react-native';
 
 interface Message {
   id: string;
@@ -52,7 +52,7 @@ export function LiveRoomChat({ roomId, userId, userName, newMessage }: LiveRoomC
 
   useEffect(() => {
     if (newMessage) {
-      setMessages(prev => [newMessage, ...prev]);
+      setMessages((prev) => [newMessage, ...prev]);
     }
   }, [newMessage]);
 
@@ -76,7 +76,7 @@ export function LiveRoomChat({ roomId, userId, userName, newMessage }: LiveRoomC
     try {
       const options = sharedUrl ? { sharedUrl } : undefined;
       const message = await liveRoomService.sendChatMessage(roomId, messageText, options);
-      
+
       // ローカルに即座に追加
       const localMessage: Message = {
         id: message.id,
@@ -87,10 +87,10 @@ export function LiveRoomChat({ roomId, userId, userName, newMessage }: LiveRoomC
         shared_url: message.sharedUrl,
         url_preview: message.urlPreview,
       };
-      
-      setMessages(prev => [...prev, localMessage]);
+
+      setMessages((prev) => [...prev, localMessage]);
       setSharedUrl('');
-      
+
       // スクロール
       setTimeout(() => {
         flatListRef.current?.scrollToEnd();
@@ -114,9 +114,7 @@ export function LiveRoomChat({ roomId, userId, userName, newMessage }: LiveRoomC
 
     return (
       <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
-        <Text style={styles.userName}>
-          {item.user?.display_name || 'Unknown'}
-        </Text>
+        <Text style={styles.userName}>{item.user?.display_name || 'Unknown'}</Text>
         <View style={[styles.messageBubble, isOwnMessage && styles.ownMessageBubble]}>
           <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
             {item.content}
@@ -158,7 +156,7 @@ export function LiveRoomChat({ roomId, userId, userName, newMessage }: LiveRoomC
         ref={flatListRef}
         data={messages}
         renderItem={renderMessage}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messagesList}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
       />
@@ -171,7 +169,7 @@ export function LiveRoomChat({ roomId, userId, userName, newMessage }: LiveRoomC
         >
           <Link size={20} color="#666" />
         </TouchableOpacity>
-        
+
         <TextInput
           style={styles.input}
           placeholder="メッセージを入力..."
@@ -180,7 +178,7 @@ export function LiveRoomChat({ roomId, userId, userName, newMessage }: LiveRoomC
           multiline
           maxLength={500}
         />
-        
+
         <TouchableOpacity
           onPress={handleSend}
           testID="send-button"

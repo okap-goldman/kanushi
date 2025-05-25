@@ -1,5 +1,5 @@
-import React from 'react';
-import { ScrollView, ScrollViewProps, StyleSheet } from 'react-native';
+import type React from 'react';
+import { ScrollView, type ScrollViewProps, StyleSheet } from 'react-native';
 
 interface ScrollAreaProps extends ScrollViewProps {
   children?: React.ReactNode;

@@ -10,10 +10,19 @@ Kanushi（かぬし）は「目醒め人のためのSNS」です。音声コン�
 ### 開発
 ```bash
 # 開発サーバーを起動
-npm run web
+npm run web          # Web版開発サーバー
+npm run ios          # iOS Simulator
+npm run android      # Android Emulator
 
-# 型チェックとLintを実行
-npm run check
+# コード品質チェック
+npm run check        # TypeScript型チェック + Biome lint/format
+
+# テスト実行
+npm test             # 全テスト実行
+npm run test:ui      # Vitest UIモード
+npm run test:api     # APIテスト（単体テスト）のみ実行
+npm run test:integration # 結合テストのみ実行
+npm run test:e2e     # E2Eテストのみ実行
 
 # データベース操作
 npm run db:generate  # スキーマ変更からマイグレーションを生成
@@ -86,9 +95,48 @@ supabase/
 - 重要なユーザーフローのエンドツーエンドテスト
 - コードカバレッジ80%を目標
 
-## 現在の実装状況
-詳細なフェーズ状況については `doc/implementation-plan.md` を参照してください。現在フェーズ2（コア機能）です。
+## 関連ドキュメント
+
+### 設計・仕様書
+- `doc/requirements.yaml` - 要件定義書
+- `doc/architecture.md` - システムアーキテクチャ
+- `doc/er_diagram.md` - データベース設計
+- `doc/screen_flow.md` - 画面遷移設計
+- `doc/usecase.md` - ユースケース定義
+- `doc/openapi.yaml` - API仕様書
+
+### 実装計画・進捗
+- `doc/implementation-plan.md` - 実装計画書（フェーズ別進捗状況）
+- `doc/progress.md` - 詳細進捗記録
+
+### シーケンス図
+- `doc/sequences/01_auth_account.md` - 認証・アカウント管理
+- `doc/sequences/02_timeline_post.md` - タイムライン・投稿機能
+- `doc/sequences/03_follow.md` - フォロー機能
+- `doc/sequences/04_liveroom.md` - ライブルーム機能
+- `doc/sequences/05_direct_message.md` - ダイレクトメッセージ
+- `doc/sequences/06_event.md` - イベント機能
+- `doc/sequences/07_shop_ec.md` - ショップ・EC機能
+- `doc/sequences/08_group.md` - グループ機能
+- `doc/sequences/09_ai_search.md` - AIチャット・検索機能
+- `doc/sequences/10_stories.md` - ストーリーズ機能
+- `doc/sequences/11_notification.md` - 通知機能
+
+### テスト仕様書
+- `doc/test-specs/01_auth-account-test-spec.md` - 認証・アカウント管理テスト
+- `doc/test-specs/02_timeline-post-test-spec.md` - タイムライン・投稿テスト
+- `doc/test-specs/03_follow-function-test-spec.md` - フォロー機能テスト
+- `doc/test-specs/04_liveroom_test_specification.md` - ライブルームテスト
+- `doc/test-specs/05_test_specification_dm.md` - DMテスト
+- `doc/test-specs/06_test-specification-event.md` - イベントテスト
+- `doc/test-specs/07_test_specification_shop_ec.md` - ショップ・ECテスト
+- `doc/test-specs/08_group_test_spec.md` - グループテスト
+- `doc/test-specs/09_test_specification_ai_search.md` - AIチャット・検索テスト
+- `doc/test-specs/10_stories_test_spec.md` - ストーリーズテスト
+- `doc/test-specs/11_notification_test_spec.md` - 通知テスト
 
 ## 重要な注意事項
-- 作業開始前に @doc/ を確認
-- 作業完了後は @doc/implementation-plan.md と @doc/progress を更新
+- 作業完了後は `doc/implementation-plan.md` を更新
+- Biome設定: セミコロン必須、シングルクォート、インデント2スペース
+- テスト実装時は対応するtest仕様書（`doc/test-specs/`）を参照
+- データベーススキーマ変更時は必ず型生成とマイグレーション実行

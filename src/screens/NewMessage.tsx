@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  SafeAreaView,
-  TextInput,
-} from 'react-native';
-import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { Image } from 'expo-image';
+import React, { useState } from 'react';
+import {
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 // Sample user data for contacts
 const SAMPLE_CONTACTS = [
@@ -69,18 +69,17 @@ export default function NewMessage() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const navigation = useNavigation<any>();
 
-  const filteredContacts = SAMPLE_CONTACTS.filter(contact => {
+  const filteredContacts = SAMPLE_CONTACTS.filter((contact) => {
     const query = searchQuery.toLowerCase();
     return (
-      contact.name.toLowerCase().includes(query) ||
-      contact.username.toLowerCase().includes(query)
+      contact.name.toLowerCase().includes(query) || contact.username.toLowerCase().includes(query)
     );
   });
 
   const handleUserSelection = (userId: string) => {
     // If user is already selected, remove them
     if (selectedUsers.includes(userId)) {
-      setSelectedUsers(selectedUsers.filter(id => id !== userId));
+      setSelectedUsers(selectedUsers.filter((id) => id !== userId));
     } else {
       // Otherwise, add them to selection
       setSelectedUsers([...selectedUsers, userId]);
@@ -89,11 +88,11 @@ export default function NewMessage() {
 
   const handleStartConversation = () => {
     if (selectedUsers.length === 0) return;
-    
+
     // For simplicity, we'll just navigate to the first selected user's message detail
     const selectedUserId = selectedUsers[0];
-    const selectedUser = SAMPLE_CONTACTS.find(contact => contact.id === selectedUserId);
-    
+    const selectedUser = SAMPLE_CONTACTS.find((contact) => contact.id === selectedUserId);
+
     if (selectedUser) {
       navigation.navigate('MessageDetail', {
         user: {
@@ -107,23 +106,19 @@ export default function NewMessage() {
 
   const renderContactItem = ({ item }: { item: any }) => {
     const isSelected = selectedUsers.includes(item.id);
-    
+
     return (
       <TouchableOpacity
         style={[styles.contactItem, isSelected && styles.selectedContactItem]}
         onPress={() => handleUserSelection(item.id)}
       >
-        <Image
-          source={{ uri: item.avatar }}
-          style={styles.avatar}
-          contentFit="cover"
-        />
-        
+        <Image source={{ uri: item.avatar }} style={styles.avatar} contentFit="cover" />
+
         <View style={styles.contactInfo}>
           <Text style={styles.contactName}>{item.name}</Text>
           <Text style={styles.contactUsername}>@{item.username}</Text>
         </View>
-        
+
         <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
           {isSelected && <Feather name="check" size={14} color="#FFFFFF" />}
         </View>
@@ -134,20 +129,14 @@ export default function NewMessage() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color="#1A202C" />
         </TouchableOpacity>
-        
+
         <Text style={styles.title}>New Message</Text>
-        
+
         <TouchableOpacity
-          style={[
-            styles.nextButton,
-            selectedUsers.length === 0 && styles.nextButtonDisabled,
-          ]}
+          style={[styles.nextButton, selectedUsers.length === 0 && styles.nextButtonDisabled]}
           onPress={handleStartConversation}
           disabled={selectedUsers.length === 0}
         >
@@ -181,9 +170,7 @@ export default function NewMessage() {
 
         {selectedUsers.length > 0 && (
           <View style={styles.selectedUsersContainer}>
-            <Text style={styles.selectedUsersText}>
-              Selected: {selectedUsers.length}
-            </Text>
+            <Text style={styles.selectedUsersText}>Selected: {selectedUsers.length}</Text>
           </View>
         )}
       </View>
@@ -191,7 +178,7 @@ export default function NewMessage() {
       <FlatList
         data={filteredContacts}
         renderItem={renderContactItem}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.contactsList}
       />
     </SafeAreaView>

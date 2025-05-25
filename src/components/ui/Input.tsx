@@ -1,12 +1,12 @@
 import React from 'react';
 import {
-  TextInput,
-  View,
-  Text,
+  type TextInputProps as RNTextInputProps,
   StyleSheet,
-  ViewStyle,
-  TextStyle,
-  TextInputProps as RNTextInputProps,
+  Text,
+  TextInput,
+  type TextStyle,
+  View,
+  type ViewStyle,
 } from 'react-native';
 
 interface InputProps extends RNTextInputProps {
@@ -31,11 +31,7 @@ export function Input({
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={[styles.label, labelStyle]}>{label}</Text>}
       <TextInput
-        style={[
-          styles.input,
-          error ? styles.inputError : null,
-          inputStyle,
-        ]}
+        style={[styles.input, error ? styles.inputError : null, inputStyle]}
         placeholderTextColor="#A0AEC0"
         autoCapitalize="none"
         {...props}

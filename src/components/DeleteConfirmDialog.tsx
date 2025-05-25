@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import React from 'react';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from './ui/Button';
 
 interface DeleteConfirmDialogProps {
@@ -16,24 +16,19 @@ export function DeleteConfirmDialog({
   onConfirm,
   onCancel,
   title = '投稿を削除しますか？',
-  message = 'この操作は取り消せません。'
+  message = 'この操作は取り消せません。',
 }: DeleteConfirmDialogProps) {
   return (
-    <Modal
-      visible={visible}
-      animationType="fade"
-      transparent={true}
-      onRequestClose={onCancel}
-    >
+    <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onCancel}>
       <View style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.iconContainer}>
             <Feather name="alert-triangle" size={40} color="#EF4444" />
           </View>
-          
+
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
-          
+
           <View style={styles.buttonContainer}>
             <Button
               variant="outline"
@@ -43,7 +38,7 @@ export function DeleteConfirmDialog({
             >
               キャンセル
             </Button>
-            
+
             <Button
               variant="destructive"
               onPress={onConfirm}

@@ -1,23 +1,27 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { createFollowService, FollowService } from '../../src/lib/followService';
-import type { 
-  FollowCreateInput, FollowUpdateInput, FollowType, FollowStatus,
-  DrizzleFollow, ServiceResult 
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type {
+  DrizzleFollow,
+  FollowCreateInput,
+  FollowStatus,
+  FollowType,
+  FollowUpdateInput,
+  ServiceResult,
 } from '../../src/lib/data';
+import { FollowService, createFollowService } from '../../src/lib/followService';
 
 // Mock Supabase client
 const mockSupabaseClient = {
   from: vi.fn(),
   storage: {
-    from: vi.fn()
+    from: vi.fn(),
   },
   auth: {
-    getUser: vi.fn()
+    getUser: vi.fn(),
   },
-  rpc: vi.fn()
+  rpc: vi.fn(),
 };
 
-// Mock database client  
+// Mock database client
 const mockDb = {
   select: vi.fn(),
   insert: vi.fn(),
@@ -26,14 +30,14 @@ const mockDb = {
   query: {
     follows: {
       findMany: vi.fn(),
-      findFirst: vi.fn()
+      findFirst: vi.fn(),
     },
     profiles: {
       findFirst: vi.fn(),
-      findMany: vi.fn()
-    }
+      findMany: vi.fn(),
+    },
   },
-  transaction: vi.fn()
+  transaction: vi.fn(),
 };
 
 describe('FollowService - フォロー作成機能', () => {
@@ -56,7 +60,7 @@ describe('FollowService - フォロー作成機能', () => {
         followerId: mockFollowerId,
         followeeId: mockFolloweeId,
         followType: 'family' as FollowType,
-        followReason: 'とても価値のあるコンテンツを提供してくれるから'
+        followReason: 'とても価値のあるコンテンツを提供してくれるから',
       };
 
       const mockCreatedFollow = {
@@ -68,7 +72,7 @@ describe('FollowService - フォロー作成機能', () => {
         followReason: followInput.followReason,
         createdAt: new Date(),
         unfollowedAt: null,
-        unfollowReason: null
+        unfollowReason: null,
       };
 
       // Mock existing follow check
@@ -77,20 +81,22 @@ describe('FollowService - フォロー作成機能', () => {
       // Mock self-follow check (different users)
       mockDb.insert.mockReturnValue({
         values: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([mockCreatedFollow])
-        })
+          returning: vi.fn().mockResolvedValue([mockCreatedFollow]),
+        }),
       });
 
       const result = await followService.createFollow(followInput);
 
       expect(result.success).toBe(true);
-      expect(result.data).toEqual(expect.objectContaining({
-        followerId: mockFollowerId,
-        followeeId: mockFolloweeId,
-        followType: 'family',
-        followReason: followInput.followReason,
-        status: 'active'
-      }));
+      expect(result.data).toEqual(
+        expect.objectContaining({
+          followerId: mockFollowerId,
+          followeeId: mockFolloweeId,
+          followType: 'family',
+          followReason: followInput.followReason,
+          status: 'active',
+        })
+      );
       expect(result.error).toBeNull();
     });
 
@@ -98,7 +104,7 @@ describe('FollowService - フォロー作成機能', () => {
       const followInput: FollowCreateInput = {
         followerId: mockFollowerId,
         followeeId: mockFolloweeId,
-        followType: 'family' as FollowType
+        followType: 'family' as FollowType,
         // followReason: なし
       };
 
@@ -116,7 +122,7 @@ describe('FollowService - フォロー作成機能', () => {
       const followInput: FollowCreateInput = {
         followerId: mockFollowerId,
         followeeId: mockFolloweeId,
-        followType: 'watch' as FollowType
+        followType: 'watch' as FollowType,
       };
 
       const mockCreatedFollow = {
@@ -128,26 +134,28 @@ describe('FollowService - フォロー作成機能', () => {
         followReason: null,
         createdAt: new Date(),
         unfollowedAt: null,
-        unfollowReason: null
+        unfollowReason: null,
       };
 
       mockDb.query.follows.findFirst.mockResolvedValue(null);
       mockDb.insert.mockReturnValue({
         values: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([mockCreatedFollow])
-        })
+          returning: vi.fn().mockResolvedValue([mockCreatedFollow]),
+        }),
       });
 
       const result = await followService.createFollow(followInput);
 
       expect(result.success).toBe(true);
-      expect(result.data).toEqual(expect.objectContaining({
-        followerId: mockFollowerId,
-        followeeId: mockFolloweeId,
-        followType: 'watch',
-        followReason: null,
-        status: 'active'
-      }));
+      expect(result.data).toEqual(
+        expect.objectContaining({
+          followerId: mockFollowerId,
+          followeeId: mockFolloweeId,
+          followType: 'watch',
+          followReason: null,
+          status: 'active',
+        })
+      );
       expect(result.error).toBeNull();
     });
 
@@ -156,7 +164,7 @@ describe('FollowService - フォロー作成機能', () => {
         followerId: mockFollowerId,
         followeeId: mockFolloweeId,
         followType: 'watch' as FollowType,
-        followReason: '興味深い内容が多いから'
+        followReason: '興味深い内容が多いから',
       };
 
       const mockCreatedFollow = {
@@ -168,14 +176,14 @@ describe('FollowService - フォロー作成機能', () => {
         followReason: followInput.followReason,
         createdAt: new Date(),
         unfollowedAt: null,
-        unfollowReason: null
+        unfollowReason: null,
       };
 
       mockDb.query.follows.findFirst.mockResolvedValue(null);
       mockDb.insert.mockReturnValue({
         values: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([mockCreatedFollow])
-        })
+          returning: vi.fn().mockResolvedValue([mockCreatedFollow]),
+        }),
       });
 
       const result = await followService.createFollow(followInput);
@@ -191,7 +199,7 @@ describe('FollowService - フォロー作成機能', () => {
       const followInput: FollowCreateInput = {
         followerId: mockFollowerId,
         followeeId: mockFolloweeId,
-        followType: 'watch' as FollowType
+        followType: 'watch' as FollowType,
       };
 
       const existingFollow = {
@@ -203,7 +211,7 @@ describe('FollowService - フォロー作成機能', () => {
         followReason: null,
         createdAt: new Date(),
         unfollowedAt: null,
-        unfollowReason: null
+        unfollowReason: null,
       };
 
       mockDb.query.follows.findFirst.mockResolvedValue(existingFollow);
@@ -220,7 +228,7 @@ describe('FollowService - フォロー作成機能', () => {
       const selfFollowInput: FollowCreateInput = {
         followerId: mockFollowerId,
         followeeId: mockFollowerId, // 同じユーザーID
-        followType: 'watch' as FollowType
+        followType: 'watch' as FollowType,
       };
 
       const result = await followService.createFollow(selfFollowInput);
@@ -255,14 +263,14 @@ describe('FollowService - アンフォロー機能', () => {
         followReason: '以前の理由',
         createdAt: new Date(),
         unfollowedAt: null,
-        unfollowReason: null
+        unfollowReason: null,
       };
 
       mockDb.query.follows.findFirst.mockResolvedValue(existingFollow);
       mockDb.update.mockReturnValue({
         set: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue({ rowCount: 1 })
-        })
+          where: vi.fn().mockResolvedValue({ rowCount: 1 }),
+        }),
       });
 
       const result = await followService.unfollow(mockFollowId, mockFollowerId, unfollowReason);
@@ -282,14 +290,14 @@ describe('FollowService - アンフォロー機能', () => {
         followReason: null,
         createdAt: new Date(),
         unfollowedAt: null,
-        unfollowReason: null
+        unfollowReason: null,
       };
 
       mockDb.query.follows.findFirst.mockResolvedValue(existingFollow);
       mockDb.update.mockReturnValue({
         set: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue({ rowCount: 1 })
-        })
+          where: vi.fn().mockResolvedValue({ rowCount: 1 }),
+        }),
       });
 
       const result = await followService.unfollow(mockFollowId, mockFollowerId);
@@ -322,7 +330,7 @@ describe('FollowService - アンフォロー機能', () => {
         followReason: null,
         createdAt: new Date(),
         unfollowedAt: null,
-        unfollowReason: null
+        unfollowReason: null,
       };
 
       mockDb.query.follows.findFirst.mockResolvedValue(otherUserFollow);
@@ -358,7 +366,7 @@ describe('FollowService - フォロワー/フォロー中一覧', () => {
           followReason: '理由1',
           createdAt: new Date('2024-01-01'),
           unfollowedAt: null,
-          unfollowReason: null
+          unfollowReason: null,
         },
         {
           id: 'follow-2',
@@ -369,8 +377,8 @@ describe('FollowService - フォロワー/フォロー中一覧', () => {
           followReason: null,
           createdAt: new Date('2024-01-02'),
           unfollowedAt: null,
-          unfollowReason: null
-        }
+          unfollowReason: null,
+        },
       ];
 
       mockDb.query.follows.findMany.mockResolvedValue(mockFollowers);
@@ -407,7 +415,7 @@ describe('FollowService - フォロワー/フォロー中一覧', () => {
           followReason: '素晴らしいコンテンツ',
           createdAt: new Date('2024-01-03'),
           unfollowedAt: null,
-          unfollowReason: null
+          unfollowReason: null,
         },
         {
           id: 'follow-4',
@@ -418,8 +426,8 @@ describe('FollowService - フォロワー/フォロー中一覧', () => {
           followReason: null,
           createdAt: new Date('2024-01-04'),
           unfollowedAt: null,
-          unfollowReason: null
-        }
+          unfollowReason: null,
+        },
       ];
 
       mockDb.query.follows.findMany.mockResolvedValue(mockFollowing);
@@ -444,8 +452,8 @@ describe('FollowService - フォロワー/フォロー中一覧', () => {
           followReason: 'ファミリー理由',
           createdAt: new Date('2024-01-05'),
           unfollowedAt: null,
-          unfollowReason: null
-        }
+          unfollowReason: null,
+        },
       ];
 
       mockDb.query.follows.findMany.mockResolvedValue(mockFamilyFollows);
@@ -466,19 +474,21 @@ describe('FollowService - フォロワー/フォロー中一覧', () => {
 
       // user1 -> user2, user2 -> user1 の双方向フォロー
       mockDb.query.follows.findFirst
-        .mockResolvedValueOnce({ // user1 follows user2
+        .mockResolvedValueOnce({
+          // user1 follows user2
           id: 'follow-a',
           followerId: userId1,
           followeeId: userId2,
           followType: 'family',
-          status: 'active'
+          status: 'active',
         })
-        .mockResolvedValueOnce({ // user2 follows user1
+        .mockResolvedValueOnce({
+          // user2 follows user1
           id: 'follow-b',
           followerId: userId2,
           followeeId: userId1,
           followType: 'watch',
-          status: 'active'
+          status: 'active',
         });
 
       const result = await followService.checkMutualFollow(userId1, userId2);
@@ -487,7 +497,7 @@ describe('FollowService - フォロワー/フォロー中一覧', () => {
       expect(result.data).toEqual({
         isMutual: true,
         user1FollowsUser2: true,
-        user2FollowsUser1: true
+        user2FollowsUser1: true,
       });
       expect(result.error).toBeNull();
     });
@@ -498,12 +508,13 @@ describe('FollowService - フォロワー/フォロー中一覧', () => {
 
       // user1 -> user2 のみ（user2 -> user1 なし）
       mockDb.query.follows.findFirst
-        .mockResolvedValueOnce({ // user1 follows user2
+        .mockResolvedValueOnce({
+          // user1 follows user2
           id: 'follow-a',
           followerId: userId1,
           followeeId: userId2,
           followType: 'watch',
-          status: 'active'
+          status: 'active',
         })
         .mockResolvedValueOnce(null); // user2 does not follow user1
 
@@ -513,7 +524,7 @@ describe('FollowService - フォロワー/フォロー中一覧', () => {
       expect(result.data).toEqual({
         isMutual: false,
         user1FollowsUser2: true,
-        user2FollowsUser1: false
+        user2FollowsUser1: false,
       });
       expect(result.error).toBeNull();
     });

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Text, TextProps, StyleSheet } from 'react-native';
+import type React from 'react';
+import { StyleSheet, Text, type TextProps } from 'react-native';
 
 interface LabelProps extends TextProps {
   children?: React.ReactNode;
@@ -8,14 +8,7 @@ interface LabelProps extends TextProps {
 
 export function Label({ children, disabled, style, ...props }: LabelProps) {
   return (
-    <Text
-      style={[
-        styles.label,
-        disabled && styles.disabled,
-        style
-      ]}
-      {...props}
-    >
+    <Text style={[styles.label, disabled && styles.disabled, style]} {...props}>
       {children}
     </Text>
   );
