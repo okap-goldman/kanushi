@@ -2,12 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import { Feather } from '@expo/vector-icons';
-import { Slider } from './ui/Slider';
+import { Slider } from './ui/slider';
 
 interface AudioPost {
   id: string;
   mediaUrl: string;
   waveformUrl?: string;
+  waveformData?: {
+    waveform: number[];
+    duration: number;
+  };
+  previewUrl?: string;
   durationSeconds: number;
   aiMetadata?: {
     summary?: string;
@@ -17,15 +22,18 @@ interface AudioPost {
 interface AudioPlayerProps {
   post: AudioPost;
   sound?: Audio.Sound;
+  showWaveform?: boolean;
+  usePreview?: boolean;
 }
 
-export function AudioPlayer({ post, sound: externalSound }: AudioPlayerProps) {
+export function AudioPlayer({ post, sound: externalSound, showWaveform = true, usePreview = false }: AudioPlayerProps) {
   const [sound, setSound] = useState<Audio.Sound | null>(externalSound || null);
   const [status, setStatus] = useState<AVPlaybackStatus | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(post.durationSeconds * 1000);
   const [isLoading, setIsLoading] = useState(false);
+  const [waveformData, setWaveformData] = useState<number[] | null>(post.waveformData?.waveform || null);
 
   useEffect(() => {
     return sound
@@ -38,12 +46,29 @@ export function AudioPlayer({ post, sound: externalSound }: AudioPlayerProps) {
   const loadAudio = async () => {
     try {
       setIsLoading(true);
+      
+      const audioUrl = usePreview && post.previewUrl ? post.previewUrl : post.mediaUrl;
+      
       const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: post.mediaUrl },
+        { uri: audioUrl },
         { shouldPlay: false },
         onPlaybackStatusUpdate
       );
       setSound(newSound);
+      
+      if (!post.waveformData && post.waveformUrl && !waveformData) {
+        try {
+          const response = await fetch(post.waveformUrl);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.waveform && Array.isArray(data.waveform)) {
+              setWaveformData(data.waveform);
+            }
+          }
+        } catch (waveformError) {
+          console.error('Error loading waveform data:', waveformError);
+        }
+      }
     } catch (error) {
       console.error('Error loading audio:', error);
     } finally {
@@ -96,13 +121,32 @@ export function AudioPlayer({ post, sound: externalSound }: AudioPlayerProps) {
 
   return (
     <View style={styles.container}>
-      {/* Waveform Image */}
-      {post.waveformUrl && (
-        <Image
-          source={{ uri: post.waveformUrl }}
-          style={styles.waveform}
-          testID="waveform-image"
-        />
+      {/* Waveform Visualization */}
+      {showWaveform && (
+        <View style={styles.waveformContainer} testID="waveform-container">
+          {waveformData ? (
+            <View style={styles.waveformVisualization}>
+              {waveformData.map((value, index) => (
+                <View
+                  key={`waveform-${index}`}
+                  style={[
+                    styles.waveformBar,
+                    {
+                      height: Math.max(4, value * 60),
+                      opacity: position / duration > index / waveformData.length ? 1 : 0.5
+                    }
+                  ]}
+                />
+              ))}
+            </View>
+          ) : post.waveformUrl ? (
+            <Image
+              source={{ uri: post.waveformUrl }}
+              style={styles.waveform}
+              testID="waveform-image"
+            />
+          ) : null}
+        </View>
       )}
 
       {/* Audio Controls */}
@@ -167,11 +211,33 @@ const styles = StyleSheet.create({
     padding: 16,
     marginVertical: 8,
   },
+  waveformContainer: {
+    width: '100%',
+    height: 60,
+    marginBottom: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
   waveform: {
     width: '100%',
     height: 60,
     borderRadius: 8,
-    marginBottom: 12,
+  },
+  waveformVisualization: {
+    width: '100%',
+    height: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingHorizontal: 2,
+  },
+  waveformBar: {
+    width: 3,
+    backgroundColor: '#0070F3',
+    borderRadius: 1.5,
+    marginHorizontal: 1,
   },
   controlsContainer: {
     flexDirection: 'row',
