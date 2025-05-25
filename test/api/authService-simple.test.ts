@@ -9,13 +9,26 @@ const mockSupabase = {
     refreshSession: vi.fn(),
     getUser: vi.fn(),
     getSession: vi.fn(),
+    signUp: vi.fn(),
+    signInWithPassword: vi.fn(),
   },
-  from: vi.fn((table: string) => ({
-    insert: vi.fn().mockReturnThis(),
-    select: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    single: vi.fn(),
+  from: vi.fn(() => ({
+    insert: vi.fn(() => ({
+      select: vi.fn(() => ({
+        single: vi.fn(),
+      })),
+    })),
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn(),
+        })),
+        single: vi.fn(),
+      })),
+    })),
+    update: vi.fn(() => ({
+      eq: vi.fn(),
+    })),
   })),
 };
 
@@ -43,56 +56,40 @@ describe('AuthService - Google OAuth認証', () => {
     });
 
     // プロフィールが存在しない（新規ユーザー）
-    const fromMock = mockSupabase.from('profiles');
-    fromMock
-      .select()
-      .eq()
-      .single.mockResolvedValueOnce({
-        data: null,
-        error: { code: 'PGRST116' }, // Not found
-      });
+    mockSupabase.from().select().eq().single.mockResolvedValueOnce({
+      data: null,
+      error: { code: 'PGRST116' }, // Not found
+    });
 
     // 新規プロフィール作成
-    fromMock
-      .insert()
-      .select()
-      .single.mockResolvedValueOnce({
-        data: {
-          id: 'test-user-id',
-          email: 'test@example.com',
-          displayName: 'Test User',
-        },
-        error: null,
-      });
+    mockSupabase.from().insert().select().single.mockResolvedValueOnce({
+      data: {
+        id: 'test-user-id',
+        googleUid: 'test@example.com',
+        displayName: 'Test User',
+      },
+      error: null,
+    });
 
     // アカウントが存在しない
-    mockSupabase
-      .from('accounts')
-      .select()
-      .eq()
-      .eq()
-      .single.mockResolvedValueOnce({
-        data: null,
-        error: { code: 'PGRST116' },
-      });
+    mockSupabase.from().select().eq().eq().single.mockResolvedValueOnce({
+      data: null,
+      error: { code: 'PGRST116' },
+    });
 
     // 新規アカウント作成
-    mockSupabase
-      .from('accounts')
-      .insert()
-      .select()
-      .single.mockResolvedValueOnce({
-        data: {
-          id: 'test-account-id',
-          profileId: 'test-user-id',
-          accountType: 'google',
-          isActive: true,
-        },
-        error: null,
-      });
+    mockSupabase.from().insert().select().single.mockResolvedValueOnce({
+      data: {
+        id: 'test-account-id',
+        profileId: 'test-user-id',
+        accountType: 'google',
+        isActive: true,
+      },
+      error: null,
+    });
 
     // 最終ログイン時刻更新
-    mockSupabase.from('profiles').update().eq.mockResolvedValueOnce({
+    mockSupabase.from().update().eq.mockResolvedValueOnce({
       data: null,
       error: null,
     });
@@ -110,7 +107,7 @@ describe('AuthService - Google OAuth認証', () => {
 
   it('無効なトークンでエラーが発生すること', async () => {
     mockSupabase.auth.signInWithIdToken.mockResolvedValue({
-      data: null,
+      data: { user: null },
       error: { message: 'Invalid token' },
     });
 
@@ -123,7 +120,7 @@ describe('AuthService - Google OAuth認証', () => {
 
   it('ネットワークエラーで適切なエラーが発生すること', async () => {
     mockSupabase.auth.signInWithIdToken.mockResolvedValue({
-      data: null,
+      data: { user: null },
       error: { message: 'Network error: fetch failed' },
     });
 
@@ -150,6 +147,7 @@ describe('AuthService - リフレッシュトークン', () => {
       email: 'test@example.com',
     };
 
+    // refreshSessionの戻り値を修正
     mockSupabase.auth.refreshSession.mockResolvedValue({
       data: {
         user: mockUser,
@@ -158,24 +156,17 @@ describe('AuthService - リフレッシュトークン', () => {
       error: null,
     });
 
-    mockSupabase
-      .from('profiles')
-      .select()
-      .eq()
-      .single.mockResolvedValueOnce({
-        data: { id: 'test-user-id', displayName: 'Test User' },
-        error: null,
-      });
+    // プロフィール取得のモック
+    mockSupabase.from().select().eq().single.mockResolvedValueOnce({
+      data: { id: 'test-user-id', displayName: 'Test User' },
+      error: null,
+    });
 
-    mockSupabase
-      .from('accounts')
-      .select()
-      .eq()
-      .eq()
-      .single.mockResolvedValueOnce({
-        data: { id: 'test-account-id', profileId: 'test-user-id' },
-        error: null,
-      });
+    // アカウント取得のモック
+    mockSupabase.from().select().eq().eq().single.mockResolvedValueOnce({
+      data: { id: 'test-account-id', profileId: 'test-user-id' },
+      error: null,
+    });
 
     const result = await authService.refreshToken('valid-refresh-token');
 
@@ -185,7 +176,7 @@ describe('AuthService - リフレッシュトークン', () => {
 
   it('無効なリフレッシュトークンでエラーが発生すること', async () => {
     mockSupabase.auth.refreshSession.mockResolvedValue({
-      data: null,
+      data: { user: null },
       error: { message: 'Token expired' },
     });
 

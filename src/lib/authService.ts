@@ -1,6 +1,10 @@
 import type { AuthError, User } from '@supabase/supabase-js';
-import type { Account, Profile } from './db/schema/profile';
 import { supabase } from './supabase';
+import { accounts, profiles } from './db/schema/profile';
+
+// テーブル定義から型を作成
+export type Profile = typeof profiles.$inferSelect;
+export type Account = typeof accounts.$inferSelect;
 
 // 認証サービスのレスポンス型
 export type AuthResponse = {
@@ -96,7 +100,7 @@ export class AuthService implements IAuthService {
     const testProfile: Partial<Profile> = {
       id: 'dev-test-profile-id',
       displayName: '開発テストユーザー',
-      email: 'testuser@kanushi.love',
+      googleUid: 'testuser@kanushi.love', // emailをgoogleUidに変更
       profileText: 'これは開発用のテストアカウントです',
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -105,7 +109,7 @@ export class AuthService implements IAuthService {
     // テストアカウント
     const testAccount: Partial<Account> = {
       id: 'dev-test-account-id',
-      profileId: testProfile.id,
+      profileId: testProfile.id as string,
       accountType: 'google',
       isActive: true,
       switchOrder: 1,
@@ -153,7 +157,7 @@ export class AuthService implements IAuthService {
       const { data: profile, error: profileError } = await this.supabase
         .from('profiles')
         .select('*')
-        .eq('email', data.user.email)
+        .eq('googleUid', data.user.user_metadata?.sub)
         .single();
 
       let userProfile = profile;
@@ -164,7 +168,7 @@ export class AuthService implements IAuthService {
           .from('profiles')
           .insert({
             id: data.user.id,
-            email: data.user.email,
+            googleUid: data.user.user_metadata?.sub,
             displayName: data.user.user_metadata?.name || 'ユーザー',
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -263,7 +267,7 @@ export class AuthService implements IAuthService {
       const { data: profile, error: profileError } = await this.supabase
         .from('profiles')
         .select('*')
-        .eq('email', data.user.email)
+        .eq('appleUid', data.user.user_metadata?.sub)
         .single();
 
       let userProfile = profile;
@@ -274,7 +278,7 @@ export class AuthService implements IAuthService {
           .from('profiles')
           .insert({
             id: data.user.id,
-            email: data.user.email,
+            appleUid: data.user.user_metadata?.sub,
             displayName: data.user.user_metadata?.name || 'ユーザー',
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -344,7 +348,7 @@ export class AuthService implements IAuthService {
       const { data: existingProfile } = await this.supabase
         .from('profiles')
         .select('*')
-        .eq('email', email)
+        .eq('googleUid', email)
         .single();
 
       if (existingProfile) {
@@ -375,7 +379,7 @@ export class AuthService implements IAuthService {
         .from('profiles')
         .insert({
           id: data.user.id,
-          email: email,
+          googleUid: email,
           displayName: 'ユーザー',
           createdAt: new Date(),
           updatedAt: new Date(),
