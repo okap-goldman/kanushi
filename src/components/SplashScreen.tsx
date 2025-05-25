@@ -62,7 +62,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
 }
 
 // Just get the window dimensions for reference, not using them in this component
-const dimensions = Dimensions.get('window');
+const _dimensions = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
