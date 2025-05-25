@@ -118,6 +118,7 @@ const linking = {
         },
       },
       LiveRoom: 'liveroom/:roomId',
+      PostDetail: 'post/:postId',
       Login: {
         path: 'login',
         parse: {

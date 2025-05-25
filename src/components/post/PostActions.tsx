@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert } fro
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { ShareModal } from '../ShareModal';
 
 interface PostActionsProps {
   postId: string;
@@ -20,6 +21,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
   const [showHighlightDialog, setShowHighlightDialog] = useState(false);
   const [highlightReason, setHighlightReason] = useState('');
   const [highlightError, setHighlightError] = useState('');
+  const [showShareModal, setShowShareModal] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -251,9 +253,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
   };
 
   const handleShare = () => {
-    // Share functionality to be implemented
-    // Will generate share URL and open share dialog
-    Alert.alert('共有', 'この機能は近日中に実装されます');
+    setShowShareModal(true);
   };
 
   return (
@@ -361,6 +361,13 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           </View>
         </View>
       </Modal>
+      
+      {/* Share Modal */}
+      <ShareModal
+        visible={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        postId={postId}
+      />
     </View>
   );
 }
