@@ -402,6 +402,468 @@ describe('AuthCore - Apple Sign-In認証', () => {
   });
 });
 
+describe('AuthCore - Email + Passkey認証', () => {
+  let authCore: AuthCore;
+  let mockAuthProvider: any;
+  let mockDbProvider: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuthProvider = createMockAuthProvider();
+    mockDbProvider = createMockDbProvider();
+    authCore = new AuthCore(mockAuthProvider, mockDbProvider);
+  });
+
+  it('パスキーを使った新規登録が正常に完了すること', async () => {
+    const mockUser = {
+      id: 'passkey-user-id',
+      email: 'passkey@example.com',
+      user_metadata: {},
+    };
+
+    let fromCallCount = 0;
+    mockDbProvider.from.mockImplementation((table: string) => {
+      fromCallCount++;
+      
+      // 1回目: profiles select (メールアドレスの重複チェック)
+      if (fromCallCount === 1 && table === 'profiles') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: { code: 'PGRST116' }, // Not found
+          }),
+        };
+      }
+      
+      // 2回目: profiles insert
+      if (fromCallCount === 2 && table === 'profiles') {
+        return {
+          insert: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'passkey-user-id',
+              email: 'passkey@example.com',
+              displayName: 'passkey',
+            },
+            error: null,
+          }),
+        };
+      }
+      
+      // 3回目: passkeys insert
+      if (fromCallCount === 3 && table === 'passkeys') {
+        return {
+          insert: vi.fn().mockResolvedValue({
+            error: null,
+          }),
+        };
+      }
+      
+      // 4回目: accounts select
+      if (fromCallCount === 4 && table === 'accounts') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: { code: 'PGRST116' },
+          }),
+        };
+      }
+      
+      // 5回目: accounts insert
+      if (fromCallCount === 5 && table === 'accounts') {
+        return {
+          insert: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'passkey-account-id',
+              profileId: 'passkey-user-id',
+              accountType: 'passkey',
+              isActive: true,
+            },
+            error: null,
+          }),
+        };
+      }
+    });
+
+    const result = await authCore.registerWithPasskey('passkey@example.com', 'mock-credential-id', 'mock-public-key');
+
+    expect(result.error).toBeNull();
+    expect(result.user).toBeDefined();
+    expect(result.user?.email).toBe('passkey@example.com');
+    expect(result.account?.accountType).toBe('passkey');
+  });
+
+  it('既に登録済みのメールアドレスでパスキー登録を試みた際にエラーが発生すること', async () => {
+    // 既存のプロフィール
+    mockDbProvider.from.mockImplementation((table: string) => {
+      if (table === 'profiles') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'existing-user-id',
+              email: 'existing@example.com',
+              displayName: 'Existing User',
+            },
+            error: null,
+          }),
+        };
+      }
+    });
+
+    const result = await authCore.registerWithPasskey('existing@example.com', 'mock-credential-id', 'mock-public-key');
+
+    expect(result.user).toBeNull();
+    expect(result.error?.message).toBe('EMAIL_ALREADY_REGISTERED');
+  });
+
+  it('パスキーを使ったログインが正常に完了すること', async () => {
+    const mockUser = {
+      id: 'passkey-user-id',
+      email: 'passkey@example.com',
+      user_metadata: {},
+    };
+
+    let fromCallCount = 0;
+    mockDbProvider.from.mockImplementation((table: string) => {
+      fromCallCount++;
+      
+      // 1回目: passkeys select
+      if (fromCallCount === 1 && table === 'passkeys') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'passkey-id',
+              profileId: 'passkey-user-id',
+              credentialId: 'mock-credential-id',
+              publicKey: 'mock-public-key',
+            },
+            error: null,
+          }),
+        };
+      }
+      
+      // 2回目: profiles select
+      if (fromCallCount === 2 && table === 'profiles') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'passkey-user-id',
+              email: 'passkey@example.com',
+              displayName: 'Passkey User',
+            },
+            error: null,
+          }),
+        };
+      }
+      
+      // 3回目: accounts select
+      if (fromCallCount === 3 && table === 'accounts') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'passkey-account-id',
+              profileId: 'passkey-user-id',
+              accountType: 'passkey',
+              isActive: true,
+            },
+            error: null,
+          }),
+        };
+      }
+      
+      // 4回目: passkeys update (lastUsedAt)
+      if (fromCallCount === 4 && table === 'passkeys') {
+        return {
+          update: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({
+            error: null,
+          }),
+        };
+      }
+    });
+
+    const result = await authCore.signInWithPasskey('mock-credential-id', 'mock-signature');
+
+    expect(result.error).toBeNull();
+    expect(result.user).toBeDefined();
+    expect(result.user?.email).toBe('passkey@example.com');
+  });
+
+  it('無効なパスキー情報でログインを試みた際にエラーが発生すること', async () => {
+    // パスキーが見つからない
+    mockDbProvider.from.mockImplementation((table: string) => {
+      if (table === 'passkeys') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: { code: 'PGRST116' }, // Not found
+          }),
+        };
+      }
+    });
+
+    const result = await authCore.signInWithPasskey('invalid-credential-id', 'mock-signature');
+
+    expect(result.user).toBeNull();
+    expect(result.error?.message).toBe('INVALID_PASSKEY');
+  });
+});
+
+describe('AuthCore - 複数アカウント管理', () => {
+  let authCore: AuthCore;
+  let mockAuthProvider: any;
+  let mockDbProvider: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuthProvider = createMockAuthProvider();
+    mockDbProvider = createMockDbProvider();
+    authCore = new AuthCore(mockAuthProvider, mockDbProvider);
+  });
+
+  it('ユーザーが所有する全てのアカウント情報が正しく取得できること', async () => {
+    const mockAccounts = [
+      {
+        id: 'acc-1',
+        profileId: 'user-1',
+        accountType: 'google',
+        isActive: true,
+        switchOrder: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'acc-2',
+        profileId: 'user-1',
+        accountType: 'apple',
+        isActive: false,
+        switchOrder: 2,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    mockDbProvider.from.mockImplementation((table: string) => {
+      if (table === 'accounts') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({
+            data: mockAccounts,
+            error: null,
+          }),
+        };
+      }
+    });
+
+    const result = await authCore.getAccounts('user-1');
+
+    expect(result.error).toBeNull();
+    expect(result.accounts).toHaveLength(2);
+    expect(result.accounts?.[0].isActive).toBe(true);
+    expect(result.accounts?.[1].switchOrder).toBe(2);
+  });
+
+  it('別のアカウントへの切り替えが正常に完了すること', async () => {
+    const mockCurrentAccount = {
+      id: 'acc-1',
+      profileId: 'user-1',
+      accountType: 'google',
+      isActive: true,
+    };
+
+    const mockTargetAccount = {
+      id: 'acc-2',
+      profileId: 'user-1',
+      accountType: 'apple',
+      isActive: false,
+    };
+
+    let fromCallCount = 0;
+    mockDbProvider.from.mockImplementation((table: string) => {
+      fromCallCount++;
+      if (table === 'accounts') {
+        // 1回目: ターゲットアカウントの確認
+        if (fromCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: mockTargetAccount,
+              error: null,
+            }),
+          };
+        }
+        // 2回目: 現在のアクティブアカウントを非アクティブに
+        if (fromCallCount === 2) {
+          return {
+            update: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              error: null,
+            }),
+          };
+        }
+        // 3回目: ターゲットアカウントをアクティブに
+        if (fromCallCount === 3) {
+          return {
+            update: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockResolvedValue({
+              data: { ...mockTargetAccount, isActive: true },
+              error: null,
+            }),
+          };
+        }
+      }
+    });
+
+    const result = await authCore.switchAccount('user-1', 'acc-2');
+
+    expect(result.error).toBeNull();
+    expect(result.success).toBe(true);
+  });
+
+  it('存在しないアカウントIDで切り替えを試みた際にエラーが発生すること', async () => {
+    mockDbProvider.from.mockImplementation((table: string) => {
+      if (table === 'accounts') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: { code: 'PGRST116' },
+          }),
+        };
+      }
+    });
+
+    const result = await authCore.switchAccount('user-1', 'non-existent');
+
+    expect(result.success).toBe(false);
+    expect(result.error?.message).toBe('ACCOUNT_NOT_FOUND');
+  });
+
+  it('他のユーザーのアカウントに切り替えようとした際にエラーが発生すること', async () => {
+    const mockAccount = {
+      id: 'acc-2',
+      profileId: 'user-2', // 別のユーザーのアカウント
+      accountType: 'google',
+      isActive: false,
+    };
+
+    mockDbProvider.from.mockImplementation((table: string) => {
+      if (table === 'accounts') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: mockAccount,
+            error: null,
+          }),
+        };
+      }
+    });
+
+    const result = await authCore.switchAccount('user-1', 'acc-2');
+
+    expect(result.success).toBe(false);
+    expect(result.error?.message).toBe('UNAUTHORIZED_ACCOUNT_ACCESS');
+  });
+
+  it('アカウント数が5つ未満の場合、新しいアカウントが正常に追加できること', async () => {
+    // 既存アカウント3つ
+    const mockExistingAccounts = [
+      { id: 'acc-1', switchOrder: 1 },
+      { id: 'acc-2', switchOrder: 2 },
+      { id: 'acc-3', switchOrder: 3 },
+    ];
+
+    let fromCallCount = 0;
+    mockDbProvider.from.mockImplementation((table: string) => {
+      fromCallCount++;
+      if (table === 'accounts') {
+        // 1回目: 既存アカウント数チェック
+        if (fromCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockResolvedValue({
+              data: mockExistingAccounts,
+              error: null,
+            }),
+          };
+        }
+        // 2回目: 新規アカウント作成
+        if (fromCallCount === 2) {
+          return {
+            insert: vi.fn().mockReturnThis(),
+            select: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: {
+                id: 'acc-4',
+                profileId: 'user-1',
+                accountType: 'passkey',
+                isActive: false,
+                switchOrder: 4,
+              },
+              error: null,
+            }),
+          };
+        }
+      }
+    });
+
+    const result = await authCore.addAccount('user-1', 'passkey');
+
+    expect(result.error).toBeNull();
+    expect(result.account?.switchOrder).toBe(4);
+  });
+
+  it('アカウント数が5つに達している場合、新しいアカウントの追加時にエラーが発生すること', async () => {
+    // 既存アカウント5つ
+    const mockExistingAccounts = [
+      { id: 'acc-1', switchOrder: 1 },
+      { id: 'acc-2', switchOrder: 2 },
+      { id: 'acc-3', switchOrder: 3 },
+      { id: 'acc-4', switchOrder: 4 },
+      { id: 'acc-5', switchOrder: 5 },
+    ];
+
+    mockDbProvider.from.mockImplementation((table: string) => {
+      if (table === 'accounts') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({
+            data: mockExistingAccounts,
+            error: null,
+          }),
+        };
+      }
+    });
+
+    const result = await authCore.addAccount('user-1', 'passkey');
+
+    expect(result.account).toBeNull();
+    expect(result.error?.message).toBe('ACCOUNT_LIMIT_REACHED');
+  });
+});
+
 describe('AuthCore - ログアウト', () => {
   let authCore: AuthCore;
   let mockAuthProvider: any;

@@ -5,8 +5,8 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
 
 // Follow enums
-export const followTypeEnum = pgEnum('follow_type', ['normal', 'close_friend']);
-export const followStatusEnum = pgEnum('follow_status', ['active', 'pending', 'blocked']);
+export const followTypeEnum = pgEnum('follow_type', ['family', 'watch']);
+export const followStatusEnum = pgEnum('follow_status', ['active', 'unfollowed', 'blocked']);
 
 // Post enums
 export const contentTypeEnum = pgEnum('content_type', ['text', 'image', 'audio', 'video']);
@@ -19,7 +19,7 @@ export const roomStatusEnum = pgEnum('room_status', ['scheduled', 'live', 'ended
 export const participantRoleEnum = pgEnum('participant_role', ['host', 'speaker', 'listener', 'moderator']);
 
 // Event enums
-export const eventTypeEnum = pgEnum('event_type', ['online', 'offline', 'hybrid']);
+export const eventTypeEnum = pgEnum('event_type', ['online', 'offline', 'hybrid', 'voice_workshop']);
 export const eventParticipantStatusEnum = pgEnum('event_participant_status', ['registered', 'attended', 'cancelled', 'no_show']);
 export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'paid', 'refunded']);
 

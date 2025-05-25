@@ -27,17 +27,22 @@
    - テスト: 全テストケース成功
    - 機能: 環境変数による制御、認証テスト時の無効化
 
-### 実装中 🔄
-
 5. **Email + Passkey認証**
-   - WebAuthn APIとの連携
-   - パスキー登録・認証フロー
-
-### 今後の実装予定 📝
+   - 実装: `AuthCore.registerWithPasskey()`, `AuthCore.signInWithPasskey()`
+   - テスト: 全テストケース成功
+   - 機能: パスキー新規登録、ログイン、重複メール検出、エラーハンドリング
+   - スキーマ: passkeysテーブル追加、accountTypeEnum更新
 
 6. **複数アカウント切替機能**
-   - 最大5アカウントまでの管理
-   - アカウント切替UI
+   - 実装: `AuthCore.getAccounts()`, `AuthCore.switchAccount()`, `AuthCore.addAccount()`
+   - テスト: 全テストケース成功（6テスト）
+   - 機能: アカウント一覧取得、アカウント切替、アカウント追加（最大5つ）、権限チェック
+
+### 実装中 🔄
+
+なし
+
+### 今後の実装予定 📝
 
 7. **統合テスト**
    - 認証フロー全体のE2Eテスト
@@ -46,15 +51,17 @@
 ## テスト実行結果
 
 ```
-✓ test/api/authCore.test.ts (14 tests)
-  ✓ AuthCore - 認証バイパス機能 (5 tests)
+✓ test/api/authCore.test.ts (24 tests)
+  ✓ AuthCore - 認証バイパス機能 (4 tests)
   ✓ AuthCore - Google OAuth認証 (3 tests)
   ✓ AuthCore - リフレッシュトークン (2 tests)
   ✓ AuthCore - Apple Sign-In認証 (3 tests)
+  ✓ AuthCore - Email + Passkey認証 (4 tests)
+  ✓ AuthCore - 複数アカウント管理 (6 tests)
   ✓ AuthCore - ログアウト (2 tests)
 
  Test Files  1 passed (1)
-      Tests  14 passed (14)
+      Tests  24 passed (24)
 ```
 
 ## 主要な設計決定

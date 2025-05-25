@@ -160,6 +160,10 @@ export const createPost = async (post: Omit<Post, 'id' | 'created_at' | 'updated
     
     if (contentType === 'text') {
       textContent = post.content || post.text_content || '';
+      // Validate text length for text posts
+      if (textContent.length > 10000) {
+        throw new Error('Text content exceeds maximum length of 10,000 characters');
+      }
     } else if (contentType === 'image' || contentType === 'video') {
       mediaUrl = post.content || post.media_url;
     } else if (contentType === 'audio') {
@@ -317,6 +321,11 @@ export const createComment = async (
   comment: Omit<Comment, 'id' | 'created_at'>
 ): Promise<ApiResponse<Comment>> => {
   try {
+    // Validate content
+    if (!comment.content || comment.content.trim() === '') {
+      throw new Error('Content cannot be empty');
+    }
+
     // Begin a transaction
     const { data: newComment, error: commentError } = await supabase
       .from('comments')
@@ -442,6 +451,49 @@ export const checkLiked = async (
     return { data: !!data, error: null };
   } catch (error) {
     console.error('Error checking like status:', error);
+    return { data: null, error: error as Error };
+  }
+};
+
+/**
+ * Deletes a post (soft delete)
+ * @param post_id The post ID
+ * @param user_id The user ID requesting deletion
+ */
+export const deletePost = async (
+  post_id: string,
+  user_id: string
+): Promise<ApiResponse<boolean>> => {
+  try {
+    // First, check if the post exists and belongs to the user
+    const { data: post, error: fetchError } = await supabase
+      .from('posts')
+      .select('id, user_id')
+      .eq('id', post_id)
+      .single();
+
+    if (fetchError || !post) {
+      throw new Error('Post not found');
+    }
+
+    // Check ownership
+    if (post.user_id !== user_id) {
+      throw new Error('You do not have permission to delete this post');
+    }
+
+    // Soft delete by setting deleted_at
+    const { error: deleteError } = await supabase
+      .from('posts')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', post_id);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    return { data: true, error: null };
+  } catch (error) {
+    console.error('Error deleting post:', error);
     return { data: null, error: error as Error };
   }
 };

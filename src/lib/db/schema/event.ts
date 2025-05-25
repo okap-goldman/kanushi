@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, decimal, unique, index, check } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, decimal, unique, index, check, integer, boolean } from 'drizzle-orm/pg-core';
 import { eventTypeEnum, eventParticipantStatusEnum, paymentStatusEnum } from './enums';
 import { profiles } from './profile';
 import { liveRooms } from './liveRoom';
@@ -42,4 +42,29 @@ export const eventParticipants = pgTable('event_participant', {
   statusIdx: index('idx_event_participant_status').on(table.status),
   paymentStatusIdx: index('idx_event_participant_payment_status').on(table.paymentStatus),
   uniqueEventUser: unique().on(table.eventId, table.userId)
+}));
+
+// Voice workshop specific table
+export const eventVoiceWorkshops = pgTable('event_voice_workshop', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }).unique(),
+  maxParticipants: integer('max_participants').notNull().default(10),
+  isRecorded: boolean('is_recorded').notNull().default(false),
+  recordingUrl: text('recording_url'),
+  archiveExpiresAt: timestamp('archive_expires_at', { withTimezone: true })
+}, (table) => ({
+  eventIdIdx: index('idx_event_voice_workshop_event_id').on(table.eventId)
+}));
+
+// Event archive access table for tracking who can access recordings
+export const eventArchiveAccess = pgTable('event_archive_access', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  purchasedAt: timestamp('purchased_at', { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp('expires_at', { withTimezone: true })
+}, (table) => ({
+  eventIdIdx: index('idx_event_archive_access_event_id').on(table.eventId),
+  userIdIdx: index('idx_event_archive_access_user_id').on(table.userId),
+  uniqueEventUserArchive: unique().on(table.eventId, table.userId)
 }));

@@ -12,7 +12,8 @@ export const groups = pgTable('group', {
   subscriptionPrice: decimal('subscription_price', { precision: 10, scale: 2 }),
   storesPriceId: text('stores_price_id'),
   memberLimit: integer('member_limit'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => ({
   ownerUserIdIdx: index('idx_group_owner_user_id').on(table.ownerUserId),
   groupTypeIdx: index('idx_group_group_type').on(table.groupType),
