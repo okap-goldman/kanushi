@@ -1,9 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { eventServiceDrizzle } from '../../src/lib/eventServiceDrizzle';
-import { db } from '../../src/lib/db/client';
-import { events, eventParticipants, eventVoiceWorkshops, eventArchiveAccess } from '../../src/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { supabase } from '../../src/lib/supabase';
 import type { CreateEventRequest, CreateVoiceWorkshopRequest } from '../../src/lib/eventServiceDrizzle';
+
+// モックの設定
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(),
+  },
+}));
 
 // テスト用のユーザー
 const testUser = {
@@ -16,20 +21,12 @@ const testUser = {
 };
 
 describe('EventService - イベント作成API', () => {
-  beforeEach(async () => {
-    // テストデータのクリーンアップ
-    await db.delete(eventArchiveAccess).where(eq(eventArchiveAccess.userId, testUser.id));
-    await db.delete(eventParticipants).where(eq(eventParticipants.userId, testUser.id));
-    await db.delete(eventVoiceWorkshops);
-    await db.delete(events).where(eq(events.creatorUserId, testUser.id));
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  afterEach(async () => {
-    // テストデータのクリーンアップ
-    await db.delete(eventArchiveAccess).where(eq(eventArchiveAccess.userId, testUser.id));
-    await db.delete(eventParticipants).where(eq(eventParticipants.userId, testUser.id));
-    await db.delete(eventVoiceWorkshops);
-    await db.delete(events).where(eq(events.creatorUserId, testUser.id));
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('通常イベント作成', () => {
@@ -46,11 +43,34 @@ describe('EventService - イベント作成API', () => {
         refundPolicy: 'イベント開始24時間前まで全額返金'
       };
 
+      const mockEvent = {
+        id: 'event-1',
+        creator_user_id: testUser.id,
+        name: eventData.name,
+        description: eventData.description,
+        event_type: eventData.eventType,
+        location: eventData.location,
+        starts_at: eventData.startsAt.toISOString(),
+        ends_at: eventData.endsAt.toISOString(),
+        fee: String(eventData.fee),
+        currency: eventData.currency,
+        refund_policy: eventData.refundPolicy,
+        created_at: new Date().toISOString()
+      };
+
+      const mockSupabaseChain = {
+        insert: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockEvent, error: null })
+      };
+
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
+
       const result = await eventServiceDrizzle.createEvent(eventData, testUser.id);
 
       expect(result.data).toBeTruthy();
       expect(result.error).toBeNull();
-      expect(result.data?.id).toBeTruthy();
+      expect(result.data?.id).toBe('event-1');
       expect(result.data?.creatorUserId).toBe(testUser.id);
       expect(result.data?.name).toBe(eventData.name);
       expect(result.data?.description).toBe(eventData.description);
@@ -59,6 +79,7 @@ describe('EventService - イベント作成API', () => {
       expect(result.data?.fee).toBe(String(eventData.fee));
       expect(result.data?.currency).toBe(eventData.currency);
       expect(result.data?.refundPolicy).toBe(eventData.refundPolicy);
+      expect(supabase.from).toHaveBeenCalledWith('event');
     });
 
     it('必須項目不足でエラー', async () => {
@@ -73,6 +94,7 @@ describe('EventService - イベント作成API', () => {
       expect(result.data).toBeNull();
       expect(result.error).toBeTruthy();
       expect(result.error?.message).toContain('必須項目');
+      expect(supabase.from).not.toHaveBeenCalled();
     });
 
     it('過去の日時でエラー', async () => {
@@ -88,6 +110,7 @@ describe('EventService - イベント作成API', () => {
       expect(result.data).toBeNull();
       expect(result.error).toBeTruthy();
       expect(result.error?.message).toBe('開始時間は現在以降である必要があります');
+      expect(supabase.from).not.toHaveBeenCalled();
     });
   });
 
@@ -106,6 +129,40 @@ describe('EventService - イベント作成API', () => {
         isRecorded: false
       };
 
+      const mockEvent = {
+        id: 'event-2',
+        creator_user_id: testUser.id,
+        name: workshopData.name,
+        description: workshopData.description,
+        event_type: 'voice_workshop',
+        location: workshopData.location,
+        starts_at: workshopData.startsAt.toISOString(),
+        ends_at: workshopData.endsAt.toISOString(),
+        fee: String(workshopData.fee),
+        currency: workshopData.currency,
+        refund_policy: workshopData.refundPolicy
+      };
+
+      const mockWorkshop = {
+        id: 'workshop-1',
+        event_id: 'event-2',
+        max_participants: workshopData.maxParticipants,
+        is_recorded: workshopData.isRecorded,
+        recording_url: null,
+        archive_expires_at: null
+      };
+
+      const mockSupabaseChain = {
+        insert: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValueOnce({ data: mockEvent, error: null })
+          .mockResolvedValueOnce({ data: mockWorkshop, error: null }),
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis()
+      };
+
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
+
       const result = await eventServiceDrizzle.createVoiceWorkshop(workshopData, testUser.id);
 
       expect(result.data).toBeTruthy();
@@ -114,6 +171,8 @@ describe('EventService - イベント作成API', () => {
       expect(result.data?.workshop).toBeTruthy();
       expect(result.data?.workshop?.maxParticipants).toBe(workshopData.maxParticipants);
       expect(result.data?.workshop?.isRecorded).toBe(workshopData.isRecorded);
+      expect(supabase.from).toHaveBeenCalledWith('event');
+      expect(supabase.from).toHaveBeenCalledWith('event_voice_workshop');
     });
 
     it('録音付きワークショップの作成', async () => {
@@ -128,6 +187,37 @@ describe('EventService - イベント作成API', () => {
         isRecorded: true,
         archiveExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30日後
       };
+
+      const mockEvent = {
+        id: 'event-3',
+        creator_user_id: testUser.id,
+        name: workshopData.name,
+        description: workshopData.description,
+        event_type: 'voice_workshop',
+        location: 'オンライン',
+        starts_at: workshopData.startsAt.toISOString(),
+        ends_at: workshopData.endsAt.toISOString(),
+        fee: String(workshopData.fee),
+        currency: workshopData.currency
+      };
+
+      const mockWorkshop = {
+        id: 'workshop-2',
+        event_id: 'event-3',
+        max_participants: workshopData.maxParticipants,
+        is_recorded: true,
+        recording_url: null,
+        archive_expires_at: workshopData.archiveExpiresAt?.toISOString()
+      };
+
+      const mockSupabaseChain = {
+        insert: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValueOnce({ data: mockEvent, error: null })
+          .mockResolvedValueOnce({ data: mockWorkshop, error: null })
+      };
+
+      (supabase.from as any).mockReturnValue(mockSupabaseChain);
 
       const result = await eventServiceDrizzle.createVoiceWorkshop(workshopData, testUser.id);
 
@@ -149,7 +239,8 @@ describe('EventService - イベント作成API', () => {
 
       expect(result.data).toBeNull();
       expect(result.error).toBeTruthy();
-      expect(result.error?.message).toContain('定員');
+      expect(result.error?.message).toContain('定員は1000人以下である必要があります');
+      expect(supabase.from).not.toHaveBeenCalled();
     });
 
     it('負の定員設定でエラー', async () => {
@@ -165,6 +256,7 @@ describe('EventService - イベント作成API', () => {
       expect(result.data).toBeNull();
       expect(result.error).toBeTruthy();
       expect(result.error?.message).toContain('定員は1人以上である必要があります');
+      expect(supabase.from).not.toHaveBeenCalled();
     });
   });
 });

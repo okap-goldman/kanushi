@@ -1,5 +1,289 @@
 import { supabase } from './supabase';
 
+export interface SearchResult {
+  users: any[];
+  posts: any[];
+  hashtags: any[];
+}
+
+export interface SearchFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  userId?: string;
+  hasMedia?: boolean;
+}
+
+export interface PaginatedSearchResult {
+  data: SearchResult;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface CategorySearchResult {
+  data: any[];
+  count: number;
+}
+
+export class SearchService {
+  async search(keyword: string): Promise<SearchResult> {
+    try {
+      const searchPattern = `%${keyword}%`;
+
+      // Search users
+      const { data: users, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, name, username, avatar_url, bio')
+        .or(`name.ilike.${searchPattern},username.ilike.${searchPattern},bio.ilike.${searchPattern}`)
+        .limit(20);
+
+      if (usersError) throw usersError;
+
+      // Search posts
+      const { data: posts, error: postsError } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          content,
+          media_url,
+          media_type,
+          created_at,
+          author_id,
+          profiles:author_id(id, name, username, avatar_url)
+        `)
+        .or(`content.ilike.${searchPattern}`)
+        .eq('is_draft', false)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (postsError) throw postsError;
+
+      // Search hashtags
+      const { data: hashtags, error: hashtagsError } = await supabase
+        .rpc('search_hashtags', { search_term: keyword });
+
+      if (hashtagsError) throw hashtagsError;
+
+      return {
+        users: users || [],
+        posts: posts || [],
+        hashtags: hashtags || [],
+      };
+    } catch (error) {
+      console.error('Search error:', error);
+      throw new Error('Search failed');
+    }
+  }
+
+  async searchByCategory(
+    keyword: string,
+    category: 'users' | 'posts' | 'hashtags',
+    page = 0,
+    limit = 20
+  ): Promise<CategorySearchResult> {
+    try {
+      const searchPattern = `%${keyword}%`;
+      const offset = page * limit;
+
+      switch (category) {
+        case 'users':
+          const { data: users, error: usersError } = await supabase
+            .from('profiles')
+            .select('id, name, username, avatar_url, bio', { count: 'exact' })
+            .or(`name.ilike.${searchPattern},username.ilike.${searchPattern},bio.ilike.${searchPattern}`)
+            .range(offset, offset + limit - 1);
+
+          if (usersError) throw usersError;
+          
+          return {
+            data: users || [],
+            count: users?.length || 0,
+          };
+
+        case 'posts':
+          const { data: posts, error: postsError } = await supabase
+            .from('posts')
+            .select(`
+              id,
+              content,
+              media_url,
+              media_type,
+              created_at,
+              author_id,
+              profiles:author_id(id, name, username, avatar_url)
+            `, { count: 'exact' })
+            .or(`content.ilike.${searchPattern}`)
+            .eq('is_draft', false)
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
+
+          if (postsError) throw postsError;
+          
+          return {
+            data: posts || [],
+            count: posts?.length || 0,
+          };
+
+        case 'hashtags':
+          const { data: hashtags, error: hashtagsError } = await supabase
+            .rpc('search_hashtags_paginated', { 
+              search_term: keyword,
+              limit_count: limit,
+              offset_count: offset
+            });
+
+          if (hashtagsError) throw hashtagsError;
+          
+          return {
+            data: hashtags || [],
+            count: hashtags?.length || 0,
+          };
+
+        default:
+          throw new Error('Invalid category');
+      }
+    } catch (error) {
+      console.error('Category search error:', error);
+      throw new Error('Category search failed');
+    }
+  }
+
+  async searchWithFilters(
+    keyword: string,
+    filters: SearchFilters
+  ): Promise<SearchResult> {
+    try {
+      const searchPattern = `%${keyword}%`;
+
+      // Build queries with filters
+      let usersQuery = supabase
+        .from('profiles')
+        .select('id, name, username, avatar_url, bio')
+        .or(`name.ilike.${searchPattern},username.ilike.${searchPattern},bio.ilike.${searchPattern}`);
+
+      let postsQuery = supabase
+        .from('posts')
+        .select(`
+          id,
+          content,
+          media_url,
+          media_type,
+          created_at,
+          author_id,
+          profiles:author_id(id, name, username, avatar_url)
+        `)
+        .or(`content.ilike.${searchPattern}`)
+        .eq('is_draft', false);
+
+      // Apply filters to posts
+      if (filters.dateFrom) {
+        postsQuery = postsQuery.gte('created_at', filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        postsQuery = postsQuery.lte('created_at', filters.dateTo);
+      }
+      if (filters.userId) {
+        postsQuery = postsQuery.eq('author_id', filters.userId);
+      }
+      if (filters.hasMedia !== undefined) {
+        if (filters.hasMedia) {
+          postsQuery = postsQuery.not('media_url', 'is', null);
+        } else {
+          postsQuery = postsQuery.is('media_url', null);
+        }
+      }
+
+      postsQuery = postsQuery.order('created_at', { ascending: false }).limit(20);
+
+      const [usersResult, postsResult, hashtagsResult] = await Promise.all([
+        usersQuery.limit(20),
+        postsQuery,
+        supabase.rpc('search_hashtags', { search_term: keyword })
+      ]);
+
+      if (usersResult.error) throw usersResult.error;
+      if (postsResult.error) throw postsResult.error;
+      if (hashtagsResult.error) throw hashtagsResult.error;
+
+      return {
+        users: usersResult.data || [],
+        posts: postsResult.data || [],
+        hashtags: hashtagsResult.data || [],
+      };
+    } catch (error) {
+      console.error('Filtered search error:', error);
+      throw new Error('Filtered search failed');
+    }
+  }
+
+  async searchWithPagination(
+    keyword: string,
+    page: number,
+    limit: number
+  ): Promise<PaginatedSearchResult> {
+    try {
+      const offset = (page - 1) * limit;
+      const searchPattern = `%${keyword}%`;
+
+      // Get counts for pagination
+      const { count: postsCount } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .or(`content.ilike.${searchPattern}`)
+        .eq('is_draft', false);
+
+      // Search with pagination
+      const [usersResult, postsResult, hashtagsResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, name, username, avatar_url, bio')
+          .or(`name.ilike.${searchPattern},username.ilike.${searchPattern},bio.ilike.${searchPattern}`)
+          .range(offset, offset + limit - 1),
+        
+        supabase
+          .from('posts')
+          .select(`
+            id,
+            content,
+            media_url,
+            media_type,
+            created_at,
+            author_id,
+            profiles:author_id(id, name, username, avatar_url)
+          `)
+          .or(`content.ilike.${searchPattern}`)
+          .eq('is_draft', false)
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1),
+        
+        supabase.rpc('search_hashtags', { search_term: keyword })
+      ]);
+
+      if (usersResult.error) throw usersResult.error;
+      if (postsResult.error) throw postsResult.error;
+      if (hashtagsResult.error) throw hashtagsResult.error;
+
+      const totalPages = Math.ceil((postsCount || 0) / limit);
+
+      return {
+        data: {
+          users: usersResult.data || [],
+          posts: postsResult.data || [],
+          hashtags: hashtagsResult.data || [],
+        },
+        page,
+        limit,
+        totalPages,
+      };
+    } catch (error) {
+      console.error('Paginated search error:', error);
+      throw new Error('Paginated search failed');
+    }
+  }
+}
+
+// 既存の関数も残しておく（互換性のため）
+
 // ユーザー検索の型定義
 export interface UserSearchResult {
   id: string;

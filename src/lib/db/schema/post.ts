@@ -32,11 +32,16 @@ export const posts = pgTable('post', {
 export const stories = pgTable('story', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
-  imageUrl: text('image_url').notNull(),
-  editData: jsonb('edit_data'),
+  imageUrl: text('image_url'),
+  textContent: text('text_content'),
+  backgroundColor: text('background_color'),
+  fontStyle: text('font_style'),
+  editData: jsonb('edit_data'), // Contains text positions, stickers, filters, etc.
+  caption: text('caption'),
+  location: text('location'),
   isRepost: boolean('is_repost').notNull().default(false),
   originalStoryId: uuid('original_story_id').references(() => stories.id, { onDelete: 'cascade' }),
-  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull().default(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => ({
   userIdIdx: index('idx_story_user_id').on(table.userId),
@@ -125,7 +130,7 @@ export const offlineContents = pgTable('offline_content', {
   sizeBytes: integer('size_bytes').notNull(),
   cachedAt: timestamp('cached_at', { withTimezone: true }).notNull().defaultNow(),
   lastAccessedAt: timestamp('last_accessed_at', { withTimezone: true }).notNull().defaultNow(),
-  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull().default(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull()
 }, (table) => ({
   userIdIdx: index('idx_offline_content_user_id').on(table.userId),
   expiresAtIdx: index('idx_offline_content_expires_at').on(table.expiresAt),

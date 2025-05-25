@@ -1,6 +1,4 @@
-import { db } from './db/client';
-import { events, eventParticipants, eventVoiceWorkshops, eventArchiveAccess } from './db/schema';
-import { eq, and, gte, lte, desc, asc, count, or, ilike } from 'drizzle-orm';
+import { supabase } from './supabase';
 import type { ApiResponse } from './data';
 
 // イベント作成リクエストの型定義
@@ -89,20 +87,33 @@ export const eventServiceDrizzle = {
       }
 
       // イベントの作成
-      const [newEvent] = await db.insert(events).values({
-        creatorUserId: userId,
-        name: eventData.name,
-        description: eventData.description,
-        eventType: eventData.eventType || 'offline',
-        location: eventData.location,
-        startsAt: eventData.startsAt,
-        endsAt: eventData.endsAt,
-        fee: eventData.fee?.toString(),
-        currency: eventData.currency || 'JPY',
-        refundPolicy: eventData.refundPolicy
-      }).returning();
+      const { data, error } = await supabase
+        .from('event')
+        .insert({
+          creator_user_id: userId,
+          name: eventData.name,
+          description: eventData.description,
+          event_type: eventData.eventType || 'offline',
+          location: eventData.location,
+          starts_at: eventData.startsAt.toISOString(),
+          ends_at: eventData.endsAt.toISOString(),
+          fee: eventData.fee?.toString(),
+          currency: eventData.currency || 'JPY',
+          refund_policy: eventData.refundPolicy
+        })
+        .select()
+        .single();
 
-      return { data: newEvent as EventResponse, error: null };
+      if (error) throw error;
+
+      return { 
+        data: {
+          ...data,
+          startsAt: new Date(data.starts_at),
+          endsAt: new Date(data.ends_at)
+        } as EventResponse, 
+        error: null 
+      };
     } catch (error) {
       console.error('Error creating event:', error);
       return { data: null, error: error as Error };
@@ -143,37 +154,56 @@ export const eventServiceDrizzle = {
         };
       }
 
-      // トランザクションでイベントとワークショップ情報を作成
-      const result = await db.transaction(async (tx) => {
-        // イベントの作成
-        const [newEvent] = await tx.insert(events).values({
-          creatorUserId: userId,
+      // イベントの作成
+      const { data: newEvent, error: eventError } = await supabase
+        .from('event')
+        .insert({
+          creator_user_id: userId,
           name: workshopData.name,
           description: workshopData.description,
-          eventType: 'voice_workshop',
+          event_type: 'voice_workshop',
           location: workshopData.location || 'オンライン',
-          startsAt: workshopData.startsAt,
-          endsAt: workshopData.endsAt,
+          starts_at: workshopData.startsAt.toISOString(),
+          ends_at: workshopData.endsAt.toISOString(),
           fee: workshopData.fee?.toString(),
           currency: workshopData.currency || 'JPY',
-          refundPolicy: workshopData.refundPolicy
-        }).returning();
+          refund_policy: workshopData.refundPolicy
+        })
+        .select()
+        .single();
 
-        // ワークショップ情報の作成
-        const [workshopInfo] = await tx.insert(eventVoiceWorkshops).values({
-          eventId: newEvent.id,
-          maxParticipants,
-          isRecorded: workshopData.isRecorded || false,
-          archiveExpiresAt: workshopData.archiveExpiresAt
-        }).returning();
+      if (eventError) throw eventError;
 
-        return {
+      // ワークショップ情報の作成
+      const { data: workshopInfo, error: workshopError } = await supabase
+        .from('event_voice_workshop')
+        .insert({
+          event_id: newEvent.id,
+          max_participants: maxParticipants,
+          is_recorded: workshopData.isRecorded || false,
+          archive_expires_at: workshopData.archiveExpiresAt?.toISOString()
+        })
+        .select()
+        .single();
+
+      if (workshopError) {
+        // イベントを削除
+        await supabase.from('event').delete().eq('id', newEvent.id);
+        throw workshopError;
+      }
+
+      return { 
+        data: {
           ...newEvent,
-          workshop: workshopInfo
-        };
-      });
-
-      return { data: result as EventResponse, error: null };
+          startsAt: new Date(newEvent.starts_at),
+          endsAt: new Date(newEvent.ends_at),
+          workshop: {
+            ...workshopInfo,
+            archiveExpiresAt: workshopInfo.archive_expires_at ? new Date(workshopInfo.archive_expires_at) : null
+          }
+        } as EventResponse, 
+        error: null 
+      };
     } catch (error) {
       console.error('Error creating voice workshop:', error);
       return { data: null, error: error as Error };

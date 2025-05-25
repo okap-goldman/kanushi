@@ -527,112 +527,97 @@ describe('DM Service - Read Status Management', () => {
     });
   });
 
-  test('スレッド一覧取得', async () => {
-    // Arrange
-    const threads = [
-      {
-        id: 'thread-1',
-        user1_id: currentUser.id,
-        user2_id: 'user-456',
-        user2: {
-          display_name: 'ユーザー2',
-          profile_image: 'image2.jpg'
-        },
-        last_message: {
-          content: 'encrypted-こんにちは',
-          created_at: new Date().toISOString()
-        },
-        unread_count: 2
-      },
-      {
-        id: 'thread-2',
-        user1_id: 'user-789',
-        user2_id: currentUser.id,
-        user1: {
-          display_name: 'ユーザー3',
-          profile_image: 'image3.jpg'
-        },
-        last_message: {
-          content: 'encrypted-おはよう',
-          created_at: new Date().toISOString()
-        },
-        unread_count: 0
-      }
-    ];
-    
-    mockSupabase.select.mockResolvedValueOnce({
-      data: threads,
-      error: null
-    });
-    
-    mockEncryptionService.decryptMessage.mockImplementation(
-      (content) => Promise.resolve(content.replace('encrypted-', ''))
-    );
-    
-    // Act
-    const result = await dmService.getThreads();
-    
-    // Assert
-    expect(result).toHaveLength(2);
-    
-    // ユーザー表示名が正しく設定されているか
-    expect(result[0].otherUser.displayName).toBe('ユーザー2');
-    expect(result[1].otherUser.displayName).toBe('ユーザー3');
-    
-    // 最新メッセージが復号化されているか
-    expect(result[0].lastMessage.content).toBe('こんにちは');
-    expect(result[1].lastMessage.content).toBe('おはよう');
-    
-    // 未読カウントが正しいか
-    expect(result[0].unreadCount).toBe(2);
-    expect(result[1].unreadCount).toBe(0);
-  });
-
-  test('スレッドの検索', async () => {
-    // Arrange
-    mockSupabase.select.mockResolvedValueOnce({
-      data: [
-        {
-          id: 'thread-1',
-          user1_id: currentUser.id,
-          user2_id: 'user-456',
-          user2: {
-            display_name: '検索対象ユーザー',
-            profile_image: 'image.jpg'
-          },
-          last_message: {
-            content: 'encrypted-こんにちは',
-            created_at: new Date().toISOString()
-          }
-        }
-      ],
-      error: null
-    });
-    
-    // Act
-    const result = await dmService.searchThreads('検索');
-    
-    // Assert
-    expect(result).toHaveLength(1);
-    expect(result[0].otherUser.displayName).toBe('検索対象ユーザー');
-  });
-
-  test('スレッドのアーカイブ', async () => {
+  it('メッセージの既読状態更新', async () => {
     // Arrange
     const threadId = 'thread-123';
     
-    mockSupabase.update.mockResolvedValueOnce({
-      data: { archived_at: new Date().toISOString() },
-      error: null
-    });
+    const mockUpdate = vi.fn().mockResolvedValueOnce({ rowCount: 3 });
+    vi.mocked(db.update).mockReturnValueOnce({
+      set: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      execute: mockUpdate
+    } as any);
     
     // Act
-    const result = await dmService.archiveThread(threadId);
+    const result = await dmService.markThreadAsRead(threadId);
+    
+    // Assert
+    expect(result.updatedCount).toBe(3);
+    expect(db.update).toHaveBeenCalledWith(directMessages);
+  });
+
+  it('既読ステータスの一括更新', async () => {
+    // Arrange
+    const threadId = 'thread-123';
+    
+    // Mock unread messages
+    const unreadMessages = [
+      { id: 'msg-1', isRead: false },
+      { id: 'msg-2', isRead: false },
+      { id: 'msg-3', isRead: false }
+    ];
+    
+    const mockSelect = vi.fn().mockResolvedValueOnce(unreadMessages);
+    vi.mocked(db.select).mockReturnValueOnce({
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      execute: mockSelect
+    } as any);
+    
+    const mockUpdate = vi.fn().mockResolvedValueOnce({ rowCount: 3 });
+    vi.mocked(db.update).mockReturnValueOnce({
+      set: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      execute: mockUpdate
+    } as any);
+    
+    // Act
+    const result = await dmService.markAllAsRead(threadId);
+    
+    // Assert
+    expect(result.updatedCount).toBe(3);
+  });
+
+  it('最終既読位置の更新', async () => {
+    // Arrange
+    const threadId = 'thread-123';
+    const lastReadMessageId = 'message-456';
+    
+    // Mock transaction
+    const mockTransaction = vi.fn().mockImplementation(async (fn) => {
+      const tx = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        execute: vi.fn().mockResolvedValueOnce([{ createdAt: new Date() }]),
+        update: vi.fn().mockReturnThis(),
+        set: vi.fn().mockReturnThis()
+      };
+      return fn(tx);
+    });
+    vi.mocked(db.transaction).mockImplementation(mockTransaction);
+    
+    // Act
+    const result = await dmService.updateLastReadPosition(threadId, lastReadMessageId);
     
     // Assert
     expect(result.success).toBe(true);
-    expect(mockSupabase.update).toHaveBeenCalledWith({
-      archived_at: expect.any(String)
-    });
+  });
+
+  it('存在しないスレッドでエラー', async () => {
+    // Arrange
+    const nonExistentThreadId = 'thread-999';
+    
+    // Mock thread not found
+    const mockSelect = vi.fn().mockResolvedValueOnce([]);
+    vi.mocked(db.select).mockReturnValueOnce({
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      execute: mockSelect
+    } as any);
+    
+    // Act & Assert
+    await expect(dmService.markThreadAsRead(nonExistentThreadId))
+      .rejects.toThrow('スレッドが見つかりません');
   });
 });

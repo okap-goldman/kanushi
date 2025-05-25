@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import {
   profiles, accounts, follows,
   posts, stories, hashtags, postHashtags, comments, likes, highlights, bookmarks, offlineContents,
+  storyViewers, storyReactions, storyReplies,
   dmThreads, directMessages,
   liveRooms, roomParticipants, roomChats, gifts,
   events, eventParticipants, eventVoiceWorkshops, eventArchiveAccess,
@@ -18,6 +19,9 @@ export const profilesRelations = relations(profiles, ({ many }) => ({
   followers: many(follows, { relationName: 'followee' }),
   posts: many(posts),
   stories: many(stories),
+  storyViews: many(storyViewers),
+  storyReactions: many(storyReactions),
+  storyReplies: many(storyReplies),
   comments: many(comments),
   likes: many(likes),
   highlights: many(highlights),
@@ -98,7 +102,7 @@ export const postsRelations = relations(posts, ({ one, many }) => ({
 }));
 
 // Story relations
-export const storiesRelations = relations(stories, ({ one }) => ({
+export const storiesRelations = relations(stories, ({ one, many }) => ({
   user: one(profiles, {
     fields: [stories.userId],
     references: [profiles.id]
@@ -112,7 +116,10 @@ export const storiesRelations = relations(stories, ({ one }) => ({
     fields: [stories.id],
     references: [stories.originalStoryId],
     relationName: 'repost'
-  })
+  }),
+  viewers: many(storyViewers),
+  reactions: many(storyReactions),
+  replies: many(storyReplies)
 }));
 
 // Hashtag relations
@@ -529,5 +536,45 @@ export const scheduleVotesRelations = relations(scheduleVotes, ({ one }) => ({
   user: one(profiles, {
     fields: [scheduleVotes.userId],
     references: [profiles.id]
+  })
+}));
+
+// Story viewer relations
+export const storyViewersRelations = relations(storyViewers, ({ one }) => ({
+  story: one(stories, {
+    fields: [storyViewers.storyId],
+    references: [stories.id]
+  }),
+  user: one(profiles, {
+    fields: [storyViewers.userId],
+    references: [profiles.id]
+  })
+}));
+
+// Story reaction relations
+export const storyReactionsRelations = relations(storyReactions, ({ one }) => ({
+  story: one(stories, {
+    fields: [storyReactions.storyId],
+    references: [stories.id]
+  }),
+  user: one(profiles, {
+    fields: [storyReactions.userId],
+    references: [profiles.id]
+  })
+}));
+
+// Story reply relations
+export const storyRepliesRelations = relations(storyReplies, ({ one }) => ({
+  story: one(stories, {
+    fields: [storyReplies.storyId],
+    references: [stories.id]
+  }),
+  user: one(profiles, {
+    fields: [storyReplies.userId],
+    references: [profiles.id]
+  }),
+  message: one(directMessages, {
+    fields: [storyReplies.messageId],
+    references: [directMessages.id]
   })
 }));

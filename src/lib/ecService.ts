@@ -104,6 +104,77 @@ export interface PaymentHistory {
   payment_date: string;
 }
 
+// Cart types
+export interface Cart {
+  id: string;
+  user_id: string;
+  status: 'active' | 'checked_out' | 'abandoned';
+  created_at: string;
+  updated_at?: string;
+  items: CartItem[];
+  total_amount: number;
+}
+
+export interface CartItem {
+  id: string;
+  cart_id: string;
+  product_id: string;
+  quantity: number;
+  added_at: string;
+  product?: Product;
+}
+
+export interface AddToCartInput {
+  product_id: string;
+  quantity: number;
+}
+
+export interface UpdateCartItemInput {
+  item_id: string;
+  quantity: number;
+}
+
+// Gift types
+export interface Gift {
+  id: string;
+  sender_user_id: string;
+  recipient_user_id: string;
+  target_type: 'post' | 'live_room';
+  target_id: string;
+  amount: number;
+  message?: string;
+  platform_fee_rate: number;
+  created_at: string;
+}
+
+export interface SendGiftInput {
+  target_id: string;
+  amount: 300 | 600 | 1200;
+  message?: string;
+}
+
+// Product from post
+export interface CreateProductFromPostInput {
+  post_id: string;
+  price: number;
+  generate_ai_description?: boolean;
+}
+
+// Dashboard types
+export type DashboardPeriod = 'daily' | 'weekly' | 'monthly';
+
+export interface SellerDashboard {
+  period: DashboardPeriod;
+  total_revenue: number;
+  total_orders: number;
+  total_products_sold: number;
+  average_order_value: number;
+  revenue_chart: { date: string; revenue: number }[];
+  top_products: { id: string; title: string; quantity: number; revenue: number }[];
+  gift_revenue: number;
+  recent_orders: Order[];
+}
+
 // Product Services
 export const getProducts = async (
   options: {
@@ -954,5 +1025,732 @@ export const getSalesAnalytics = async (): Promise<{
   } catch (error) {
     console.error('Error getting sales analytics:', error);
     throw new Error('売上分析の取得に失敗しました');
+  }
+};
+
+// Cart Services
+export const getCart = async (): Promise<Cart> => {
+  try {
+    // Get current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    if (!userId) {
+      throw new Error('ログインが必要です');
+    }
+
+    // Get active cart with items
+    const { data, error } = await supabase
+      .from('carts')
+      .select(`
+        *,
+        cart_items (
+          *,
+          product:product_id (
+            id,
+            title,
+            price,
+            stock,
+            image_url,
+            seller_user_id
+          )
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No active cart found
+        return {
+          id: '',
+          user_id: userId,
+          status: 'active',
+          created_at: '',
+          items: [],
+          total_amount: 0,
+        };
+      }
+      throw error;
+    }
+
+    // Calculate total amount
+    const items = data.cart_items || [];
+    const totalAmount = items.reduce((sum: number, item: any) => {
+      return sum + (item.product.price * item.quantity);
+    }, 0);
+
+    return {
+      id: data.id,
+      user_id: data.user_id,
+      status: data.status,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      items: items.map((item: any) => ({
+        id: item.id,
+        cart_id: item.cart_id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        added_at: item.added_at,
+        product: item.product,
+      })),
+      total_amount: totalAmount,
+    };
+  } catch (error) {
+    console.error('Error fetching cart:', error);
+    throw new Error('カートの取得に失敗しました');
+  }
+};
+
+export const addToCart = async (input: AddToCartInput): Promise<CartItem> => {
+  try {
+    // Get current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    if (!userId) {
+      throw new Error('ログインが必要です');
+    }
+
+    // Get or create active cart
+    let cartId: string;
+    const { data: existingCart } = await supabase
+      .from('carts')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .single();
+
+    if (!existingCart) {
+      // Create new cart
+      const { data: newCart, error: createError } = await supabase
+        .from('carts')
+        .insert({
+          user_id: userId,
+          status: 'active',
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        throw createError;
+      }
+      cartId = newCart.id;
+    } else {
+      cartId = existingCart.id;
+    }
+
+    // Check product availability
+    const { data: product, error: productError } = await supabase
+      .from('products')
+      .select('id, stock, price')
+      .eq('id', input.product_id)
+      .single();
+
+    if (productError || !product) {
+      throw new Error('商品が見つかりません');
+    }
+
+    if (product.stock < input.quantity) {
+      throw new Error('在庫が不足しています');
+    }
+
+    // Check if item already exists in cart
+    const { data: existingItem } = await supabase
+      .from('cart_items')
+      .select('id, quantity')
+      .eq('cart_id', cartId)
+      .eq('product_id', input.product_id)
+      .single();
+
+    if (existingItem) {
+      // Update existing item quantity
+      const newQuantity = existingItem.quantity + input.quantity;
+      
+      if (product.stock < newQuantity) {
+        throw new Error('在庫が不足しています');
+      }
+
+      const { data: updatedItem, error: updateError } = await supabase
+        .from('cart_items')
+        .update({ quantity: newQuantity })
+        .eq('id', existingItem.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      return updatedItem;
+    } else {
+      // Add new item to cart
+      const { data: newItem, error: insertError } = await supabase
+        .from('cart_items')
+        .insert({
+          cart_id: cartId,
+          product_id: input.product_id,
+          quantity: input.quantity,
+          added_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      return newItem;
+    }
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+    throw error instanceof Error && error.message.includes('在庫') 
+      ? error 
+      : new Error('カートへの追加に失敗しました');
+  }
+};
+
+export const updateCartItem = async (input: UpdateCartItemInput): Promise<CartItem> => {
+  try {
+    // Get current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    if (!userId) {
+      throw new Error('ログインが必要です');
+    }
+
+    // Get cart item with cart info
+    const { data: cartItem, error: itemError } = await supabase
+      .from('cart_items')
+      .select(`
+        *,
+        cart:cart_id (
+          user_id
+        )
+      `)
+      .eq('id', input.item_id)
+      .single();
+
+    if (itemError || !cartItem) {
+      throw new Error('カートアイテムが見つかりません');
+    }
+
+    // Verify ownership
+    if (cartItem.cart.user_id !== userId) {
+      throw new Error('このカートアイテムを更新する権限がありません');
+    }
+
+    // Check product stock
+    const { data: product, error: productError } = await supabase
+      .from('products')
+      .select('id, stock')
+      .eq('id', cartItem.product_id)
+      .single();
+
+    if (productError || !product) {
+      throw new Error('商品が見つかりません');
+    }
+
+    if (product.stock < input.quantity) {
+      throw new Error('在庫が不足しています');
+    }
+
+    // Update quantity
+    const { data: updatedItem, error: updateError } = await supabase
+      .from('cart_items')
+      .update({ quantity: input.quantity })
+      .eq('id', input.item_id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    return updatedItem;
+  } catch (error) {
+    console.error('Error updating cart item:', error);
+    throw error instanceof Error && error.message.includes('在庫') 
+      ? error 
+      : new Error('カートアイテムの更新に失敗しました');
+  }
+};
+
+export const removeFromCart = async (itemId: string): Promise<boolean> => {
+  try {
+    // Get current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    if (!userId) {
+      throw new Error('ログインが必要です');
+    }
+
+    // Get cart item with cart info
+    const { data: cartItem, error: itemError } = await supabase
+      .from('cart_items')
+      .select(`
+        *,
+        cart:cart_id (
+          user_id
+        )
+      `)
+      .eq('id', itemId)
+      .single();
+
+    if (itemError || !cartItem) {
+      throw new Error('カートアイテムが見つかりません');
+    }
+
+    // Verify ownership
+    if (cartItem.cart.user_id !== userId) {
+      throw new Error('このカートアイテムを削除する権限がありません');
+    }
+
+    // Delete item
+    const { error: deleteError } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('id', itemId);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error removing from cart:', error);
+    throw new Error('カートアイテムの削除に失敗しました');
+  }
+};
+
+export const clearCart = async (): Promise<boolean> => {
+  try {
+    // Get current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    if (!userId) {
+      throw new Error('ログインが必要です');
+    }
+
+    // Get active cart
+    const { data: cart } = await supabase
+      .from('carts')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .single();
+
+    if (!cart) {
+      // No active cart
+      return true;
+    }
+
+    // Delete all items from cart
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('cart_id', cart.id);
+
+    if (error) {
+      throw error;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error clearing cart:', error);
+    throw new Error('カートのクリアに失敗しました');
+  }
+};
+
+export const createCheckoutSession = async (
+  shippingAddressId: string
+): Promise<{ payment_url: string; order_id: string }> => {
+  try {
+    // Get current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    if (!userId) {
+      throw new Error('ログインが必要です');
+    }
+
+    // Get active cart with items
+    const { data: cart, error: cartError } = await supabase
+      .from('carts')
+      .select(`
+        *,
+        cart_items (
+          *,
+          product:product_id (
+            id,
+            title,
+            price,
+            seller_user_id
+          )
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .single();
+
+    if (cartError || !cart) {
+      throw new Error('アクティブなカートが見つかりません');
+    }
+
+    if (!cart.cart_items || cart.cart_items.length === 0) {
+      throw new Error('カートが空です');
+    }
+
+    // Verify shipping address
+    const { data: shippingAddress, error: addressError } = await supabase
+      .from('shipping_addresses')
+      .select('*')
+      .eq('id', shippingAddressId)
+      .eq('user_id', userId)
+      .single();
+
+    if (addressError || !shippingAddress) {
+      throw new Error('配送先住所が見つかりません');
+    }
+
+    // Calculate total amount
+    const totalAmount = cart.cart_items.reduce((sum: number, item: any) => {
+      return sum + (item.product.price * item.quantity);
+    }, 0);
+
+    // Create order
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        buyer_user_id: userId,
+        product_id: cart.cart_items[0].product_id, // Simplified for single product
+        quantity: cart.cart_items[0].quantity,
+        amount: totalAmount,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (orderError) {
+      throw orderError;
+    }
+
+    // Update cart status
+    await supabase
+      .from('carts')
+      .update({ status: 'checked_out' })
+      .eq('id', cart.id);
+
+    // Generate Stripe checkout URL (simulated)
+    const checkoutUrl = `https://checkout.stripe.com/c/pay/cs_test_${order.id}#${btoa(JSON.stringify({
+      success_url: 'https://example.com/success',
+      cancel_url: 'https://example.com/cancel',
+    }))}`;
+
+    return {
+      payment_url: checkoutUrl,
+      order_id: order.id,
+    };
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    throw new Error('チェックアウトセッションの作成に失敗しました');
+  }
+};
+
+// Gift Services
+export const sendGiftToPost = async (
+  postId: string,
+  input: SendGiftInput
+): Promise<Gift> => {
+  try {
+    // Get current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    if (!userId) {
+      throw new Error('ログインが必要です');
+    }
+
+    // Get post and recipient info
+    const { data: post, error: postError } = await supabase
+      .from('posts')
+      .select('id, user_id')
+      .eq('id', postId)
+      .single();
+
+    if (postError || !post) {
+      throw new Error('投稿が見つかりません');
+    }
+
+    // Create gift record
+    const { data: gift, error: giftError } = await supabase
+      .from('gifts')
+      .insert({
+        sender_user_id: userId,
+        recipient_user_id: post.user_id,
+        target_type: 'post',
+        target_id: postId,
+        amount: input.amount,
+        message: input.message,
+        platform_fee_rate: 0.08, // 8% platform fee
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (giftError) {
+      throw giftError;
+    }
+
+    // TODO: Process payment through Stripe
+
+    return gift;
+  } catch (error) {
+    console.error('Error sending gift to post:', error);
+    throw new Error('ギフトの送信に失敗しました');
+  }
+};
+
+export const sendGiftToLiveRoom = async (
+  liveRoomId: string,
+  input: SendGiftInput
+): Promise<Gift> => {
+  try {
+    // Get current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    if (!userId) {
+      throw new Error('ログインが必要です');
+    }
+
+    // Get live room and host info
+    const { data: liveRoom, error: roomError } = await supabase
+      .from('live_rooms')
+      .select('id, host_user_id')
+      .eq('id', liveRoomId)
+      .single();
+
+    if (roomError || !liveRoom) {
+      throw new Error('ライブルームが見つかりません');
+    }
+
+    // Create gift record
+    const { data: gift, error: giftError } = await supabase
+      .from('gifts')
+      .insert({
+        sender_user_id: userId,
+        recipient_user_id: liveRoom.host_user_id,
+        target_type: 'live_room',
+        target_id: liveRoomId,
+        amount: input.amount,
+        message: input.message,
+        platform_fee_rate: 0.08, // 8% platform fee
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (giftError) {
+      throw giftError;
+    }
+
+    // TODO: Process payment through Stripe
+
+    return gift;
+  } catch (error) {
+    console.error('Error sending gift to live room:', error);
+    throw new Error('ギフトの送信に失敗しました');
+  }
+};
+
+// Product from Post
+export const createProductFromPost = async (
+  input: CreateProductFromPostInput
+): Promise<Product> => {
+  try {
+    // Get current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    if (!userId) {
+      throw new Error('ログインが必要です');
+    }
+
+    // Get post details
+    const { data: post, error: postError } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('id', input.post_id)
+      .eq('user_id', userId)
+      .single();
+
+    if (postError || !post) {
+      throw new Error('投稿が見つからないか、出品権限がありません');
+    }
+
+    // Generate AI description if requested
+    let description = post.content || '';
+    if (input.generate_ai_description) {
+      // TODO: Integrate with Gemini API to generate description
+      description = `【AI生成説明文】\n${post.content}\n\n推奨視聴者: スピリチュアルに興味がある方、自己成長を求める方`;
+    }
+
+    // Create product
+    const { data: product, error: productError } = await supabase
+      .from('products')
+      .insert({
+        seller_user_id: userId,
+        title: post.content ? post.content.substring(0, 50) + '...' : '音声コンテンツ',
+        description: description,
+        price: input.price,
+        currency: 'JPY',
+        image_url: post.thumbnail_url || 'https://example.com/default-audio.jpg',
+        stock: 9999, // Digital product
+        source_post_id: input.post_id,
+        product_type: 'digital',
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (productError) {
+      throw productError;
+    }
+
+    return product;
+  } catch (error) {
+    console.error('Error creating product from post:', error);
+    throw new Error('音声投稿からの商品作成に失敗しました');
+  }
+};
+
+// Dashboard
+export const getSellerDashboard = async (
+  period: DashboardPeriod = 'monthly'
+): Promise<SellerDashboard> => {
+  try {
+    // Get current user session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    if (!userId) {
+      throw new Error('ログインが必要です');
+    }
+
+    // Calculate date range based on period
+    const now = new Date();
+    let startDate: Date;
+    
+    switch (period) {
+      case 'daily':
+        startDate = new Date(now.setDate(now.getDate() - 7));
+        break;
+      case 'weekly':
+        startDate = new Date(now.setDate(now.getDate() - 28));
+        break;
+      case 'monthly':
+      default:
+        startDate = new Date(now.setMonth(now.getMonth() - 3));
+        break;
+    }
+
+    // Get seller's products
+    const { data: products } = await supabase
+      .from('products')
+      .select('id')
+      .eq('seller_user_id', userId);
+
+    if (!products || products.length === 0) {
+      return {
+        period,
+        total_revenue: 0,
+        total_orders: 0,
+        total_products_sold: 0,
+        average_order_value: 0,
+        revenue_chart: [],
+        top_products: [],
+        gift_revenue: 0,
+        recent_orders: [],
+      };
+    }
+
+    const productIds = products.map(p => p.id);
+
+    // Get orders for the period
+    const { data: orders } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        product:product_id (
+          id,
+          title
+        )
+      `)
+      .in('product_id', productIds)
+      .in('status', ['paid', 'shipped'])
+      .gte('created_at', startDate.toISOString())
+      .order('created_at', { ascending: false });
+
+    // Get gifts for the period
+    const { data: gifts } = await supabase
+      .from('gifts')
+      .select('*')
+      .eq('recipient_user_id', userId)
+      .gte('created_at', startDate.toISOString());
+
+    // Calculate metrics
+    const totalRevenue = (orders || []).reduce((sum, order) => sum + order.amount, 0);
+    const giftRevenue = (gifts || []).reduce((sum, gift) => sum + (gift.amount * (1 - gift.platform_fee_rate)), 0);
+    const totalOrders = (orders || []).length;
+    const totalProductsSold = (orders || []).reduce((sum, order) => sum + order.quantity, 0);
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+    // Group by product for top products
+    const productMap = new Map<string, { id: string; title: string; quantity: number; revenue: number }>();
+    (orders || []).forEach(order => {
+      const existing = productMap.get(order.product_id);
+      if (existing) {
+        existing.quantity += order.quantity;
+        existing.revenue += order.amount;
+      } else {
+        productMap.set(order.product_id, {
+          id: order.product_id,
+          title: order.product.title,
+          quantity: order.quantity,
+          revenue: order.amount,
+        });
+      }
+    });
+
+    const topProducts = Array.from(productMap.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+
+    // Generate revenue chart data
+    const revenueChart: { date: string; revenue: number }[] = [];
+    // Simplified - just show total for now
+    // In production, would group by date
+
+    return {
+      period,
+      total_revenue: totalRevenue,
+      total_orders: totalOrders,
+      total_products_sold: totalProductsSold,
+      average_order_value: averageOrderValue,
+      revenue_chart: revenueChart,
+      top_products: topProducts,
+      gift_revenue: giftRevenue,
+      recent_orders: (orders || []).slice(0, 10),
+    };
+  } catch (error) {
+    console.error('Error fetching seller dashboard:', error);
+    throw new Error('ダッシュボードデータの取得に失敗しました');
   }
 };
