@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import AudioPlayer from '@/components/AudioPlayer';
+import AudioPlayer from '../../src/components/AudioPlayer';
 
 // モックの設定
 vi.mock('expo-av', () => ({
@@ -33,10 +33,10 @@ vi.mock('expo-av', () => ({
 }));
 
 vi.mock('@expo/vector-icons', () => ({
-  Feather: ({ name, size, color }: any) => <span testID={`icon-${name}`}>{name}</span>,
+  Feather: ({ name, size, color }: any) => ({ testID: `icon-${name}`, children: name }),
 }));
 
-vi.mock('@/components/ui/Slider', () => ({
+vi.mock('../../src/components/ui/slider', () => ({
   Slider: ({ onValueChange, value, testID }: any) => (
     <input
       type="range"
@@ -65,7 +65,9 @@ describe('AudioPlayer Component', () => {
   it('初期状態で正しく表示される', () => {
     const { getByTestId, getByText } = render(<AudioPlayer post={mockPost} />);
 
-    // 波形画像が表示される
+    expect(getByTestId('waveform-container')).toBeTruthy();
+    
+    // 波形画像が表示される（waveformDataがない場合はURLから画像を表示）
     expect(getByTestId('waveform-image')).toBeTruthy();
     
     // 再生ボタンが表示される
@@ -94,6 +96,28 @@ describe('AudioPlayer Component', () => {
     await waitFor(() => {
       expect(Audio.Sound.createAsync).toHaveBeenCalledWith(
         { uri: mockPost.mediaUrl },
+        { shouldPlay: false },
+        expect.any(Function)
+      );
+    });
+  });
+  
+  it('usePreview=trueでプレビューURLがある場合はプレビューが使用される', async () => {
+    const { Audio } = await import('expo-av');
+    const postWithPreview = {
+      ...mockPost,
+      previewUrl: 'https://example.com/preview.mp3',
+    };
+    
+    const { getByTestId } = render(<AudioPlayer post={postWithPreview} usePreview={true} />);
+
+    // 再生ボタンをクリック
+    const playButton = getByTestId('play-button');
+    fireEvent.press(playButton);
+
+    await waitFor(() => {
+      expect(Audio.Sound.createAsync).toHaveBeenCalledWith(
+        { uri: postWithPreview.previewUrl },
         { shouldPlay: false },
         expect.any(Function)
       );
@@ -141,7 +165,7 @@ describe('AudioPlayer Component', () => {
       unloadAsync: vi.fn(),
     };
     
-    (Audio.Sound.createAsync as any).mockImplementation(async (source, initialStatus, onPlaybackStatusUpdate) => {
+    (Audio.Sound.createAsync as any).mockImplementation(async (source: any, initialStatus: any, onPlaybackStatusUpdate: any) => {
       // 音声が読み込まれた状態を通知
       setTimeout(() => {
         onPlaybackStatusUpdate?.({
@@ -166,14 +190,14 @@ describe('AudioPlayer Component', () => {
 
     // シークバーを操作
     const seekBar = getByTestId('seek-bar');
-    fireEvent.change(seekBar, { target: { value: '90000' } });
+    fireEvent(seekBar, 'valueChange', 90000);
 
     await waitFor(() => {
       expect(mockSound.setPositionAsync).toHaveBeenCalledWith(90000);
     });
   });
 
-  it('波形画像がない場合は表示されない', () => {
+  it('波形画像がない場合でも波形コンテナは表示される', () => {
     const postWithoutWaveform = {
       ...mockPost,
       waveformUrl: undefined,
@@ -181,6 +205,28 @@ describe('AudioPlayer Component', () => {
     
     const { queryByTestId } = render(<AudioPlayer post={postWithoutWaveform} />);
     
+    expect(queryByTestId('waveform-container')).toBeTruthy();
+    expect(queryByTestId('waveform-image')).toBeNull();
+  });
+  
+  it('showWaveform=falseの場合は波形が表示されない', () => {
+    const { queryByTestId } = render(<AudioPlayer post={mockPost} showWaveform={false} />);
+    
+    expect(queryByTestId('waveform-container')).toBeNull();
+  });
+  
+  it('waveformDataがある場合は波形可視化が表示される', () => {
+    const postWithWaveformData = {
+      ...mockPost,
+      waveformData: {
+        waveform: Array(100).fill(0).map(() => Math.random()),
+        duration: 180,
+      },
+    };
+    
+    const { queryByTestId } = render(<AudioPlayer post={postWithWaveformData} />);
+    
+    expect(queryByTestId('waveform-container')).toBeTruthy();
     expect(queryByTestId('waveform-image')).toBeNull();
   });
 
