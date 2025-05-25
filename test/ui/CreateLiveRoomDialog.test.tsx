@@ -201,4 +201,3 @@ describe('CreateLiveRoomDialog', () => {
     expect(queryByText('ライブルームを作成')).toBeNull();
   });
 });
-EOF < /dev/null

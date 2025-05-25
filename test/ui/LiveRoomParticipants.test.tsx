@@ -301,4 +301,3 @@ describe('LiveRoomParticipants', () => {
     });
   });
 });
-EOF < /dev/null

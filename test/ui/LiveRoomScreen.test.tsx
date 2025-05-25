@@ -271,4 +271,3 @@ describe('LiveRoomScreen', () => {
     });
   });
 });
-EOF < /dev/null

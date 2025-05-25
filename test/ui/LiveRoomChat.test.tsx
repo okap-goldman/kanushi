@@ -219,4 +219,3 @@ describe('LiveRoomChat', () => {
     });
   });
 });
-EOF < /dev/null
