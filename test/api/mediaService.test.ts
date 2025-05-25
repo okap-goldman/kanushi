@@ -31,7 +31,7 @@ describe('MediaService', () => {
 
       const result = await mediaService.uploadFile({ file: mockFile });
 
-      expect(result.error).toBeUndefined();
+      expect(result.error).toBeNull();
       expect(result.data).toEqual({
         url: 'https://cdn.example.com/test.jpg',
         fileId: 'file123',
@@ -49,8 +49,8 @@ describe('MediaService', () => {
 
       const result = await mediaService.uploadFile({ file: mockFile });
 
-      expect(result.error).toBe('Upload failed');
-      expect(result.data).toBeUndefined();
+      expect(result.error?.message).toBe('Upload failed');
+      expect(result.data).toBeNull();
     });
   });
 
@@ -72,7 +72,7 @@ describe('MediaService', () => {
 
       const result = await mediaService.processAudio(audioUrl);
 
-      expect(result.error).toBeUndefined();
+      expect(result.error).toBeNull();
       expect(result.data).toEqual({
         originalUrl: audioUrl,
         processedUrl: 'https://cdn.example.com/processed.mp3',
@@ -95,8 +95,8 @@ describe('MediaService', () => {
 
       const result = await mediaService.processAudio('https://example.com/audio.mp3');
 
-      expect(result.error).toBe('Processing failed');
-      expect(result.data).toBeUndefined();
+      expect(result.error?.message).toBe('Processing failed');
+      expect(result.data).toBeNull();
     });
   });
 
@@ -119,7 +119,7 @@ describe('MediaService', () => {
 
       const result = await mediaService.processImage(imageUrl);
 
-      expect(result.error).toBeUndefined();
+      expect(result.error).toBeNull();
       expect(result.data).toEqual({
         originalUrl: imageUrl,
         processedUrl: 'https://cdn.example.com/optimized.jpg',
@@ -149,7 +149,7 @@ describe('MediaService', () => {
 
       const result = await mediaService.processImage(imageUrl, options);
 
-      expect(result.error).toBeUndefined();
+      expect(result.error).toBeNull();
       expect(mockSupabase.functions.invoke).toHaveBeenCalledWith('process-image', {
         body: {
           imageUrl,
@@ -166,8 +166,8 @@ describe('MediaService', () => {
 
       const result = await mediaService.processImage('https://example.com/image.jpg');
 
-      expect(result.error).toBe('Invalid image format');
-      expect(result.data).toBeUndefined();
+      expect(result.error?.message).toBe('Invalid image format');
+      expect(result.data).toBeNull();
     });
   });
 });
