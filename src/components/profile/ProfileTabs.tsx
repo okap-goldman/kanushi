@@ -12,7 +12,7 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { supabase } from '../../lib/supabase';
 
-type Tab = 'posts' | 'highlights' | 'likes';
+type Tab = 'posts' | 'highlights' | 'likes' | 'bookmarks';
 
 interface ProfileTabsProps {
   userId: string;
@@ -24,6 +24,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
   const [posts, setPosts] = useState<any[]>([]);
   const [highlights, setHighlights] = useState<any[]>([]);
   const [likes, setLikes] = useState<any[]>([]);
+  const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -33,6 +34,8 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
       fetchHighlights();
     } else if (activeTab === 'likes') {
       fetchLikes();
+    } else if (activeTab === 'bookmarks') {
+      fetchBookmarks();
     }
   }, [activeTab, userId]);
 
@@ -99,6 +102,27 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
     }
   };
 
+  const fetchBookmarks = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('bookmarks')
+        .select('*, posts!inner(*)')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      if (data) {
+        setBookmarks(data);
+      }
+    } catch (err) {
+      console.error('Error fetching bookmarks:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderTabContent = () => {
     if (loading) {
       return (
@@ -135,6 +159,15 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
       );
     }
 
+    if (activeTab === 'bookmarks' && bookmarks.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Feather name="bookmark" size={48} color="#CBD5E0" />
+          <Text style={styles.emptyText}>No bookmarks yet</Text>
+        </View>
+      );
+    }
+
     let data = [];
     if (activeTab === 'posts') {
       data = posts;
@@ -142,6 +175,8 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
       data = highlights.map(h => h.posts);
     } else if (activeTab === 'likes') {
       data = likes.map(l => l.posts);
+    } else if (activeTab === 'bookmarks') {
+      data = bookmarks.map(b => b.posts);
     }
 
     return (
@@ -221,6 +256,18 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
             name="heart"
             size={20}
             color={activeTab === 'likes' ? '#0070F3' : '#64748B'}
+          />
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          testID="bookmark-tab"
+          style={[styles.tab, activeTab === 'bookmarks' && styles.activeTab]}
+          onPress={() => onChangeTab('bookmarks')}
+        >
+          <Feather
+            name="bookmark"
+            size={20}
+            color={activeTab === 'bookmarks' ? '#0070F3' : '#64748B'}
           />
         </TouchableOpacity>
       </View>

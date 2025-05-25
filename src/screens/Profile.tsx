@@ -21,7 +21,7 @@ export default function Profile() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'highlights' | 'likes'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'highlights' | 'likes' | 'bookmarks'>('posts');
   
   const navigation = useNavigation<any>();
   const route = useRoute();
