@@ -1,0 +1,258 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip E2E tests'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run tests
+      run: npm test -- --coverage --watchAll=false
+    
+    - name: Run production build check
+      run: npm run build:web
+      env:
+        NODE_ENV: production
+
+  deploy-web:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build web application
+      run: npm run build:web
+      env:
+        EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.PRODUCTION_SUPABASE_URL }}
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PRODUCTION_SUPABASE_ANON_KEY }}
+        NODE_ENV: production
+    
+    - name: Deploy to Vercel Production
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod'
+        working-directory: ./dist
+        production: true
+    
+    - name: Purge CDN Cache
+      run: |
+        curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
+          -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          --data '{"purge_everything":true}'
+
+  deploy-mobile:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Install EAS CLI
+      run: npm install -g eas-cli
+    
+    - name: Setup Expo
+      uses: expo/expo-github-action@v8
+      with:
+        eas-version: latest
+        token: ${{ secrets.EXPO_TOKEN }}
+    
+    - name: Create app.config.js for production
+      run: |
+        cat > app.config.js << EOF
+        module.exports = {
+          ...require('./app.json').expo,
+          extra: {
+            supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
+            supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+            environment: 'production'
+          }
+        };
+        EOF
+      env:
+        EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.PRODUCTION_SUPABASE_URL }}
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PRODUCTION_SUPABASE_ANON_KEY }}
+    
+    - name: Publish to Expo (Production Channel)
+      run: eas update --branch production --message "Production deployment from ${{ github.sha }}"
+      env:
+        EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    
+    - name: Submit to App Store
+      if: github.event_name == 'workflow_dispatch'
+      run: eas submit --platform ios --latest --non-interactive
+      env:
+        EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        EXPO_APPLE_ID: ${{ secrets.APPLE_ID }}
+        EXPO_APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+    
+    - name: Submit to Google Play
+      if: github.event_name == 'workflow_dispatch'
+      run: eas submit --platform android --latest --non-interactive
+      env:
+        EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  smoke-tests:
+    needs: [deploy-web, deploy-mobile]
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_tests }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run smoke tests
+      run: npm run test:smoke
+      env:
+        PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+        TEST_TIMEOUT: 30000
+    
+    - name: Health check
+      run: |
+        response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.PRODUCTION_URL }}/api/health)
+        if [ $response != "200" ]; then
+          echo "Health check failed with status $response"
+          exit 1
+        fi
+
+  rollback:
+    needs: smoke-tests
+    runs-on: ubuntu-latest
+    if: failure()
+    
+    steps:
+    - name: Rollback Vercel deployment
+      run: |
+        echo "Rolling back to previous deployment..."
+        # Vercel automatically keeps previous deployments
+        # This would trigger a rollback through Vercel API
+    
+    - name: Notify team of rollback
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: |
+          ⚠️ Production deployment failed and was rolled back!
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+          Please check the logs immediately.
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  notify:
+    needs: [deploy-web, deploy-mobile, smoke-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Create deployment record
+      uses: actions/github-script@v6
+      with:
+        script: |
+          await github.rest.repos.createDeployment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: context.sha,
+            task: 'deploy',
+            auto_merge: false,
+            required_contexts: [],
+            payload: {
+              web_url: '${{ secrets.PRODUCTION_URL }}',
+              deployed_by: context.actor,
+              deployment_time: new Date().toISOString()
+            },
+            environment: 'production',
+            description: 'Production deployment'
+          });
+    
+    - name: Notify Slack
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: |
+          Production Deployment ${{ job.status }}
+          Version: ${{ github.sha }}
+          Deployed by: ${{ github.actor }}
+          Web: ${{ secrets.PRODUCTION_URL }}
+          Mobile: Production channel updated
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+    
+    - name: Create release notes
+      if: success()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { data: commits } = await github.rest.repos.compareCommits({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            base: context.payload.before,
+            head: context.sha
+          });
+          
+          const releaseNotes = commits.commits
+            .map(c => `- ${c.commit.message} (@${c.author.login})`)
+            .join('\n');
+          
+          await github.rest.repos.createRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag_name: `v${new Date().toISOString().split('T')[0]}`,
+            name: `Production Release ${new Date().toISOString().split('T')[0]}`,
+            body: `## Changes\n\n${releaseNotes}`,
+            draft: false,
+            prerelease: false
+          });

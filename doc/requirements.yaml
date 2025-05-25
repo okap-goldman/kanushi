@@ -1,4 +1,5 @@
-更新日: 2025-05-25  (Deep-Link & ライブルーム拡張を反映)
+# 要件定義
+更新日: 2025-05-25
 
 サービス概要:
   サービス名: "目醒め人のためのSNS"
@@ -6,13 +7,12 @@
     “目醒め” をテーマに、音声を主軸とした深い共感・学び合い・自己表現を促す
     コミュニティSNS。Instagram／Threads の気軽さと Spotify 的 “発見して聴く”
     体験を融合し、スピリチュアル領域のクリエイター経済を支援する。
-
   提供プラットフォーム:
     モバイル: [iOS, Android]
     デスクトップ(Web): [Chrome, Safari]
     Deep-Link:
-      モバイル: "awakening://<path>"
-      UniversalLink: "https://app.awakening.tld/<path>"
+      モバイル: "kanushi://<path>"
+      UniversalLink: "https://app.kanushi.tld/<path>"
       対象: [投稿, プロフィール, イベント, ライブルーム, 商品, グループ]
 
 機能要件:
@@ -29,6 +29,15 @@
       外部リンクURL: true
       通知設定: [コメント, ハイライト, 新規フォロワー, ギフト提案]
     複数アカウント切替: {最大保持数: 5, UI: "プロフィール長押し"}
+    投稿閲覧: 
+      投稿:
+        - そのユーザーの投稿のみをTL表示
+        - 音声・画像・テキスト・ハイライトでフィルタリング可能
+      イベント:
+        - そのユーザーが募集中及び開催済のイベントを表示
+        - 開催済のイベントは背景色を変えて開催済みであることをわかりやすく
+      ショップ
+        - そのユーザーが出品中の商品を表示
 
   ## フォロー
   フォロー機能:
@@ -57,6 +66,7 @@
       ハイライト: {理由必須: true, 取消: false, 公開: true}
       後で見る: true
       シェアURL: true
+      削除: {対象: "自分の投稿"}        # ← NEW
     ミニオーディオプレーヤー: {UI要素: [アートワーク, タイトル, 再生/停止, シーク, 波形]}
 
   ## ストーリーズ
@@ -70,6 +80,7 @@
     種類: [テキスト, 画像, 音声メモ]
     既読: true
     E2E暗号化: true
+    スレッド管理: true            # ← CHANGED (DM_THREAD 追加)
 
   ## AIチャット
   AIチャット:
@@ -97,11 +108,12 @@
     音声ワークショップ:
       ライブ: "ライブルーム(購入者限定)"
       アーカイブ: 自動
-    決済: {Stripe, 手数料: 7%}
+    決済: {Stores.jp(Payge), 手数料: 7%}  # ← CHANGED
 
   ## ショップ
   ショップ:
     商品タイプ: ["物理商品", "オンラインセッション", "音声"]
+    カート: true                             # ← NEW (複数商品まとめ買い)
     音声即時出品:
       投稿「出品」ボタン: true
       AI説明文生成: true
@@ -109,21 +121,21 @@
       音質向上: 自動
     出品者管理: {取引一覧: true, 売上ダッシュボード: true}
     購入者管理: {注文履歴: true, 配送追跡: true}
-    決済: "Stripe"
+    決済: "Stores.jp(Payge)"                 # ← CHANGED
     光ギフト: {プリセット: [300, 600, 1200], 分配: {クリエイター: 92%, 手数料: 8%}}
 
   ## ライブルーム (H)
   ライブルーム:
     同時登壇: 10
     リスナー: "無制限"
-    録音投稿化: 任意
+    録音投稿化: 任意 (単一パート固定)     # ← CLARIFIED
     ルームチャット:
       リスナーコメント: true
       ホスト固定メッセージ: true
-      URLシェア: true          # 外部/内部リンクを投稿可
+      URLシェア: true
       ピン機能: true
     Deep-Link生成:
-      例: "awakening://room/<id>" (UniversalLink 同等)
+      例: "kanushi://room/<id>"
     プロトコル: "WebRTC(LiveKit)"
 
   ## グループ
@@ -132,6 +144,7 @@
     参加タイプ: ["無料", "月額サブスク"]
     チャット: [テキスト, 画像, 音声メモ]
     グループTL: true
+    決済: "Stores.jp(Payge)"                 # ← CHANGED
 
   ## 日程調整, サブスク, クラファン, イマジネーション
   日程調整アシスト: L
@@ -147,8 +160,8 @@
     iOS/Android: {保存上限: "500 MB", 対象: ["後で見る", "MyRadio"]}
     Web: "非対応"
   Deep-Link:
-    Scheme: "awakening://"
-    UniversalLink: "https://app.awakening.tld/"
+    Scheme: "kanushi://"
+    UniversalLink: "https://app.kanushi.tld/"
     Fallback: "ブラウザ → ストア誘導"
   アクセシビリティ: "WCAG 2.1 AA"
   国際化: ["ja", "en"]
@@ -159,8 +172,8 @@
   ストレージ: {B2+Cloudflare, Supabase PG}
   EdgeFunctions(Deno): [画像変換, Waveform, AudioEnhance]
   LiveKit Cloud, Cloudflare TURN
-  Stripe Webhook → gift_webhook
-  Deep-Link Resolver: Supabase Edge Function (redirect)
+  Stores.jp Webhook → gift_webhook         # ← CHANGED
+  Deep-Link Resolver: Supabase Edge Function
 
 開発運用:
   GitFlow, vitest, Vibe Coding(AI), Storybook+OpenAPI
