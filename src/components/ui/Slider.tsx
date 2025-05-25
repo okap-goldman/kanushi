@@ -3,23 +3,29 @@ import { View, PanResponder, ViewProps, StyleSheet, Dimensions } from 'react-nat
 
 interface SliderProps extends ViewProps {
   value?: number;
-  min?: number;
-  max?: number;
+  minimumValue?: number;
+  maximumValue?: number;
   onValueChange?: (value: number) => void;
   disabled?: boolean;
+  minimumTrackTintColor?: string;
+  maximumTrackTintColor?: string;
+  thumbStyle?: any;
 }
 
 export function Slider({ 
   value = 0, 
-  min = 0, 
-  max = 100, 
+  minimumValue = 0, 
+  maximumValue = 100, 
   onValueChange, 
   disabled,
+  minimumTrackTintColor = '#0070F3',
+  maximumTrackTintColor = '#E2E8F0',
+  thumbStyle,
   style,
   ...props 
 }: SliderProps) {
   const [sliderWidth, setSliderWidth] = React.useState(0);
-  const percentage = ((value - min) / (max - min)) * 100;
+  const percentage = ((value - minimumValue) / (maximumValue - minimumValue)) * 100;
 
   const panResponder = React.useRef(
     PanResponder.create({
@@ -38,7 +44,7 @@ export function Slider({
     if (sliderWidth === 0) return;
     
     const newPercentage = Math.max(0, Math.min(100, (locationX / sliderWidth) * 100));
-    const newValue = min + (newPercentage / 100) * (max - min);
+    const newValue = minimumValue + (newPercentage / 100) * (maximumValue - minimumValue);
     
     onValueChange?.(Math.round(newValue));
   };
@@ -49,11 +55,11 @@ export function Slider({
       onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
       {...props}
     >
-      <View style={styles.track}>
-        <View style={[styles.fill, { width: `${percentage}%` }]} />
+      <View style={[styles.track, { backgroundColor: maximumTrackTintColor }]}>
+        <View style={[styles.fill, { width: `${percentage}%`, backgroundColor: minimumTrackTintColor }]} />
       </View>
       <View
-        style={[styles.thumb, { left: `${percentage}%` }]}
+        style={[styles.thumb, { left: `${percentage}%`, borderColor: minimumTrackTintColor }, thumbStyle]}
         {...panResponder.panHandlers}
       />
     </View>

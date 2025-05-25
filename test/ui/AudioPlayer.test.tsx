@@ -1,12 +1,8 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { vi } from 'vitest';
 import AudioPlayer from '@/components/AudioPlayer';
 import { Audio } from 'expo-av';
-
-// react-native-reanimated/mockを使用
-jest.mock('react-native-reanimated', () => 
-  require('react-native-reanimated/mock')
-);
 
 describe('AudioPlayer Component', () => {
   const mockAudioPost = {
@@ -21,7 +17,7 @@ describe('AudioPlayer Component', () => {
 
   beforeEach(() => {
     // Audio APIのモックをリセット
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('初期状態で再生ボタンが表示される', () => {
@@ -36,9 +32,9 @@ describe('AudioPlayer Component', () => {
   it('再生ボタンをタップすると音声が再生される', async () => {
     // Arrange
     const mockSoundObject = {
-      playAsync: jest.fn().mockResolvedValue({}),
-      pauseAsync: jest.fn().mockResolvedValue({}),
-      getStatusAsync: jest.fn().mockResolvedValue({
+      playAsync: vi.fn().mockResolvedValue({}),
+      pauseAsync: vi.fn().mockResolvedValue({}),
+      getStatusAsync: vi.fn().mockResolvedValue({
         isLoaded: true,
         isPlaying: true,
         positionMillis: 0,
@@ -46,7 +42,7 @@ describe('AudioPlayer Component', () => {
       })
     };
     
-    Audio.Sound.createAsync = jest.fn().mockResolvedValue({
+    Audio.Sound.createAsync = vi.fn().mockResolvedValue({
       sound: mockSoundObject,
       status: { isLoaded: true }
     });
@@ -66,7 +62,7 @@ describe('AudioPlayer Component', () => {
   it('シークバーで再生位置を変更できる', async () => {
     // Arrange
     const mockSoundObject = {
-      setPositionAsync: jest.fn().mockResolvedValue({})
+      setPositionAsync: vi.fn().mockResolvedValue({})
     };
     
     const { getByTestId } = render(
