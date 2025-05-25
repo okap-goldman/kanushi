@@ -1,5 +1,5 @@
 // UI test setup for Vitest + React Native Testing Library
-import { vi } from 'vitest';
+import { vi, describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import * as testingLibrary from '../mocks/testing-library-react-native';
 
 // Configure React Native Testing Library

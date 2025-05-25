@@ -65,14 +65,14 @@ export function createMediaService(supabaseClient = supabase): MediaService {
             url: data.url,
             fileId: data.fileId,
           },
-          error: null
+          error: null,
         };
       } catch (error) {
         console.error('File upload error:', error);
-        return { 
-          success: false, 
-          data: null, 
-          error: new Error('ファイルのアップロードに失敗しました') 
+        return {
+          success: false,
+          data: null,
+          error: new Error('ファイルのアップロードに失敗しました'),
         };
       }
     },
@@ -92,7 +92,11 @@ export function createMediaService(supabaseClient = supabase): MediaService {
         }
 
         if (!data.success) {
-          return { success: false, data: null, error: new Error(data.error || 'Audio processing failed') };
+          return {
+            success: false,
+            data: null,
+            error: new Error(data.error || 'Audio processing failed'),
+          };
         }
 
         return {
@@ -104,7 +108,7 @@ export function createMediaService(supabaseClient = supabase): MediaService {
             previewUrl: data.previewUrl,
             durationSeconds: data.durationSeconds,
           },
-          error: null
+          error: null,
         };
       } catch (error) {
         console.error('Audio processing error:', error);
@@ -131,7 +135,11 @@ export function createMediaService(supabaseClient = supabase): MediaService {
         }
 
         if (!data.success) {
-          return { success: false, data: null, error: new Error(data.error || 'Image processing failed') };
+          return {
+            success: false,
+            data: null,
+            error: new Error(data.error || 'Image processing failed'),
+          };
         }
 
         return {
@@ -144,7 +152,7 @@ export function createMediaService(supabaseClient = supabase): MediaService {
             height: data.height,
             size: data.size,
           },
-          error: null
+          error: null,
         };
       } catch (error) {
         console.error('Image processing error:', error);
