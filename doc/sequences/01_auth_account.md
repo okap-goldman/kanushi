@@ -353,3 +353,101 @@ sequenceDiagram
         App->>User: 成功メッセージ
     end
 ```
+
+## 9. 開発環境用自動ログイン
+
+### 開発環境での自動ログインフロー
+
+```mermaid
+sequenceDiagram
+    participant User as 開発者
+    participant App as モバイルアプリ
+    participant Config as 環境設定
+    participant API as Supabase API
+    participant DB as PostgreSQL
+
+    User->>App: アプリ起動/テスト実行
+    App->>Config: 環境変数確認
+    Config->>App: NODE_ENV, TEST_FILE
+    
+    alt ローカル環境 & 認証テスト以外
+        note right of Config: NODE_ENV = development<br/>TEST_FILE != *auth*
+        App->>App: 自動ログインモード有効化
+        App->>API: POST /auth/dev-login
+        note right of API: email: testuser@kanushi.love<br/>環境: development
+        
+        API->>API: 開発環境確認
+        API->>DB: テストユーザー取得
+        alt テストユーザーが存在しない
+            API->>DB: テストユーザー作成
+            note right of DB: displayName: "開発テストユーザー"<br/>email: testuser@kanushi.love
+            DB->>API: プロフィールID
+        end
+        
+        API->>App: JWT (accessToken, refreshToken)
+        App->>App: トークン保存
+        App->>User: ホーム画面表示
+        note right of User: 自動ログイン完了
+    else 本番環境 または 認証テスト実行中
+        App->>User: 通常のログイン画面表示
+        note right of User: 通常の認証フロー必要
+    end
+```
+
+### テスト実行時の認証フロー
+
+```mermaid
+sequenceDiagram
+    participant Test as テストランナー
+    participant App as アプリケーション
+    participant Config as 環境設定
+    participant Auth as 認証サービス
+
+    Test->>Config: テストファイル名設定
+    Test->>App: テスト開始
+    App->>Config: 環境変数確認
+    
+    alt 認証機能のテスト
+        Config->>App: TEST_FILE = *auth*.test.ts
+        App->>App: 自動ログイン無効化
+        note right of App: 認証テストでは<br/>通常の認証フロー使用
+        
+        Test->>App: 認証テスト実行
+        App->>Auth: 通常の認証処理
+        Auth->>App: 認証結果
+        App->>Test: テスト結果
+    else その他の機能テスト
+        Config->>App: TEST_FILE = post.test.ts等
+        App->>App: 自動ログイン有効化
+        note right of App: 認証済み状態で<br/>テスト開始
+        
+        App->>Auth: 自動ログイン実行
+        Auth->>App: テストユーザーJWT
+        Test->>App: 機能テスト実行
+        App->>Test: テスト結果
+    end
+```
+
+### 開発環境設定の切り替え
+
+```mermaid
+sequenceDiagram
+    participant Dev as 開発者
+    participant CLI as コマンドライン
+    participant Env as 環境変数
+    participant App as アプリケーション
+
+    Dev->>CLI: npm run dev
+    CLI->>Env: NODE_ENV=development
+    CLI->>App: アプリ起動
+    App->>Env: 環境変数読み込み
+    Env->>App: 開発モード設定
+    App->>App: 自動ログイン有効化
+    
+    Dev->>CLI: npm test
+    CLI->>Env: NODE_ENV=test
+    CLI->>App: テスト実行
+    App->>Env: 環境変数読み込み
+    Env->>App: テストモード設定
+    App->>App: 自動ログイン無効化
+```

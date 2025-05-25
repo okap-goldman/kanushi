@@ -48,10 +48,15 @@
   - Auth (認証)
   - Storage (ファイルストレージ)
 - **AI/ML**: Gemini-2.5-Pro API
-- **音声処理**: WebRTC (LiveKit Cloud)
-- **決済**: Stripe
 
-### 3.3 インフラストラクチャ
+### 3.3 開発環境
+- **開発サーバー**: npm run dev (Vite)
+- **テストランナー**: Vitest
+- **認証バイパス**: 開発効率化のための自動ログイン機能
+  - 有効条件: ローカル環境 & 認証テスト以外
+  - テストユーザー: testuser@kanushi.love
+  - セキュリティ: 本番環境では無効化
+### 3.4 インフラストラクチャ
 - **CDN**: Cloudflare
 - **オブジェクトストレージ**: Backblaze B2
 - **TURN Server**: Cloudflare TURN
@@ -234,6 +239,11 @@
   - テストカバレッジ: 80%以上
   - Vitest によるユニットテスト
   - Storybook によるUIテスト
+- **開発環境の認証**:
+  - 自動ログイン: ローカル開発時に有効
+  - テストユーザー: testuser@kanushi.love
+  - 認証テスト時: 通常の認証フロー使用
+  - 環境判定: NODE_ENV & TEST_FILE による制御
 
 ### 10.2 監視・観測性
 - **ログ**: Loki (90日保存)
