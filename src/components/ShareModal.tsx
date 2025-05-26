@@ -1,12 +1,12 @@
+import { Feather } from '@expo/vector-icons';
 /**
  * 投稿共有用モーダルコンポーネント
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Clipboard } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/Dialog';
+import { Alert, Clipboard, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { shareService } from '../lib/shareService';
 import type { ShareUrlResult } from '../lib/shareService';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/Dialog';
 
 interface ShareModalProps {
   visible: boolean;
@@ -55,7 +55,7 @@ export function ShareModal({ visible, onClose, postId }: ShareModalProps) {
         <DialogHeader>
           <DialogTitle>投稿を共有</DialogTitle>
         </DialogHeader>
-        
+
         <View style={styles.content}>
           {loading ? (
             <Text style={styles.loadingText}>URLを生成中...</Text>

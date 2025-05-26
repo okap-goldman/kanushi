@@ -1,8 +1,8 @@
+import type { ServiceResult } from './data';
 /**
  * 投稿共有機能を提供するサービス
  */
 import { supabase } from './supabase';
-import type { ServiceResult } from './data';
 
 export interface ShareUrlResult {
   deepLink: string;
@@ -23,7 +23,7 @@ export function createShareService(supabaseClient = supabase): ShareService {
           return {
             success: false,
             data: null,
-            error: new Error('投稿IDが無効です')
+            error: new Error('投稿IDが無効です'),
           };
         }
 
@@ -32,27 +32,27 @@ export function createShareService(supabaseClient = supabase): ShareService {
           return {
             success: false,
             data: null,
-            error: validationResult.error
+            error: validationResult.error,
           };
         }
 
         const deepLink = `kanushi://post/${postId}`;
         const webUrl = `https://app.kanushi.tld/post/${postId}`;
-        
+
         return {
           success: true,
           data: {
             deepLink,
             webUrl,
-            qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(deepLink)}`
+            qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(deepLink)}`,
           },
-          error: null
+          error: null,
         };
       } catch (error) {
         return {
           success: false,
           data: null,
-          error: error instanceof Error ? error : new Error('シェアURL生成に失敗しました')
+          error: error instanceof Error ? error : new Error('シェアURL生成に失敗しました'),
         };
       }
     },
@@ -74,23 +74,23 @@ export function createShareService(supabaseClient = supabase): ShareService {
           return {
             success: false,
             data: null,
-            error: new Error('投稿が見つかりません')
+            error: new Error('投稿が見つかりません'),
           };
         }
 
         return {
           success: true,
           data: true,
-          error: null
+          error: null,
         };
       } catch (error) {
         return {
           success: false,
           data: null,
-          error: error instanceof Error ? error : new Error('投稿確認に失敗しました')
+          error: error instanceof Error ? error : new Error('投稿確認に失敗しました'),
         };
       }
-    }
+    },
   };
 }
 

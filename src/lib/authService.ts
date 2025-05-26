@@ -1,6 +1,6 @@
 import type { AuthError, User } from '@supabase/supabase-js';
+import type { accounts, profiles } from './db/schema/profile';
 import { supabase } from './supabase';
-import { accounts, profiles } from './db/schema/profile';
 
 // テーブル定義から型を作成
 export type Profile = typeof profiles.$inferSelect;

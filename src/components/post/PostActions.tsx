@@ -2,8 +2,8 @@ import { Feather } from '@expo/vector-icons';
 import React, { useState, useEffect } from 'react';
 import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import { ShareModal } from '../ShareModal';
 import { supabase } from '../../lib/supabase';
+import { ShareModal } from '../ShareModal';
 
 interface PostActionsProps {
   postId: string;
@@ -337,7 +337,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           </View>
         </View>
       </Modal>
-      
+
       {/* Share Modal */}
       <ShareModal
         visible={showShareModal}
