@@ -35,7 +35,7 @@ export const createHighlight = async (highlight: {
 
     // Insert highlight
     const { data, error } = await supabase
-      .from('highlights')
+      .from('highlight')
       .insert({
         post_id: highlight.post_id,
         user_id: highlight.user_id,
@@ -70,7 +70,7 @@ export const removeHighlight = async (
 ): Promise<ApiResponse<boolean>> => {
   try {
     const { error } = await supabase
-      .from('highlights')
+      .from('highlight')
       .delete()
       .eq('post_id', post_id)
       .eq('user_id', user_id);
@@ -93,7 +93,7 @@ export const removeHighlight = async (
 export const getHighlights = async (post_id: string): Promise<ApiResponse<Highlight[]>> => {
   try {
     const { data, error } = await supabase
-      .from('highlights')
+      .from('highlight')
       .select(`
         *,
         user:profiles(id, name, image)
@@ -129,7 +129,7 @@ export const checkHighlighted = async (
 ): Promise<ApiResponse<boolean>> => {
   try {
     const { data, error } = await supabase
-      .from('highlights')
+      .from('highlight')
       .select('id')
       .eq('post_id', post_id)
       .eq('user_id', user_id)

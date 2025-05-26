@@ -55,7 +55,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
 
       try {
         const { data, error } = await supabase
-          .from('highlights')
+          .from('highlight')
           .select()
           .eq('post_id', postId)
           .eq('user_id', user.id)
@@ -74,7 +74,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
 
       try {
         const { data, error } = await supabase
-          .from('bookmarks')
+          .from('bookmark')
           .select()
           .eq('post_id', postId)
           .eq('user_id', user.id)
@@ -121,7 +121,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     const getHighlightCount = async () => {
       try {
         const { count, error } = await supabase
-          .from('highlights')
+          .from('highlight')
           .select('*', { count: 'exact', head: true })
           .eq('post_id', postId);
 
@@ -233,7 +233,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
       if (highlighted) {
         // Remove highlight
         const { error } = await supabase
-          .from('highlights')
+          .from('highlight')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
@@ -243,7 +243,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
         setHighlightCount((prev) => Math.max(0, prev - 1));
       } else {
         // Add highlight
-        const { error } = await supabase.from('highlights').insert({
+        const { error } = await supabase.from('highlight').insert({
           post_id: postId,
           user_id: user.id,
           reason: highlightReason,
@@ -270,7 +270,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
       if (bookmarked) {
         // Remove bookmark
         const { error } = await supabase
-          .from('bookmarks')
+          .from('bookmark')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
@@ -279,7 +279,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
         setBookmarked(false);
       } else {
         // Add bookmark
-        const { error } = await supabase.from('bookmarks').insert({
+        const { error } = await supabase.from('bookmark').insert({
           post_id: postId,
           user_id: user.id,
           created_at: new Date().toISOString(),
