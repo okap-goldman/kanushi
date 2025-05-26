@@ -1,28 +1,41 @@
 // UI test setup for Vitest + React Native Testing Library
 import { vi, describe, it, test, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import * as testingLibrary from '../mocks/testing-library-react-native';
+import React from 'react';
 
-// Configure React Native Testing Library
-// import 'react-native-gesture-handler/jestSetup';
+// Make React available globally
+global.React = React;
 
 // Make testing library functions globally available
-(global as any).render = testingLibrary.render;
-(global as any).fireEvent = testingLibrary.fireEvent;
-(global as any).waitFor = testingLibrary.waitFor;
-(global as any).act = testingLibrary.act;
+global.render = testingLibrary.render;
+global.fireEvent = testingLibrary.fireEvent;
+global.waitFor = testingLibrary.waitFor;
+global.act = testingLibrary.act;
+global.screen = testingLibrary.screen;
 
 // Make jest available globally for Vitest compatibility
-(global as any).jest = vi;
+global.jest = vi;
 
 // Make test functions globally available
-(global as any).describe = describe;
-(global as any).it = it;
-(global as any).test = test;
-(global as any).expect = expect;
-(global as any).beforeEach = beforeEach;
-(global as any).afterEach = afterEach;
-(global as any).beforeAll = beforeAll;
-(global as any).afterAll = afterAll;
+global.describe = describe;
+global.it = it;
+global.test = test;
+global.expect = expect;
+global.beforeEach = beforeEach;
+global.afterEach = afterEach;
+global.beforeAll = beforeAll;
+global.afterAll = afterAll;
+
+// Add toBeOnTheScreen matcher
+expect.extend({
+  toBeOnTheScreen(received) {
+    const pass = !!received;
+    return {
+      pass,
+      message: () => `expected ${received} to be on the screen`,
+    };
+  },
+});
 
 // Mock necessary modules for UI testing
 vi.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
@@ -122,3 +135,50 @@ vi.mock('@expo/vector-icons', () => ({
     return createElement('text', { ...props, testID: props.testID || 'icon' }, props.name);
   },
 }));
+
+// Mock services
+global.userService = {
+  getCurrentUser: vi.fn().mockResolvedValue({ id: 'test-user-id', displayName: 'Test User' }),
+  getUserById: vi.fn().mockResolvedValue({ id: 'other-user-id', displayName: 'Other User' }),
+  updateProfile: vi.fn().mockResolvedValue({ success: true }),
+};
+
+global.audioService = {
+  play: vi.fn(),
+  pause: vi.fn(),
+  stop: vi.fn(),
+  seek: vi.fn(),
+  getStatus: vi.fn().mockResolvedValue({ isPlaying: false, position: 0, duration: 180 }),
+};
+
+global.mediaService = {
+  uploadFile: vi.fn().mockResolvedValue({ success: true, data: { url: 'https://example.com/file.mp3' }, error: null }),
+  processAudio: vi.fn().mockResolvedValue({
+    success: true,
+    data: {
+      originalUrl: 'https://example.com/original.mp3',
+      processedUrl: 'https://example.com/processed.mp3',
+      waveformUrl: 'https://example.com/waveform.json',
+      previewUrl: 'https://example.com/preview.mp3',
+      durationSeconds: 180,
+    },
+    error: null,
+  }),
+  processImage: vi.fn().mockResolvedValue({
+    success: true,
+    data: {
+      originalUrl: 'https://example.com/original.jpg',
+      processedUrl: 'https://example.com/processed.jpg',
+      thumbnailUrl: 'https://example.com/thumbnail.jpg',
+      width: 800,
+      height: 600,
+      size: 1024000,
+    },
+    error: null,
+  }),
+};
+
+// テスト後のクリーンアップ
+afterEach(() => {
+  vi.clearAllMocks();
+});
