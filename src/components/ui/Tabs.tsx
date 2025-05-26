@@ -8,6 +8,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
+import { theme } from '../../lib/theme';
 
 interface TabsProps {
   defaultValue?: string;
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
   },
   listInner: {
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.colors.background.secondary,
     borderRadius: 8,
     padding: 4,
   },
@@ -148,17 +149,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   triggerActive: {
-    backgroundColor: '#FFFFFF',
-    // iOS shadow
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    // Android shadow
-    elevation: 2,
+    backgroundColor: theme.colors.background.primary,
+    // Themed shadow
+    ...theme.shadows.sm,
   },
   triggerDisabled: {
     opacity: 0.5,
@@ -166,13 +159,13 @@ const styles = StyleSheet.create({
   triggerText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: theme.colors.text.muted,
   },
   triggerTextActive: {
-    color: '#1a1a1a',
+    color: theme.colors.primary.main,
   },
   triggerTextDisabled: {
-    color: '#9ca3af',
+    color: theme.colors.text.light,
   },
   content: {
     marginTop: 8,

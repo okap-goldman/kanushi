@@ -4,6 +4,7 @@ import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'reac
 import AudioPlayer from './AudioPlayer';
 import DeleteConfirmDialog from './DeleteConfirmDialog';
 import { Card } from './ui/Card';
+import { theme } from '../lib/theme';
 
 interface PostCardProps {
   post: {
@@ -232,7 +233,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   avatarPlaceholder: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.background.secondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -242,12 +243,12 @@ const styles = StyleSheet.create({
   displayName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: theme.colors.text.primary,
     marginBottom: 2,
   },
   timestamp: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.colors.text.muted,
   },
   deleteButton: {
     padding: 8,
@@ -258,7 +259,7 @@ const styles = StyleSheet.create({
   textContent: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#1F2937',
+    color: theme.colors.text.primary,
   },
   image: {
     width: '100%',
@@ -270,7 +271,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: theme.colors.background.secondary,
   },
   actionButton: {
     flexDirection: 'row',
@@ -279,22 +280,22 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   likedButton: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: theme.colors.background.rose.subtle,
     paddingHorizontal: 8,
     borderRadius: 12,
   },
   highlightedButton: {
-    backgroundColor: '#FFFBEB',
+    backgroundColor: theme.colors.background.emerald.subtle,
     paddingHorizontal: 8,
     borderRadius: 12,
   },
   actionText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.colors.text.muted,
     marginLeft: 4,
   },
   likedText: {
-    color: '#EF4444',
+    color: theme.colors.secondary.dark,
   },
   highlightDialog: {
     position: 'absolute',
@@ -314,12 +315,12 @@ const styles = StyleSheet.create({
   },
   reasonInput: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: theme.colors.border.default,
     borderRadius: 8,
     padding: 12,
     minHeight: 80,
     width: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background.primary,
   },
   dialogButtons: {
     flexDirection: 'row',
@@ -330,18 +331,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.colors.background.secondary,
     borderRadius: 8,
   },
   confirmButton: {
     flex: 1,
     padding: 12,
     alignItems: 'center',
-    backgroundColor: '#0070F3',
+    backgroundColor: theme.colors.primary.main,
     borderRadius: 8,
   },
   confirmButtonText: {
-    color: '#FFFFFF',
+    color: theme.colors.text.inverse,
     fontWeight: '600',
   },
 });

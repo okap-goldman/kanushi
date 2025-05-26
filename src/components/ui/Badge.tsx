@@ -1,5 +1,6 @@
 import type React from 'react';
 import { StyleSheet, Text, type TextStyle, View, type ViewStyle } from 'react-native';
+import { theme } from '../../lib/theme';
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
@@ -53,36 +54,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  // Default variant
+  // Default variant - Pink Gold accent
   variantDefault: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
+    backgroundColor: theme.colors.accent.main,
+    borderColor: theme.colors.accent.main,
   },
   variantDefaultText: {
-    color: '#FFFFFF',
+    color: theme.colors.text.inverse,
   },
-  // Secondary variant
+  // Secondary variant - Emerald subtle
   variantSecondary: {
-    backgroundColor: '#f3f4f6',
-    borderColor: '#f3f4f6',
+    backgroundColor: theme.colors.background.emerald.light,
+    borderColor: theme.colors.border.emerald,
   },
   variantSecondaryText: {
-    color: '#374151',
+    color: theme.colors.primary.dark,
   },
   // Destructive variant
   variantDestructive: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: theme.colors.status.error,
+    borderColor: theme.colors.status.error,
   },
   variantDestructiveText: {
-    color: '#FFFFFF',
+    color: theme.colors.text.inverse,
   },
   // Outline variant
   variantOutline: {
     backgroundColor: 'transparent',
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border.default,
   },
   variantOutlineText: {
-    color: '#1a1a1a',
+    color: theme.colors.text.primary,
   },
 });

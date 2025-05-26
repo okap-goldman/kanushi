@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
-    width: 160, // Fixed value instead of using width
-    height: 160, // Fixed value instead of using width
+    width: 200, // Fixed value instead of using width
+    height: 200, // Fixed value instead of using width
   },
 });

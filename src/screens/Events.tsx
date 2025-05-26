@@ -1,9 +1,10 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FlatList,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -11,121 +12,177 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-
-// Sample events data
-const SAMPLE_EVENTS = [
-  {
-    id: '1',
-    title: 'Tokyo Food Festival',
-    date: '2023-06-15',
-    time: '11:00 - 20:00',
-    location: 'Yoyogi Park, Tokyo',
-    image: 'https://picsum.photos/500/300?random=30',
-    description:
-      "Explore the best of Tokyo's food scene with over 100 vendors offering traditional and modern Japanese cuisine.",
-    category: 'food',
-    attendees: 458,
-    price: 'Free Entry',
-  },
-  {
-    id: '2',
-    title: 'Japanese Ink Painting Workshop',
-    date: '2023-06-18',
-    time: '14:00 - 16:30',
-    location: 'Roppongi Arts Center, Tokyo',
-    image: 'https://picsum.photos/500/300?random=31',
-    description:
-      'Learn the traditional art of Sumi-e (Japanese ink painting) with master artist Tanaka Hiroshi.',
-    category: 'workshop',
-    attendees: 24,
-    price: '¥5,000',
-  },
-  {
-    id: '3',
-    title: 'Summer Night Market',
-    date: '2023-06-24',
-    time: '18:00 - 23:00',
-    location: 'Nakameguro, Tokyo',
-    image: 'https://picsum.photos/500/300?random=32',
-    description:
-      'Enjoy a vibrant night market with local crafts, street food, and live music along the Meguro River.',
-    category: 'market',
-    attendees: 287,
-    price: 'Free Entry',
-  },
-  {
-    id: '4',
-    title: 'Traditional Tea Ceremony',
-    date: '2023-06-20',
-    time: '13:00 - 15:00',
-    location: 'Happo-en Garden, Tokyo',
-    image: 'https://picsum.photos/500/300?random=33',
-    description:
-      'Experience the art and philosophy of Japanese tea ceremony in a beautiful traditional garden setting.',
-    category: 'cultural',
-    attendees: 18,
-    price: '¥3,500',
-  },
-  {
-    id: '5',
-    title: 'Sumida River Fireworks Festival',
-    date: '2023-07-29',
-    time: '19:00 - 20:30',
-    location: 'Sumida River, Tokyo',
-    image: 'https://picsum.photos/500/300?random=34',
-    description:
-      "One of Tokyo's most famous fireworks displays with over 20,000 fireworks illuminating the summer night sky.",
-    category: 'festival',
-    attendees: 950,
-    price: '無料（プレミアム観覧エリアあり）',
-  },
-];
+import { Input } from '../components/ui/Input';
+import { useToast } from '../hooks/use-toast';
+import { eventService, type ExtendedEvent } from '../lib/eventService';
 
 const EVENT_CATEGORIES = [
-  { id: 'all', name: 'すべて' },
-  { id: 'food', name: 'グルメ' },
-  { id: 'cultural', name: '文化' },
-  { id: 'workshop', name: 'ワークショップ' },
-  { id: 'market', name: 'マーケット' },
-  { id: 'festival', name: 'フェスティバル' },
+  { id: 'all', name: 'すべて', value: undefined },
+  { id: 'offline', name: 'オフライン', value: 'offline' },
+  { id: 'online', name: 'オンライン', value: 'online' },
+  { id: 'hybrid', name: 'ハイブリッド', value: 'hybrid' },
+  { id: 'voice_workshop', name: 'ボイスワークショップ', value: 'voice_workshop' },
 ];
 
 export default function Events() {
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [events, setEvents] = useState<ExtendedEvent[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [showSearch, setShowSearch] = useState(false);
   const navigation = useNavigation<any>();
+  const { toast } = useToast();
 
-  const filteredEvents =
-    selectedCategory === 'all'
-      ? SAMPLE_EVENTS
-      : SAMPLE_EVENTS.filter((event) => event.category === selectedCategory);
+  const fetchEvents = async (pageNum = 1, shouldRefresh = false) => {
+    try {
+      if (shouldRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      const categoryValue = EVENT_CATEGORIES.find((cat) => cat.id === selectedCategory)?.value;
+      
+      const response = await eventService.getEvents({
+        category: categoryValue,
+        search: searchQuery,
+        page: pageNum,
+        limit: 20,
+      });
+
+      if (response.data) {
+        if (pageNum === 1) {
+          setEvents(response.data.events);
+        } else {
+          setEvents((prev) => [...prev, ...response.data.events]);
+        }
+        setHasMore(response.data.events.length === 20);
+      }
+    } catch (error) {
+      toast({
+        title: 'エラー',
+        description: 'イベントの読み込みに失敗しました',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents(1);
+  }, [selectedCategory, searchQuery]);
+
+  const handleRefresh = () => {
+    setPage(1);
+    fetchEvents(1, true);
+  };
+
+  const handleLoadMore = () => {
+    if (!loading && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchEvents(nextPage);
+    }
+  };
 
   const navigateToEventDetail = (eventId: string) => {
     navigation.navigate('EventDetail', { eventId });
   };
 
-  const renderEventItem = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.eventCard} onPress={() => navigateToEventDetail(item.id)}>
-      <Image source={{ uri: item.image }} style={styles.eventImage} contentFit="cover" />
+  const formatEventDate = (startDate: string, endDate?: string) => {
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : null;
+    
+    const dateOptions: Intl.DateTimeFormatOptions = {
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    };
+    
+    const startStr = start.toLocaleString('ja-JP', dateOptions);
+    
+    if (end) {
+      const endStr = end.toLocaleString('ja-JP', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      return `${startStr} - ${endStr}`;
+    }
+    
+    return startStr;
+  };
 
-      <View style={styles.eventContent}>
-        <Text style={styles.eventDate}>
-          {item.date} • {item.time}
-        </Text>
-        <Text style={styles.eventTitle}>{item.title}</Text>
-        <Text style={styles.eventLocation} numberOfLines={1}>
-          <Feather name="map-pin" size={12} color="#718096" /> {item.location}
-        </Text>
+  const getEventTypeBadge = (eventType?: string) => {
+    switch (eventType) {
+      case 'online':
+        return { text: 'オンライン', color: '#10B981' };
+      case 'offline':
+        return { text: 'オフライン', color: '#F59E0B' };
+      case 'hybrid':
+        return { text: 'ハイブリッド', color: '#8B5CF6' };
+      case 'voice_workshop':
+        return { text: 'ボイスワークショップ', color: '#EC4899' };
+      default:
+        return null;
+    }
+  };
 
-        <View style={styles.eventFooter}>
-          <View style={styles.attendeeCount}>
-            <Feather name="users" size={14} color="#718096" />
-            <Text style={styles.attendeeText}>{item.attendees} 人参加</Text>
+  const renderEventItem = ({ item }: { item: ExtendedEvent }) => {
+    const badge = getEventTypeBadge(item.event_type || item.category);
+    
+    return (
+      <TouchableOpacity style={styles.eventCard} onPress={() => navigateToEventDetail(item.id)}>
+        {item.image_url || item.cover_image_url ? (
+          <Image 
+            source={{ uri: item.image_url || item.cover_image_url }} 
+            style={styles.eventImage} 
+            contentFit="cover" 
+          />
+        ) : (
+          <View style={[styles.eventImage, styles.placeholderImage]}>
+            <Feather name="calendar" size={48} color="#CBD5E0" />
           </View>
-          <Text style={styles.eventPrice}>{item.price}</Text>
+        )}
+
+        {badge && (
+          <View style={[styles.eventTypeBadge, { backgroundColor: badge.color }]}>
+            <Text style={styles.eventTypeBadgeText}>{badge.text}</Text>
+          </View>
+        )}
+
+        <View style={styles.eventContent}>
+          <Text style={styles.eventDate}>
+            {formatEventDate(item.start_date, item.end_date)}
+          </Text>
+          <Text style={styles.eventTitle}>{item.title}</Text>
+          
+          {item.location && (
+            <Text style={styles.eventLocation} numberOfLines={1}>
+              <Feather name="map-pin" size={12} color="#718096" /> {item.location}
+            </Text>
+          )}
+
+          <View style={styles.eventFooter}>
+            <View style={styles.attendeeCount}>
+              <Feather name="users" size={14} color="#718096" />
+              <Text style={styles.attendeeText}>
+                {item.participant_count || 0} 人参加
+              </Text>
+            </View>
+            <Text style={styles.eventPrice}>
+              {item.price ? `¥${item.price.toLocaleString()}` : '無料'}
+            </Text>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -134,10 +191,30 @@ export default function Events() {
           <Feather name="arrow-left" size={24} color="#1A202C" />
         </TouchableOpacity>
         <Text style={styles.title}>イベント</Text>
-        <TouchableOpacity style={styles.searchButton}>
+        <TouchableOpacity style={styles.searchButton} onPress={() => setShowSearch(!showSearch)}>
           <Feather name="search" size={24} color="#1A202C" />
         </TouchableOpacity>
       </View>
+
+      {/* Search Bar */}
+      {showSearch && (
+        <View style={styles.searchContainer}>
+          <Input
+            placeholder="イベントを検索..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            style={styles.searchInput}
+            leftIcon={<Feather name="search" size={20} color="#718096" />}
+            rightIcon={
+              searchQuery ? (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Feather name="x" size={20} color="#718096" />
+                </TouchableOpacity>
+              ) : null
+            }
+          />
+        </View>
+      )}
 
       {/* Categories filter */}
       <ScrollView
@@ -167,13 +244,41 @@ export default function Events() {
         ))}
       </ScrollView>
 
-      <FlatList
-        data={filteredEvents}
-        renderItem={renderEventItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.eventsList}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading && events.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>読み込み中...</Text>
+        </View>
+      ) : events.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Feather name="calendar" size={64} color="#CBD5E0" />
+          <Text style={styles.emptyText}>イベントがありません</Text>
+          <Text style={styles.emptySubText}>
+            {searchQuery 
+              ? '検索条件に一致するイベントが見つかりませんでした' 
+              : '新しいイベントが追加されるまでお待ちください'}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={events}
+          renderItem={renderEventItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.eventsList}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            loading && events.length > 0 ? (
+              <View style={styles.loadingFooter}>
+                <Text style={styles.loadingFooterText}>読み込み中...</Text>
+              </View>
+            ) : null
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -284,5 +389,67 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#0070F3',
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  searchInput: {
+    backgroundColor: '#F7FAFC',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#718096',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2D3748',
+    marginTop: 16,
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#718096',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  loadingFooter: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  loadingFooterText: {
+    fontSize: 14,
+    color: '#718096',
+  },
+  eventTypeBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  eventTypeBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  placeholderImage: {
+    backgroundColor: '#F7FAFC',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

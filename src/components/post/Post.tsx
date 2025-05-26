@@ -168,8 +168,8 @@ const styles = StyleSheet.create({
   },
   tag: {
     fontSize: 12,
-    backgroundColor: '#F0F9FF',
-    color: '#0070F3',
+    backgroundColor: '#ECFDF5', // Emerald-50
+    color: '#10B981', // Emerald-500
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 16,

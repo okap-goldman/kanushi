@@ -19,6 +19,8 @@ import { Avatar } from '../components/ui/Avatar';
 import { useToast } from '../hooks/use-toast';
 import { searchHistoryService, type SearchHistoryItem } from '../lib/searchHistoryService';
 import { searchService } from '../lib/searchService';
+import { Navbar } from '../components/Navbar';
+import { FooterNav } from '../components/FooterNav';
 
 type SearchTab = 'all' | 'users' | 'posts' | 'hashtags' | 'events' | 'products';
 
@@ -311,11 +313,11 @@ export const Search = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <MaterialIcons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
+      <Navbar />
+      
+      <View style={styles.searchSection}>
         <View style={styles.searchBarContainer}>
+          <Feather name="search" size={20} color="#65676B" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Kanushiを検索"
@@ -328,44 +330,53 @@ export const Search = () => {
             autoCapitalize="none"
             autoCorrect={false}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+              <MaterialIcons name="close" size={20} color="#65676B" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
       {!isFocused && searchResults && renderTabs()}
 
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1877F2" />
-        </View>
-      ) : (
-        <>
-          {renderSearchHistory()}
-          {searchResults ? (
-            renderSearchResults()
-          ) : (
-            !isFocused && recommendedPosts.length > 0 && (
-              <ScrollView style={styles.resultsContainer}>
-                <Text style={styles.resonanceTitle}>あなたに共鳴している投稿</Text>
-                {recommendedPosts.map((post: any) => (
-                  <Post
-                    key={post.id}
-                    author={{
-                      id: post.author_id,
-                      name: post.profiles?.name || 'ユーザー',
-                      image: post.profiles?.avatar_url || '',
-                    }}
-                    content={post.content}
-                    caption={post.content}
-                    mediaType={post.media_type || 'text'}
-                    postId={post.id}
-                    tags={[]}
-                  />
-                ))}
-              </ScrollView>
-            )
-          )}
-        </>
-      )}
+      <View style={styles.content}>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#1877F2" />
+          </View>
+        ) : (
+          <>
+            {renderSearchHistory()}
+            {searchResults ? (
+              renderSearchResults()
+            ) : (
+              !isFocused && recommendedPosts.length > 0 && (
+                <ScrollView style={styles.resultsContainer}>
+                  <Text style={styles.resonanceTitle}>あなたに共鳴している投稿</Text>
+                  {recommendedPosts.map((post: any) => (
+                    <Post
+                      key={post.id}
+                      author={{
+                        id: post.author_id,
+                        name: post.profiles?.name || 'ユーザー',
+                        image: post.profiles?.avatar_url || '',
+                      }}
+                      content={post.content}
+                      caption={post.content}
+                      mediaType={post.media_type || 'text'}
+                      postId={post.id}
+                      tags={[]}
+                    />
+                  ))}
+                </ScrollView>
+              )
+            )}
+          </>
+        )}
+      </View>
+      
+      <FooterNav />
     </SafeAreaView>
   );
 };
@@ -375,28 +386,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  searchSection: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E4E6EB',
   },
-  backButton: {
-    marginRight: 12,
-  },
   searchBarContainer: {
-    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F0F2F5',
     borderRadius: 20,
     paddingHorizontal: 16,
-    height: 36,
-    justifyContent: 'center',
+    height: 40,
+  },
+  searchIcon: {
+    marginRight: 8,
   },
   searchInput: {
+    flex: 1,
     fontSize: 16,
     color: '#050505',
+    paddingVertical: 8,
+  },
+  clearButton: {
+    padding: 4,
+  },
+  content: {
+    flex: 1,
   },
   tabsContainer: {
     borderBottomWidth: 1,

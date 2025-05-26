@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { theme } from '../lib/theme';
 
 export function Navbar() {
   const { toast: _ } = useToast(); // Keep the import but mark as unused
@@ -25,15 +26,15 @@ export function Navbar() {
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.iconButton} onPress={() => setShowNotifications(true)}>
-            <Bell size={20} color="#666" />
+            <Bell size={20} color={theme.colors.text.secondary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Messages')}>
-            <MessageCircle size={20} color="#666" />
+            <MessageCircle size={20} color={theme.colors.text.secondary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Settings')}>
-            <Settings size={20} color="#666" />
+            <Settings size={20} color={theme.colors.text.secondary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -79,9 +80,9 @@ export function Navbar() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background.primary,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: theme.colors.border.light,
   },
   navbar: {
     flexDirection: 'row',
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#6366f1',
+    color: theme.colors.primary.main,
   },
   actions: {
     flexDirection: 'row',
@@ -109,7 +110,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background.primary,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '70%',
@@ -120,14 +121,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: theme.colors.border.light,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
   },
   closeButton: {
-    color: '#6366f1',
+    color: theme.colors.accent.main,
     fontSize: 16,
   },
   modalScroll: {
@@ -138,7 +139,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.background.tertiary,
   },
   avatar: {
     width: 40,
@@ -151,11 +152,11 @@ const styles = StyleSheet.create({
   },
   notificationText: {
     fontSize: 14,
-    color: '#333',
+    color: theme.colors.text.primary,
   },
   notificationTime: {
     fontSize: 12,
-    color: '#999',
+    color: theme.colors.text.muted,
     marginTop: 2,
   },
 });

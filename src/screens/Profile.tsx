@@ -16,6 +16,8 @@ import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { Navbar } from '../components/Navbar';
+import { FooterNav } from '../components/FooterNav';
 
 export default function Profile() {
   const [profile, setProfile] = useState<any>(null);
@@ -41,7 +43,10 @@ export default function Profile() {
         .eq('id', userId)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        throw profileError;
+      }
 
       // Fetch followers count
       const { count: followersCount } = await supabase
@@ -103,18 +108,36 @@ export default function Profile() {
 
   const isCurrentUser = user?.id === userId;
 
-  if (!profile) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <Navbar />
         <View style={styles.loadingContainer}>
           <Text>プロフィールを読み込み中...</Text>
         </View>
+        <FooterNav />
+      </SafeAreaView>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Navbar />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>プロフィールが見つかりません</Text>
+          <Button onPress={handleRefresh} variant="outline" style={styles.retryButton}>
+            再読み込み
+          </Button>
+        </View>
+        <FooterNav />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
+      <Navbar />
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
@@ -158,6 +181,7 @@ export default function Profile() {
 
         <ProfileTabs userId={userId} activeTab={activeTab} onChangeTab={setActiveTab} />
       </ScrollView>
+      <FooterNav />
     </SafeAreaView>
   );
 }
@@ -171,6 +195,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#64748B',
+    marginBottom: 16,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
   },
   header: {
     padding: 16,

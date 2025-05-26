@@ -83,6 +83,7 @@ supabase/
 - スキーマの変更は `src/lib/db/schema/` に行います
 - スキーマ変更後、`npm run db:generate` を実行し、その後 `npm run db:migrate` を実行します
 - すべてのDB操作にはDrizzleの型安全なクエリビルダーを使用します
+- PostgreSQL(Supabase)のスキーマの変更や、シーディングデータの変更を行った際は必ず npm run db:reset-and-setupを実行
 
 ### 認証フロー
 - Supabase AuthがOAuthおよびメール/パスキー認証を処理します

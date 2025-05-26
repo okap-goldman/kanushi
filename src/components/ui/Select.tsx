@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { theme } from '../../lib/theme';
 
 interface SelectOption {
   label: string;
@@ -107,7 +108,7 @@ export function SelectValue({ placeholder }: SelectValueProps) {
       <Text style={[styles.value, !value && styles.placeholder]}>
         {value || displayPlaceholder || 'Select...'}
       </Text>
-      <ChevronDown size={16} color="#666" />
+      <ChevronDown size={16} color={theme.colors.text.muted} />
     </View>
   );
 }
@@ -150,7 +151,7 @@ export function SelectItem({ value, children, disabled }: SelectItemProps) {
       disabled={disabled}
     >
       <View style={styles.itemCheckContainer}>
-        {isSelected && <Check size={16} color="#2563eb" />}
+        {isSelected && <Check size={16} color={theme.colors.primary.main} />}
       </View>
       <Text
         style={[
@@ -182,9 +183,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background.primary,
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: theme.colors.border.light,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -201,11 +202,11 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 14,
-    color: '#1a1a1a',
+    color: theme.colors.text.primary,
     flex: 1,
   },
   placeholder: {
-    color: '#999999',
+    color: theme.colors.text.light,
   },
   overlay: {
     flex: 1,
@@ -219,19 +220,11 @@ const styles = StyleSheet.create({
     maxHeight: '70%',
   },
   content: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background.primary,
     borderRadius: 12,
     overflow: 'hidden',
-    // iOS shadow
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    // Android shadow
-    elevation: 5,
+    // Themed shadow
+    ...theme.shadows.lg,
   },
   scrollView: {
     maxHeight: 300,
@@ -243,7 +236,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   itemSelected: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.colors.background.emerald.subtle,
   },
   itemDisabled: {
     opacity: 0.5,
@@ -257,14 +250,14 @@ const styles = StyleSheet.create({
   },
   itemText: {
     fontSize: 14,
-    color: '#1a1a1a',
+    color: theme.colors.text.primary,
     flex: 1,
   },
   itemTextSelected: {
     fontWeight: '500',
   },
   itemTextDisabled: {
-    color: '#999999',
+    color: theme.colors.text.light,
   },
   group: {
     paddingVertical: 4,
@@ -272,14 +265,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666666',
+    color: theme.colors.text.muted,
     paddingHorizontal: 16,
     paddingVertical: 8,
     textTransform: 'uppercase',
   },
   separator: {
     height: 1,
-    backgroundColor: '#e5e5e5',
+    backgroundColor: theme.colors.border.light,
     marginVertical: 4,
     marginHorizontal: 8,
   },

@@ -87,8 +87,17 @@ export class SearchHistoryService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
+      // First, get the list of users the current user is following
+      const { data: followingData } = await supabase
+        .from('follow')
+        .select('followee_id')
+        .eq('follower_id', user.id)
+        .eq('status', 'active');
+
+      const followingIds = followingData?.map(f => f.followee_id) || [];
+
       // Get users that the current user is not following
-      const { data: suggestedUsers, error } = await supabase
+      let query = supabase
         .from('profile')
         .select(`
           id,
@@ -98,14 +107,14 @@ export class SearchHistoryService {
           prefecture,
           city
         `)
-        .neq('id', user.id)
-        .not('id', 'in', `(
-          SELECT followee_id 
-          FROM follow 
-          WHERE follower_id = '${user.id}'
-            AND status = 'active'
-        )`)
-        .limit(limit);
+        .neq('id', user.id);
+
+      // Only add the not-in condition if there are following IDs
+      if (followingIds.length > 0) {
+        query = query.not('id', 'in', `(${followingIds.join(',')})`);
+      }
+
+      const { data: suggestedUsers, error } = await query.limit(limit);
 
       if (error) throw error;
 

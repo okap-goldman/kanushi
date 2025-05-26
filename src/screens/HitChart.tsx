@@ -20,6 +20,7 @@ import { Avatar } from '../components/ui/Avatar';
 import { Card } from '../components/ui/Card';
 import { Navbar } from '../components/Navbar';
 import { FooterNav } from '../components/FooterNav';
+import { theme } from '../lib/theme';
 
 const hitChartService = createHitChartService();
 const { width } = Dimensions.get('window');
@@ -183,7 +184,7 @@ export default function HitChart() {
           <Feather 
             name={category.icon as any} 
             size={16} 
-            color={selectedCategory === category.id ? '#FFFFFF' : '#666666'} 
+            color={selectedCategory === category.id ? theme.colors.text.inverse : theme.colors.text.muted} 
           />
           <Text style={[
             styles.categoryText,
@@ -202,7 +203,7 @@ export default function HitChart() {
         <ExpoImage source={{ uri: item.thumbnail }} style={styles.featuredImage} />
         <View style={styles.playButtonOverlay}>
           <TouchableOpacity style={styles.playButton}>
-            <Feather name="play" size={24} color="#FFFFFF" />
+            <Feather name="play" size={24} color={theme.colors.text.inverse} />
           </TouchableOpacity>
         </View>
       </View>
@@ -241,7 +242,7 @@ export default function HitChart() {
         <Text style={styles.regionalPlays}>{item.plays.toLocaleString()} 再生</Text>
       </View>
       <TouchableOpacity style={styles.playButtonSmall}>
-        <Feather name="play" size={16} color="#FFFFFF" />
+        <Feather name="play" size={16} color={theme.colors.text.inverse} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -255,7 +256,7 @@ export default function HitChart() {
         <View style={styles.headerTop}>
           <Text style={styles.mainTitle}>ヒットチャート</Text>
           <TouchableOpacity style={styles.searchButton}>
-            <Feather name="search" size={24} color="#FFFFFF" />
+            <Feather name="search" size={24} color={theme.colors.text.inverse} />
           </TouchableOpacity>
         </View>
         <Text style={styles.subtitle}>目醒めの音声コンテンツ</Text>
@@ -322,7 +323,7 @@ export default function HitChart() {
           
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#9333EA" />
+              <ActivityIndicator size="large" color={theme.colors.primary.main} />
             </View>
           ) : posts.length > 0 ? (
             posts.slice(0, 10).map((post, index) => (
@@ -341,13 +342,13 @@ export default function HitChart() {
                   <Text style={styles.chartItemArtist}>{post.profileName || '匿名ユーザー'}</Text>
                 </View>
                 <TouchableOpacity style={styles.chartPlayButton}>
-                  <Feather name="play" size={16} color="#9333EA" />
+                  <Feather name="play" size={16} color={theme.colors.primary.main} />
                 </TouchableOpacity>
               </TouchableOpacity>
             ))
           ) : (
             <View style={styles.emptyContainer}>
-              <Feather name="music" size={48} color="#D1D5DB" />
+              <Feather name="music" size={48} color={theme.colors.border.default} />
               <Text style={styles.emptyText}>まだチャートデータがありません</Text>
             </View>
           )}
@@ -362,10 +363,10 @@ export default function HitChart() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: theme.colors.background.primary,
   },
   headerSection: {
-    backgroundColor: '#9333EA',
+    backgroundColor: theme.colors.primary.main,
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 25,
@@ -391,11 +392,11 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: theme.colors.background.primary,
   },
   filterSection: {
     paddingVertical: 15,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: theme.colors.background.primary,
   },
   categoriesContainer: {
     paddingHorizontal: 20,
@@ -404,23 +405,23 @@ const styles = StyleSheet.create({
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.background.secondary,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.colors.border.light,
   },
   categoryButtonActive: {
-    backgroundColor: '#9333EA',
-    borderColor: '#9333EA',
+    backgroundColor: theme.colors.primary.main,
+    borderColor: theme.colors.primary.main,
   },
   categoryText: {
     marginLeft: 8,
     fontSize: 14,
     fontWeight: '500',
-    color: '#CCCCCC',
+    color: theme.colors.text.secondary,
   },
   categoryTextActive: {
     color: '#FFFFFF',
@@ -438,13 +439,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     marginHorizontal: 20,
     marginBottom: 15,
   },
   seeAllText: {
     fontSize: 14,
-    color: '#9333EA',
+    color: theme.colors.secondary.main,
     fontWeight: '500',
   },
   horizontalList: {
@@ -454,10 +455,12 @@ const styles = StyleSheet.create({
   // Featured Audio Card Styles
   featuredCard: {
     width: width * 0.7,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.background.rose.subtle,
     borderRadius: 12,
     marginRight: 15,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.border.rose,
   },
   featuredImageContainer: {
     position: 'relative',
@@ -480,7 +483,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#9333EA',
+    backgroundColor: theme.colors.secondary.main,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -490,12 +493,12 @@ const styles = StyleSheet.create({
   featuredTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     marginBottom: 5,
   },
   featuredArtist: {
     fontSize: 14,
-    color: '#BBBBBB',
+    color: theme.colors.text.secondary,
     marginBottom: 10,
   },
   featuredStats: {
@@ -504,22 +507,24 @@ const styles = StyleSheet.create({
   },
   featuredDuration: {
     fontSize: 12,
-    color: '#888888',
+    color: theme.colors.text.muted,
   },
   featuredPlays: {
     fontSize: 12,
-    color: '#888888',
+    color: theme.colors.text.muted,
   },
 
   // Trending User Card Styles
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.background.emerald.subtle,
     marginHorizontal: 20,
     marginBottom: 10,
     padding: 15,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border.emerald,
   },
   userInfo: {
     flex: 1,
@@ -528,25 +533,25 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
   },
   userSpeciality: {
     fontSize: 14,
-    color: '#9333EA',
+    color: theme.colors.primary.main,
     marginVertical: 2,
   },
   userFollowers: {
     fontSize: 12,
-    color: '#888888',
+    color: theme.colors.text.muted,
   },
   followButton: {
-    backgroundColor: '#9333EA',
+    backgroundColor: theme.colors.secondary.main,
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
   },
   followButtonText: {
-    color: '#FFFFFF',
+    color: theme.colors.text.inverse,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -555,7 +560,7 @@ const styles = StyleSheet.create({
   regionalCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.background.secondary,
     marginHorizontal: 20,
     marginBottom: 10,
     padding: 15,
@@ -572,29 +577,29 @@ const styles = StyleSheet.create({
   },
   regionalRegion: {
     fontSize: 12,
-    color: '#9333EA',
+    color: theme.colors.secondary.main,
     fontWeight: '500',
   },
   regionalTitle: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     marginVertical: 2,
   },
   regionalArtist: {
     fontSize: 13,
-    color: '#BBBBBB',
+    color: theme.colors.text.secondary,
   },
   regionalPlays: {
     fontSize: 11,
-    color: '#888888',
+    color: theme.colors.text.muted,
     marginTop: 2,
   },
   playButtonSmall: {
     width: 35,
     height: 35,
     borderRadius: 17.5,
-    backgroundColor: '#9333EA',
+    backgroundColor: theme.colors.primary.main,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -603,7 +608,7 @@ const styles = StyleSheet.create({
   chartItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.background.tertiary,
     marginHorizontal: 20,
     marginBottom: 8,
     padding: 12,
@@ -617,7 +622,7 @@ const styles = StyleSheet.create({
   rankNumberText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: theme.colors.primary.dark,
   },
   chartItemImage: {
     width: 45,
@@ -631,18 +636,18 @@ const styles = StyleSheet.create({
   chartItemTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
   },
   chartItemArtist: {
     fontSize: 13,
-    color: '#BBBBBB',
+    color: theme.colors.text.secondary,
     marginTop: 2,
   },
   chartPlayButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(147, 51, 234, 0.2)',
+    backgroundColor: theme.colors.background.emerald.light,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -659,6 +664,6 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666666',
+    color: theme.colors.text.muted,
   },
 });

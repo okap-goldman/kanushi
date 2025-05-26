@@ -5,6 +5,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Avatar } from './ui/Avatar';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { theme } from '../lib/theme';
 
 export function FooterNav() {
   const navigation = useNavigation<any>();
@@ -24,12 +25,12 @@ export function FooterNav() {
     try {
       const { data, error } = await supabase
         .from('profile')
-        .select('image')
+        .select('profile_image_url')
         .eq('id', user.id)
         .single();
       
       if (data && !error) {
-        setUserAvatar(data.image);
+        setUserAvatar(data.profile_image_url);
       }
     } catch (error) {
       console.error('Error fetching user avatar:', error);
@@ -38,7 +39,6 @@ export function FooterNav() {
 
   const navItems = [
     { name: 'メニュー', icon: 'menu', route: 'Menu', testId: 'nav-menu' },
-    { name: '検索', icon: 'search', route: 'Search', testId: 'nav-search' },
     { name: '発見', icon: 'compass', route: 'Discover', testId: 'nav-discover' },
     { name: 'タイムライン', icon: 'home', route: 'Home', testId: 'nav-home' },
     { name: 'マーケット', icon: 'shopping-bag', route: 'Market', testId: 'nav-market' },
@@ -67,7 +67,7 @@ export function FooterNav() {
           <Feather
             name={item.icon as any}
             size={22}
-            color={isActive(item.route) ? '#0070F3' : '#64748B'}
+            color={isActive(item.route) ? theme.colors.primary.main : theme.colors.text.muted}
           />
           <Text style={[styles.navText, isActive(item.route) ? styles.activeText : null]}>
             {item.name}
@@ -81,10 +81,10 @@ export function FooterNav() {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background.primary,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: theme.colors.border.light,
     boxShadow: '0px -3px 3px rgba(0, 0, 0, 0.1)',
     elevation: 10,
   },
@@ -97,10 +97,10 @@ const styles = StyleSheet.create({
   navText: {
     fontSize: 12,
     marginTop: 2,
-    color: '#64748B',
+    color: theme.colors.text.muted,
   },
   activeText: {
-    color: '#0070F3',
+    color: theme.colors.primary.main,
     fontWeight: '600',
   },
   avatarContainer: {
@@ -111,6 +111,6 @@ const styles = StyleSheet.create({
   },
   activeAvatarContainer: {
     borderWidth: 1.5,
-    borderColor: '#0070F3',
+    borderColor: theme.colors.primary.main,
   },
 });

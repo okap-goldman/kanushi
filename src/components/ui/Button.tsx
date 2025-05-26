@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   type ViewStyle,
 } from 'react-native';
+import { theme } from '../../lib/theme';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -58,7 +59,7 @@ export function Button({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' || variant === 'destructive' ? '#FFFFFF' : '#0070F3'}
+          color={variant === 'primary' || variant === 'destructive' ? theme.colors.text.inverse : theme.colors.primary.main}
         />
       ) : (
         <Text style={textStyles}>{children}</Text>
@@ -86,37 +87,37 @@ const styles = StyleSheet.create({
 
   // Variants
   primary: {
-    backgroundColor: '#0070F3',
+    backgroundColor: theme.colors.primary.main,
     borderWidth: 1,
-    borderColor: '#0070F3',
+    borderColor: theme.colors.primary.main,
   },
   primaryText: {
-    color: '#FFFFFF',
+    color: theme.colors.text.inverse,
   },
 
   secondary: {
-    backgroundColor: '#EEF4FF',
+    backgroundColor: theme.colors.background.rose.light,
     borderWidth: 1,
-    borderColor: '#EEF4FF',
+    borderColor: theme.colors.border.rose,
   },
   secondaryText: {
-    color: '#0070F3',
+    color: theme.colors.secondary.dark,
   },
 
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border.default,
   },
   outlineText: {
-    color: '#1E293B',
+    color: theme.colors.text.primary,
   },
 
   ghost: {
     backgroundColor: 'transparent',
   },
   ghostText: {
-    color: '#1E293B',
+    color: theme.colors.text.primary,
   },
 
   link: {
@@ -125,17 +126,17 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   linkText: {
-    color: '#0070F3',
+    color: theme.colors.primary.main,
     textDecorationLine: 'underline',
   },
 
   destructive: {
-    backgroundColor: '#DC2626',
+    backgroundColor: theme.colors.status.error,
     borderWidth: 1,
-    borderColor: '#DC2626',
+    borderColor: theme.colors.status.error,
   },
   destructiveText: {
-    color: '#FFFFFF',
+    color: theme.colors.text.inverse,
   },
 
   // Sizes

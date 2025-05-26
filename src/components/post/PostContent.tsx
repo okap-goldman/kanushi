@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#0070F3',
+    backgroundColor: '#10B981', // Emerald-500
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   waveformBar: {
     width: 3,
     height: 16,
-    backgroundColor: '#0070F3',
+    backgroundColor: '#10B981', // Emerald-500
     marginHorizontal: 3,
     borderRadius: 3,
   },
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   readMoreText: {
     fontSize: 14,
-    color: '#0070F3',
+    color: '#10B981', // Emerald-500
     fontWeight: '500',
   },
 });

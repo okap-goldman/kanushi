@@ -41,7 +41,7 @@ export default function Home() {
             .from('post')
             .select(`
             *,
-            profile!post_user_id_fkey (id, display_name, profile_image_url),
+            profile:user_id (id, display_name, profile_image_url),
             post_hashtag (
               hashtag (id, name)
             )
@@ -54,7 +54,7 @@ export default function Home() {
             .from('post')
             .select(`
             *,
-            profile!post_user_id_fkey (id, display_name, profile_image_url),
+            profile:user_id (id, display_name, profile_image_url),
             post_hashtag (
               hashtag (id, name)
             )
@@ -124,7 +124,7 @@ export default function Home() {
 
     return (
       <View style={styles.loadingMore} testID="loading-more-indicator">
-        <ActivityIndicator size="small" color="#0070F3" />
+        <ActivityIndicator size="small" color="#10B981" />
         <Text style={styles.loadingText}>読み込み中...</Text>
       </View>
     );
@@ -283,14 +283,14 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   activeTab: {
-    borderBottomColor: '#0070F3',
+    borderBottomColor: '#10B981', // Emerald-500
   },
   tabText: {
     color: '#64748B',
     fontWeight: '500',
   },
   activeTabText: {
-    color: '#0070F3',
+    color: '#10B981', // Emerald-500
     fontWeight: '600',
   },
   list: {
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#0070F3',
+    backgroundColor: '#10B981', // Emerald-500
     justifyContent: 'center',
     alignItems: 'center',
     boxShadow: '0px 2px 3.84px rgba(0, 0, 0, 0.25)',
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   closeButton: {
-    color: '#0070F3',
+    color: '#10B981', // Emerald-500
     fontSize: 16,
   },
   modalScroll: {

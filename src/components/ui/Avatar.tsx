@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import React from 'react';
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { theme } from '../../lib/theme';
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -27,7 +28,7 @@ export function Avatar({ source, size = 'md', style, fallbackText }: AvatarProps
           }}
         />
       ) : (
-        <View style={[styles.fallback, { backgroundColor: '#6366F1' }]}>
+        <View style={[styles.fallback, { backgroundColor: theme.colors.primary.main }]}>
           <Text style={styles.fallbackText}>{fallbackText || '?'}</Text>
         </View>
       )}
@@ -39,7 +40,7 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 9999,
     overflow: 'hidden',
-    backgroundColor: '#E2E8F0',
+    backgroundColor: theme.colors.border.light,
   },
   image: {
     width: '100%',

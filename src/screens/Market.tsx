@@ -12,12 +12,13 @@ import {
   View,
 } from 'react-native';
 import { Bell, Check, Heart, Search } from 'lucide-react-native';
-import FooterNav from '../components/FooterNav';
+import { FooterNav } from '../components/FooterNav';
 import Avatar from '../components/ui/Avatar';
 import { useAuth } from '../context/AuthContext';
 import { ecService, type Product } from '../lib/ecService';
 import { followService } from '../lib/followService';
 import { type Profile } from '../lib/db/schema';
+import { theme } from '../lib/theme';
 
 interface ProductGridItemProps {
   product: Product;
@@ -239,7 +240,7 @@ const Market: React.FC = () => {
       {/* ヘッダー */}
       <View style={styles.header}>
         <View style={styles.searchContainer}>
-          <Search color="#666" size={20} style={styles.searchIcon} />
+          <Search color={theme.colors.text.muted} size={20} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="買いたい、売りたいものを探す"
@@ -250,10 +251,10 @@ const Market: React.FC = () => {
           />
         </View>
         <TouchableOpacity style={styles.headerIcon}>
-          <Bell color="#333" size={24} />
+          <Bell color={theme.colors.text.primary} size={24} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.headerIcon}>
-          <Check color="#333" size={24} />
+          <Check color={theme.colors.text.primary} size={24} />
         </TouchableOpacity>
       </View>
 
@@ -289,23 +290,23 @@ const Market: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background.primary,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background.primary,
     paddingHorizontal: 16,
     paddingTop: 48,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme.colors.border.light,
   },
   searchContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.colors.background.secondary,
     borderRadius: 8,
     paddingHorizontal: 12,
     marginRight: 12,
@@ -317,16 +318,16 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     fontSize: 16,
-    color: '#333',
+    color: theme.colors.text.primary,
   },
   headerIcon: {
     padding: 8,
   },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background.primary,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme.colors.border.light,
   },
   tab: {
     flex: 1,
@@ -336,15 +337,15 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#e60012',
+    borderBottomColor: theme.colors.primary.main,
   },
   tabText: {
     fontSize: 16,
-    color: '#666',
+    color: theme.colors.text.muted,
     fontWeight: '500',
   },
   activeTabText: {
-    color: '#e60012',
+    color: theme.colors.primary.main,
     fontWeight: '600',
   },
   notificationDot: {
@@ -354,7 +355,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#e60012',
+    backgroundColor: theme.colors.secondary.main,
   },
   content: {
     flex: 1,
@@ -363,28 +364,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background.primary,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 8,
   },
   saveSearchText: {
     fontSize: 14,
-    color: '#2196f3',
+    color: theme.colors.secondary.main,
   },
   chevron: {
     fontSize: 20,
-    color: '#2196f3',
+    color: theme.colors.secondary.main,
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background.primary,
     marginBottom: 8,
     paddingVertical: 16,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text.primary,
     paddingHorizontal: 16,
     marginBottom: 12,
   },
@@ -401,11 +402,11 @@ const styles = StyleSheet.create({
   subSectionTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
+    color: theme.colors.text.primary,
   },
   seeMoreText: {
     fontSize: 14,
-    color: '#2196f3',
+    color: theme.colors.secondary.main,
   },
   horizontalList: {
     flexDirection: 'row',
@@ -451,15 +452,15 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#333',
+    color: theme.colors.text.primary,
     marginBottom: 4,
   },
   userInfo: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.text.muted,
   },
   productsGridSection: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background.primary,
     paddingVertical: 16,
   },
   productsGrid: {
@@ -510,7 +511,7 @@ const styles = StyleSheet.create({
   },
   campaignText: {
     fontSize: 16,
-    color: '#666',
+    color: theme.colors.text.muted,
   },
 });
 

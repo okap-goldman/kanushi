@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Check if profile exists
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profile')
         .select('id')
         .eq('id', user.id)
         .single();
@@ -77,14 +77,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           user.email?.split('@')[0] ||
           `user_${Math.random().toString(36).substring(2, 9)}`;
 
-        const { error: profileError } = await supabase.from('profiles').insert({
+        const { error: profileError } = await supabase.from('profile').insert({
           id: user.id,
-          name: user.user_metadata?.name || username,
-          image: user.user_metadata?.image || 'https://via.placeholder.com/150',
-          username: username,
-          bio: user.user_metadata?.bio || '',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          display_name: user.user_metadata?.name || username,
+          profile_image_url: user.user_metadata?.image || 'https://via.placeholder.com/150',
+          profile_text: user.user_metadata?.bio || '',
         });
 
         if (profileError) {
@@ -119,14 +116,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data.session) {
         // User is signed in and authenticated, now create the profile
-        const { error: profileError } = await supabase.from('profiles').insert({
+        const { error: profileError } = await supabase.from('profile').insert({
           id: data.user!.id,
-          name: username,
-          image: 'https://via.placeholder.com/150',
-          username,
-          bio: '',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          display_name: username,
+          profile_image_url: 'https://via.placeholder.com/150',
+          profile_text: '',
         });
 
         if (profileError) {

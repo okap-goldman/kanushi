@@ -12,8 +12,10 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Modal,
 } from 'react-native';
 import { Button } from '../components/ui/Button';
+import ImageEditor from '../components/ImageEditor';
 
 type MediaType = 'text' | 'image' | 'audio';
 type PostType = 'post' | 'story';
@@ -27,6 +29,8 @@ export default function CreatePost() {
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isEditingImage, setIsEditingImage] = useState(false);
+  const [editedImageUri, setEditedImageUri] = useState<string | null>(null);
 
   const MAX_CHARS = 10000;
 
@@ -47,6 +51,7 @@ export default function CreatePost() {
     }
     if (type !== 'image') {
       setImageUri(null);
+      setEditedImageUri(null);
     }
     if (type !== 'audio') {
       setAudioUri(null);
@@ -175,7 +180,7 @@ export default function CreatePost() {
         type: postType,
         mediaType: activeType,
         textContent: activeType === 'text' ? textContent : undefined,
-        imageUri: activeType === 'image' ? imageUri : undefined,
+        imageUri: activeType === 'image' ? (editedImageUri || imageUri) : undefined,
         audioUri: activeType === 'audio' ? audioUri : undefined,
         hashtags: extractedHashtags,
       };
@@ -187,6 +192,7 @@ export default function CreatePost() {
       // Reset form
       setTextContent('');
       setImageUri(null);
+      setEditedImageUri(null);
       setAudioUri(null);
       setActiveType('text');
       setPostType('post');
@@ -197,6 +203,15 @@ export default function CreatePost() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImageEditorSave = (editedUri: string) => {
+    setEditedImageUri(editedUri);
+    setIsEditingImage(false);
+  };
+
+  const handleImageEditorCancel = () => {
+    setIsEditingImage(false);
   };
 
   const renderContent = () => {
@@ -264,7 +279,7 @@ export default function CreatePost() {
             {imageUri ? (
               <View style={styles.imagePreviewContainer}>
                 <Image
-                  source={{ uri: imageUri }}
+                  source={{ uri: editedImageUri || imageUri }}
                   style={styles.imagePreview}
                   testID="image-preview"
                 />
@@ -274,6 +289,14 @@ export default function CreatePost() {
                   </Button>
                   <Button onPress={selectFromGallery} variant="outline" size="sm">
                     別の画像を選択
+                  </Button>
+                  <Button 
+                    onPress={() => setIsEditingImage(true)} 
+                    variant="outline" 
+                    size="sm"
+                    style={styles.editButton}
+                  >
+                    <Feather name="edit-2" size={16} /> 編集
                   </Button>
                 </View>
                 {postType === 'story' && (
@@ -429,6 +452,21 @@ export default function CreatePost() {
       <ScrollView style={styles.content}>
         {renderContent()}
       </ScrollView>
+
+      {/* Image Editor Modal */}
+      <Modal
+        visible={isEditingImage}
+        animationType="slide"
+        presentationStyle="fullScreen"
+      >
+        {imageUri && (
+          <ImageEditor
+            imageUri={imageUri}
+            onSave={handleImageEditorSave}
+            onCancel={handleImageEditorCancel}
+          />
+        )}
+      </Modal>
     </View>
   );
 }

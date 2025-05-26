@@ -158,6 +158,9 @@ const resetAndSetup = async () => {
     console.log('- npm test でテストを実行');
     console.log('');
     
+    // プロセスを正常終了
+    process.exit(0);
+    
   } catch (error) {
     console.error('');
     console.error('❌ セットアップ中にエラーが発生しました:', error);

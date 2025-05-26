@@ -38,7 +38,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
 
       try {
         const { data, error } = await supabase
-          .from('likes')
+          .from('like')
           .select()
           .eq('post_id', postId)
           .eq('user_id', user.id)
@@ -93,7 +93,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     const getLikeCount = async () => {
       try {
         const { count, error } = await supabase
-          .from('likes')
+          .from('like')
           .select('*', { count: 'exact', head: true })
           .eq('post_id', postId);
 
@@ -108,7 +108,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     const getCommentCount = async () => {
       try {
         const { count, error } = await supabase
-          .from('comments')
+          .from('comment')
           .select('*', { count: 'exact', head: true })
           .eq('post_id', postId);
 
@@ -186,10 +186,14 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     if (!user) return;
 
     try {
+      // Ensure profile exists before liking
+      const { profileService } = await import('../../lib/profileService');
+      await profileService.ensureProfileExists(user);
+
       if (liked) {
         // Unlike
         const { error } = await supabase
-          .from('likes')
+          .from('like')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
@@ -201,7 +205,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
         // Like and show highlight bubble
         showBubbleAnimation();
         
-        const { error } = await supabase.from('likes').insert({
+        const { error } = await supabase.from('like').insert({
           post_id: postId,
           user_id: user.id,
           created_at: new Date().toISOString(),
@@ -213,16 +217,25 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
       }
     } catch (err) {
       console.error('Error toggling like:', err);
+      toast({
+        title: 'エラーが発生しました',
+        description: 'もう一度お試しください',
+        variant: 'destructive',
+      });
     }
   };
 
   const handleHighlight = async () => {
     if (!user) return;
     
+    // Ensure profile exists before highlighting
+    const { profileService } = await import('../../lib/profileService');
+    await profileService.ensureProfileExists(user);
+    
     // いいねしていない場合は先にいいねする
     if (!liked) {
       try {
-        const { error } = await supabase.from('likes').insert({
+        const { error } = await supabase.from('like').insert({
           post_id: postId,
           user_id: user.id,
           created_at: new Date().toISOString(),
@@ -365,15 +378,6 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
         <TouchableOpacity onPress={onComment} style={styles.actionButton} testID="comment-button">
           <Feather name="message-circle" size={22} color="#64748B" />
           <Text style={styles.actionText}>{commentCount > 0 ? commentCount : ''}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handleHighlight}
-          style={styles.actionButton}
-          testID="highlight-button"
-        >
-          <Feather name="star" size={22} color={highlighted ? '#F59E0B' : '#64748B'} />
-          <Text style={styles.actionText}>{highlightCount > 0 ? highlightCount : ''}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleShare} style={styles.actionButton} testID="share-button">
