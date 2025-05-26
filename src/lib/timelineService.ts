@@ -311,7 +311,7 @@ export const getTimelinePosts = async (
       .from('posts')
       .select(`
         *,
-        author:profiles(id, name, image),
+        author:profile(id, display_name, profile_image_url),
         tags:post_tags(
           tag:tags(id, name)
         )
@@ -359,7 +359,11 @@ export const getTimelinePosts = async (
       return {
         ...post,
         author_id: post.user_id,
-        author: post.author[0] || {
+        author: post.author[0] ? {
+          id: post.author[0].id,
+          name: post.author[0].display_name,
+          image: post.author[0].profile_image_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown',
+        } : {
           id: 'unknown',
           name: 'Unknown User',
           image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown',
@@ -404,7 +408,7 @@ export const getAllPosts = async (
       .from('posts')
       .select(`
         *,
-        author:profiles(id, name, image),
+        author:profile(id, display_name, profile_image_url),
         tags:post_tags(
           tag:tags(id, name)
         )
@@ -448,7 +452,11 @@ export const getAllPosts = async (
       return {
         ...post,
         author_id: post.user_id,
-        author: post.author[0] || {
+        author: post.author[0] ? {
+          id: post.author[0].id,
+          name: post.author[0].display_name,
+          image: post.author[0].profile_image_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown',
+        } : {
           id: 'unknown',
           name: 'Unknown User',
           image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown',

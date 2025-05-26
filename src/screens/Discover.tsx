@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -11,25 +11,29 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Bell, MessageCircle, Settings } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Card } from '../components/ui/Card';
+import { FooterNav } from '../components/FooterNav';
+import { searchService } from '../lib/searchService';
 
 // Sample data for the discover page
 const REGIONS = [
-  { id: '1', name: 'Tokyo', image: 'https://picsum.photos/400/200?random=10', count: 245 },
-  { id: '2', name: 'Osaka', image: 'https://picsum.photos/400/200?random=11', count: 182 },
-  { id: '3', name: 'Kyoto', image: 'https://picsum.photos/400/200?random=12', count: 156 },
-  { id: '4', name: 'Hokkaido', image: 'https://picsum.photos/400/200?random=13', count: 134 },
-  { id: '5', name: 'Okinawa', image: 'https://picsum.photos/400/200?random=14', count: 98 },
-  { id: '6', name: 'Hiroshima', image: 'https://picsum.photos/400/200?random=15', count: 87 },
+  { id: '1', name: '北海道', image: 'https://picsum.photos/400/200?random=10', count: 245 },
+  { id: '2', name: '東北', image: 'https://picsum.photos/400/200?random=11', count: 182 },
+  { id: '3', name: '関東', image: 'https://picsum.photos/400/200?random=12', count: 156 },
+  { id: '4', name: '中部', image: 'https://picsum.photos/400/200?random=13', count: 134 },
+  { id: '5', name: '関西', image: 'https://picsum.photos/400/200?random=14', count: 98 },
+  { id: '6', name: '中国', image: 'https://picsum.photos/400/200?random=15', count: 87 },
+  { id: '7', name: '四国', image: 'https://picsum.photos/400/200?random=16', count: 76 },
+  { id: '8', name: '九州・沖縄', image: 'https://picsum.photos/400/200?random=17', count: 65 },
 ];
 
-const TRENDING_CATEGORIES = [
-  { id: '1', name: 'グルメ', icon: 'coffee' },
-  { id: '2', name: 'イベント', icon: 'calendar' },
-  { id: '3', name: '自然', icon: 'tree' },
-  { id: '4', name: 'アート', icon: 'image' },
-  { id: '5', name: 'ショッピング', icon: 'shopping-bag' },
-  { id: '6', name: 'ナイトライフ', icon: 'moon' },
+const SEARCH_FILTERS = [
+  { id: 'posts', name: '投稿', icon: 'edit' },
+  { id: 'users', name: 'ユーザー', icon: 'user' },
+  { id: 'events', name: 'イベント', icon: 'calendar' },
+  { id: 'items', name: 'アイテム', icon: 'shopping-bag' },
 ];
 
 const TRENDING_POSTS = [
@@ -81,19 +85,57 @@ const { width } = Dimensions.get('window');
 const regionCardWidth = width * 0.7;
 
 export default function Discover() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<'posts' | 'users' | 'events' | 'items' | null>(null);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const navigation = useNavigation<any>();
+
+  // フィルター選択時に検索を実行
+  useEffect(() => {
+    if (selectedFilter) {
+      handleFilterSearch();
+    }
+  }, [selectedFilter]);
+
+  const handleFilterSearch = async () => {
+    if (!selectedFilter) return;
+    
+    setIsSearching(true);
+    try {
+      const results = await searchService.getDiscoverContent(selectedFilter);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Filter search error:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>発見</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.title}>発見</Text>
+          <View style={styles.headerIcons}>
+            <TouchableOpacity style={styles.iconButton}>
+              <Bell size={20} color="#666" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Messages')}>
+              <MessageCircle size={20} color="#666" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Settings')}>
+              <Settings size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Regions section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>人気の地域</Text>
+            <Text style={styles.sectionTitle}>地域別ヒットチャート</Text>
             <TouchableOpacity>
               <Text style={styles.seeAllText}>すべて見る</Text>
             </TouchableOpacity>
@@ -103,7 +145,10 @@ export default function Discover() {
             horizontal
             data={REGIONS}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.regionCard}>
+              <TouchableOpacity 
+                style={styles.regionCard}
+                onPress={() => navigation.navigate('RegionDetail', { regionName: item.name })}
+              >
                 <Image source={{ uri: item.image }} style={styles.regionImage} contentFit="cover" />
                 <View style={styles.regionInfo}>
                   <Text style={styles.regionName}>{item.name}</Text>
@@ -119,78 +164,151 @@ export default function Discover() {
           />
         </View>
 
-        {/* Categories */}
+        {/* Search Filters */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>カテゴリで探す</Text>
           <View style={styles.categoriesContainer}>
-            {TRENDING_CATEGORIES.map((category) => (
+            {SEARCH_FILTERS.map((filter) => (
               <TouchableOpacity
-                key={category.id}
+                key={filter.id}
                 style={[
                   styles.categoryButton,
-                  selectedCategory === category.id && styles.categoryButtonSelected,
+                  selectedFilter === filter.id && styles.categoryButtonSelected,
                 ]}
                 onPress={() =>
-                  setSelectedCategory(selectedCategory === category.id ? null : category.id)
+                  setSelectedFilter(selectedFilter === filter.id ? null : filter.id as any)
                 }
               >
                 <Feather
-                  name={category.icon as any}
+                  name={filter.icon as any}
                   size={16}
-                  color={selectedCategory === category.id ? '#FFFFFF' : '#4A5568'}
+                  color={selectedFilter === filter.id ? '#FFFFFF' : '#4A5568'}
                 />
                 <Text
                   style={[
                     styles.categoryText,
-                    selectedCategory === category.id && styles.categoryTextSelected,
+                    selectedFilter === filter.id && styles.categoryTextSelected,
                   ]}
                 >
-                  {category.name}
+                  {filter.name}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Trending posts */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>トレンド</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>すべて見る</Text>
-            </TouchableOpacity>
-          </View>
-
-          {TRENDING_POSTS.map((post) => (
-            <Card key={post.id} style={styles.postCard}>
-              <View style={styles.postHeader}>
-                <Image source={{ uri: post.user.avatarUrl }} style={styles.postAvatar} />
-                <View>
-                  <Text style={styles.postUserName}>{post.user.name}</Text>
-                  <Text style={styles.postUsername}>@{post.user.username}</Text>
-                </View>
-              </View>
-
-              <Text style={styles.postContent} numberOfLines={2}>
-                {post.content}
+        {/* Search Results */}
+        {selectedFilter && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                {SEARCH_FILTERS.find(f => f.id === selectedFilter)?.name}の検索結果
               </Text>
+              <TouchableOpacity onPress={() => setSelectedFilter(null)}>
+                <Text style={styles.seeAllText}>クリア</Text>
+              </TouchableOpacity>
+            </View>
 
-              <Image source={{ uri: post.images[0] }} style={styles.postImage} contentFit="cover" />
-
-              <View style={styles.postStats}>
-                <View style={styles.postStat}>
-                  <Feather name="heart" size={16} color="#4A5568" />
-                  <Text style={styles.postStatText}>{post.likes}</Text>
-                </View>
-                <View style={styles.postStat}>
-                  <Feather name="message-circle" size={16} color="#4A5568" />
-                  <Text style={styles.postStatText}>{post.comments}</Text>
-                </View>
+            {isSearching ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>検索中...</Text>
               </View>
-            </Card>
-          ))}
-        </View>
+            ) : searchResults.length > 0 ? (
+              <View>
+                {selectedFilter === 'posts' && searchResults.map((post) => (
+                  <Card key={post.id} style={styles.postCard}>
+                    <View style={styles.postHeader}>
+                      <Image 
+                        source={{ uri: post.profiles?.avatar_url || 'https://i.pravatar.cc/150' }} 
+                        style={styles.postAvatar} 
+                      />
+                      <View>
+                        <Text style={styles.postUserName}>{post.profiles?.name || '匿名ユーザー'}</Text>
+                        <Text style={styles.postUsername}>@{post.profiles?.username || 'anonymous'}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.postContent} numberOfLines={2}>
+                      {post.content}
+                    </Text>
+                    {post.media_url && (
+                      <Image source={{ uri: post.media_url }} style={styles.postImage} contentFit="cover" />
+                    )}
+                  </Card>
+                ))}
+                
+                {selectedFilter === 'users' && searchResults.map((user) => (
+                  <Card key={user.id} style={styles.postCard}>
+                    <View style={styles.postHeader}>
+                      <Image 
+                        source={{ uri: user.avatar_url || 'https://i.pravatar.cc/150' }} 
+                        style={styles.postAvatar} 
+                      />
+                      <View>
+                        <Text style={styles.postUserName}>{user.name || '匿名ユーザー'}</Text>
+                        <Text style={styles.postUsername}>@{user.username || 'anonymous'}</Text>
+                        {user.bio && <Text style={styles.userBio}>{user.bio}</Text>}
+                      </View>
+                    </View>
+                  </Card>
+                ))}
+
+                {(selectedFilter === 'events' || selectedFilter === 'items') && (
+                  <View style={styles.comingSoonContainer}>
+                    <Text style={styles.comingSoonText}>この機能は近日公開予定です</Text>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <View style={styles.noResultsContainer}>
+                <Text style={styles.noResultsText}>結果が見つかりませんでした</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Trending posts - show only when no filter is selected */}
+        {!selectedFilter && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>トレンド</Text>
+              <TouchableOpacity>
+                <Text style={styles.seeAllText}>すべて見る</Text>
+              </TouchableOpacity>
+            </View>
+
+            {TRENDING_POSTS.map((post) => (
+              <Card key={post.id} style={styles.postCard}>
+                <View style={styles.postHeader}>
+                  <Image source={{ uri: post.user.avatarUrl }} style={styles.postAvatar} />
+                  <View>
+                    <Text style={styles.postUserName}>{post.user.name}</Text>
+                    <Text style={styles.postUsername}>@{post.user.username}</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.postContent} numberOfLines={2}>
+                  {post.content}
+                </Text>
+
+                <Image source={{ uri: post.images[0] }} style={styles.postImage} contentFit="cover" />
+
+                <View style={styles.postStats}>
+                  <View style={styles.postStat}>
+                    <Feather name="heart" size={16} color="#4A5568" />
+                    <Text style={styles.postStatText}>{post.likes}</Text>
+                  </View>
+                  <View style={styles.postStat}>
+                    <Feather name="message-circle" size={16} color="#4A5568" />
+                    <Text style={styles.postStatText}>{post.comments}</Text>
+                  </View>
+                </View>
+              </Card>
+            ))}
+          </View>
+        )}
       </ScrollView>
+      
+      <FooterNav />
     </SafeAreaView>
   );
 }
@@ -201,15 +319,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7FAFC',
   },
   header: {
-    padding: 16,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    padding: 16,
+    boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.05)',
+    elevation: 3,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1A202C',
+  },
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  iconButton: {
+    padding: 8,
   },
   scrollView: {
     flex: 1,
@@ -339,5 +470,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#718096',
     marginLeft: 4,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#718096',
+  },
+  noResultsContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noResultsText: {
+    fontSize: 16,
+    color: '#718096',
+  },
+  comingSoonContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  comingSoonText: {
+    fontSize: 16,
+    color: '#718096',
+    fontStyle: 'italic',
+  },
+  userBio: {
+    fontSize: 12,
+    color: '#A0AEC0',
+    marginTop: 4,
   },
 });

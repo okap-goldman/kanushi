@@ -1,8 +1,6 @@
 // Main index file that exports all schemas
 // This file also sets up foreign key constraints for circular dependencies
 
-import { foreignKey } from 'drizzle-orm/pg-core';
-
 // Export all enums
 export * from './enums';
 
@@ -17,27 +15,27 @@ export * from './group';
 export * from './ai';
 export * from './notification';
 
+// TODO: 関係定義は後で追加
+// 現在はマイグレーション生成時に循環参照エラーが発生するため一時的にコメントアウト
+// export * from './relations';
+
+// TODO: 外部キー制約は後で個別に追加
+// 現在はマイグレーション生成時にエラーが発生するため一時的にコメントアウト
+/*
+import { foreignKey } from 'drizzle-orm/pg-core';
 import { events } from './event';
 import { groups } from './group';
-// Import necessary tables for foreign key setup
 import { posts } from './post';
 
-// Add foreign key constraints that couldn't be added directly due to circular dependencies
-// These would be applied during migration setup
-
-// Posts -> Events foreign key
 export const postEventFk = foreignKey({
   columns: [posts.eventId],
   foreignColumns: [events.id],
   name: 'fk_post_event_id',
 });
 
-// Posts -> Groups foreign key
 export const postGroupFk = foreignKey({
   columns: [posts.groupId],
   foreignColumns: [groups.id],
   name: 'fk_post_group_id',
 });
-
-// Export all relations
-export * from './relations';
+*/

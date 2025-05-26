@@ -4,6 +4,7 @@ import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View, Anim
 import { useAuth } from '../../context/AuthContext';
 import { ShareModal } from '../ShareModal';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../../hooks/use-toast';
 
 interface PostActionsProps {
   postId: string;
@@ -24,6 +25,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
   const [showShareModal, setShowShareModal] = useState(false);
   const [showHighlightBubble, setShowHighlightBubble] = useState(false);
   const { user } = useAuth();
+  const { toast } = useToast();
   
   // Animation values for highlight bubble
   const bubbleOpacity = useRef(new Animated.Value(0)).current;
@@ -214,8 +216,31 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     }
   };
 
-  const handleHighlight = () => {
+  const handleHighlight = async () => {
     if (!user) return;
+    
+    // いいねしていない場合は先にいいねする
+    if (!liked) {
+      try {
+        const { error } = await supabase.from('likes').insert({
+          post_id: postId,
+          user_id: user.id,
+          created_at: new Date().toISOString(),
+        });
+
+        if (error) throw error;
+        setLiked(true);
+        setLikeCount((prev) => prev + 1);
+      } catch (err) {
+        console.error('Error adding like:', err);
+        toast({
+          title: 'エラーが発生しました',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+    
     setShowHighlightDialog(true);
     setHighlightError('');
     setHighlightReason('');
@@ -253,6 +278,11 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
         if (error) throw error;
         setHighlighted(true);
         setHighlightCount((prev) => prev + 1);
+        
+        // ハイライト成功のトーストを表示
+        toast({
+          title: 'ハイライトしました✨',
+        });
       }
 
       setShowHighlightDialog(false);
@@ -260,6 +290,10 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     } catch (err) {
       console.error('Error toggling highlight:', err);
       setHighlightError('ハイライトの更新に失敗しました');
+      toast({
+        title: 'ハイライトの更新に失敗しました',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -321,7 +355,9 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
                 },
               ]}
             >
-              <Text style={styles.highlightBubbleText}>ハイライトする！</Text>
+              <TouchableOpacity onPress={handleHighlight} activeOpacity={0.8}>
+                <Text style={styles.highlightBubbleText}>ハイライトする！</Text>
+              </TouchableOpacity>
             </Animated.View>
           )}
         </View>

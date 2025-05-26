@@ -2,7 +2,24 @@
 
 Supabase SQL Editorを使用してモックデータを適用する手順です。
 
+## 重要: 前提条件
+
+モックデータを適用する前に、Supabase Authにテストユーザーを作成する必要があります。
+
 ## 手順
+
+### ステップ1: Authユーザーの作成
+
+```bash
+# 環境変数を設定
+export SUPABASE_URL="https://dpmrgzjvljaacdwggnaf.supabase.co"
+export SUPABASE_SERVICE_ROLE_KEY="[Settings > API から取得したサービスロールキー]"
+
+# Authユーザーを作成
+node scripts/seed-auth-users.js
+```
+
+### ステップ2: モックデータの適用
 
 1. **Supabaseダッシュボードにアクセス**
    - https://app.supabase.com/project/dpmrgzjvljaacdwggnaf にアクセス

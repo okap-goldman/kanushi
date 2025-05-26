@@ -17,12 +17,13 @@ import { Input } from '../ui/Input';
 
 interface Comment {
   id: string;
-  content: string;
+  body?: string;
+  content?: string;
   created_at: string;
-  profiles: {
+  profile: {
     id: string;
-    username: string;
-    image: string;
+    display_name: string;
+    profile_image_url?: string;
   };
 }
 
@@ -50,10 +51,10 @@ export function PostComments({
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.from('comments').insert({
+      const { error } = await supabase.from('comment').insert({
         post_id: postId,
         user_id: user.id,
-        content: newComment.trim(),
+        body: newComment.trim(),
         created_at: new Date().toISOString(),
       });
 
@@ -107,16 +108,17 @@ export function PostComments({
           renderItem={({ item }) => (
             <View style={styles.commentItem}>
               <Avatar
-                source={item.profiles.image || 'https://via.placeholder.com/32'}
+                source={item.profile.profile_image_url}
                 size="sm"
                 style={styles.commentAvatar}
+                fallbackText={item.profile.display_name?.substring(0, 1)}
               />
               <View style={styles.commentContent}>
                 <View style={styles.commentHeader}>
-                  <Text style={styles.commentUser}>{item.profiles.username}</Text>
+                  <Text style={styles.commentUser}>{item.profile.display_name}</Text>
                   <Text style={styles.commentTime}>{formatDate(item.created_at)}</Text>
                 </View>
-                <Text style={styles.commentText}>{item.content}</Text>
+                <Text style={styles.commentText}>{item.body || item.content}</Text>
               </View>
             </View>
           )}

@@ -3,6 +3,8 @@ import { useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import React from 'react';
 import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Navbar from '../components/Navbar';
+import { FooterNav } from '../components/FooterNav';
 
 // Sample data for messages
 const SAMPLE_MESSAGES = [
@@ -126,6 +128,7 @@ export default function Messages() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Navbar />
       <View style={styles.header}>
         <Text style={styles.title}>メッセージ</Text>
         <TouchableOpacity onPress={navigateToNewMessage}>
@@ -140,6 +143,7 @@ export default function Messages() {
         contentContainerStyle={styles.messagesList}
         ListEmptyComponent={renderEmptyState}
       />
+      <FooterNav />
     </SafeAreaView>
   );
 }

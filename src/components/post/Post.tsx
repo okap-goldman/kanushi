@@ -33,10 +33,10 @@ export function Post({ author, content, caption, mediaType, postId, tags = [] }:
     setIsLoadingComments(true);
     try {
       const { data, error } = await supabase
-        .from('comments')
+        .from('comment')
         .select(`
           *,
-          profiles:user_id (id, username, image)
+          profile:user_id (id, display_name, profile_image_url)
         `)
         .eq('post_id', postId)
         .order('created_at', { ascending: true });

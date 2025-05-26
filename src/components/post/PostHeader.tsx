@@ -22,7 +22,7 @@ export function PostHeader({ author }: PostHeaderProps) {
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={navigateToProfile} style={styles.userInfo}>
-        <Avatar source={author.image || 'https://via.placeholder.com/40'} size="md" />
+        <Avatar source={author.image} size="md" fallbackText={author.name?.substring(0, 1)} />
         <Text style={styles.userName}>{author.name}</Text>
       </TouchableOpacity>
 

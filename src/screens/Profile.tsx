@@ -34,21 +34,43 @@ export default function Profile() {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      // Fetch profile data
+      const { data: profileData, error: profileError } = await supabase
         .from('profile')
-        .select(`
-          *,
-          followers:follow!followee_id(count),
-          following:follow!follower_id(count),
-          posts:post(count)
-        `)
+        .select('*')
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
-      if (data) {
-        setProfile(data);
+      // Fetch followers count
+      const { count: followersCount } = await supabase
+        .from('follow')
+        .select('*', { count: 'exact', head: true })
+        .eq('followee_id', userId)
+        .eq('status', 'active');
+
+      // Fetch following count
+      const { count: followingCount } = await supabase
+        .from('follow')
+        .select('*', { count: 'exact', head: true })
+        .eq('follower_id', userId)
+        .eq('status', 'active');
+
+      // Fetch posts count
+      const { count: postsCount } = await supabase
+        .from('post')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .is('deleted_at', null);
+
+      if (profileData) {
+        setProfile({
+          ...profileData,
+          followers: { count: followersCount || 0 },
+          following: { count: followingCount || 0 },
+          posts: { count: postsCount || 0 }
+        });
       }
     } catch (err) {
       console.error('Error fetching profile:', err);

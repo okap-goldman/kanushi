@@ -97,7 +97,7 @@ export const getConversations = async (
         *,
         participants:conversation_participants(
           *,
-          user:profiles(id, name, image, username)
+          user:profile(id, display_name, profile_image_url)
         )
       `)
       .in('id', conversationIds)
@@ -115,7 +115,7 @@ export const getConversations = async (
           .from('messages')
           .select(`
             *,
-            sender:profiles(id, name, image)
+            sender:profile(id, display_name, profile_image_url)
           `)
           .eq('conversation_id', conversation.id)
           .order('created_at', { ascending: false })
@@ -158,7 +158,11 @@ export const getConversations = async (
           messagesData && messagesData.length > 0
             ? {
                 ...messagesData[0],
-                sender: messagesData[0].sender[0] || {
+                sender: messagesData[0].sender[0] ? {
+                  id: messagesData[0].sender[0].id,
+                  name: messagesData[0].sender[0].display_name,
+                  image: messagesData[0].sender[0].profile_image_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown',
+                } : {
                   id: 'unknown',
                   name: 'Unknown User',
                   image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unknown',
@@ -174,11 +178,11 @@ export const getConversations = async (
           // For display in the UI, use other participant's name/image for 1:1 chats
           display_name:
             otherParticipants.length === 1
-              ? otherParticipants[0].user.name
-              : formattedParticipants.map((p: any) => p.user.name).join(', '),
+              ? otherParticipants[0].user.display_name
+              : formattedParticipants.map((p: any) => p.user.display_name).join(', '),
           display_image:
             otherParticipants.length === 1
-              ? otherParticipants[0].user.image
+              ? otherParticipants[0].user.profile_image_url
               : 'https://api.dicebear.com/7.x/avataaars/svg?seed=group',
         };
       })
@@ -212,7 +216,7 @@ export const getConversation = async (
         *,
         participants:conversation_participants(
           *,
-          user:profiles(id, name, image, username)
+          user:profile(id, display_name, profile_image_url)
         )
       `)
       .eq('id', conversation_id)
@@ -237,10 +241,10 @@ export const getConversation = async (
       .from('messages')
       .select(`
         *,
-        sender:profiles(id, name, image),
+        sender:profile(id, display_name, profile_image_url),
         reactions:message_reactions(
           *,
-          user:profiles(id, name, image)
+          user:profile(id, display_name, profile_image_url)
         )
       `)
       .eq('conversation_id', conversation_id)
@@ -318,11 +322,11 @@ export const getConversation = async (
       // For display in the UI, use other participant's name/image for 1:1 chats
       display_name:
         otherParticipants.length === 1
-          ? otherParticipants[0].user.name
-          : formattedParticipants.map((p: any) => p.user.name).join(', '),
+          ? otherParticipants[0].user.display_name
+          : formattedParticipants.map((p: any) => p.user.display_name).join(', '),
       display_image:
         otherParticipants.length === 1
-          ? otherParticipants[0].user.image
+          ? otherParticipants[0].user.profile_image_url
           : 'https://api.dicebear.com/7.x/avataaars/svg?seed=group',
     };
 
@@ -360,7 +364,7 @@ export const sendMessage = async (
       })
       .select(`
         *,
-        sender:profiles(id, name, image)
+        sender:profile(id, display_name, profile_image_url)
       `)
       .single();
 
@@ -462,7 +466,7 @@ export const reactToMessage = async (
       })
       .select(`
         *,
-        user:profiles(id, name, image)
+        user:profile(id, display_name, profile_image_url)
       `)
       .single();
 
@@ -593,7 +597,7 @@ export const getAvailableUsers = async (
   current_user_id?: string
 ): Promise<ApiResponse<ConversationParticipant['user'][]>> => {
   try {
-    let query = supabase.from('profiles').select('id, name, image, username');
+    let query = supabase.from('profile').select('id, display_name, profile_image_url');
 
     // Filter out the current user if provided
     if (current_user_id) {
@@ -602,10 +606,10 @@ export const getAvailableUsers = async (
 
     // Apply search filter if provided
     if (search_term) {
-      query = query.or(`name.ilike.%${search_term}%,username.ilike.%${search_term}%`);
+      query = query.or(`display_name.ilike.%${search_term}%`);
     }
 
-    const { data, error } = await query.order('name');
+    const { data, error } = await query.order('display_name');
 
     if (error) {
       throw error;

@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } fr
 import { useNavigation } from '@react-navigation/native';
 import { ChevronRight, User, Bell, Lock, HelpCircle, LogOut } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
+import Navbar from '../components/Navbar';
+import FooterNav from '../components/FooterNav';
 
 export default function Settings() {
   const navigation = useNavigation<any>();
@@ -37,11 +39,12 @@ export default function Settings() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Navbar />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>設定</Text>
       </View>
       
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         {settingsItems.map((item, index) => {
           const Icon = item.icon;
           return (
@@ -69,6 +72,7 @@ export default function Settings() {
           </View>
         </TouchableOpacity>
       </ScrollView>
+      <FooterNav />
     </SafeAreaView>
   );
 }
@@ -92,6 +96,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   settingItem: {
     backgroundColor: '#FFFFFF',

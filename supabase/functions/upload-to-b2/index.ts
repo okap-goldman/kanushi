@@ -1,6 +1,5 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { createHash } from 'https://deno.land/std@0.250.0/crypto/mod.ts';
-import { encode } from 'https://deno.land/std@0.250.0/encoding/base64.ts';
+import { encodeBase64 } from 'https://deno.land/std@0.177.0/encoding/base64.ts';
 
 // Backblaze B2 API endpoints
 const B2_API_URL = 'https://api.backblazeb2.com/b2api/v2';
@@ -27,7 +26,7 @@ interface B2UploadUrlResponse {
 
 // Authorize with B2
 async function authorizeB2(keyId: string, applicationKey: string): Promise<B2AuthResponse> {
-  const authString = encode(`${keyId}:${applicationKey}`);
+  const authString = encodeBase64(`${keyId}:${applicationKey}`);
 
   const response = await fetch(B2_AUTH_URL, {
     method: 'GET',
@@ -73,8 +72,9 @@ async function uploadToB2(
   fileData: Uint8Array,
   contentType: string
 ): Promise<{ fileId: string; fileName: string }> {
-  const sha1 = await createHash('sha1').update(fileData).digest();
-  const sha1Hex = Array.from(new Uint8Array(sha1))
+  // Calculate SHA-1 hash using Web Crypto API
+  const hashBuffer = await crypto.subtle.digest('SHA-1', fileData);
+  const sha1Hex = Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 

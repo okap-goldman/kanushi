@@ -17,7 +17,8 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { uploadFile } from '../lib/supabase';
+import { uploadToB2 } from '../lib/b2Service';
+import { uploadToSupabaseStorage } from '../lib/storageService';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 
@@ -48,7 +49,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: [ImagePicker.MediaType.IMAGE],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
@@ -61,7 +62,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
 
   const pickVideo = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      mediaTypes: [ImagePicker.MediaType.VIDEO],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
@@ -159,6 +160,14 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
     onClose();
   };
 
+  const canSubmit = (): boolean => {
+    if (activeTab === 'text') return textContent.trim().length > 0;
+    if (activeTab === 'image') return imageUri !== null;
+    if (activeTab === 'video') return videoUri !== null;
+    if (activeTab === 'audio') return audioUri !== null;
+    return false;
+  };
+
   const handleSubmit = async () => {
     if (!user) return;
 
@@ -176,42 +185,51 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
 
       // Upload media based on type
       if (activeTab === 'image' && imageUri) {
-        // Need to convert URI to blob for uploadFile
+        // Convert URI to File object for B2 upload
         const response = await fetch(imageUri);
         const blob = await response.blob();
-        const file = {
-          name: `image_${Date.now()}.jpg`,
+        const file = new File([blob], `image_${Date.now()}.jpg`, {
           type: 'image/jpeg',
-          uri: imageUri,
-        };
+        });
 
-        const { url, error } = await uploadFile(file, 'media', 'images');
-        if (error) throw error;
-        mediaUrl = url;
+        // Try B2 first, fallback to Supabase Storage
+        let result = await uploadToB2(file, 'posts');
+        if (!result.success) {
+          console.log('B2 upload failed, trying Supabase Storage:', result.error);
+          result = await uploadToSupabaseStorage(file, 'posts');
+          if (!result.success) throw new Error(result.error);
+        }
+        mediaUrl = result.url;
       } else if (activeTab === 'video' && videoUri) {
         const response = await fetch(videoUri);
         const blob = await response.blob();
-        const file = {
-          name: `video_${Date.now()}.mp4`,
+        const file = new File([blob], `video_${Date.now()}.mp4`, {
           type: 'video/mp4',
-          uri: videoUri,
-        };
+        });
 
-        const { url, error } = await uploadFile(file, 'media', 'videos');
-        if (error) throw error;
-        mediaUrl = url;
+        // Try B2 first, fallback to Supabase Storage
+        let result = await uploadToB2(file, 'posts');
+        if (!result.success) {
+          console.log('B2 upload failed, trying Supabase Storage:', result.error);
+          result = await uploadToSupabaseStorage(file, 'posts');
+          if (!result.success) throw new Error(result.error);
+        }
+        mediaUrl = result.url;
       } else if (activeTab === 'audio' && audioUri) {
         const response = await fetch(audioUri);
         const blob = await response.blob();
-        const file = {
-          name: `audio_${Date.now()}.m4a`,
+        const file = new File([blob], `audio_${Date.now()}.m4a`, {
           type: 'audio/m4a',
-          uri: audioUri,
-        };
+        });
 
-        const { url, error } = await uploadFile(file, 'media', 'audio');
-        if (error) throw error;
-        audioUrl = url;
+        // Try B2 first, fallback to Supabase Storage
+        let result = await uploadToB2(file, 'posts');
+        if (!result.success) {
+          console.log('B2 upload failed, trying Supabase Storage:', result.error);
+          result = await uploadToSupabaseStorage(file, 'posts');
+          if (!result.success) throw new Error(result.error);
+        }
+        audioUrl = result.url;
       }
 
       // Prepare post data
@@ -331,7 +349,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
             <Feather name="x" size={24} color="#1E293B" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>投稿を作成</Text>
-          <Button onPress={handleSubmit} size="sm" disabled={loading} loading={loading}>
+          <Button onPress={handleSubmit} size="sm" disabled={loading || !canSubmit()} loading={loading}>
             投稿
           </Button>
         </View>

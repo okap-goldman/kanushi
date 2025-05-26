@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Avatar } from '../components/ui/Avatar';
 import { CreatePostDialog } from '../components/CreatePostDialog';
 import { Post } from '../components/post/Post';
+import { FooterNav } from '../components/FooterNav';
 import { useAuth } from '../context/AuthContext';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { supabase } from '../lib/supabase';
@@ -37,12 +38,12 @@ export default function Home() {
         if (timelineType === 'family') {
           // Family timeline: posts from people you follow + your posts
           query = supabase
-            .from('posts')
+            .from('post')
             .select(`
             *,
-            profiles!posts_user_id_fkey (id, username, image),
-            post_tags (
-              tags (id, name)
+            profile!post_user_id_fkey (id, display_name, profile_image_url),
+            post_hashtag (
+              hashtag (id, name)
             )
           `)
             .order('created_at', { ascending: false })
@@ -50,12 +51,12 @@ export default function Home() {
         } else {
           // Watch timeline: shows all posts
           query = supabase
-            .from('posts')
+            .from('post')
             .select(`
             *,
-            profiles!posts_user_id_fkey (id, username, image),
-            post_tags (
-              tags (id, name)
+            profile!post_user_id_fkey (id, display_name, profile_image_url),
+            post_hashtag (
+              hashtag (id, name)
             )
           `)
             .order('created_at', { ascending: false })
@@ -72,19 +73,19 @@ export default function Home() {
           // Process the data to format it properly
           const formattedPosts = data.map((post) => ({
             id: post.id,
-            content: post.media_url || post.audio_url || post.text_content,
+            content: post.media_url || post.text_content,
             caption: post.text_content,
             mediaType: post.content_type,
             author: {
-              id: post.profiles.id,
-              name: post.profiles.username,
-              image: post.profiles.image,
+              id: post.profile.id,
+              name: post.profile.display_name,
+              image: post.profile.profile_image_url,
             },
-            // Consolidate tags from the posts_tags join table
+            // Consolidate tags from the post_hashtag join table
             tags:
-              post.post_tags?.map((pt: any) => ({
-                id: pt.tags.id,
-                name: pt.tags.name,
+              post.post_hashtag?.map((pt: any) => ({
+                id: pt.hashtag.id,
+                name: pt.hashtag.name,
               })) || [],
           }));
 
@@ -236,6 +237,8 @@ export default function Home() {
           </View>
         </View>
       </Modal>
+      
+      <FooterNav />
     </SafeAreaView>
   );
 }
@@ -298,7 +301,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 16,
+    bottom: 80,
     right: 16,
     width: 56,
     height: 56,

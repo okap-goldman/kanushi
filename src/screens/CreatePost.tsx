@@ -16,24 +16,26 @@ import {
 import { Button } from '../components/ui/Button';
 
 type MediaType = 'text' | 'image' | 'audio';
+type PostType = 'post' | 'story';
 
 export default function CreatePost() {
   const [activeType, setActiveType] = useState<MediaType>('text');
+  const [postType, setPostType] = useState<PostType>('post');
   const [textContent, setTextContent] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [audioUri, setAudioUri] = useState<string | null>(null);
-  const [hashtags, setHashtags] = useState<string[]>([]);
-  const [hashtagInput, setHashtagInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [showHashtagWarning, setShowHashtagWarning] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const MAX_CHARS = 10000;
-  const MAX_HASHTAGS = 5;
 
   const characterCount = textContent.length;
   const isTextTooLong = characterCount > MAX_CHARS;
+  
+  // Extract hashtags from text content
+  const extractedHashtags = textContent.match(/#[^\s#]+/g) || [];
+  
   const canSubmit =
     !isTextTooLong && (activeType !== 'text' || textContent.trim().length > 0) && !loading;
 
@@ -52,6 +54,10 @@ export default function CreatePost() {
         recording.stopAndUnloadAsync();
         setRecording(null);
       }
+    }
+    // Reset to post when changing from image to other types
+    if (type !== 'image' && postType === 'story') {
+      setPostType('post');
     }
   };
 
@@ -158,47 +164,36 @@ export default function CreatePost() {
     }
   };
 
-  // Hashtag functions
-  const addHashtag = () => {
-    const tag = hashtagInput.trim();
-    if (!tag) return;
-
-    if (hashtags.length >= MAX_HASHTAGS) {
-      setShowHashtagWarning(true);
-      setTimeout(() => setShowHashtagWarning(false), 3000);
-      return;
-    }
-
-    if (!hashtags.includes(tag)) {
-      setHashtags([...hashtags, tag]);
-    }
-    setHashtagInput('');
-  };
-
-  const removeHashtag = (tagToRemove: string) => {
-    setHashtags(hashtags.filter((tag) => tag !== tagToRemove));
-    setShowHashtagWarning(false);
-  };
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
 
     setLoading(true);
     try {
-      // Simulate post submission
+      // Prepare submission data
+      const submissionData = {
+        type: postType,
+        mediaType: activeType,
+        textContent: activeType === 'text' ? textContent : undefined,
+        imageUri: activeType === 'image' ? imageUri : undefined,
+        audioUri: activeType === 'audio' ? audioUri : undefined,
+        hashtags: extractedHashtags,
+      };
+
+      // Simulate post/story submission
       await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.log('Submitting:', submissionData);
 
       // Reset form
       setTextContent('');
       setImageUri(null);
       setAudioUri(null);
-      setHashtags([]);
-      setHashtagInput('');
       setActiveType('text');
+      setPostType('post');
 
-      console.log('Post submitted successfully');
+      console.log(`${postType === 'story' ? 'Story' : 'Post'} submitted successfully`);
     } catch (error) {
-      console.error('Error submitting post:', error);
+      console.error('Error submitting:', error);
     } finally {
       setLoading(false);
     }
@@ -211,7 +206,7 @@ export default function CreatePost() {
           <View style={styles.textSection}>
             <TextInput
               style={[styles.textInput, isTextTooLong && styles.textInputError]}
-              placeholder="今何を考えていますか？"
+              placeholder="今何を考えていますか？ #ハッシュタグ を使って投稿をカテゴライズできます"
               value={textContent}
               onChangeText={setTextContent}
               multiline
@@ -226,12 +221,46 @@ export default function CreatePost() {
                 {characterCount} / {MAX_CHARS}
               </Text>
             </View>
+            {extractedHashtags.length > 0 && (
+              <View style={styles.extractedHashtags}>
+                <Text style={styles.hashtagsLabel}>検出されたハッシュタグ:</Text>
+                <View style={styles.hashtagsList}>
+                  {extractedHashtags.map((tag, index) => (
+                    <View key={index} style={styles.hashtagChip}>
+                      <Text style={styles.hashtagText}>{tag}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
         );
 
       case 'image':
         return (
           <View style={styles.imageSection}>
+            {/* Post Type Selector for Image */}
+            <View style={styles.postTypeSelector}>
+              <TouchableOpacity
+                style={[styles.postTypeButton, postType === 'post' && styles.activePostTypeButton]}
+                onPress={() => setPostType('post')}
+              >
+                <Feather name="file-text" size={20} color={postType === 'post' ? '#FFFFFF' : '#6B7280'} />
+                <Text style={[styles.postTypeText, postType === 'post' && styles.activePostTypeText]}>
+                  通常投稿
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.postTypeButton, postType === 'story' && styles.activePostTypeButton]}
+                onPress={() => setPostType('story')}
+              >
+                <Feather name="clock" size={20} color={postType === 'story' ? '#FFFFFF' : '#6B7280'} />
+                <Text style={[styles.postTypeText, postType === 'story' && styles.activePostTypeText]}>
+                  ストーリー (24時間)
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             {imageUri ? (
               <View style={styles.imagePreviewContainer}>
                 <Image
@@ -247,6 +276,11 @@ export default function CreatePost() {
                     別の画像を選択
                   </Button>
                 </View>
+                {postType === 'story' && (
+                  <Text style={styles.storyNote}>
+                    ストーリーは24時間後に自動的に削除されます
+                  </Text>
+                )}
               </View>
             ) : (
               <View style={styles.imageSelector}>
@@ -352,7 +386,7 @@ export default function CreatePost() {
           size="sm"
           testID="submit-button"
         >
-          投稿
+          {postType === 'story' ? 'ストーリーを投稿' : '投稿'}
         </Button>
       </View>
 
@@ -394,53 +428,6 @@ export default function CreatePost() {
 
       <ScrollView style={styles.content}>
         {renderContent()}
-
-        {/* Hashtag Section */}
-        <View style={styles.hashtagSection}>
-          <Text style={styles.hashtagTitle}>ハッシュタグ</Text>
-
-          <View style={styles.hashtagInputContainer}>
-            <TextInput
-              style={styles.hashtagInput}
-              placeholder="ハッシュタグを入力"
-              value={hashtagInput}
-              onChangeText={setHashtagInput}
-              onSubmitEditing={addHashtag}
-              testID="hashtag-input"
-            />
-            <TouchableOpacity
-              style={[
-                styles.addHashtagButton,
-                !hashtagInput.trim() && styles.addHashtagButtonDisabled,
-              ]}
-              onPress={addHashtag}
-              disabled={!hashtagInput.trim()}
-              testID="add-hashtag-button"
-            >
-              <Feather name="plus" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-
-          {showHashtagWarning && (
-            <Text style={styles.warningText} testID="hashtag-limit-warning">
-              ハッシュタグは最大{MAX_HASHTAGS}個まで追加できます
-            </Text>
-          )}
-
-          <View style={styles.hashtagsList}>
-            {hashtags.map((tag, index) => (
-              <View key={index} style={styles.hashtagChip} testID={`hashtag-chip-${index}`}>
-                <Text style={styles.hashtagText}>#{tag}</Text>
-                <TouchableOpacity
-                  onPress={() => removeHashtag(tag)}
-                  style={styles.removeHashtagButton}
-                >
-                  <Feather name="x" size={16} color="#6B7280" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        </View>
       </ScrollView>
     </View>
   );
@@ -631,43 +618,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  hashtagSection: {
-    marginTop: 24,
+  extractedHashtags: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
   },
-  hashtagTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 12,
-  },
-  hashtagInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  hashtagInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
-  },
-  addHashtagButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#0070F3',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addHashtagButtonDisabled: {
-    backgroundColor: '#D1D5DB',
-  },
-  warningText: {
+  hashtagsLabel: {
     fontSize: 12,
-    color: '#EF4444',
+    color: '#6B7280',
     marginBottom: 8,
   },
   hashtagsList: {
@@ -676,19 +635,50 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   hashtagChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#EEF2FF',
     borderRadius: 16,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   hashtagText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#4338CA',
-    marginRight: 4,
   },
-  removeHashtagButton: {
-    padding: 2,
+  postTypeSelector: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  postTypeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    gap: 8,
+  },
+  activePostTypeButton: {
+    backgroundColor: '#0070F3',
+    borderColor: '#0070F3',
+  },
+  postTypeText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  activePostTypeText: {
+    color: '#FFFFFF',
+  },
+  storyNote: {
+    marginTop: 12,
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

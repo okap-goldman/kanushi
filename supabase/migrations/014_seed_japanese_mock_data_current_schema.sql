@@ -1,16 +1,19 @@
 -- 日本語のスピリチュアル系モックデータの挿入（現在のスキーマに対応）
 
+-- 注意: このスクリプトを実行する前に、Supabase AuthにテストユーザーをセットアップするJavaScriptスクリプトを実行する必要があります
+-- 詳細は scripts/seed-with-supabase-cli.sh を参照してください
+
 -- プロフィールデータの挿入
-INSERT INTO profiles (id, display_name, bio, created_at, updated_at)
+INSERT INTO profiles (id, display_name, profile_text, profile_image_url, created_at, updated_at)
 VALUES 
-  ('550e8400-e29b-41d4-a716-446655440001', '光の導き手 明子', '魂の目醒めをサポートするライトワーカーです。瞑想指導歴15年。あなたの内なる光を見出すお手伝いをさせていただきます。', NOW(), NOW()),
-  ('550e8400-e29b-41d4-a716-446655440002', '宇宙意識 龍馬', 'プレアデス系スターシード。高次元とのチャネリングを通じて、地球のアセンションをサポートしています。音声による宇宙メッセージをお届け。', NOW(), NOW()),
-  ('550e8400-e29b-41d4-a716-446655440003', '癒しの音 さくら', 'クリスタルボウルとライトランゲージによるヒーリングセッションを提供。あなたの波動を高める音の魔法をお届けします。', NOW(), NOW()),
-  ('550e8400-e29b-41d4-a716-446655440004', '目醒めの案内人 健太', 'エネルギーワーカー、レイキマスター。日々の瞑想実践と霊的成長のためのガイダンスを音声で配信中。', NOW(), NOW()),
-  ('550e8400-e29b-41d4-a716-446655440005', '天使のメッセンジャー 美咲', 'エンジェルカードリーダー。天使からのメッセージをあなたにお届けします。愛と光の中で生きる方法をシェア。', NOW(), NOW()),
-  ('550e8400-e29b-41d4-a716-446655440006', 'アカシックリーダー 蓮', 'アカシックレコードへのアクセスを通じて、魂の記憶と使命を読み解きます。過去生リーディングも承ります。', NOW(), NOW()),
-  ('550e8400-e29b-41d4-a716-446655440007', 'エナジーヒーラー 翔', 'チャクラバランシングとオーラクレンジングの専門家。あなたのエネルギーフィールドを整え、本来の輝きを取り戻すサポートをします。', NOW(), NOW()),
-  ('550e8400-e29b-41d4-a716-446655440008', '覚醒のファシリテーター 真理子', 'クンダリーニ覚醒の体験者。安全な覚醒プロセスのガイダンスと、統合のサポートを提供しています。', NOW(), NOW())
+  ('550e8400-e29b-41d4-a716-446655440001', '光の導き手 明子', '魂の目醒めをサポートするライトワーカーです。瞑想指導歴15年。あなたの内なる光を見出すお手伝いをさせていただきます。', 'https://api.dicebear.com/7.x/avataaars/svg?seed=akiko&backgroundColor=b6e3f4', NOW(), NOW()),
+  ('550e8400-e29b-41d4-a716-446655440002', '宇宙意識 龍馬', 'プレアデス系スターシード。高次元とのチャネリングを通じて、地球のアセンションをサポートしています。音声による宇宙メッセージをお届け。', 'https://api.dicebear.com/7.x/avataaars/svg?seed=ryoma&backgroundColor=c0aede', NOW(), NOW()),
+  ('550e8400-e29b-41d4-a716-446655440003', '癒しの音 さくら', 'クリスタルボウルとライトランゲージによるヒーリングセッションを提供。あなたの波動を高める音の魔法をお届けします。', 'https://api.dicebear.com/7.x/avataaars/svg?seed=sakura&backgroundColor=ffd5dc', NOW(), NOW()),
+  ('550e8400-e29b-41d4-a716-446655440004', '目醒めの案内人 健太', 'エネルギーワーカー、レイキマスター。日々の瞑想実践と霊的成長のためのガイダンスを音声で配信中。', 'https://api.dicebear.com/7.x/avataaars/svg?seed=kenta&backgroundColor=aec6cf', NOW(), NOW()),
+  ('550e8400-e29b-41d4-a716-446655440005', '天使のメッセンジャー 美咲', 'エンジェルカードリーダー。天使からのメッセージをあなたにお届けします。愛と光の中で生きる方法をシェア。', 'https://api.dicebear.com/7.x/avataaars/svg?seed=misaki&backgroundColor=ffb7c5', NOW(), NOW()),
+  ('550e8400-e29b-41d4-a716-446655440006', 'アカシックリーダー 蓮', 'アカシックレコードへのアクセスを通じて、魂の記憶と使命を読み解きます。過去生リーディングも承ります。', 'https://api.dicebear.com/7.x/avataaars/svg?seed=ren&backgroundColor=b19cd9', NOW(), NOW()),
+  ('550e8400-e29b-41d4-a716-446655440007', 'エナジーヒーラー 翔', 'チャクラバランシングとオーラクレンジングの専門家。あなたのエネルギーフィールドを整え、本来の輝きを取り戻すサポートをします。', 'https://api.dicebear.com/7.x/avataaars/svg?seed=sho&backgroundColor=89cff0', NOW(), NOW()),
+  ('550e8400-e29b-41d4-a716-446655440008', '覚醒のファシリテーター 真理子', 'クンダリーニ覚醒の体験者。安全な覚醒プロセスのガイダンスと、統合のサポートを提供しています。', 'https://api.dicebear.com/7.x/avataaars/svg?seed=mariko&backgroundColor=fdfd96', NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- タグ（ハッシュタグ）の挿入
@@ -96,3 +99,117 @@ ON CONFLICT (id) DO NOTHING;
 -- いいねと投稿のカウントを更新
 UPDATE posts SET likes_count = (SELECT COUNT(*) FROM likes WHERE post_id = posts.id);
 UPDATE posts SET comments_count = (SELECT COUNT(*) FROM comments WHERE post_id = posts.id);
+
+-- ストーリーズデータの挿入
+-- 注意: storyテーブルは002_create_post_and_story_tables.sqlで作成されます
+-- テーブルが存在しない場合は、先にそのマイグレーションを実行してください
+INSERT INTO story (id, user_id, image_url, edit_data, is_repost, original_story_id, expires_at, created_at)
+VALUES
+  -- 光の導き手 明子のストーリー（朝の瞑想風景）
+  ('BB0e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440001', 
+   'https://example.com/stories/meditation-sunrise.jpg', 
+   '{"filters": ["warm"], "stickers": [{"type": "sparkle", "x": 100, "y": 200}], "caption": "朝日と共に瞑想の時間✨ 今日も光と共に歩みます", "location": "富士山麓瞑想センター"}',
+   false,
+   NULL,
+   NOW() + INTERVAL '20 hours',
+   NOW() - INTERVAL '4 hours'),
+   
+  -- 宇宙意識 龍馬のストーリー（11:11のポータル）
+  ('BB0e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440002', 
+   'https://example.com/stories/portal-1111.jpg', 
+   '{"text_content": "11:11\n今、宇宙のポータルが開いています\n深呼吸をして\nエネルギーを受け取ってください", "background_color": "#1a0033", "font_style": "cosmic", "textPosition": {"x": "center", "y": "center"}, "animation": "glow", "caption": "特別なエネルギーが降り注いでいます"}',
+   false,
+   NULL,
+   NOW() + INTERVAL '18 hours',
+   NOW() - INTERVAL '6 hours'),
+   
+  -- 癒しの音 さくらのストーリー（クリスタルボウル準備）
+  ('BB0e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440003', 
+   'https://example.com/stories/crystal-bowls.jpg', 
+   '{"filters": ["ethereal"], "stickers": [{"type": "musical_note", "x": 150, "y": 100}, {"type": "heart", "x": 200, "y": 150}], "caption": "今夜のヒーリングセッションの準備中です🎵", "location": "ヒーリングサロン光の音"}',
+   false,
+   NULL,
+   NOW() + INTERVAL '16 hours',
+   NOW() - INTERVAL '8 hours'),
+   
+  -- 目醒めの案内人 健太のストーリー（エネルギーワーク体験シェア）
+  ('BB0e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440004', 
+   'https://example.com/stories/energy-work.jpg', 
+   '{"text_content": "今朝のエネルギーワークで\n第三の目が完全に開きました\n\n紫の光が見えた方\nコメントで教えてください", "background_color": "#4a148c", "font_style": "mystical", "textPosition": {"x": "center", "y": "middle"}, "effects": ["gradient"], "caption": "覚醒体験をシェア"}',
+   false,
+   NULL,
+   NOW() + INTERVAL '14 hours',
+   NOW() - INTERVAL '10 hours'),
+   
+  -- 天使のメッセンジャー 美咲のストーリー（天使からのメッセージ）
+  ('BB0e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440005', 
+   'https://example.com/stories/angel-card.jpg', 
+   '{"filters": ["soft"], "stickers": [{"type": "angel_wings", "x": 50, "y": 50}, {"type": "feather", "x": 250, "y": 300}], "caption": "今日のエンジェルメッセージ：信頼と委ねること💫"}',
+   false,
+   NULL,
+   NOW() + INTERVAL '12 hours',
+   NOW() - INTERVAL '12 hours'),
+   
+  -- アカシックリーダー 蓮のストーリー（リポスト）
+  ('BB0e8400-e29b-41d4-a716-446655440006', '550e8400-e29b-41d4-a716-446655440006', 
+   'https://example.com/stories/repost.jpg', 
+   '{"text_content": "重要なメッセージなのでリポストします", "background_color": "#000033", "font_style": "minimal", "textPosition": {"x": "center", "y": "top"}, "caption": "宇宙からの緊急メッセージ"}',
+   true,
+   'BB0e8400-e29b-41d4-a716-446655440002',
+   NOW() + INTERVAL '10 hours',
+   NOW() - INTERVAL '14 hours'),
+   
+  -- エナジーヒーラー 翔のストーリー（チャクラ診断）
+  ('BB0e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440007', 
+   'https://example.com/stories/chakra-diagnosis.jpg', 
+   '{"text_content": "あなたのチャクラ診断\n\n画面に手を当てて\n温かさを感じる場所が\n今活性化しているチャクラです", "background_color": "linear-gradient(45deg, #ff6b6b, #4ecdc4)", "font_style": "healing", "textPosition": {"x": "center", "y": "center"}, "interactive": true, "caption": "インタラクティブチャクラ診断"}',
+   false,
+   NULL,
+   NOW() + INTERVAL '8 hours',
+   NOW() - INTERVAL '16 hours'),
+   
+  -- 覚醒のファシリテーター 真理子のストーリー（クンダリーニ体験）
+  ('BB0e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440008', 
+   'https://example.com/stories/kundalini-energy.jpg', 
+   '{"filters": ["energy"], "animation": "pulse", "stickers": [{"type": "snake", "x": 100, "y": 400, "animation": "rise"}], "caption": "クンダリーニの上昇を視覚化してみました🐍✨", "location": "瞑想ルーム"}',
+   false,
+   NULL,
+   NOW() + INTERVAL '6 hours',
+   NOW() - INTERVAL '18 hours')
+ON CONFLICT (id) DO NOTHING;
+
+-- ストーリービューワー、リアクション、リプライテーブルは
+-- 011_add_story_interaction_tables.sql で作成されるため、
+-- そちらのマイグレーションが適用されていない場合はコメントアウト
+
+-- -- ストーリービューワーデータの挿入
+-- INSERT INTO story_viewer (id, story_id, user_id, viewed_at)
+-- VALUES
+--   ('CC0e8400-e29b-41d4-a716-446655440001', 'BB0e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002', NOW() - INTERVAL '3 hours'),
+--   ('CC0e8400-e29b-41d4-a716-446655440002', 'BB0e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440003', NOW() - INTERVAL '2 hours'),
+--   ('CC0e8400-e29b-41d4-a716-446655440003', 'BB0e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440004', NOW() - INTERVAL '1 hour'),
+--   ('CC0e8400-e29b-41d4-a716-446655440004', 'BB0e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440001', NOW() - INTERVAL '5 hours'),
+--   ('CC0e8400-e29b-41d4-a716-446655440005', 'BB0e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440005', NOW() - INTERVAL '4 hours'),
+--   ('CC0e8400-e29b-41d4-a716-446655440006', 'BB0e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440006', NOW() - INTERVAL '7 hours'),
+--   ('CC0e8400-e29b-41d4-a716-446655440007', 'BB0e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440008', NOW() - INTERVAL '9 hours'),
+--   ('CC0e8400-e29b-41d4-a716-446655440008', 'BB0e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440007', NOW() - INTERVAL '11 hours')
+-- ON CONFLICT (id) DO NOTHING;
+
+-- -- ストーリーリアクションデータの挿入
+-- INSERT INTO story_reaction (id, story_id, user_id, emoji, created_at)
+-- VALUES
+--   ('DD0e8400-e29b-41d4-a716-446655440001', 'BB0e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002', '✨', NOW() - INTERVAL '3 hours'),
+--   ('DD0e8400-e29b-41d4-a716-446655440002', 'BB0e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440003', '🙏', NOW() - INTERVAL '2 hours'),
+--   ('DD0e8400-e29b-41d4-a716-446655440003', 'BB0e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440005', '💫', NOW() - INTERVAL '4 hours'),
+--   ('DD0e8400-e29b-41d4-a716-446655440004', 'BB0e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440006', '💕', NOW() - INTERVAL '7 hours'),
+--   ('DD0e8400-e29b-41d4-a716-446655440005', 'BB0e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440008', '👁️', NOW() - INTERVAL '9 hours'),
+--   ('DD0e8400-e29b-41d4-a716-446655440006', 'BB0e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440007', '🕊️', NOW() - INTERVAL '11 hours')
+-- ON CONFLICT (id) DO NOTHING;
+
+-- -- ストーリーリプライデータの挿入
+-- INSERT INTO story_reply (id, story_id, user_id, reply_text, created_at)
+-- VALUES
+--   ('EE0e8400-e29b-41d4-a716-446655440001', 'BB0e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440004', '美しい朝日ですね！私も一緒に瞑想させていただきました🌅', NOW() - INTERVAL '2 hours'),
+--   ('EE0e8400-e29b-41d4-a716-446655440002', 'BB0e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440001', '11:11のエネルギーを強く感じています。ありがとうございます。', NOW() - INTERVAL '5 hours'),
+--   ('EE0e8400-e29b-41d4-a716-446655440003', 'BB0e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440002', '私も紫の光が見えました！シンクロニシティですね✨', NOW() - INTERVAL '9 hours')
+-- ON CONFLICT (id) DO NOTHING;

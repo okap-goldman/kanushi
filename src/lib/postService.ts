@@ -487,12 +487,12 @@ export const postServiceInstance = createPostService();
 export const getPostsByIds = async (ids: string[]): Promise<Post[]> => {
   try {
     const { data, error } = await supabase
-      .from('posts')
+      .from('post')
       .select(`
         *,
-        user:profiles!posts_user_id_fkey(*),
-        likes(user_id),
-        comments(id)
+        user:profile!post_user_id_fkey(*),
+        like(user_id),
+        comment(id)
       `)
       .in('id', ids);
 
@@ -527,12 +527,12 @@ export const getPosts = async (
 ): Promise<ApiResponse<Post[]>> => {
   try {
     const query = supabase
-      .from('posts')
+      .from('post')
       .select(`
         *,
-        author:profiles(id, name, image),
-        tags:post_tags(
-          tag:tags(id, name)
+        author:profile(id, display_name, profile_image_url),
+        tags:post_hashtag(
+          tag:hashtag(id, name)
         )
       `)
       .order('created_at', { ascending: false });
@@ -573,7 +573,11 @@ export const getPosts = async (
       return {
         ...post,
         author_id: post.user_id, // Mapping for API compatibility
-        author: post.author[0] || {
+        author: post.author ? {
+          id: post.author.id,
+          name: post.author.display_name,
+          image: post.author.profile_image_url,
+        } : {
           id: 'unknown',
           name: '山田健太',
           image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=yamada',
@@ -606,12 +610,12 @@ export const getPosts = async (
 export const getPostById = async (id: string): Promise<ApiResponse<Post>> => {
   try {
     const { data, error } = await supabase
-      .from('posts')
+      .from('post')
       .select(`
         *,
-        author:profiles(id, name, image),
-        tags:post_tags(
-          tag:tags(id, name)
+        author:profile(id, display_name, profile_image_url),
+        tags:post_hashtag(
+          tag:hashtag(id, name)
         )
       `)
       .eq('id', id)
@@ -626,7 +630,7 @@ export const getPostById = async (id: string): Promise<ApiResponse<Post>> => {
     if (data.content_type === 'image' || data.content_type === 'video') {
       content = data.media_url;
     } else if (data.content_type === 'audio') {
-      content = data.audio_url || data.media_url;
+      content = data.media_url;
     }
 
     // Create a caption from text_content for media posts
@@ -643,7 +647,11 @@ export const getPostById = async (id: string): Promise<ApiResponse<Post>> => {
     const formattedPost = {
       ...data,
       author_id: data.user_id, // Mapping for API compatibility
-      author: data.author[0] || {
+      author: data.author ? {
+        id: data.author.id,
+        name: data.author.display_name,
+        image: data.author.profile_image_url,
+      } : {
         id: 'unknown',
         name: '山田健太',
         image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=yamada',
@@ -672,7 +680,6 @@ export const createPost = async (
     // Determine content fields based on media_type
     const contentType = post.media_type || post.content_type;
     let mediaUrl = null;
-    let audioUrl = null;
     let textContent = post.caption || post.text_content || '';
 
     if (contentType === 'text') {
@@ -681,24 +688,19 @@ export const createPost = async (
       if (textContent.length > 10000) {
         throw new Error('テキストの最大文字数（10,000文字）を超えています');
       }
-    } else if (contentType === 'image' || contentType === 'video') {
+    } else if (contentType === 'image' || contentType === 'video' || contentType === 'audio') {
       mediaUrl = post.content || post.media_url;
-    } else if (contentType === 'audio') {
-      audioUrl = post.content || post.audio_url || post.media_url;
     }
 
     // Insert the post data
     const { data, error } = await supabase
-      .from('posts')
+      .from('post')
       .insert({
         user_id: post.author_id || post.user_id,
         content_type: contentType,
         text_content: textContent,
         media_url: mediaUrl,
-        audio_url: audioUrl,
-        thumbnail_url: post.thumbnail_url,
-        likes_count: 0,
-        comments_count: 0,
+        preview_url: post.thumbnail_url,
       })
       .select()
       .single();
@@ -718,7 +720,7 @@ export const createPost = async (
 
         // Otherwise, try to find the tag by name or create a new one
         const { data: existingTag, error: findError } = await supabase
-          .from('tags')
+          .from('hashtag')
           .select('id, name')
           .eq('name', tag.name)
           .maybeSingle();
@@ -734,7 +736,7 @@ export const createPost = async (
 
         // Create new tag
         const { data: newTag, error: insertError } = await supabase
-          .from('tags')
+          .from('hashtag')
           .insert({ name: tag.name })
           .select()
           .single();
@@ -757,7 +759,7 @@ export const createPost = async (
           tag_id: tag.id,
         }));
 
-        const { error: linkError } = await supabase.from('post_tags').insert(postTagsData);
+        const { error: linkError } = await supabase.from('post_hashtag').insert(postTagsData);
 
         if (linkError) {
           console.error('Error linking tags to post:', linkError);
@@ -779,9 +781,7 @@ export const createPost = async (
         content:
           data.content_type === 'text'
             ? data.text_content
-            : data.content_type === 'audio'
-              ? data.audio_url || data.media_url
-              : data.media_url,
+            : data.media_url,
         caption: data.content_type !== 'text' ? data.text_content : undefined,
         tags: post.tags || [],
       } as unknown as Post;
@@ -803,10 +803,10 @@ export const createPost = async (
 export const getComments = async (post_id: string): Promise<ApiResponse<Comment[]>> => {
   try {
     const { data, error } = await supabase
-      .from('comments')
+      .from('comment')
       .select(`
         *,
-        author:profiles(id, name, image)
+        author:profile(id, display_name, profile_image_url)
       `)
       .eq('post_id', post_id)
       .order('created_at', { ascending: true });
@@ -818,7 +818,11 @@ export const getComments = async (post_id: string): Promise<ApiResponse<Comment[
     const formattedComments = data.map((comment) => ({
       ...comment,
       author_id: comment.user_id, // Mapping for API compatibility
-      author: comment.author[0] || {
+      author: comment.author ? {
+        id: comment.author.id,
+        name: comment.author.display_name,
+        image: comment.author.profile_image_url,
+      } : {
         id: 'unknown',
         name: '山田健太',
         image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=yamada',
@@ -847,7 +851,7 @@ export const createComment = async (
 
     // Begin a transaction
     const { data: newComment, error: commentError } = await supabase
-      .from('comments')
+      .from('comment')
       .insert({
         post_id: comment.post_id,
         user_id: comment.author_id, // Mapping for API compatibility
@@ -888,7 +892,7 @@ export const toggleLike = async (
   try {
     // Check if like exists
     const { data: existingLike, error: checkError } = await supabase
-      .from('likes')
+      .from('like')
       .select('*')
       .eq('post_id', post_id)
       .eq('user_id', user_id)
@@ -903,7 +907,7 @@ export const toggleLike = async (
     if (existingLike) {
       // Unlike: remove the like
       const { error: unlikeError } = await supabase
-        .from('likes')
+        .from('like')
         .delete()
         .eq('post_id', post_id)
         .eq('user_id', user_id);
@@ -920,7 +924,7 @@ export const toggleLike = async (
       }
     } else {
       // Like: add the like
-      const { error: likeError } = await supabase.from('likes').insert({ post_id, user_id });
+      const { error: likeError } = await supabase.from('like').insert({ post_id, user_id });
 
       if (likeError) {
         throw likeError;
@@ -954,7 +958,7 @@ export const checkLiked = async (
 ): Promise<ApiResponse<boolean>> => {
   try {
     const { data, error } = await supabase
-      .from('likes')
+      .from('like')
       .select('*')
       .eq('post_id', post_id)
       .eq('user_id', user_id)
@@ -983,7 +987,7 @@ export const deletePost = async (
   try {
     // First, check if the post exists and belongs to the user
     const { data: post, error: fetchError } = await supabase
-      .from('posts')
+      .from('post')
       .select('id, user_id')
       .eq('id', post_id)
       .single();
@@ -999,7 +1003,7 @@ export const deletePost = async (
 
     // Soft delete by setting deleted_at
     const { error: deleteError } = await supabase
-      .from('posts')
+      .from('post')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', post_id);
 

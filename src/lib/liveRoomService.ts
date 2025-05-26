@@ -558,8 +558,8 @@ class LiveRoomService {
       .select(`
         *,
         user:profiles(
-          display_name,
-          profile_image_url
+          name,
+          image
         )
       `)
       .eq('room_id', roomId)
@@ -578,7 +578,7 @@ class LiveRoomService {
       .select(`
         *,
         requester:profiles!requester_id(
-          display_name
+          name
         )
       `)
       .eq('room_id', roomId)
@@ -597,8 +597,8 @@ class LiveRoomService {
       .select(`
         *,
         host:profiles!host_user_id(
-          display_name,
-          profile_image_url
+          name,
+          image
         )
       `)
       .in('status', ['preparing', 'active'])
