@@ -1,10 +1,21 @@
-// src/components/__tests__/AccountSwitcher.test.tsx
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { AccountSwitcher } from '../../src/components/profile/AccountSwitcher';
+import { authService } from '../../src/lib/authService';
+
+jest.mock('../../src/lib/authService', () => ({
+  authService: {
+    getAccounts: jest.fn(),
+    switchAccount: jest.fn()
+  }
+}));
+
 describe('AccountSwitcher Component', () => {
   it('アカウント一覧が正しく表示される', async () => {
     // Given
     const mockAccounts = [
       { id: 'acc1', profile: { displayName: 'アカウント1' }, isActive: true },
-      { id: 'acc2', profile: { displayName: 'アカウント2' }, isActive: false }
+      { id: 'acc2', profile: { displayName: 'アカウント2' }, isActive: false },
     ];
     jest.spyOn(accountService, 'getAccounts').mockResolvedValue(mockAccounts);
 
@@ -22,7 +33,7 @@ describe('AccountSwitcher Component', () => {
     // Given
     const mockAccounts = [
       { id: 'acc1', profile: { displayName: 'アカウント1' }, isActive: true },
-      { id: 'acc2', profile: { displayName: 'アカウント2' }, isActive: false }
+      { id: 'acc2', profile: { displayName: 'アカウント2' }, isActive: false },
     ];
     jest.spyOn(accountService, 'getAccounts').mockResolvedValue(mockAccounts);
 
@@ -65,11 +76,13 @@ describe('AccountSwitcher Component', () => {
 
   it('5アカウント制限時にアカウント追加ボタンが無効になる', async () => {
     // Given
-    const mockAccounts = Array(5).fill(null).map((_, i) => ({
-      id: `acc${i + 1}`,
-      profile: { displayName: `アカウント${i + 1}` },
-      isActive: i === 0
-    }));
+    const mockAccounts = Array(5)
+      .fill(null)
+      .map((_, i) => ({
+        id: `acc${i + 1}`,
+        profile: { displayName: `アカウント${i + 1}` },
+        isActive: i === 0,
+      }));
     jest.spyOn(accountService, 'getAccounts').mockResolvedValue(mockAccounts);
 
     // When

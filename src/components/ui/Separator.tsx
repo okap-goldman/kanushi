@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ViewProps, StyleSheet } from 'react-native';
+import { StyleSheet, View, type ViewProps } from 'react-native';
 
 interface SeparatorProps extends ViewProps {
   orientation?: 'horizontal' | 'vertical';
@@ -11,7 +11,7 @@ export function Separator({ orientation = 'horizontal', style, ...props }: Separ
       style={[
         styles.separator,
         orientation === 'horizontal' ? styles.horizontal : styles.vertical,
-        style
+        style,
       ]}
       {...props}
     />

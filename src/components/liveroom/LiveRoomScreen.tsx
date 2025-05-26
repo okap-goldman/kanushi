@@ -1,18 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
 import { liveRoomService } from '@/lib/liveRoomService';
-import { Mic, MicOff, Users, Radio, X, MoreVertical } from 'lucide-react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { Mic, MicOff, MoreVertical, Radio, Users, X } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Button } from '../ui/Button';
 import { LiveRoomChat } from './LiveRoomChat';
 import { LiveRoomParticipants } from './LiveRoomParticipants';
-import { Button } from '../ui/button';
 
 interface RouteParams {
   roomId: string;
@@ -48,7 +41,7 @@ export function LiveRoomScreen() {
       setError(err instanceof Error ? err.message : 'ルーム参加に失敗しました');
       setLoading(false);
       Alert.alert('エラー', error || 'ルーム参加に失敗しました', [
-        { text: 'OK', onPress: () => navigation.goBack() }
+        { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     }
   };
@@ -63,39 +56,31 @@ export function LiveRoomScreen() {
   };
 
   const handleEndRoom = async () => {
-    Alert.alert(
-      'ルームを終了しますか？',
-      'この操作は取り消せません',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        {
-          text: '終了する',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await liveRoomService.endRoom(roomId, false);
-              navigation.goBack();
-            } catch (err) {
-              Alert.alert('エラー', 'ルーム終了に失敗しました');
-            }
+    Alert.alert('ルームを終了しますか？', 'この操作は取り消せません', [
+      { text: 'キャンセル', style: 'cancel' },
+      {
+        text: '終了する',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await liveRoomService.endRoom(roomId, false);
+            navigation.goBack();
+          } catch (err) {
+            Alert.alert('エラー', 'ルーム終了に失敗しました');
           }
-        }
-      ]
-    );
+        },
+      },
+    ]);
   };
 
   const handleLeaveRoom = () => {
-    Alert.alert(
-      'ルームを退出しますか？',
-      'いつでも再度参加できます',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        {
-          text: '退出する',
-          onPress: () => navigation.goBack()
-        }
-      ]
-    );
+    Alert.alert('ルームを退出しますか？', 'いつでも再度参加できます', [
+      { text: 'キャンセル', style: 'cancel' },
+      {
+        text: '退出する',
+        onPress: () => navigation.goBack(),
+      },
+    ]);
   };
 
   if (loading) {
@@ -140,11 +125,7 @@ export function LiveRoomScreen() {
         </View>
         <View style={styles.headerRight}>
           {isHost && (
-            <TouchableOpacity
-              onPress={() => {}}
-              testID="room-menu"
-              style={styles.menuButton}
-            >
+            <TouchableOpacity onPress={() => {}} testID="room-menu" style={styles.menuButton}>
               <MoreVertical size={24} color="#333" />
             </TouchableOpacity>
           )}
@@ -196,10 +177,7 @@ export function LiveRoomScreen() {
         </TouchableOpacity>
 
         {isHost && (
-          <TouchableOpacity
-            onPress={handleEndRoom}
-            style={styles.endButton}
-          >
+          <TouchableOpacity onPress={handleEndRoom} style={styles.endButton}>
             <Text style={styles.endButtonText}>ルームを終了</Text>
           </TouchableOpacity>
         )}

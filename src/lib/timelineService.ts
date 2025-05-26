@@ -1,17 +1,37 @@
-import { supabase } from './supabase';
-import { db } from './db/client';
-import { posts, follows } from './db/schema';
-import { 
-  Post, ApiResponse, TimelineType, DrizzlePost, 
-  ServiceResult, PaginatedResult, CachedTimeline, TimelineCursor
+import { and, desc, eq, inArray, isNull, lt } from 'drizzle-orm';
+import type {
+  ApiResponse,
+  CachedTimeline,
+  DrizzlePost,
+  PaginatedResult,
+  Post,
+  ServiceResult,
+  TimelineCursor,
+  TimelineType,
 } from './data';
-import { eq, and, desc, inArray, lt, isNull } from 'drizzle-orm';
+import { db } from './db/client';
+import { follows, posts } from './db/schema';
+import { supabase } from './supabase';
 
 export interface TimelineService {
-  getTimeline(userId: string, timelineType: TimelineType, limit?: number, cursor?: string): Promise<ServiceResult<PaginatedResult<DrizzlePost>>>;
-  refreshTimeline(userId: string, timelineType: TimelineType): Promise<ServiceResult<PaginatedResult<DrizzlePost>>>;
-  getCachedTimeline(userId: string, timelineType: TimelineType): Promise<ServiceResult<CachedTimeline | null>>;
-  getAllPosts(limit?: number, cursor?: string): Promise<ServiceResult<PaginatedResult<DrizzlePost>>>;
+  getTimeline(
+    userId: string,
+    timelineType: TimelineType,
+    limit?: number,
+    cursor?: string
+  ): Promise<ServiceResult<PaginatedResult<DrizzlePost>>>;
+  refreshTimeline(
+    userId: string,
+    timelineType: TimelineType
+  ): Promise<ServiceResult<PaginatedResult<DrizzlePost>>>;
+  getCachedTimeline(
+    userId: string,
+    timelineType: TimelineType
+  ): Promise<ServiceResult<CachedTimeline | null>>;
+  getAllPosts(
+    limit?: number,
+    cursor?: string
+  ): Promise<ServiceResult<PaginatedResult<DrizzlePost>>>;
 }
 
 // Simple in-memory cache for demonstration
@@ -22,34 +42,33 @@ export class SimpleCache {
   get(key: string): any | null {
     const item = this.cache.get(key);
     if (!item) return null;
-    
+
     if (Date.now() > item.expiresAt) {
       this.cache.delete(key);
       return null;
     }
-    
+
     return item.data;
   }
 
   set(key: string, data: any, ttlSeconds: number): void {
     this.cache.set(key, {
       data,
-      expiresAt: Date.now() + (ttlSeconds * 1000)
+      expiresAt: Date.now() + ttlSeconds * 1000,
     });
   }
 }
 
 export function createTimelineService(
-  supabaseClient = supabase, 
+  supabaseClient = supabase,
   dbClient = db,
   cacheService = new SimpleCache()
 ): TimelineService {
-
   return {
     async getTimeline(
-      userId: string, 
-      timelineType: TimelineType, 
-      limit = 20, 
+      userId: string,
+      timelineType: TimelineType,
+      limit = 20,
       cursor?: string
     ): Promise<ServiceResult<PaginatedResult<DrizzlePost>>> {
       try {
@@ -59,7 +78,7 @@ export function createTimelineService(
             eq(follows.followerId, userId),
             eq(follows.followType, timelineType),
             eq(follows.status, 'active')
-          )
+          ),
         });
 
         // If no follows, return empty timeline
@@ -67,24 +86,21 @@ export function createTimelineService(
           const emptyResult: PaginatedResult<DrizzlePost> = {
             items: [],
             hasMore: false,
-            nextCursor: null
+            nextCursor: null,
           };
 
           return {
             success: true,
             data: emptyResult,
-            error: null
+            error: null,
           };
         }
 
         // Extract followee IDs
-        const followeeIds = followsData.map(f => f.followeeId);
+        const followeeIds = followsData.map((f) => f.followeeId);
 
         // Build query conditions
-        const conditions = [
-          inArray(posts.userId, followeeIds),
-          isNull(posts.deletedAt)
-        ];
+        const conditions = [inArray(posts.userId, followeeIds), isNull(posts.deletedAt)];
 
         // Add cursor condition if provided
         if (cursor) {
@@ -96,7 +112,7 @@ export function createTimelineService(
         const postsData = await dbClient.query.posts.findMany({
           where: and(...conditions),
           orderBy: [desc(posts.createdAt)],
-          limit: limit + 1
+          limit: limit + 1,
         });
 
         // Check if there are more posts
@@ -109,7 +125,7 @@ export function createTimelineService(
           const lastPost = items[items.length - 1];
           const cursorData: TimelineCursor = {
             createdAt: lastPost.createdAt.toISOString(),
-            postId: lastPost.id
+            postId: lastPost.id,
           };
           nextCursor = Buffer.from(JSON.stringify(cursorData)).toString('base64');
         }
@@ -117,46 +133,45 @@ export function createTimelineService(
         const result: PaginatedResult<DrizzlePost> = {
           items,
           hasMore,
-          nextCursor
+          nextCursor,
         };
 
         // Cache the result
         const cacheKey = `timeline:${userId}:${timelineType}`;
         const cacheData: CachedTimeline = {
           ...result,
-          cachedAt: new Date()
+          cachedAt: new Date(),
         };
         cacheService.set(cacheKey, cacheData, 300); // 5 minutes TTL
 
         return {
           success: true,
           data: result,
-          error: null
+          error: null,
         };
-
       } catch (error) {
         console.error('Error getting timeline:', error);
         return {
           success: false,
           data: null,
-          error: error as Error
+          error: error as Error,
         };
       }
     },
 
     async refreshTimeline(
-      userId: string, 
+      userId: string,
       timelineType: TimelineType
     ): Promise<ServiceResult<PaginatedResult<DrizzlePost>>> {
       // Clear cache and get fresh data
       const cacheKey = `timeline:${userId}:${timelineType}`;
       cacheService.set(cacheKey, null, 0); // Clear cache
-      
+
       return this.getTimeline(userId, timelineType, 20);
     },
 
     async getCachedTimeline(
-      userId: string, 
+      userId: string,
       timelineType: TimelineType
     ): Promise<ServiceResult<CachedTimeline | null>> {
       try {
@@ -166,21 +181,20 @@ export function createTimelineService(
         return {
           success: true,
           data: cachedData,
-          error: null
+          error: null,
         };
-
       } catch (error) {
         console.error('Error getting cached timeline:', error);
         return {
           success: false,
           data: null,
-          error: error as Error
+          error: error as Error,
         };
       }
     },
 
     async getAllPosts(
-      limit = 20, 
+      limit = 20,
       cursor?: string
     ): Promise<ServiceResult<PaginatedResult<DrizzlePost>>> {
       try {
@@ -197,7 +211,7 @@ export function createTimelineService(
         const postsData = await dbClient.query.posts.findMany({
           where: and(...conditions),
           orderBy: [desc(posts.createdAt)],
-          limit: limit + 1
+          limit: limit + 1,
         });
 
         // Check if there are more posts
@@ -210,7 +224,7 @@ export function createTimelineService(
           const lastPost = items[items.length - 1];
           const cursorData: TimelineCursor = {
             createdAt: lastPost.createdAt.toISOString(),
-            postId: lastPost.id
+            postId: lastPost.id,
           };
           nextCursor = Buffer.from(JSON.stringify(cursorData)).toString('base64');
         }
@@ -218,24 +232,23 @@ export function createTimelineService(
         const result: PaginatedResult<DrizzlePost> = {
           items,
           hasMore,
-          nextCursor
+          nextCursor,
         };
 
         return {
           success: true,
           data: result,
-          error: null
+          error: null,
         };
-
       } catch (error) {
         console.error('Error getting all posts:', error);
         return {
           success: false,
           data: null,
-          error: error as Error
+          error: error as Error,
         };
       }
-    }
+    },
   };
 }
 
@@ -263,7 +276,7 @@ interface TimelineResponse {
 export const getTimelinePosts = async (
   userId: string,
   type: 'family' | 'watch',
-  limit: number = 20,
+  limit = 20,
   cursor?: string
 ): Promise<ApiResponse<TimelineResponse>> => {
   try {
@@ -340,9 +353,7 @@ export const getTimelinePosts = async (
 
       // Format tags array from the nested structure returned by Supabase
       const tags = post.tags
-        ? post.tags
-            .filter((tag: any) => tag.tag !== null)
-            .map((tag: any) => tag.tag)
+        ? post.tags.filter((tag: any) => tag.tag !== null).map((tag: any) => tag.tag)
         : [];
 
       return {
@@ -362,9 +373,7 @@ export const getTimelinePosts = async (
     }) as Post[];
 
     // Determine next cursor
-    const nextCursor = hasMore && posts.length > 0 
-      ? posts[posts.length - 1].created_at 
-      : undefined;
+    const nextCursor = hasMore && posts.length > 0 ? posts[posts.length - 1].created_at : undefined;
 
     return {
       data: {
@@ -386,7 +395,7 @@ export const getTimelinePosts = async (
  * @param cursor Pagination cursor
  */
 export const getAllPosts = async (
-  limit: number = 20,
+  limit = 20,
   cursor?: string
 ): Promise<ApiResponse<TimelineResponse>> => {
   try {
@@ -433,9 +442,7 @@ export const getAllPosts = async (
       }
 
       const tags = post.tags
-        ? post.tags
-            .filter((tag: any) => tag.tag !== null)
-            .map((tag: any) => tag.tag)
+        ? post.tags.filter((tag: any) => tag.tag !== null).map((tag: any) => tag.tag)
         : [];
 
       return {
@@ -453,9 +460,7 @@ export const getAllPosts = async (
       };
     }) as Post[];
 
-    const nextCursor = hasMore && posts.length > 0 
-      ? posts[posts.length - 1].created_at 
-      : undefined;
+    const nextCursor = hasMore && posts.length > 0 ? posts[posts.length - 1].created_at : undefined;
 
     return {
       data: {

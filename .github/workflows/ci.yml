@@ -29,8 +29,11 @@ jobs:
     - name: Run check (lint and type check)
       run: npm run check
     
+    - name: Run type check and lint
+      run: npm run check
+
     - name: Run tests
-      run: npm test -- --coverage --watchAll=false
+      run: npm test
       env:
         CI: true
     

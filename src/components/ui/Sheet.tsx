@@ -1,19 +1,19 @@
+import { X } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  StyleSheet,
   Animated,
   Dimensions,
+  KeyboardAvoidingView,
+  Modal,
   PanResponder,
   Platform,
-  ScrollView,
-  KeyboardAvoidingView,
   Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { X } from 'lucide-react-native';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -60,16 +60,12 @@ const SheetContext = React.createContext<{
 });
 
 export function Sheet({ open, onOpenChange, children }: SheetProps) {
-  return (
-    <SheetContext.Provider value={{ open, onOpenChange }}>
-      {children}
-    </SheetContext.Provider>
-  );
+  return <SheetContext.Provider value={{ open, onOpenChange }}>{children}</SheetContext.Provider>;
 }
 
 export function SheetTrigger({ children, asChild, onPress }: SheetTriggerProps) {
   const { onOpenChange } = React.useContext(SheetContext);
-  
+
   const handlePress = () => {
     onOpenChange(true);
     onPress?.();
@@ -81,17 +77,13 @@ export function SheetTrigger({ children, asChild, onPress }: SheetTriggerProps) 
     });
   }
 
-  return (
-    <TouchableOpacity onPress={handlePress}>
-      {children}
-    </TouchableOpacity>
-  );
+  return <TouchableOpacity onPress={handlePress}>{children}</TouchableOpacity>;
 }
 
-export function SheetContent({ 
-  children, 
+export function SheetContent({
+  children,
   side = 'bottom',
-  showCloseButton = true 
+  showCloseButton = true,
 }: SheetContentProps) {
   const { open, onOpenChange } = React.useContext(SheetContext);
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -100,28 +92,26 @@ export function SheetContent({
   useEffect(() => {
     if (open) {
       const toValue = side === 'bottom' || side === 'top' ? 0 : 0;
-      Animated.spring(
-        side === 'left' || side === 'right' ? translateX : translateY,
-        {
-          toValue,
-          useNativeDriver: true,
-          tension: 65,
-          friction: 11,
-        }
-      ).start();
+      Animated.spring(side === 'left' || side === 'right' ? translateX : translateY, {
+        toValue,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }).start();
     } else {
-      const toValue = side === 'bottom' ? SCREEN_HEIGHT : 
-                      side === 'top' ? -SCREEN_HEIGHT :
-                      side === 'left' ? -SCREEN_HEIGHT :
-                      SCREEN_HEIGHT;
-      Animated.timing(
-        side === 'left' || side === 'right' ? translateX : translateY,
-        {
-          toValue,
-          duration: 250,
-          useNativeDriver: true,
-        }
-      ).start();
+      const toValue =
+        side === 'bottom'
+          ? SCREEN_HEIGHT
+          : side === 'top'
+            ? -SCREEN_HEIGHT
+            : side === 'left'
+              ? -SCREEN_HEIGHT
+              : SCREEN_HEIGHT;
+      Animated.timing(side === 'left' || side === 'right' ? translateX : translateY, {
+        toValue,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
     }
   }, [open, side, translateY, translateX]);
 
@@ -152,11 +142,7 @@ export function SheetContent({
   if (!open) return null;
 
   const animatedStyle = {
-    transform: [
-      side === 'bottom' || side === 'top' 
-        ? { translateY } 
-        : { translateX }
-    ],
+    transform: [side === 'bottom' || side === 'top' ? { translateY } : { translateX }],
   };
 
   const contentStyle = [
@@ -178,23 +164,15 @@ export function SheetContent({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
       >
-        <Pressable
-          style={styles.overlay}
-          onPress={() => onOpenChange(false)}
-        >
+        <Pressable style={styles.overlay} onPress={() => onOpenChange(false)}>
           <Animated.View
             style={[contentStyle, animatedStyle]}
             {...(side === 'bottom' ? panResponder.panHandlers : {})}
           >
             <Pressable onPress={(e) => e.stopPropagation()}>
-              {side === 'bottom' && (
-                <View style={styles.handle} />
-              )}
+              {side === 'bottom' && <View style={styles.handle} />}
               {showCloseButton && (
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => onOpenChange(false)}
-                >
+                <TouchableOpacity style={styles.closeButton} onPress={() => onOpenChange(false)}>
                   <X size={20} color="#666" />
                 </TouchableOpacity>
               )}

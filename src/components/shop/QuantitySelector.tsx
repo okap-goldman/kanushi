@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import type React from 'react';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface QuantitySelectorProps {
   quantity: number;
@@ -11,8 +11,8 @@ interface QuantitySelectorProps {
 const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   quantity,
   onChange,
-  maxQuantity = Infinity,
-  minQuantity = 1
+  maxQuantity = Number.POSITIVE_INFINITY,
+  minQuantity = 1,
 }) => {
   const handleIncrement = () => {
     if (quantity < maxQuantity) {
@@ -27,7 +27,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   };
 
   const handleChangeText = (text: string) => {
-    const value = parseInt(text);
+    const value = Number.parseInt(text);
     if (!isNaN(value)) {
       const newValue = Math.min(Math.max(value, minQuantity), maxQuantity);
       onChange(newValue);
@@ -39,17 +39,13 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       <TouchableOpacity
         onPress={handleDecrement}
         disabled={quantity <= minQuantity}
-        style={[
-          styles.button,
-          quantity <= minQuantity && styles.buttonDisabled
-        ]}
+        style={[styles.button, quantity <= minQuantity && styles.buttonDisabled]}
       >
-        <Text style={[
-          styles.buttonText,
-          quantity <= minQuantity && styles.buttonTextDisabled
-        ]}>-</Text>
+        <Text style={[styles.buttonText, quantity <= minQuantity && styles.buttonTextDisabled]}>
+          -
+        </Text>
       </TouchableOpacity>
-      
+
       <TextInput
         style={styles.input}
         value={quantity.toString()}
@@ -57,19 +53,15 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
         keyboardType="numeric"
         selectTextOnFocus
       />
-      
+
       <TouchableOpacity
         onPress={handleIncrement}
         disabled={quantity >= maxQuantity}
-        style={[
-          styles.button,
-          quantity >= maxQuantity && styles.buttonDisabled
-        ]}
+        style={[styles.button, quantity >= maxQuantity && styles.buttonDisabled]}
       >
-        <Text style={[
-          styles.buttonText,
-          quantity >= maxQuantity && styles.buttonTextDisabled
-        ]}>+</Text>
+        <Text style={[styles.buttonText, quantity >= maxQuantity && styles.buttonTextDisabled]}>
+          +
+        </Text>
       </TouchableOpacity>
     </View>
   );

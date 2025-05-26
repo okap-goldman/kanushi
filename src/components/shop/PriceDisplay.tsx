@@ -1,5 +1,5 @@
-import React from 'react';
-import { Text, StyleSheet, TextStyle } from 'react-native';
+import type React from 'react';
+import { StyleSheet, Text, type TextStyle } from 'react-native';
 
 interface PriceDisplayProps {
   price: number;
@@ -8,31 +8,27 @@ interface PriceDisplayProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-const PriceDisplay: React.FC<PriceDisplayProps> = ({ 
-  price, 
-  currency = 'JPY', 
+const PriceDisplay: React.FC<PriceDisplayProps> = ({
+  price,
+  currency = 'JPY',
   style,
-  size = 'md'
+  size = 'md',
 }) => {
   const formatPrice = (price: number, currency: string) => {
-    return new Intl.NumberFormat('ja-JP', { 
-      style: 'currency', 
+    return new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
       currency,
-      minimumFractionDigits: 0
+      minimumFractionDigits: 0,
     }).format(price);
   };
 
   const sizeStyles = {
     sm: styles.small,
     md: styles.medium,
-    lg: styles.large
+    lg: styles.large,
   };
 
-  return (
-    <Text style={[styles.base, sizeStyles[size], style]}>
-      {formatPrice(price, currency)}
-    </Text>
-  );
+  return <Text style={[styles.base, sizeStyles[size], style]}>{formatPrice(price, currency)}</Text>;
 };
 
 const styles = StyleSheet.create({

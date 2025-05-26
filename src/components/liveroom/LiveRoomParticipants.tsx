@@ -1,18 +1,18 @@
+import { liveRoomService } from '@/lib/liveRoomService';
+import { Check, Crown, Gift, Search, X, XCircle } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  Modal,
-  TextInput,
-  Image,
   Alert,
+  FlatList,
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { liveRoomService } from '@/lib/liveRoomService';
-import { X, Gift, Check, XCircle, Crown, Search } from 'lucide-react-native';
-import { Avatar } from '../ui/avatar';
+import { Avatar } from '../ui/Avatar';
 
 interface Participant {
   user_id: string;
@@ -76,7 +76,7 @@ export function LiveRoomParticipants({
   const loadSpeakerRequests = async () => {
     try {
       const data = await liveRoomService.getSpeakerRequests(roomId);
-      setSpeakerRequests(data.filter(r => r.status === 'pending'));
+      setSpeakerRequests(data.filter((r) => r.status === 'pending'));
     } catch (err) {
       console.error('Failed to load speaker requests:', err);
     }
@@ -110,12 +110,12 @@ export function LiveRoomParticipants({
     }
   };
 
-  const filteredParticipants = participants.filter(p =>
+  const filteredParticipants = participants.filter((p) =>
     p.user.display_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const speakers = filteredParticipants.filter(p => p.role === 'speaker');
-  const listeners = filteredParticipants.filter(p => p.role === 'listener');
+  const speakers = filteredParticipants.filter((p) => p.role === 'speaker');
+  const listeners = filteredParticipants.filter((p) => p.role === 'listener');
 
   const renderParticipant = ({ item }: { item: Participant }) => {
     const isHost = item.user_id === hostUserId;
@@ -203,7 +203,7 @@ export function LiveRoomParticipants({
             <FlatList
               data={speakerRequests}
               renderItem={renderSpeakerRequest}
-              keyExtractor={item => item.id}
+              keyExtractor={(item) => item.id}
             />
           </View>
         )}
@@ -213,7 +213,7 @@ export function LiveRoomParticipants({
           <FlatList
             data={speakers}
             renderItem={renderParticipant}
-            keyExtractor={item => item.user_id}
+            keyExtractor={(item) => item.user_id}
           />
         </View>
 
@@ -222,7 +222,7 @@ export function LiveRoomParticipants({
           <FlatList
             data={listeners}
             renderItem={renderParticipant}
-            keyExtractor={item => item.user_id}
+            keyExtractor={(item) => item.user_id}
           />
         </View>
       </View>
@@ -232,22 +232,13 @@ export function LiveRoomParticipants({
         <View style={styles.dialogOverlay}>
           <View style={styles.giftDialog}>
             <Text style={styles.giftDialogTitle}>ギフトを送る</Text>
-            <TouchableOpacity
-              onPress={() => sendGift('light')}
-              style={styles.giftOption}
-            >
+            <TouchableOpacity onPress={() => sendGift('light')} style={styles.giftOption}>
               <Text style={styles.giftName}>光のギフト (300円)</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => sendGift('star')}
-              style={styles.giftOption}
-            >
+            <TouchableOpacity onPress={() => sendGift('star')} style={styles.giftOption}>
               <Text style={styles.giftName}>星のギフト (600円)</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => sendGift('diamond')}
-              style={styles.giftOption}
-            >
+            <TouchableOpacity onPress={() => sendGift('diamond')} style={styles.giftOption}>
               <Text style={styles.giftName}>ダイヤモンドギフト (1200円)</Text>
             </TouchableOpacity>
             <TouchableOpacity

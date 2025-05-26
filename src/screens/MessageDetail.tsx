@@ -1,18 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
-  TextInput,
-} from 'react-native';
-import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Image } from 'expo-image';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 // Sample messages for the conversation
 const SAMPLE_CONVERSATION = [
@@ -52,10 +52,12 @@ export default function MessageDetail() {
   const [messages, setMessages] = useState(SAMPLE_CONVERSATION);
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef<FlatList>(null);
-  
+
   const navigation = useNavigation();
   const route = useRoute<any>();
-  const { user } = route.params || { user: { name: 'User', avatar: 'https://i.pravatar.cc/150?img=20' } };
+  const { user } = route.params || {
+    user: { name: 'User', avatar: 'https://i.pravatar.cc/150?img=20' },
+  };
 
   // Scroll to bottom of messages when the component mounts or messages change
   useEffect(() => {
@@ -68,14 +70,14 @@ export default function MessageDetail() {
 
   const sendMessage = () => {
     if (inputText.trim() === '') return;
-    
+
     const newMessage = {
       id: `m${messages.length + 1}`,
       text: inputText.trim(),
       sender: 'me',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
-    
+
     setMessages([...messages, newMessage]);
     setInputText('');
   };
@@ -102,22 +104,15 @@ export default function MessageDetail() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color="#1A202C" />
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.userInfo}>
-          <Image
-            source={{ uri: user.avatar }}
-            style={styles.avatar}
-            contentFit="cover"
-          />
+          <Image source={{ uri: user.avatar }} style={styles.avatar} contentFit="cover" />
           <Text style={styles.userName}>{user.name}</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.menuButton}>
           <Feather name="more-vertical" size={24} color="#1A202C" />
         </TouchableOpacity>
@@ -132,7 +127,7 @@ export default function MessageDetail() {
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.messagesList}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
@@ -142,7 +137,7 @@ export default function MessageDetail() {
           <TouchableOpacity style={styles.attachButton}>
             <Feather name="paperclip" size={20} color="#718096" />
           </TouchableOpacity>
-          
+
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
@@ -151,16 +146,17 @@ export default function MessageDetail() {
             multiline
             maxLength={500}
           />
-          
+
           <TouchableOpacity
-            style={[
-              styles.sendButton,
-              inputText.trim() === '' ? styles.sendButtonDisabled : null,
-            ]}
+            style={[styles.sendButton, inputText.trim() === '' ? styles.sendButtonDisabled : null]}
             onPress={sendMessage}
             disabled={inputText.trim() === ''}
           >
-            <Feather name="send" size={20} color={inputText.trim() === '' ? '#A0AEC0' : '#FFFFFF'} />
+            <Feather
+              name="send"
+              size={20}
+              color={inputText.trim() === '' ? '#A0AEC0' : '#FFFFFF'}
+            />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

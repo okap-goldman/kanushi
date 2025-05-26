@@ -34,7 +34,9 @@ export class SearchService {
       const { data: users, error: usersError } = await supabase
         .from('profiles')
         .select('id, name, username, avatar_url, bio')
-        .or(`name.ilike.${searchPattern},username.ilike.${searchPattern},bio.ilike.${searchPattern}`)
+        .or(
+          `name.ilike.${searchPattern},username.ilike.${searchPattern},bio.ilike.${searchPattern}`
+        )
         .limit(20);
 
       if (usersError) throw usersError;
@@ -59,8 +61,9 @@ export class SearchService {
       if (postsError) throw postsError;
 
       // Search hashtags
-      const { data: hashtags, error: hashtagsError } = await supabase
-        .rpc('search_hashtags', { search_term: keyword });
+      const { data: hashtags, error: hashtagsError } = await supabase.rpc('search_hashtags', {
+        search_term: keyword,
+      });
 
       if (hashtagsError) throw hashtagsError;
 
@@ -90,11 +93,13 @@ export class SearchService {
           const { data: users, error: usersError } = await supabase
             .from('profiles')
             .select('id, name, username, avatar_url, bio', { count: 'exact' })
-            .or(`name.ilike.${searchPattern},username.ilike.${searchPattern},bio.ilike.${searchPattern}`)
+            .or(
+              `name.ilike.${searchPattern},username.ilike.${searchPattern},bio.ilike.${searchPattern}`
+            )
             .range(offset, offset + limit - 1);
 
           if (usersError) throw usersError;
-          
+
           return {
             data: users || [],
             count: users?.length || 0,
@@ -103,7 +108,8 @@ export class SearchService {
         case 'posts':
           const { data: posts, error: postsError } = await supabase
             .from('posts')
-            .select(`
+            .select(
+              `
               id,
               content,
               media_url,
@@ -111,29 +117,33 @@ export class SearchService {
               created_at,
               author_id,
               profiles:author_id(id, name, username, avatar_url)
-            `, { count: 'exact' })
+            `,
+              { count: 'exact' }
+            )
             .or(`content.ilike.${searchPattern}`)
             .eq('is_draft', false)
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
 
           if (postsError) throw postsError;
-          
+
           return {
             data: posts || [],
             count: posts?.length || 0,
           };
 
         case 'hashtags':
-          const { data: hashtags, error: hashtagsError } = await supabase
-            .rpc('search_hashtags_paginated', { 
+          const { data: hashtags, error: hashtagsError } = await supabase.rpc(
+            'search_hashtags_paginated',
+            {
               search_term: keyword,
               limit_count: limit,
-              offset_count: offset
-            });
+              offset_count: offset,
+            }
+          );
 
           if (hashtagsError) throw hashtagsError;
-          
+
           return {
             data: hashtags || [],
             count: hashtags?.length || 0,
@@ -148,18 +158,17 @@ export class SearchService {
     }
   }
 
-  async searchWithFilters(
-    keyword: string,
-    filters: SearchFilters
-  ): Promise<SearchResult> {
+  async searchWithFilters(keyword: string, filters: SearchFilters): Promise<SearchResult> {
     try {
       const searchPattern = `%${keyword}%`;
 
       // Build queries with filters
-      let usersQuery = supabase
+      const usersQuery = supabase
         .from('profiles')
         .select('id, name, username, avatar_url, bio')
-        .or(`name.ilike.${searchPattern},username.ilike.${searchPattern},bio.ilike.${searchPattern}`);
+        .or(
+          `name.ilike.${searchPattern},username.ilike.${searchPattern},bio.ilike.${searchPattern}`
+        );
 
       let postsQuery = supabase
         .from('posts')
@@ -198,7 +207,7 @@ export class SearchService {
       const [usersResult, postsResult, hashtagsResult] = await Promise.all([
         usersQuery.limit(20),
         postsQuery,
-        supabase.rpc('search_hashtags', { search_term: keyword })
+        supabase.rpc('search_hashtags', { search_term: keyword }),
       ]);
 
       if (usersResult.error) throw usersResult.error;
@@ -237,9 +246,11 @@ export class SearchService {
         supabase
           .from('profiles')
           .select('id, name, username, avatar_url, bio')
-          .or(`name.ilike.${searchPattern},username.ilike.${searchPattern},bio.ilike.${searchPattern}`)
+          .or(
+            `name.ilike.${searchPattern},username.ilike.${searchPattern},bio.ilike.${searchPattern}`
+          )
           .range(offset, offset + limit - 1),
-        
+
         supabase
           .from('posts')
           .select(`
@@ -255,8 +266,8 @@ export class SearchService {
           .eq('is_draft', false)
           .order('created_at', { ascending: false })
           .range(offset, offset + limit - 1),
-        
-        supabase.rpc('search_hashtags', { search_term: keyword })
+
+        supabase.rpc('search_hashtags', { search_term: keyword }),
       ]);
 
       if (usersResult.error) throw usersResult.error;
@@ -411,15 +422,17 @@ export const searchPosts = async (query: string) => {
     if (error) throw error;
 
     // ネストされたタグデータを変換
-    const formattedPosts = data.map(post => {
-      const tags = post.post_tags ? post.post_tags.map((pt: any) => ({
-        id: pt.tag.id,
-        name: pt.tag.name
-      })) : [];
+    const formattedPosts = data.map((post) => {
+      const tags = post.post_tags
+        ? post.post_tags.map((pt: any) => ({
+            id: pt.tag.id,
+            name: pt.tag.name,
+          }))
+        : [];
 
       return {
         ...post,
-        tags
+        tags,
       };
     });
 
@@ -475,10 +488,10 @@ export const searchTags = async (query: string) => {
     if (error) throw error;
 
     // 各タグの投稿数を計算
-    const tagsWithCount = data.map(tag => ({
+    const tagsWithCount = data.map((tag) => ({
       id: tag.id,
       name: tag.name,
-      post_count: tag.post_tags ? tag.post_tags.length : 0
+      post_count: tag.post_tags ? tag.post_tags.length : 0,
     }));
 
     return { data: tagsWithCount, error: null };

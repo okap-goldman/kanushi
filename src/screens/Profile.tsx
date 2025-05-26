@@ -1,39 +1,39 @@
+import { Feather } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { Image } from 'expo-image';
 import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   RefreshControl,
   SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Image } from 'expo-image';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
+import { ProfileTabs } from '../components/profile/ProfileTabs';
 import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
-import { ProfileTabs } from '../components/profile/ProfileTabs';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export default function Profile() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'highlights' | 'likes' | 'bookmarks'>('posts');
-  
+ 
   const navigation = useNavigation<any>();
   const route = useRoute();
   const { user } = useAuth();
-  
+
   // Get userId from route params or use current user's ID
   const userId = (route.params as any)?.userId || user?.id;
 
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      
+
       const { data, error } = await supabase
         .from('profiles')
         .select(`
@@ -43,9 +43,9 @@ export default function Profile() {
         `)
         .eq('id', userId)
         .single();
-        
+
       if (error) throw error;
-      
+
       if (data) {
         setProfile(data);
       }
@@ -93,42 +93,25 @@ export default function Profile() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         <View style={styles.header}>
           <View style={styles.profileHeader}>
-            <Avatar 
-              source={profile.image || 'https://via.placeholder.com/80'} 
-              size="xl" 
-            />
-            
+            <Avatar source={profile.image || 'https://via.placeholder.com/80'} size="xl" />
+
             <View style={styles.profileStats}>
               <TouchableOpacity style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {profile.post_count || 0}
-                </Text>
+                <Text style={styles.statValue}>{profile.post_count || 0}</Text>
                 <Text style={styles.statLabel}>Posts</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.statItem}
-                onPress={handleFollowersPress}
-              >
-                <Text style={styles.statValue}>
-                  {profile.followers?.count || 0}
-                </Text>
+
+              <TouchableOpacity style={styles.statItem} onPress={handleFollowersPress}>
+                <Text style={styles.statValue}>{profile.followers?.count || 0}</Text>
                 <Text style={styles.statLabel}>Followers</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.statItem}
-                onPress={handleFollowingPress}
-              >
-                <Text style={styles.statValue}>
-                  {profile.following?.count || 0}
-                </Text>
+
+              <TouchableOpacity style={styles.statItem} onPress={handleFollowingPress}>
+                <Text style={styles.statValue}>{profile.following?.count || 0}</Text>
                 <Text style={styles.statLabel}>Following</Text>
               </TouchableOpacity>
             </View>
@@ -137,31 +120,20 @@ export default function Profile() {
           <View style={styles.profileInfo}>
             <Text style={styles.displayName}>{profile.full_name || profile.username}</Text>
             {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
-            
+
             {isCurrentUser ? (
-              <Button
-                onPress={handleEditProfile}
-                variant="outline"
-                style={styles.editButton}
-              >
+              <Button onPress={handleEditProfile} variant="outline" style={styles.editButton}>
                 Edit Profile
               </Button>
             ) : (
-              <Button
-                onPress={() => {}}
-                style={styles.followButton}
-              >
+              <Button onPress={() => {}} style={styles.followButton}>
                 Follow
               </Button>
             )}
           </View>
         </View>
 
-        <ProfileTabs
-          userId={userId}
-          activeTab={activeTab}
-          onChangeTab={setActiveTab}
-        />
+        <ProfileTabs userId={userId} activeTab={activeTab} onChangeTab={setActiveTab} />
       </ScrollView>
     </SafeAreaView>
   );

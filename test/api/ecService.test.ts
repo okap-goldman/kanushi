@@ -1,51 +1,51 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { supabase } from '../../src/lib/supabase';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  getProducts,
-  getProductById,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  getOrders,
-  getOrderById,
-  createOrder,
-  updateOrderStatus,
-  processPayment,
-  getShippingAddresses,
-  createShippingAddress,
-  getSalesAnalytics,
-  // Cart functions
-  getCart,
-  addToCart,
-  updateCartItem,
-  removeFromCart,
-  clearCart,
-  createCheckoutSession,
-  // Gift functions
-  sendGiftToPost,
-  sendGiftToLiveRoom,
-  // Product from post
-  createProductFromPost,
-  // Dashboard
-  getSellerDashboard,
-  // Types
-  type Product,
-  type CreateProductInput,
-  type UpdateProductInput,
-  type Order,
-  type CreateOrderInput,
-  type ShippingAddress,
-  type CreateShippingAddressInput,
+  type AddToCartInput,
   type Cart,
   type CartItem,
-  type AddToCartInput,
-  type UpdateCartItemInput,
-  type Gift,
-  type SendGiftInput,
+  type CreateOrderInput,
   type CreateProductFromPostInput,
-  type SellerDashboard,
+  type CreateProductInput,
+  type CreateShippingAddressInput,
   type DashboardPeriod,
+  type Gift,
+  type Order,
+  // Types
+  type Product,
+  type SellerDashboard,
+  type SendGiftInput,
+  type ShippingAddress,
+  type UpdateCartItemInput,
+  type UpdateProductInput,
+  addToCart,
+  clearCart,
+  createCheckoutSession,
+  createOrder,
+  createProduct,
+  // Product from post
+  createProductFromPost,
+  createShippingAddress,
+  deleteProduct,
+  // Cart functions
+  getCart,
+  getOrderById,
+  getOrders,
+  getProductById,
+  getProducts,
+  getSalesAnalytics,
+  // Dashboard
+  getSellerDashboard,
+  getShippingAddresses,
+  processPayment,
+  removeFromCart,
+  sendGiftToLiveRoom,
+  // Gift functions
+  sendGiftToPost,
+  updateCartItem,
+  updateOrderStatus,
+  updateProduct,
 } from '../../src/lib/ecService';
+import { supabase } from '../../src/lib/supabase';
 
 // Mock Supabase client
 vi.mock('../../src/lib/supabase', () => ({
@@ -750,7 +750,9 @@ describe('EC Service', () => {
 
         vi.mocked(supabase.from).mockReturnValue(mockQuery as any);
 
-        await expect(removeFromCart('non-existent')).rejects.toThrow('カートアイテムが見つかりません');
+        await expect(removeFromCart('non-existent')).rejects.toThrow(
+          'カートアイテムが見つかりません'
+        );
       });
     });
 

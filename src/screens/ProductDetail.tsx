@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
-  Dimensions,
-} from 'react-native';
-import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Image } from 'expo-image';
+import React, { useState } from 'react';
+import {
+  Dimensions,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -32,7 +32,8 @@ const SAMPLE_PRODUCTS = [
     seller: 'Traditional Craft Co.',
     isFeatured: true,
     isNew: false,
-    description: 'Handcrafted tote bag made with traditional Japanese indigo dyeing techniques. Each bag is unique with slight variations in the pattern.\n\nThe tote bag features:\n- 100% cotton canvas material\n- Hand-dyed using traditional aizome indigo technique\n- Interior pocket\n- Leather handles\n- Dimensions: 35cm x 40cm x 10cm\n\nEvery purchase supports local artisans continuing centuries-old Japanese dyeing traditions.',
+    description:
+      'Handcrafted tote bag made with traditional Japanese indigo dyeing techniques. Each bag is unique with slight variations in the pattern.\n\nThe tote bag features:\n- 100% cotton canvas material\n- Hand-dyed using traditional aizome indigo technique\n- Interior pocket\n- Leather handles\n- Dimensions: 35cm x 40cm x 10cm\n\nEvery purchase supports local artisans continuing centuries-old Japanese dyeing traditions.',
     specifications: [
       { name: 'Material', value: '100% Cotton Canvas' },
       { name: 'Color', value: 'Indigo Blue' },
@@ -58,7 +59,8 @@ const SAMPLE_PRODUCTS = [
     seller: 'Tokyo Style',
     isFeatured: true,
     isNew: true,
-    description: 'Contemporary take on the traditional kimono, redesigned as a versatile jacket that can be worn with any outfit. Combines traditional Japanese textiles with modern silhouettes.\n\nFeatures:\n- Made from premium quality cotton and silk blend\n- Traditional Japanese pattern inspired by cherry blossoms\n- Wide sleeves with subtle drape\n- Tie belt closure\n- Available in sizes S, M, L\n\nThis kimono jacket transitions easily from casual daywear to elegant evening attire.',
+    description:
+      'Contemporary take on the traditional kimono, redesigned as a versatile jacket that can be worn with any outfit. Combines traditional Japanese textiles with modern silhouettes.\n\nFeatures:\n- Made from premium quality cotton and silk blend\n- Traditional Japanese pattern inspired by cherry blossoms\n- Wide sleeves with subtle drape\n- Tie belt closure\n- Available in sizes S, M, L\n\nThis kimono jacket transitions easily from casual daywear to elegant evening attire.',
     specifications: [
       { name: 'Material', value: 'Cotton-Silk Blend' },
       { name: 'Color', value: 'Navy with Pattern' },
@@ -84,7 +86,8 @@ const SAMPLE_PRODUCTS = [
     seller: 'Kyoto Ceramics',
     isFeatured: false,
     isNew: true,
-    description: 'Handmade ceramic tea set including teapot and four cups. Perfect for enjoying Japanese green tea in style.\n\nThis elegant tea set is crafted by master potter Yamada Takeshi in his Kyoto studio. Each piece is individually thrown, glazed, and fired using traditional methods passed down through generations.\n\nThe set includes:\n- 1 teapot (350ml capacity) with bamboo handle\n- 4 tea cups\n- 1 bamboo tea scoop\n\nThe minimalist design features a subtle blue glaze that enhances the tea drinking experience.',
+    description:
+      'Handmade ceramic tea set including teapot and four cups. Perfect for enjoying Japanese green tea in style.\n\nThis elegant tea set is crafted by master potter Yamada Takeshi in his Kyoto studio. Each piece is individually thrown, glazed, and fired using traditional methods passed down through generations.\n\nThe set includes:\n- 1 teapot (350ml capacity) with bamboo handle\n- 4 tea cups\n- 1 bamboo tea scoop\n\nThe minimalist design features a subtle blue glaze that enhances the tea drinking experience.',
     specifications: [
       { name: 'Material', value: 'Porcelain' },
       { name: 'Color', value: 'Sky Blue' },
@@ -99,13 +102,13 @@ const SAMPLE_PRODUCTS = [
 export default function ProductDetail() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  
+
   const navigation = useNavigation();
   const route = useRoute<any>();
   const { productId } = route.params || { productId: '1' };
-  
+
   // Find the product from the sample data
-  const product = SAMPLE_PRODUCTS.find(p => p.id === productId) || SAMPLE_PRODUCTS[0];
+  const product = SAMPLE_PRODUCTS.find((p) => p.id === productId) || SAMPLE_PRODUCTS[0];
 
   const incrementQuantity = () => {
     if (quantity < product.stock) {
@@ -127,10 +130,7 @@ export default function ProductDetail() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color="#1A202C" />
         </TouchableOpacity>
         <View style={styles.headerActions}>
@@ -157,9 +157,7 @@ export default function ProductDetail() {
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={(event) => {
-              const newIndex = Math.round(
-                event.nativeEvent.contentOffset.x / width
-              );
+              const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
               setCurrentImageIndex(newIndex);
             }}
           >
@@ -172,7 +170,7 @@ export default function ProductDetail() {
               />
             ))}
           </ScrollView>
-          
+
           {/* Image pagination indicators */}
           <View style={styles.paginationContainer}>
             {product.images.map((_, index) => (
@@ -186,7 +184,7 @@ export default function ProductDetail() {
             ))}
           </View>
         </View>
-        
+
         {/* Product info */}
         <View style={styles.productInfo}>
           <View style={styles.priceRow}>
@@ -198,19 +196,19 @@ export default function ProductDetail() {
             ) : (
               <Text style={styles.price}>¥{product.price.toLocaleString()}</Text>
             )}
-            
+
             {product.isNew && (
               <View style={styles.newBadge}>
                 <Text style={styles.newBadgeText}>NEW</Text>
               </View>
             )}
           </View>
-          
+
           <Text style={styles.productName}>{product.name}</Text>
-          
+
           <View style={styles.ratingRow}>
             <View style={styles.rating}>
-              {[1, 2, 3, 4, 5].map(star => (
+              {[1, 2, 3, 4, 5].map((star) => (
                 <Feather
                   key={star}
                   name="star"
@@ -223,14 +221,14 @@ export default function ProductDetail() {
             </View>
             <Text style={styles.reviewCount}>{product.reviews} reviews</Text>
           </View>
-          
+
           <TouchableOpacity style={styles.sellerRow}>
             <Text style={styles.sellerLabel}>Seller:</Text>
             <Text style={styles.sellerName}>{product.seller}</Text>
             <Feather name="chevron-right" size={16} color="#718096" />
           </TouchableOpacity>
         </View>
-        
+
         {/* Quantity selector */}
         <View style={styles.quantityContainer}>
           <Text style={styles.quantityLabel}>Quantity:</Text>
@@ -242,34 +240,41 @@ export default function ProductDetail() {
             >
               <Feather name="minus" size={16} color={quantity <= 1 ? '#A0AEC0' : '#1A202C'} />
             </TouchableOpacity>
-            
+
             <Text style={styles.quantityValue}>{quantity}</Text>
-            
+
             <TouchableOpacity
-              style={[styles.quantityButton, quantity >= product.stock && styles.quantityButtonDisabled]}
+              style={[
+                styles.quantityButton,
+                quantity >= product.stock && styles.quantityButtonDisabled,
+              ]}
               onPress={incrementQuantity}
               disabled={quantity >= product.stock}
             >
-              <Feather name="plus" size={16} color={quantity >= product.stock ? '#A0AEC0' : '#1A202C'} />
+              <Feather
+                name="plus"
+                size={16}
+                color={quantity >= product.stock ? '#A0AEC0' : '#1A202C'}
+              />
             </TouchableOpacity>
           </View>
-          
+
           <Text style={styles.stockText}>{product.stock} available</Text>
         </View>
-        
+
         {/* Description */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Description</Text>
           <Text style={styles.descriptionText}>{product.description}</Text>
         </View>
-        
+
         {/* Specifications */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Specifications</Text>
-          
+
           {product.specifications.map((spec, index) => (
-            <View 
-              key={index} 
+            <View
+              key={index}
               style={[
                 styles.specRow,
                 index === product.specifications.length - 1 && styles.lastSpecRow,
@@ -281,7 +286,7 @@ export default function ProductDetail() {
           ))}
         </View>
       </ScrollView>
-      
+
       {/* Bottom action bar */}
       <View style={styles.actionBar}>
         <View style={styles.totalContainer}>
@@ -290,11 +295,8 @@ export default function ProductDetail() {
             ¥{((product.discountPrice || product.price) * quantity).toLocaleString()}
           </Text>
         </View>
-        
-        <TouchableOpacity
-          style={styles.addToCartButton}
-          onPress={addToCart}
-        >
+
+        <TouchableOpacity style={styles.addToCartButton} onPress={addToCart}>
           <Feather name="shopping-cart" size={20} color="#FFFFFF" />
           <Text style={styles.addToCartText}>Add to Cart</Text>
         </TouchableOpacity>

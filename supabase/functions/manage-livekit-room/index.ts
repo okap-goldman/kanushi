@@ -30,12 +30,15 @@ serve(async (req) => {
     );
 
     // 認証チェック
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseClient.auth.getUser();
     if (authError || !user) {
       throw new Error('Unauthorized');
     }
 
-    const { action, roomName, emptyTimeout, maxParticipants } = await req.json() as RoomRequest;
+    const { action, roomName, emptyTimeout, maxParticipants } = (await req.json()) as RoomRequest;
 
     const apiKey = Deno.env.get('LIVEKIT_API_KEY');
     const apiSecret = Deno.env.get('LIVEKIT_API_SECRET');
@@ -56,7 +59,7 @@ serve(async (req) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${generateManagementToken(apiKey, apiSecret)}`,
+            Authorization: `Bearer ${generateManagementToken(apiKey, apiSecret)}`,
           },
           body: JSON.stringify({
             name: roomName,
@@ -71,13 +74,10 @@ serve(async (req) => {
         }
 
         const room = await createResponse.json();
-        return new Response(
-          JSON.stringify({ room }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          }
-        );
+        return new Response(JSON.stringify({ room }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
 
       case 'delete':
         // ルーム削除
@@ -85,7 +85,7 @@ serve(async (req) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${generateManagementToken(apiKey, apiSecret)}`,
+            Authorization: `Bearer ${generateManagementToken(apiKey, apiSecret)}`,
           },
           body: JSON.stringify({
             room: roomName,
@@ -97,25 +97,19 @@ serve(async (req) => {
           throw new Error(`Failed to delete room: ${error}`);
         }
 
-        return new Response(
-          JSON.stringify({ success: true }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          }
-        );
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
 
       default:
         throw new Error('Invalid action');
     }
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400,
+    });
   }
 });
 

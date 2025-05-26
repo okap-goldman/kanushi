@@ -2,7 +2,7 @@
  * Integration Tests for Stripe Payment Service
  * Tests the integration between stripeService and eventService for payments
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock environment variables before importing services
 vi.mock('@/lib/env', () => ({
@@ -36,9 +36,9 @@ vi.mock('stripe', () => ({
   default: vi.fn().mockImplementation(() => mockStripe),
 }));
 
+import { eventServiceDrizzle } from '@/lib/eventServiceDrizzle';
 // Import services after mocks
 import { stripeService } from '@/lib/stripeService';
-import { eventServiceDrizzle } from '@/lib/eventServiceDrizzle';
 
 describe('Stripe Payment Integration Tests', () => {
   beforeEach(() => {
@@ -99,11 +99,13 @@ describe('Stripe Payment Integration Tests', () => {
         amount: 8000,
         currency: 'jpy',
         charges: {
-          data: [{
-            id: 'ch_test_123',
-            amount: 8000,
-            paid: true,
-          }],
+          data: [
+            {
+              id: 'ch_test_123',
+              amount: 8000,
+              paid: true,
+            },
+          ],
         },
       });
 
@@ -117,9 +119,7 @@ describe('Stripe Payment Integration Tests', () => {
 
     it('should handle payment intent creation errors', async () => {
       // Mock Stripe error
-      mockStripe.paymentIntents.create.mockRejectedValue(
-        new Error('Your card was declined.')
-      );
+      mockStripe.paymentIntents.create.mockRejectedValue(new Error('Your card was declined.'));
 
       const result = await stripeService.createPaymentIntent({
         amount: 3000,
@@ -253,10 +253,7 @@ describe('Stripe Payment Integration Tests', () => {
 
       mockStripe.webhooks.constructEvent.mockReturnValue(mockEvent);
 
-      const result = await stripeService.constructWebhookEvent(
-        mockWebhookBody,
-        mockSignature
-      );
+      const result = await stripeService.constructWebhookEvent(mockWebhookBody, mockSignature);
 
       expect(result.data).toBeTruthy();
       expect(result.error).toBeNull();
@@ -277,10 +274,7 @@ describe('Stripe Payment Integration Tests', () => {
         throw new Error('Invalid signature');
       });
 
-      const result = await stripeService.constructWebhookEvent(
-        mockWebhookBody,
-        invalidSignature
-      );
+      const result = await stripeService.constructWebhookEvent(mockWebhookBody, invalidSignature);
 
       expect(result.data).toBeNull();
       expect(result.error).toBeTruthy();
@@ -404,16 +398,18 @@ describe('Stripe Payment Integration Tests', () => {
         currency: 'jpy',
       });
 
-      vi.mocked(eventServiceDrizzle.confirmEventPayment).mockImplementation(async (paymentIntentId) => {
-        // This would normally call stripeService.confirmPayment internally
-        const confirmResult = await stripeService.confirmPayment(paymentIntentId);
-        
-        if (confirmResult.error || confirmResult.data?.status !== 'succeeded') {
-          return { data: null, error: new Error('Payment confirmation failed') };
-        }
+      vi.mocked(eventServiceDrizzle.confirmEventPayment).mockImplementation(
+        async (paymentIntentId) => {
+          // This would normally call stripeService.confirmPayment internally
+          const confirmResult = await stripeService.confirmPayment(paymentIntentId);
 
-        return { data: { success: true }, error: null };
-      });
+          if (confirmResult.error || confirmResult.data?.status !== 'succeeded') {
+            return { data: null, error: new Error('Payment confirmation failed') };
+          }
+
+          return { data: { success: true }, error: null };
+        }
+      );
 
       const confirmResult = await eventServiceDrizzle.confirmEventPayment(
         'pi_workshop_integration',

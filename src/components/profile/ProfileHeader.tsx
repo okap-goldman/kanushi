@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Audio } from 'expo-av';
-import { Play, Pause, Store, LogOut } from 'lucide-react-native';
+import { LogOut, Pause, Play, Store } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/avatar';
 import { Button } from '../ui/button';
@@ -38,7 +38,9 @@ export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps
           await sound.playAsync();
           setIsAudioPlaying(true);
         } else {
-          const audioUrl = profile?.audio_url || "https://s328.podbean.com/pb/4b3e15298687315db3070972aaa50fee/676f0aab/data1/fs91/20007750/uploads/6b592.m4a?pbss=abbaab44-f1dd-5725-bf73-452199e42c01";
+          const audioUrl =
+            profile?.audio_url ||
+            'https://s328.podbean.com/pb/4b3e15298687315db3070972aaa50fee/676f0aab/data1/fs91/20007750/uploads/6b592.m4a?pbss=abbaab44-f1dd-5725-bf73-452199e42c01';
           const { sound: newSound } = await Audio.Sound.createAsync(
             { uri: audioUrl },
             { shouldPlay: true }
@@ -66,10 +68,7 @@ export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps
   return (
     <View style={styles.container}>
       <View style={styles.avatarRow}>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={toggleAudio}
-        >
+        <TouchableOpacity style={styles.iconButton} onPress={toggleAudio}>
           {isAudioPlaying ? (
             <Pause size={24} color="#6366f1" />
           ) : (
@@ -78,7 +77,11 @@ export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps
         </TouchableOpacity>
 
         <Avatar
-          source={{ uri: profile?.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || '1'}` }}
+          source={{
+            uri:
+              profile?.image ||
+              `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || '1'}`,
+          }}
           style={styles.avatar}
           fallback={profile?.name?.[0] || user?.email?.[0] || 'U'}
         />
@@ -90,19 +93,13 @@ export function ProfileHeader({ isPlaying, handlePlayVoice }: ProfileHeaderProps
           <Store size={24} color="#6366f1" />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.actions}>
-        <Button 
-          variant="outline" 
-          onPress={() => navigation.navigate('ProfileEdit' as never)}
-        >
+        <Button variant="outline" onPress={() => navigation.navigate('ProfileEdit' as never)}>
           プロフィールを編集
         </Button>
-        
-        <Button 
-          variant="outline" 
-          onPress={handleSignOut}
-        >
+
+        <Button variant="outline" onPress={handleSignOut}>
           <LogOut size={16} color="#6366f1" style={{ marginRight: 8 }} />
           ログアウト
         </Button>

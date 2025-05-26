@@ -1,20 +1,20 @@
+import { CreateLiveRoomDialog } from '@/components/liveroom/CreateLiveRoomDialog';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent } from '@/components/ui/Card';
+import { useAuth } from '@/context/AuthContext';
+import { liveRoomService } from '@/lib/liveRoomService';
+import { useNavigation } from '@react-navigation/native';
+import { Plus, Radio, Users } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  RefreshControl,
   ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { Radio, Users, Plus } from 'lucide-react-native';
-import { liveRoomService } from '@/lib/liveRoomService';
-import { CreateLiveRoomDialog } from '@/components/liveroom/CreateLiveRoomDialog';
-import { useAuth } from '@/context/AuthContext';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 interface LiveRoom {
   id: string;
@@ -93,20 +93,16 @@ export default function LiveRooms() {
               </View>
             )}
           </View>
-          
+
           <Text style={styles.roomTitle} numberOfLines={2}>
             {item.title}
           </Text>
-          
+
           <View style={styles.roomInfo}>
-            <Text style={styles.hostName}>
-              {item.host?.display_name || 'Unknown Host'}
-            </Text>
+            <Text style={styles.hostName}>{item.host?.display_name || 'Unknown Host'}</Text>
             <View style={styles.participantInfo}>
               <Users size={14} color="#666" />
-              <Text style={styles.participantCount}>
-                {item.participant_count}
-              </Text>
+              <Text style={styles.participantCount}>{item.participant_count}</Text>
             </View>
           </View>
         </CardContent>
@@ -134,10 +130,7 @@ export default function LiveRooms() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>ライブルーム</Text>
-        <TouchableOpacity
-          onPress={() => setShowCreateDialog(true)}
-          style={styles.createButton}
-        >
+        <TouchableOpacity onPress={() => setShowCreateDialog(true)} style={styles.createButton}>
           <Plus size={24} color="#007AFF" />
         </TouchableOpacity>
       </View>
@@ -147,9 +140,7 @@ export default function LiveRooms() {
         renderItem={renderRoom}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         ListEmptyComponent={renderEmpty}
       />
 

@@ -1,38 +1,38 @@
+import { useNavigation } from '@react-navigation/native';
+import * as Audio from 'expo-av';
+import * as ImagePicker from 'expo-image-picker';
+import { ArrowLeft, Mic, Pause, Play, Save, Square, Upload } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
+  Alert,
+  Image,
+  Platform,
   ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  Image,
-  Alert,
-  Platform,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import * as ImagePicker from 'expo-image-picker';
-import * as Audio from 'expo-av';
-import { ArrowLeft, Save, Upload, Mic, Square, Play, Pause } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/use-toast';
-import { Avatar } from '../ui/avatar';
-import { Button } from '../ui/button';
-import { Card } from '../ui/card';
+import { supabase } from '../../lib/supabase';
+import { Avatar } from '../ui/Avatar';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
 
 export function ProfileEdit() {
   const navigation = useNavigation();
   const { user, profile, refreshProfile } = useAuth();
   const { toast } = useToast();
-  
+
   const [avatar, setAvatar] = useState<string>('');
   const [name, setName] = useState<string>('');
   const [username, setUsername] = useState<string>('');
   const [bio, setBio] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  
+
   // Audio recording states
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -92,7 +92,7 @@ export function ProfileEdit() {
       const { recording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
-      
+
       setRecording(recording);
       setIsRecording(true);
     } catch (err) {
@@ -148,22 +148,23 @@ export function ProfileEdit() {
     }
   };
 
-  const uploadFile = async (uri: string, folder: string): Promise<{ url?: string; error?: Error }> => {
+  const uploadFile = async (
+    uri: string,
+    folder: string
+  ): Promise<{ url?: string; error?: Error }> => {
     try {
       const response = await fetch(uri);
       const blob = await response.blob();
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
       const fileExt = uri.split('.').pop() || 'jpg';
-      
+
       const { data, error } = await supabase.storage
         .from('media')
         .upload(`${folder}/${fileName}.${fileExt}`, blob);
 
       if (error) throw error;
 
-      const { data: publicUrl } = supabase.storage
-        .from('media')
-        .getPublicUrl(data.path);
+      const { data: publicUrl } = supabase.storage.from('media').getPublicUrl(data.path);
 
       return { url: publicUrl.publicUrl };
     } catch (error) {
@@ -178,7 +179,7 @@ export function ProfileEdit() {
       setIsLoading(true);
 
       let imageUrl = profile?.image || '';
-      
+
       // Upload avatar if changed
       if (avatar && avatar !== profile?.image && avatar.startsWith('file://')) {
         const result = await uploadFile(avatar, 'avatars');
@@ -210,12 +211,12 @@ export function ProfileEdit() {
       if (error) throw error;
 
       await refreshProfile();
-      
+
       toast({
         title: '保存完了',
         description: 'プロフィールが更新されました',
       });
-      
+
       navigation.goBack();
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -245,7 +246,9 @@ export function ProfileEdit() {
         <View style={styles.avatarSection}>
           <TouchableOpacity onPress={pickImage} disabled={isLoading}>
             <Avatar
-              source={{ uri: avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}` }}
+              source={{
+                uri: avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`,
+              }}
               style={styles.avatar}
               fallback={name?.[0] || user?.email?.[0] || 'U'}
             />
@@ -306,28 +309,20 @@ export function ProfileEdit() {
             <Text style={styles.audioDescription}>
               プロフィールに表示される自己紹介音声を録音します
             </Text>
-            
+
             <View style={styles.audioButtons}>
               {!isRecording ? (
-                <Button
-                  variant="outline"
-                  onPress={startRecording}
-                  disabled={isLoading}
-                >
+                <Button variant="outline" onPress={startRecording} disabled={isLoading}>
                   <Mic size={16} color="#6366f1" style={{ marginRight: 8 }} />
                   録音開始
                 </Button>
               ) : (
-                <Button
-                  variant="destructive"
-                  onPress={stopRecording}
-                  disabled={isLoading}
-                >
+                <Button variant="destructive" onPress={stopRecording} disabled={isLoading}>
                   <Square size={16} color="#fff" style={{ marginRight: 8 }} />
                   録音停止
                 </Button>
               )}
-              
+
               {recordedAudioUri && (
                 <Button
                   variant="outline"
@@ -343,7 +338,7 @@ export function ProfileEdit() {
                 </Button>
               )}
             </View>
-            
+
             {(recordedAudioUri || profile?.audio_url) && (
               <Text style={styles.audioStatus}>✅ 録音済み</Text>
             )}

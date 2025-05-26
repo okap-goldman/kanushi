@@ -1,7 +1,7 @@
-import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { CreatePostDialog } from '@/components/CreatePostDialog';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // モックの設定
 vi.mock('@/lib/supabase', () => ({
@@ -27,7 +27,7 @@ vi.mock('@/context/AuthContext', () => ({
 }));
 
 vi.mock('expo-image-picker', () => ({
-  launchImageLibraryAsync: vi.fn(() => 
+  launchImageLibraryAsync: vi.fn(() =>
     Promise.resolve({
       canceled: false,
       assets: [{ uri: 'file://image.jpg' }],
@@ -44,7 +44,7 @@ vi.mock('expo-av', () => ({
     requestPermissionsAsync: vi.fn(() => Promise.resolve({ status: 'granted' })),
     setAudioModeAsync: vi.fn(() => Promise.resolve()),
     Recording: {
-      createAsync: vi.fn(() => 
+      createAsync: vi.fn(() =>
         Promise.resolve({
           recording: {
             stopAndUnloadAsync: vi.fn(() => Promise.resolve()),
@@ -164,10 +164,12 @@ describe('CreatePostDialog Component', () => {
   });
 
   it('タグの追加と削除ができる', () => {
-    const { getByPlaceholderText, getByTestId, getByText } = render(<CreatePostDialog {...mockProps} />);
+    const { getByPlaceholderText, getByTestId, getByText } = render(
+      <CreatePostDialog {...mockProps} />
+    );
 
     const tagInput = getByPlaceholderText('Add tags (press Enter to add)');
-    
+
     // タグを追加
     fireEvent.changeText(tagInput, 'test');
     fireEvent.press(getByTestId('icon-plus'));
@@ -197,9 +199,12 @@ describe('CreatePostDialog Component', () => {
     fireEvent.press(getByText('Post'));
 
     // onSuccessが呼ばれないことを確認
-    await waitFor(() => {
-      expect(mockProps.onSuccess).not.toHaveBeenCalled();
-    }, { timeout: 1000 });
+    await waitFor(
+      () => {
+        expect(mockProps.onSuccess).not.toHaveBeenCalled();
+      },
+      { timeout: 1000 }
+    );
   });
 
   it('画像投稿にキャプションを追加できる', async () => {

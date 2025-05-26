@@ -1,6 +1,6 @@
-import { describe, expect, test, jest, beforeEach } from '@jest/globals';
-import { navigationRef } from '@/navigation';
 import { liveRoomService } from '@/lib/liveRoomService';
+import { navigationRef } from '@/navigation';
+import { beforeEach, describe, expect, jest, test } from '@jest/globals';
 
 jest.mock('@/lib/liveRoomService');
 
@@ -16,9 +16,9 @@ describe('LiveRoom Navigation Integration', () => {
         title: '目醒めトーク',
         hostUser: {
           id: 'user-123',
-          displayName: 'ホストユーザー'
+          displayName: 'ホストユーザー',
         },
-        status: 'preparing'
+        status: 'preparing',
       };
 
       (liveRoomService.createRoom as jest.Mock).mockResolvedValue(mockRoom);
@@ -27,14 +27,14 @@ describe('LiveRoom Navigation Integration', () => {
       const room = await liveRoomService.createRoom({
         title: '目醒めトーク',
         maxSpeakers: 10,
-        isRecording: false
+        isRecording: false,
       });
 
       // ナビゲーション実行
       navigationRef.current?.navigate('LiveRoom', {
         roomId: room.id,
         userId: room.hostUser.id,
-        role: 'speaker'
+        role: 'speaker',
       });
 
       // 現在のルートを確認
@@ -43,7 +43,7 @@ describe('LiveRoom Navigation Integration', () => {
       expect(currentRoute?.params).toMatchObject({
         roomId: 'room-123',
         userId: 'user-123',
-        role: 'speaker'
+        role: 'speaker',
       });
     });
 
@@ -63,7 +63,7 @@ describe('LiveRoom Navigation Integration', () => {
       navigationRef.current?.navigate('LiveRoom', {
         roomId,
         userId,
-        role: 'listener'
+        role: 'listener',
       });
 
       const currentRoute = navigationRef.current?.getCurrentRoute();
@@ -71,7 +71,7 @@ describe('LiveRoom Navigation Integration', () => {
       expect(currentRoute?.params).toMatchObject({
         roomId,
         userId,
-        role: 'listener'
+        role: 'listener',
       });
     });
 
@@ -88,20 +88,20 @@ describe('LiveRoom Navigation Integration', () => {
   describe('Deep Link対応', () => {
     test('Deep Linkからライブルームへのダイレクトアクセス', () => {
       const deepLink = 'kanushi://liveroom/room-123';
-      
+
       // Deep Linkを処理
       handleDeepLink(deepLink);
 
       const currentRoute = navigationRef.current?.getCurrentRoute();
       expect(currentRoute?.name).toBe('LiveRoom');
       expect(currentRoute?.params).toMatchObject({
-        roomId: 'room-123'
+        roomId: 'room-123',
       });
     });
 
     test('無効なDeep Linkのハンドリング', () => {
       const invalidLink = 'kanushi://invalid/path';
-      
+
       // Deep Linkを処理
       const result = handleDeepLink(invalidLink);
 
@@ -113,7 +113,7 @@ describe('LiveRoom Navigation Integration', () => {
 
     test('認証が必要なライブルームへのDeep Link', () => {
       const deepLink = 'kanushi://liveroom/private-room';
-      
+
       // 未認証状態でDeep Linkを処理
       handleDeepLink(deepLink, { isAuthenticated: false });
 
@@ -122,7 +122,7 @@ describe('LiveRoom Navigation Integration', () => {
       expect(currentRoute?.name).toBe('Login');
       expect(currentRoute?.params).toMatchObject({
         redirectTo: 'LiveRoom',
-        redirectParams: { roomId: 'private-room' }
+        redirectParams: { roomId: 'private-room' },
       });
     });
   });
@@ -132,7 +132,7 @@ describe('LiveRoom Navigation Integration', () => {
       // ライブルーム一覧画面で事前にルーム情報をフェッチ
       const rooms = [
         { id: 'room-1', title: 'ルーム1', participant_count: 10 },
-        { id: 'room-2', title: 'ルーム2', participant_count: 5 }
+        { id: 'room-2', title: 'ルーム2', participant_count: 5 },
       ];
 
       // プリロードデータをナビゲーションパラメータに含める
@@ -140,7 +140,7 @@ describe('LiveRoom Navigation Integration', () => {
         roomId: 'room-1',
         userId: 'user-123',
         role: 'listener',
-        preloadedData: rooms[0]
+        preloadedData: rooms[0],
       });
 
       const currentRoute = navigationRef.current?.getCurrentRoute();
@@ -164,13 +164,13 @@ describe('LiveRoom Navigation Integration', () => {
         animation: 'slide_from_bottom',
         config: {
           duration: 300,
-          easing: 'ease-in-out'
-        }
+          easing: 'ease-in-out',
+        },
       };
 
       navigationRef.current?.navigate('LiveRoom', {
         roomId: 'room-123',
-        animationConfig
+        animationConfig,
       });
 
       // アニメーション設定が適用されていることを確認
@@ -205,7 +205,7 @@ describe('LiveRoom Navigation Integration', () => {
         }
         return Promise.resolve({
           token: 'mock-token',
-          room: { id: 'room-123', status: 'active' }
+          room: { id: 'room-123', status: 'active' },
         });
       });
 
@@ -218,7 +218,7 @@ describe('LiveRoom Navigation Integration', () => {
           break;
         } catch (error) {
           // リトライ待機
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
 
@@ -231,26 +231,26 @@ describe('LiveRoom Navigation Integration', () => {
 // ヘルパー関数
 function handleDeepLink(url: string, options?: { isAuthenticated?: boolean }): boolean {
   const isAuthenticated = options?.isAuthenticated ?? true;
-  
+
   if (url.startsWith('kanushi://liveroom/')) {
     const roomId = url.replace('kanushi://liveroom/', '');
-    
+
     if (!isAuthenticated) {
       navigationRef.current?.navigate('Login', {
         redirectTo: 'LiveRoom',
-        redirectParams: { roomId }
+        redirectParams: { roomId },
       });
       return true;
     }
-    
+
     navigationRef.current?.navigate('LiveRoom', {
       roomId,
       userId: 'current-user',
-      role: 'listener'
+      role: 'listener',
     });
     return true;
   }
-  
+
   // 無効なリンクの場合はホームへ
   navigationRef.current?.navigate('Home');
   return false;
@@ -267,7 +267,7 @@ function getCurrentAnimationConfig(): any {
     animation: 'slide_from_bottom',
     config: {
       duration: 300,
-      easing: 'ease-in-out'
-    }
+      easing: 'ease-in-out',
+    },
   };
 }

@@ -4,7 +4,7 @@
 // You can also use expo-constants for additional configuration
 
 // Helper function for safely reading environment variables with default fallbacks
-function getEnvVar(key: string, defaultValue: string = ''): string {
+function getEnvVar(key: string, defaultValue = ''): string {
   if (process.env[key] !== undefined) {
     return process.env[key] as string;
   }

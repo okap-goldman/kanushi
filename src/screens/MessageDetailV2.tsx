@@ -1,24 +1,24 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Text,
-} from 'react-native';
-import { Image } from 'expo-image';
+import { MessageInput } from '@/components/chat/MessageInput';
+import { MessageItem } from '@/components/chat/MessageItem';
+import { useAuth } from '@/context/AuthContext';
+import { dmService } from '@/lib/dmService';
+import type { DmMessage } from '@/lib/dmService';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { dmService } from '@/lib/dmService';
-import { MessageItem } from '@/components/chat/MessageItem';
-import { MessageInput } from '@/components/chat/MessageInput';
-import type { DmMessage } from '@/lib/dmService';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { useAuth } from '@/context/AuthContext';
+import { Image } from 'expo-image';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function MessageDetailV2() {
   const [messages, setMessages] = useState<DmMessage[]>([]);
@@ -29,7 +29,7 @@ export default function MessageDetailV2() {
   const flatListRef = useRef<FlatList>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const navigation = useNavigation();
   const route = useRoute<any>();
   const { user: authUser } = useAuth();
@@ -38,10 +38,10 @@ export default function MessageDetailV2() {
   // Load messages
   useEffect(() => {
     if (!threadId) return;
-    
+
     loadMessages();
     setupRealtimeSubscription();
-    
+
     return () => {
       if (channelRef.current) {
         dmService.unsubscribeFromThread(threadId);
@@ -54,7 +54,7 @@ export default function MessageDetailV2() {
       setLoading(true);
       const loadedMessages = await dmService.getMessages(threadId);
       setMessages(loadedMessages.reverse()); // Reverse to show oldest first
-      
+
       // Mark messages as read
       await dmService.markThreadAsRead(threadId);
     } catch (error) {
@@ -68,16 +68,14 @@ export default function MessageDetailV2() {
     try {
       channelRef.current = await dmService.subscribeToThread(threadId, {
         onNewMessage: (message) => {
-          setMessages(prev => [...prev, message]);
+          setMessages((prev) => [...prev, message]);
           if (message.senderId !== authUser?.id) {
             dmService.markThreadAsRead(threadId);
           }
         },
         onMessageRead: (messageId, readBy) => {
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === messageId ? { ...msg, isRead: true } : msg
-            )
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === messageId ? { ...msg, isRead: true } : msg))
           );
         },
         onTyping: (userId, typing) => {
@@ -87,7 +85,7 @@ export default function MessageDetailV2() {
         },
         onPresenceChange: (userId, presence) => {
           // Handle presence updates if needed
-        }
+        },
       });
     } catch (error) {
       console.error('Failed to setup realtime subscription:', error);
@@ -96,10 +94,10 @@ export default function MessageDetailV2() {
 
   const handleSendMessage = async (content: string, attachments?: any[]) => {
     if (!content.trim() && !attachments?.length) return;
-    
+
     try {
       setSending(true);
-      
+
       // Send text message
       if (content.trim()) {
         await dmService.sendMessage({
@@ -108,19 +106,19 @@ export default function MessageDetailV2() {
           encrypted: false, // Can be toggled based on user preference
         });
       }
-      
+
       // Handle attachments if any
       if (attachments?.length) {
         for (const attachment of attachments) {
           if (attachment.type === 'image' && attachment.uri) {
-            const file = await fetch(attachment.uri).then(r => r.blob());
+            const file = await fetch(attachment.uri).then((r) => r.blob());
             await dmService.sendMessage({
               threadId,
               content: attachment.caption || '',
               imageFile: new File([file], 'image.jpg', { type: 'image/jpeg' }),
             });
           } else if (attachment.type === 'audio' && attachment.uri) {
-            const file = await fetch(attachment.uri).then(r => r.blob());
+            const file = await fetch(attachment.uri).then((r) => r.blob());
             await dmService.sendMessage({
               threadId,
               content: '',
@@ -136,25 +134,28 @@ export default function MessageDetailV2() {
     }
   };
 
-  const handleTyping = useCallback((typing: boolean) => {
-    if (typing !== isTyping) {
-      setIsTyping(typing);
-      dmService.sendTypingIndicator(threadId, typing);
-    }
-    
-    // Clear previous timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    
-    // Set timeout to stop typing after 3 seconds
-    if (typing) {
-      typingTimeoutRef.current = setTimeout(() => {
-        setIsTyping(false);
-        dmService.sendTypingIndicator(threadId, false);
-      }, 3000);
-    }
-  }, [isTyping, threadId]);
+  const handleTyping = useCallback(
+    (typing: boolean) => {
+      if (typing !== isTyping) {
+        setIsTyping(typing);
+        dmService.sendTypingIndicator(threadId, typing);
+      }
+
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Set timeout to stop typing after 3 seconds
+      if (typing) {
+        typingTimeoutRef.current = setTimeout(() => {
+          setIsTyping(false);
+          dmService.sendTypingIndicator(threadId, false);
+        }, 3000);
+      }
+    },
+    [isTyping, threadId]
+  );
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -200,13 +201,10 @@ export default function MessageDetailV2() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color="#1A202C" />
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.userInfo}>
           <Image
             source={{ uri: user?.avatar || 'https://i.pravatar.cc/150' }}
@@ -215,12 +213,10 @@ export default function MessageDetailV2() {
           />
           <View>
             <Text style={styles.userName}>{user?.name || 'User'}</Text>
-            {otherUserTyping && (
-              <Text style={styles.typingIndicator}>typing...</Text>
-            )}
+            {otherUserTyping && <Text style={styles.typingIndicator}>typing...</Text>}
           </View>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.menuButton}>
           <Feather name="more-vertical" size={24} color="#1A202C" />
         </TouchableOpacity>
@@ -235,7 +231,7 @@ export default function MessageDetailV2() {
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.messagesList}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}

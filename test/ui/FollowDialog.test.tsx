@@ -1,5 +1,5 @@
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react-native';
 
 // Mock components
 jest.mock('@/components/ui/Dialog', () => 'Dialog');
@@ -16,7 +16,7 @@ describe('FollowReasonDialog Component', () => {
       visible: true,
       followType: 'family',
       onSubmit: jest.fn(),
-      onCancel: jest.fn()
+      onCancel: jest.fn(),
     };
 
     // When
@@ -24,8 +24,7 @@ describe('FollowReasonDialog Component', () => {
 
     // Then
     expect(screen.getByText('ファミリーフォローの理由')).toBeOnTheScreen();
-    expect(screen.getByPlaceholderText('フォローする理由を入力してください'))
-      .toBeOnTheScreen();
+    expect(screen.getByPlaceholderText('フォローする理由を入力してください')).toBeOnTheScreen();
     expect(screen.getByText('フォロー')).toBeDisabled(); // 初期状態では無効
   });
 
@@ -36,13 +35,13 @@ describe('FollowReasonDialog Component', () => {
       visible: true,
       followType: 'family',
       onSubmit: mockOnSubmit,
-      onCancel: jest.fn()
+      onCancel: jest.fn(),
     };
 
     // When
     render(<FollowReasonDialog {...props} />);
     const reasonInput = screen.getByPlaceholderText('フォローする理由を入力してください');
-    
+
     await act(() => {
       fireEvent.changeText(reasonInput, '同じ価値観を持つ方だと感じたため');
     });
@@ -58,17 +57,17 @@ describe('FollowReasonDialog Component', () => {
       visible: true,
       followType: 'family',
       onSubmit: mockOnSubmit,
-      onCancel: jest.fn()
+      onCancel: jest.fn(),
     };
 
     // When
     render(<FollowReasonDialog {...props} />);
     const reasonInput = screen.getByPlaceholderText('フォローする理由を入力してください');
-    
+
     await act(() => {
       fireEvent.changeText(reasonInput, 'テスト理由');
     });
-    
+
     await act(() => {
       fireEvent.press(screen.getByText('フォロー'));
     });
@@ -76,7 +75,7 @@ describe('FollowReasonDialog Component', () => {
     // Then
     expect(mockOnSubmit).toHaveBeenCalledWith({
       followType: 'family',
-      followReason: 'テスト理由'
+      followReason: 'テスト理由',
     });
   });
 });
@@ -89,12 +88,12 @@ describe('WatchFollowDialog Component', () => {
       visible: true,
       followType: 'watch',
       onSubmit: mockOnSubmit,
-      onCancel: jest.fn()
+      onCancel: jest.fn(),
     };
 
     // When
     render(<FollowReasonDialog {...props} />);
-    
+
     await act(() => {
       fireEvent.press(screen.getByText('フォロー'));
     });
@@ -102,7 +101,7 @@ describe('WatchFollowDialog Component', () => {
     // Then
     expect(mockOnSubmit).toHaveBeenCalledWith({
       followType: 'watch',
-      followReason: null
+      followReason: null,
     });
   });
 });

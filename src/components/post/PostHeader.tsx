@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { Avatar } from '../ui/Avatar';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Avatar } from '../ui/Avatar';
 
 interface PostHeaderProps {
   author: {
@@ -25,7 +25,7 @@ export function PostHeader({ author }: PostHeaderProps) {
         <Avatar source={author.image || 'https://via.placeholder.com/40'} size="md" />
         <Text style={styles.userName}>{author.name}</Text>
       </TouchableOpacity>
-      
+
       <TouchableOpacity style={styles.moreButton}>
         <Feather name="more-horizontal" size={20} color="#64748B" />
       </TouchableOpacity>

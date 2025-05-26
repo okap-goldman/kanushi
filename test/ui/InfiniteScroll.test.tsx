@@ -1,28 +1,21 @@
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { FlatList } from 'react-native';
 
 // Mock the infinite scroll hook
 const useInfiniteScroll = jest.fn();
 
 jest.mock('../../src/hooks/useInfiniteScroll', () => ({
-  useInfiniteScroll: useInfiniteScroll
+  useInfiniteScroll: useInfiniteScroll,
 }));
 
 // Simple test component that uses infinite scroll
 const TestInfiniteScrollComponent = () => {
-  const {
-    data,
-    loading,
-    loadingMore,
-    hasNextPage,
-    loadMore,
-    refresh,
-    refreshing
-  } = useInfiniteScroll({
-    fetchData: jest.fn(),
-    pageSize: 10
-  });
+  const { data, loading, loadingMore, hasNextPage, loadMore, refresh, refreshing } =
+    useInfiniteScroll({
+      fetchData: jest.fn(),
+      pageSize: 10,
+    });
 
   return (
     <FlatList
@@ -33,9 +26,7 @@ const TestInfiniteScrollComponent = () => {
       renderItem={({ item }) => <div testID={`item-${item.id}`}>{item.text}</div>}
       refreshing={refreshing}
       onRefresh={refresh}
-      ListFooterComponent={
-        loadingMore ? <div testID="loading-more">Loading...</div> : null
-      }
+      ListFooterComponent={loadingMore ? <div testID="loading-more">Loading...</div> : null}
     />
   );
 };
@@ -53,7 +44,7 @@ describe('useInfiniteScroll Hook', () => {
       hasNextPage: true,
       loadMore: jest.fn(),
       refresh: jest.fn(),
-      refreshing: false
+      refreshing: false,
     });
 
     const { getByTestId } = render(<TestInfiniteScrollComponent />);
@@ -64,7 +55,7 @@ describe('useInfiniteScroll Hook', () => {
     const mockLoadMore = jest.fn();
     const initialData = [
       { id: '1', text: 'Item 1' },
-      { id: '2', text: 'Item 2' }
+      { id: '2', text: 'Item 2' },
     ];
 
     useInfiniteScroll.mockReturnValue({
@@ -74,11 +65,11 @@ describe('useInfiniteScroll Hook', () => {
       hasNextPage: true,
       loadMore: mockLoadMore,
       refresh: jest.fn(),
-      refreshing: false
+      refreshing: false,
     });
 
     const { getByTestId } = render(<TestInfiniteScrollComponent />);
-    
+
     const flatList = getByTestId('infinite-scroll-list');
     fireEvent(flatList, 'onEndReached');
 
@@ -93,7 +84,7 @@ describe('useInfiniteScroll Hook', () => {
       hasNextPage: true,
       loadMore: jest.fn(),
       refresh: jest.fn(),
-      refreshing: false
+      refreshing: false,
     });
 
     const { getByTestId } = render(<TestInfiniteScrollComponent />);
@@ -102,7 +93,7 @@ describe('useInfiniteScroll Hook', () => {
 
   it('handles refresh functionality', () => {
     const mockRefresh = jest.fn();
-    
+
     useInfiniteScroll.mockReturnValue({
       data: [{ id: '1', text: 'Item 1' }],
       loading: false,
@@ -110,11 +101,11 @@ describe('useInfiniteScroll Hook', () => {
       hasNextPage: true,
       loadMore: jest.fn(),
       refresh: mockRefresh,
-      refreshing: false
+      refreshing: false,
     });
 
     const { getByTestId } = render(<TestInfiniteScrollComponent />);
-    
+
     const flatList = getByTestId('infinite-scroll-list');
     fireEvent(flatList, 'onRefresh');
 
@@ -123,7 +114,7 @@ describe('useInfiniteScroll Hook', () => {
 
   it('does not load more when has no next page', () => {
     const mockLoadMore = jest.fn();
-    
+
     useInfiniteScroll.mockReturnValue({
       data: [{ id: '1', text: 'Item 1' }],
       loading: false,
@@ -131,11 +122,11 @@ describe('useInfiniteScroll Hook', () => {
       hasNextPage: false,
       loadMore: mockLoadMore,
       refresh: jest.fn(),
-      refreshing: false
+      refreshing: false,
     });
 
     const { getByTestId } = render(<TestInfiniteScrollComponent />);
-    
+
     const flatList = getByTestId('infinite-scroll-list');
     fireEvent(flatList, 'onEndReached');
 
@@ -145,7 +136,7 @@ describe('useInfiniteScroll Hook', () => {
 
   it('prevents multiple load more calls when already loading', () => {
     const mockLoadMore = jest.fn();
-    
+
     useInfiniteScroll.mockReturnValue({
       data: [{ id: '1', text: 'Item 1' }],
       loading: false,
@@ -153,11 +144,11 @@ describe('useInfiniteScroll Hook', () => {
       hasNextPage: true,
       loadMore: mockLoadMore,
       refresh: jest.fn(),
-      refreshing: false
+      refreshing: false,
     });
 
     const { getByTestId } = render(<TestInfiniteScrollComponent />);
-    
+
     const flatList = getByTestId('infinite-scroll-list');
     fireEvent(flatList, 'onEndReached');
     fireEvent(flatList, 'onEndReached');

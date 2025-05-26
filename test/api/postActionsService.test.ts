@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import request from 'supertest';
 import { app } from '@/test/setup/api';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import request from 'supertest';
 
 describe('Post Actions API Tests', () => {
   let validToken: string;
@@ -27,9 +27,7 @@ describe('Post Actions API Tests', () => {
     it('同じ投稿に2回いいねすると409エラーを返す', async () => {
       // Arrange
       const postId = 'test-post-id';
-      await request(app)
-        .post(`/posts/${postId}/like`)
-        .set('Authorization', `Bearer ${validToken}`);
+      await request(app).post(`/posts/${postId}/like`).set('Authorization', `Bearer ${validToken}`);
 
       // Act
       const response = await request(app)
@@ -57,9 +55,7 @@ describe('Post Actions API Tests', () => {
     it('いいねを取り消せる', async () => {
       // Arrange
       const postId = 'test-post-id';
-      await request(app)
-        .post(`/posts/${postId}/like`)
-        .set('Authorization', `Bearer ${validToken}`);
+      await request(app).post(`/posts/${postId}/like`).set('Authorization', `Bearer ${validToken}`);
 
       // Act
       const response = await request(app)
@@ -168,7 +164,7 @@ describe('Post Actions API Tests', () => {
         id: expect.any(String),
         body: expect.any(String),
         user: expect.any(Object),
-        createdAt: expect.any(String)
+        createdAt: expect.any(String),
       });
     });
   });
@@ -224,7 +220,7 @@ describe('Post Actions API Tests', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .send({
           contentType: 'text',
-          textContent: '削除テスト投稿'
+          textContent: '削除テスト投稿',
         });
       const postId = createResponse.body.id;
 

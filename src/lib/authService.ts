@@ -1,6 +1,6 @@
-import { Profile, Account } from './db/schema/profile';
+import type { AuthError, User } from '@supabase/supabase-js';
+import type { Account, Profile } from './db/schema/profile';
 import { supabase } from './supabase';
-import { AuthError, User } from '@supabase/supabase-js';
 
 // 認証サービスのレスポンス型
 export type AuthResponse = {
@@ -21,31 +21,31 @@ export type AccountInfo = {
 export interface IAuthService {
   // Google OAuth認証
   signInWithGoogle(idToken: string): Promise<AuthResponse>;
-  
+
   // Apple Sign-In認証
   signInWithApple(identityToken: string | null): Promise<AuthResponse>;
-  
+
   // Email + Passkey認証
   signUpWithPasskey(email: string, credential: any): Promise<AuthResponse>;
   signInWithPasskey(email: string, credential: any): Promise<AuthResponse>;
-  
+
   // Alias for registerWithPasskey (used in tests)
   registerWithPasskey(email: string, credential: any): Promise<AuthResponse>;
-  
+
   // リフレッシュトークンでアクセストークンを更新
   refreshToken(refreshToken: string): Promise<AuthResponse>;
-  
+
   // 現在のユーザー情報を取得
   getCurrentUser(): Promise<AuthResponse>;
-  
+
   // ログアウト
   signOut(): Promise<{ error: AuthError | null }>;
-  
+
   // 複数アカウント管理
   getAccounts(): Promise<{ accounts: AccountInfo[]; error: Error | null }>;
   switchAccount(accountId: string): Promise<AuthResponse>;
   addAccount(authData: any): Promise<AuthResponse>;
-  
+
   // 開発環境用自動ログイン
   checkAutoLogin(): Promise<{ shouldAutoLogin: boolean }>;
   performAutoLogin(): Promise<AuthResponse>;
@@ -58,17 +58,18 @@ export class AuthService implements IAuthService {
   // 開発環境の自動ログイン判定
   async checkAutoLogin(): Promise<{ shouldAutoLogin: boolean }> {
     const isAuthTest = process.env.TEST_FILE?.includes('auth') || false;
-    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local';
+    const isDevelopment =
+      process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local';
     const isDisabled = process.env.DISABLE_AUTO_LOGIN === 'true';
     const shouldAutoLogin = isDevelopment && !isAuthTest && !isDisabled;
-    
+
     return { shouldAutoLogin };
   }
 
   // 開発環境用の自動ログイン実行
   async performAutoLogin(): Promise<AuthResponse> {
     const { shouldAutoLogin } = await this.checkAutoLogin();
-    
+
     if (!shouldAutoLogin) {
       return {
         user: null,
@@ -83,7 +84,7 @@ export class AuthService implements IAuthService {
       id: 'dev-test-user-id',
       email: 'testuser@kanushi.love',
       app_metadata: {},
-      user_metadata: { 
+      user_metadata: {
         name: '開発テストユーザー',
         avatar_url: null,
       },
@@ -534,7 +535,10 @@ export class AuthService implements IAuthService {
   // 現在のユーザー情報を取得
   async getCurrentUser(): Promise<AuthResponse> {
     try {
-      const { data: { user }, error } = await this.supabase.auth.getUser();
+      const {
+        data: { user },
+        error,
+      } = await this.supabase.auth.getUser();
 
       if (error || !user) {
         throw new Error('UNAUTHORIZED');
@@ -583,22 +587,196 @@ export class AuthService implements IAuthService {
 
   // 複数アカウント管理：アカウント一覧取得
   async getAccounts(): Promise<{ accounts: AccountInfo[]; error: Error | null }> {
-    // TODO: 実装
-    throw new Error('Not implemented');
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await this.supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error('UNAUTHORIZED');
+      }
+
+      // プロフィールID
+      const profileId = user.id;
+
+      // アカウント一覧取得
+      const { data: accounts, error } = await this.supabase
+        .from('accounts')
+        .select('*, profiles:profiles(*)')
+        .eq('profileId', profileId)
+        .order('switchOrder');
+
+      if (error) throw error;
+
+      // アカウント情報をフォーマット
+      const accountInfos: AccountInfo[] = accounts.map((account) => ({
+        id: account.id,
+        profile: {
+          displayName: account.profiles.displayName,
+        },
+        isActive: account.isActive,
+      }));
+
+      return { accounts: accountInfos, error: null };
+    } catch (error) {
+      return { accounts: [], error: error as Error };
+    }
   }
 
   // 複数アカウント管理：アカウント切替
   async switchAccount(accountId: string): Promise<AuthResponse> {
-    // TODO: 実装
-    throw new Error('Not implemented');
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await this.supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error('UNAUTHORIZED');
+      }
+
+      // プロフィールID
+      const profileId = user.id;
+
+      // アカウント切り替え
+      const { success, error } = await this.switchAccountInternal(profileId, accountId);
+
+      if (!success) {
+        throw error || new Error('SWITCH_ACCOUNT_FAILED');
+      }
+
+      // 切り替え後のアカウント情報を取得
+      const { data: account } = await this.supabase
+        .from('accounts')
+        .select('*')
+        .eq('id', accountId)
+        .single();
+
+      // プロフィール情報取得
+      const { data: profile } = await this.supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', profileId)
+        .single();
+
+      return {
+        user,
+        profile: profile as Profile,
+        account: account as Account,
+        error: null,
+      };
+    } catch (error) {
+      return {
+        user: null,
+        profile: null,
+        account: null,
+        error: error as AuthError,
+      };
+    }
+  }
+
+  // 内部用アカウント切り替え処理
+  private async switchAccountInternal(
+    profileId: string,
+    accountId: string
+  ): Promise<{ success: boolean; error: Error | null }> {
+    try {
+      // ターゲットアカウントの存在確認
+      const { data: targetAccount, error: targetError } = await this.supabase
+        .from('accounts')
+        .select('*')
+        .eq('id', accountId)
+        .single();
+
+      if (!targetAccount || targetError) {
+        return {
+          success: false,
+          error: new Error('ACCOUNT_NOT_FOUND'),
+        };
+      }
+
+      // 権限チェック（自分のアカウントか確認）
+      if (targetAccount.profileId !== profileId) {
+        return {
+          success: false,
+          error: new Error('UNAUTHORIZED_ACCOUNT_ACCESS'),
+        };
+      }
+
+      // 現在のアクティブアカウントを非アクティブに
+      await this.supabase
+        .from('accounts')
+        .update({ isActive: false, lastSwitchedAt: new Date() })
+        .eq('profileId', profileId);
+
+      // ターゲットアカウントをアクティブに
+      const { error: updateError } = await this.supabase
+        .from('accounts')
+        .update({ isActive: true, lastSwitchedAt: new Date() })
+        .eq('id', accountId);
+
+      if (updateError) throw updateError;
+
+      return { success: true, error: null };
+    } catch (error) {
+      return { success: false, error: error as Error };
+    }
   }
 
   // 複数アカウント管理：アカウント追加
   async addAccount(authData: any): Promise<AuthResponse> {
-    // TODO: 実装
-    throw new Error('Not implemented');
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await this.supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error('UNAUTHORIZED');
+      }
+
+      // プロフィールID
+      const profileId = user.id;
+
+      // 既存アカウント数チェック
+      const { data: existingAccounts, error: countError } = await this.supabase
+        .from('accounts')
+        .select('*')
+        .eq('profileId', profileId);
+
+      if (countError) throw countError;
+
+      if (existingAccounts && existingAccounts.length >= 5) {
+        throw new Error('ACCOUNT_LIMIT_REACHED');
+      }
+
+      // authDataの処理（Google/Apple/パスキー認証に応じた処理）
+      // この部分は認証タイプによって処理が変わる
+      // 実装例: Googleの場合
+      if (authData.idToken) {
+        return await this.signInWithGoogle(authData.idToken);
+      }
+      // Appleの場合
+      else if (authData.identityToken) {
+        return await this.signInWithApple(authData.identityToken);
+      }
+      // パスキーの場合
+      else if (authData.email && authData.credential) {
+        return await this.signUpWithPasskey(authData.email, authData.credential);
+      } else {
+        throw new Error('INVALID_AUTH_DATA');
+      }
+    } catch (error) {
+      return {
+        user: null,
+        profile: null,
+        account: null,
+        error: error as AuthError,
+      };
+    }
   }
-  
+
   // Alias for registerWithPasskey (used in tests)
   async registerWithPasskey(email: string, credential: any): Promise<AuthResponse> {
     return this.signUpWithPasskey(email, credential);

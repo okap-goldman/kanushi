@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  Dimensions,
-  ActivityIndicator,
-} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { supabase } from '../../lib/supabase';
 
 type Tab = 'posts' | 'highlights' | 'likes' | 'bookmarks';
@@ -47,9 +47,9 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-        
+
       if (error) throw error;
-      
+
       if (data) {
         setPosts(data);
       }
@@ -68,9 +68,9 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
         .select('*, posts!inner(*)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-        
+
       if (error) throw error;
-      
+
       if (data) {
         setHighlights(data);
       }
@@ -89,9 +89,9 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
         .select('*, posts!inner(*)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-        
+
       if (error) throw error;
-      
+
       if (data) {
         setLikes(data);
       }
@@ -172,7 +172,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
     if (activeTab === 'posts') {
       data = posts;
     } else if (activeTab === 'highlights') {
-      data = highlights.map(h => h.posts);
+      data = highlights.map((h) => h.posts);
     } else if (activeTab === 'likes') {
       data = likes.map(l => l.posts);
     } else if (activeTab === 'bookmarks') {
@@ -230,13 +230,9 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
           style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
           onPress={() => onChangeTab('posts')}
         >
-          <Feather
-            name="grid"
-            size={20}
-            color={activeTab === 'posts' ? '#0070F3' : '#64748B'}
-          />
+          <Feather name="grid" size={20} color={activeTab === 'posts' ? '#0070F3' : '#64748B'} />
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.tab, activeTab === 'highlights' && styles.activeTab]}
           onPress={() => onChangeTab('highlights')}
@@ -247,16 +243,12 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
             color={activeTab === 'highlights' ? '#0070F3' : '#64748B'}
           />
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.tab, activeTab === 'likes' && styles.activeTab]}
           onPress={() => onChangeTab('likes')}
         >
-          <Feather
-            name="heart"
-            size={20}
-            color={activeTab === 'likes' ? '#0070F3' : '#64748B'}
-          />
+          <Feather name="heart" size={20} color={activeTab === 'likes' ? '#0070F3' : '#64748B'} />
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -271,10 +263,8 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
           />
         </TouchableOpacity>
       </View>
-      
-      <View style={styles.tabContent}>
-        {renderTabContent()}
-      </View>
+
+      <View style={styles.tabContent}>{renderTabContent()}</View>
     </View>
   );
 }

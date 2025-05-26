@@ -1,18 +1,18 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { db } from '@/lib/db/client';
-import { dmThreads, directMessages } from '@/lib/db/schema/messaging';
+import { directMessages, dmThreads } from '@/lib/db/schema/messaging';
 import { profiles } from '@/lib/db/schema/profile';
-import { eq, and, or, desc } from 'drizzle-orm';
 import type { User } from '@supabase/supabase-js';
+import { and, desc, eq, or } from 'drizzle-orm';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock modules
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
       getUser: vi.fn(),
-      getSession: vi.fn()
-    }
-  }
+      getSession: vi.fn(),
+    },
+  },
 }));
 
 vi.mock('@/lib/db/client', () => ({
@@ -23,18 +23,18 @@ vi.mock('@/lib/db/client', () => ({
     delete: vi.fn(),
     query: {
       dmThreads: {
-        findFirst: vi.fn()
+        findFirst: vi.fn(),
       },
       directMessages: {
-        findMany: vi.fn()
-      }
+        findMany: vi.fn(),
+      },
     },
-    transaction: vi.fn()
-  }
+    transaction: vi.fn(),
+  },
 }));
 
 vi.mock('@/lib/b2Service', () => ({
-  uploadToB2: vi.fn()
+  uploadToB2: vi.fn(),
 }));
 
 vi.mock('@/lib/cryptoService', () => ({
@@ -45,8 +45,8 @@ vi.mock('@/lib/cryptoService', () => ({
     storePublicKey: vi.fn(),
     getUserPublicKey: vi.fn(),
     storePrivateKey: vi.fn(),
-    getPrivateKey: vi.fn()
-  }
+    getPrivateKey: vi.fn(),
+  },
 }));
 
 vi.mock('@/lib/realtimeService', () => ({
@@ -58,16 +58,16 @@ vi.mock('@/lib/realtimeService', () => ({
     getPresenceState: vi.fn(),
     getAllPresenceStates: vi.fn(),
     cleanup: vi.fn(),
-    subscribeToUserNotifications: vi.fn()
-  }
+    subscribeToUserNotifications: vi.fn(),
+  },
 }));
 
-// Import after mocks
-import { DmService } from '@/lib/dmService';
-import { supabase } from '@/lib/supabase';
 import { uploadToB2 } from '@/lib/b2Service';
 import { cryptoService } from '@/lib/cryptoService';
+// Import after mocks
+import { DmService } from '@/lib/dmService';
 import { realtimeService } from '@/lib/realtimeService';
+import { supabase } from '@/lib/supabase';
 
 describe('DM Service - Thread Creation', () => {
   let dmService: DmService;
@@ -76,17 +76,17 @@ describe('DM Service - Thread Creation', () => {
     app_metadata: {},
     user_metadata: {},
     aud: 'authenticated',
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     dmService = new DmService();
-    
+
     // Mock authentication
     vi.mocked(supabase.auth.getUser).mockResolvedValue({
       data: { user: mockUser },
-      error: null
+      error: null,
     });
   });
 
@@ -94,51 +94,53 @@ describe('DM Service - Thread Creation', () => {
     // Arrange
     const recipientUserId = 'user-456';
     const newThreadId = 'thread-123';
-    
+
     // Mock recipient profile check (first select)
     const mockRecipientCheck = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce([{ id: recipientUserId, displayName: '受信者' }])
+      execute: vi.fn().mockResolvedValueOnce([{ id: recipientUserId, displayName: '受信者' }]),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockRecipientCheck as any);
-    
+
     // Mock no existing thread
     vi.mocked(db.query.dmThreads.findFirst).mockResolvedValueOnce(undefined);
-    
+
     // Mock thread creation
     const mockInsert = {
       values: vi.fn().mockReturnThis(),
-      returning: vi.fn().mockResolvedValueOnce([{
-        id: newThreadId,
-        user1Id: mockUser.id,
-        user2Id: recipientUserId,
-        createdAt: new Date()
-      }])
+      returning: vi.fn().mockResolvedValueOnce([
+        {
+          id: newThreadId,
+          user1Id: mockUser.id,
+          user2Id: recipientUserId,
+          createdAt: new Date(),
+        },
+      ]),
     };
     vi.mocked(db.insert).mockReturnValueOnce(mockInsert as any);
-    
+
     // Mock user profiles for participants (second select)
     const mockParticipantsSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValueOnce([
         { id: mockUser.id, displayName: 'テストユーザー', profileImage: null },
-        { id: recipientUserId, displayName: '受信者', profileImage: null }
-      ])
+        { id: recipientUserId, displayName: '受信者', profileImage: null },
+      ]),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockParticipantsSelect as any);
-    
+
     // Act
     const result = await dmService.createThread(recipientUserId);
-    
+
     // Assert
     expect(result).toMatchObject({
       id: newThreadId,
       participants: expect.arrayContaining([
         expect.objectContaining({ id: mockUser.id }),
-        expect.objectContaining({ id: recipientUserId })
-      ])
+        expect.objectContaining({ id: recipientUserId }),
+      ]),
     });
   });
 
@@ -149,34 +151,34 @@ describe('DM Service - Thread Creation', () => {
       id: 'thread-123',
       user1Id: mockUser.id,
       user2Id: recipientUserId,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
-    
+
     // Mock recipient profile check (first select)
     const mockRecipientCheck = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce([{ id: recipientUserId, displayName: '受信者' }])
+      execute: vi.fn().mockResolvedValueOnce([{ id: recipientUserId, displayName: '受信者' }]),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockRecipientCheck as any);
-    
+
     // Mock existing thread
     vi.mocked(db.query.dmThreads.findFirst).mockResolvedValueOnce(existingThread);
-    
+
     // Mock user profiles for participants
     const mockParticipantsSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValueOnce([
         { id: mockUser.id, displayName: 'テストユーザー', profileImage: null },
-        { id: recipientUserId, displayName: '受信者', profileImage: null }
-      ])
+        { id: recipientUserId, displayName: '受信者', profileImage: null },
+      ]),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockParticipantsSelect as any);
-    
+
     // Act
     const result = await dmService.createThread(recipientUserId);
-    
+
     // Assert
     expect(result.id).toBe('thread-123');
     expect(db.insert).not.toHaveBeenCalled();
@@ -184,25 +186,27 @@ describe('DM Service - Thread Creation', () => {
 
   it('自分自身とのスレッド作成でエラー', async () => {
     // Act & Assert
-    await expect(dmService.createThread(mockUser.id))
-      .rejects.toThrow('自分自身にDMを送ることはできません');
+    await expect(dmService.createThread(mockUser.id)).rejects.toThrow(
+      '自分自身にDMを送ることはできません'
+    );
   });
 
   it('存在しないユーザーへのスレッド作成でエラー', async () => {
     // Arrange
     const nonExistentUserId = 'user-999';
-    
+
     // Mock user profile not found
     const mockSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce([])
+      execute: vi.fn().mockResolvedValueOnce([]),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockSelect as any);
-    
+
     // Act & Assert
-    await expect(dmService.createThread(nonExistentUserId))
-      .rejects.toThrow('ユーザーが見つかりません');
+    await expect(dmService.createThread(nonExistentUserId)).rejects.toThrow(
+      'ユーザーが見つかりません'
+    );
   });
 });
 
@@ -213,24 +217,24 @@ describe('DM Service - Message Sending', () => {
     app_metadata: {},
     user_metadata: {},
     aud: 'authenticated',
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
   };
-  
+
   const thread = {
     id: 'thread-123',
     user1Id: 'user-123',
     user2Id: 'user-456',
-    createdAt: new Date()
+    createdAt: new Date(),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     dmService = new DmService();
-    
+
     // Mock authentication
     vi.mocked(supabase.auth.getUser).mockResolvedValue({
       data: { user: mockUser },
-      error: null
+      error: null,
     });
   });
 
@@ -238,17 +242,17 @@ describe('DM Service - Message Sending', () => {
     // Arrange
     const messageData = {
       threadId: thread.id,
-      content: 'こんにちは！'
+      content: 'こんにちは！',
     };
-    
+
     // Mock thread validation
     const mockThreadSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce([thread])
+      execute: vi.fn().mockResolvedValueOnce([thread]),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockThreadSelect as any);
-    
+
     // Mock message insertion
     const newMessage = {
       id: 'message-123',
@@ -258,25 +262,25 @@ describe('DM Service - Message Sending', () => {
       textContent: messageData.content,
       mediaUrl: null,
       isRead: false,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
-    
+
     const mockInsert = {
       values: vi.fn().mockReturnThis(),
-      returning: vi.fn().mockResolvedValueOnce([newMessage])
+      returning: vi.fn().mockResolvedValueOnce([newMessage]),
     };
     vi.mocked(db.insert).mockReturnValueOnce(mockInsert as any);
-    
+
     // Act
     const result = await dmService.sendMessage(messageData);
-    
+
     // Assert
     expect(result).toMatchObject({
       id: 'message-123',
       threadId: thread.id,
       senderId: mockUser.id,
       content: messageData.content,
-      messageType: 'text'
+      messageType: 'text',
     });
   });
 
@@ -285,23 +289,23 @@ describe('DM Service - Message Sending', () => {
     const messageData = {
       threadId: thread.id,
       content: '写真を送ります',
-      imageFile: new File(['test'], 'image.jpg', { type: 'image/jpeg' })
+      imageFile: new File(['test'], 'image.jpg', { type: 'image/jpeg' }),
     };
-    
+
     // Mock thread validation
     const mockThreadSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce([thread])
+      execute: vi.fn().mockResolvedValueOnce([thread]),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockThreadSelect as any);
-    
+
     // Mock file upload (b2Service)
     vi.mocked(uploadToB2).mockResolvedValueOnce({
       success: true,
-      url: 'https://cdn.example.com/image.jpg'
+      url: 'https://cdn.example.com/image.jpg',
     });
-    
+
     // Mock message insertion
     const newMessage = {
       id: 'message-123',
@@ -311,23 +315,23 @@ describe('DM Service - Message Sending', () => {
       textContent: messageData.content,
       mediaUrl: 'https://cdn.example.com/image.jpg',
       isRead: false,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
-    
+
     const mockInsert = {
       values: vi.fn().mockReturnThis(),
-      returning: vi.fn().mockResolvedValueOnce([newMessage])
+      returning: vi.fn().mockResolvedValueOnce([newMessage]),
     };
     vi.mocked(db.insert).mockReturnValueOnce(mockInsert as any);
-    
+
     // Act
     const result = await dmService.sendMessage(messageData);
-    
+
     // Assert
     expect(result).toMatchObject({
       id: 'message-123',
       messageType: 'image',
-      mediaUrl: 'https://cdn.example.com/image.jpg'
+      mediaUrl: 'https://cdn.example.com/image.jpg',
     });
   });
 
@@ -336,36 +340,38 @@ describe('DM Service - Message Sending', () => {
     const messageData = {
       threadId: thread.id,
       content: 'こんにちは！',
-      encrypted: true
+      encrypted: true,
     };
-    
+
     // Mock thread validation
     const mockThreadSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce([thread])
+      execute: vi.fn().mockResolvedValueOnce([thread]),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockThreadSelect as any);
-    
+
     // Mock recipient profile lookup for encryption
     const mockProfileSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce([{
-        id: 'user-456',
-        displayName: '受信者',
-        publicKey: 'mock-public-key'
-      }])
+      execute: vi.fn().mockResolvedValueOnce([
+        {
+          id: 'user-456',
+          displayName: '受信者',
+          publicKey: 'mock-public-key',
+        },
+      ]),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockProfileSelect as any);
-    
+
     // Mock encryption
     vi.mocked(cryptoService.encryptMessage).mockResolvedValueOnce({
       encryptedContent: 'encrypted-content',
       encryptedKey: 'encrypted-key',
-      iv: 'encryption-iv'
+      iv: 'encryption-iv',
     });
-    
+
     // Mock message insertion
     const newMessage = {
       id: 'message-123',
@@ -378,22 +384,22 @@ describe('DM Service - Message Sending', () => {
       isEncrypted: true,
       encryptedKey: 'encrypted-key',
       encryptionIv: 'encryption-iv',
-      createdAt: new Date()
+      createdAt: new Date(),
     };
-    
+
     const mockInsert = {
       values: vi.fn().mockReturnThis(),
-      returning: vi.fn().mockResolvedValueOnce([newMessage])
+      returning: vi.fn().mockResolvedValueOnce([newMessage]),
     };
     vi.mocked(db.insert).mockReturnValueOnce(mockInsert as any);
-    
+
     // Act
     const result = await dmService.sendMessage(messageData);
-    
+
     // Assert
     expect(result).toMatchObject({
       id: 'message-123',
-      encrypted: true
+      encrypted: true,
     });
   });
 
@@ -401,14 +407,12 @@ describe('DM Service - Message Sending', () => {
     // Arrange
     const messageData = {
       threadId: thread.id,
-      content: ''
+      content: '',
     };
-    
-    // Act & Assert
-    await expect(dmService.sendMessage(messageData))
-      .rejects.toThrow('メッセージ内容は必須です');
-  });
 
+    // Act & Assert
+    await expect(dmService.sendMessage(messageData)).rejects.toThrow('メッセージ内容は必須です');
+  });
 });
 
 describe('DM Service - Message History', () => {
@@ -418,17 +422,17 @@ describe('DM Service - Message History', () => {
     app_metadata: {},
     user_metadata: {},
     aud: 'authenticated',
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     dmService = new DmService();
-    
+
     // Mock authentication
     vi.mocked(supabase.auth.getUser).mockResolvedValue({
       data: { user: mockUser },
-      error: null
+      error: null,
     });
   });
 
@@ -444,7 +448,7 @@ describe('DM Service - Message History', () => {
         textContent: 'メッセージ 1',
         mediaUrl: null,
         isRead: true,
-        createdAt: new Date(Date.now() - 2000)
+        createdAt: new Date(Date.now() - 2000),
       },
       {
         id: 'message-2',
@@ -454,23 +458,23 @@ describe('DM Service - Message History', () => {
         textContent: 'メッセージ 2',
         mediaUrl: null,
         isRead: false,
-        createdAt: new Date(Date.now() - 1000)
-      }
+        createdAt: new Date(Date.now() - 1000),
+      },
     ];
-    
+
     const mockSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
       offset: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce(messages)
+      execute: vi.fn().mockResolvedValueOnce(messages),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockSelect as any);
-    
+
     // Act
     const result = await dmService.getMessages(threadId);
-    
+
     // Assert
     expect(result).toHaveLength(2);
     expect(result[0].content).toBe('メッセージ 1');
@@ -482,7 +486,7 @@ describe('DM Service - Message History', () => {
     const threadId = 'thread-123';
     const limit = 20;
     const page = 2;
-    
+
     const messages = Array.from({ length: limit }, (_, i) => ({
       id: `message-${i + 20}`,
       threadId: threadId,
@@ -491,22 +495,22 @@ describe('DM Service - Message History', () => {
       textContent: `メッセージ ${i + 20}`,
       mediaUrl: null,
       isRead: false,
-      createdAt: new Date(Date.now() - (i + 20) * 1000)
+      createdAt: new Date(Date.now() - (i + 20) * 1000),
     }));
-    
+
     const mockSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
       offset: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce(messages)
+      execute: vi.fn().mockResolvedValueOnce(messages),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockSelect as any);
-    
+
     // Act
     const result = await dmService.getMessages(threadId, { limit, page });
-    
+
     // Assert
     expect(result).toHaveLength(limit);
     expect(mockSelect.offset).toHaveBeenCalledWith(20);
@@ -516,7 +520,7 @@ describe('DM Service - Message History', () => {
     // Arrange
     const threadId = 'thread-123';
     const sinceDate = new Date('2024-01-01');
-    
+
     const messages = [
       {
         id: 'message-1',
@@ -526,23 +530,23 @@ describe('DM Service - Message History', () => {
         textContent: '新しいメッセージ',
         mediaUrl: null,
         isRead: true,
-        createdAt: new Date('2024-01-02')
-      }
+        createdAt: new Date('2024-01-02'),
+      },
     ];
-    
+
     const mockSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
       offset: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce(messages)
+      execute: vi.fn().mockResolvedValueOnce(messages),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockSelect as any);
-    
+
     // Act
     const result = await dmService.getMessages(threadId, { since: sinceDate });
-    
+
     // Assert
     expect(result).toHaveLength(1);
     expect(result[0].content).toBe('新しいメッセージ');
@@ -551,7 +555,7 @@ describe('DM Service - Message History', () => {
   it('存在しないスレッドでエラー', async () => {
     // Arrange
     const nonExistentThreadId = 'thread-999';
-    
+
     // Mock empty messages first
     const mockMessageSelect = {
       from: vi.fn().mockReturnThis(),
@@ -559,21 +563,22 @@ describe('DM Service - Message History', () => {
       orderBy: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
       offset: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce([])
+      execute: vi.fn().mockResolvedValueOnce([]),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockMessageSelect as any);
-    
+
     // Mock thread not found
     const mockThreadSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce([])
+      execute: vi.fn().mockResolvedValueOnce([]),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockThreadSelect as any);
-    
+
     // Act & Assert
-    await expect(dmService.getMessages(nonExistentThreadId))
-      .rejects.toThrow('スレッドが見つかりません');
+    await expect(dmService.getMessages(nonExistentThreadId)).rejects.toThrow(
+      'スレッドが見つかりません'
+    );
   });
 });
 
@@ -584,43 +589,48 @@ describe('DM Service - Read Status Management', () => {
     app_metadata: {},
     user_metadata: {},
     aud: 'authenticated',
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     dmService = new DmService();
-    
+
     // Mock authentication
     vi.mocked(supabase.auth.getUser).mockResolvedValue({
       data: { user: mockUser },
-      error: null
+      error: null,
     });
   });
 
   it('メッセージの既読状態更新', async () => {
     // Arrange
     const threadId = 'thread-123';
-    const thread = { id: threadId, user1Id: 'user-123', user2Id: 'user-456', createdAt: new Date() };
-    
+    const thread = {
+      id: threadId,
+      user1Id: 'user-123',
+      user2Id: 'user-456',
+      createdAt: new Date(),
+    };
+
     // Mock thread exists
     const mockThreadSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce([thread])
+      execute: vi.fn().mockResolvedValueOnce([thread]),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockThreadSelect as any);
-    
+
     const mockUpdate = {
       set: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce({ rowCount: 3 })
+      execute: vi.fn().mockResolvedValueOnce({ rowCount: 3 }),
     };
     vi.mocked(db.update).mockReturnValueOnce(mockUpdate as any);
-    
+
     // Act
     const result = await dmService.markThreadAsRead(threadId);
-    
+
     // Assert
     expect(result.updatedCount).toBe(3);
     expect(db.update).toHaveBeenCalledWith(directMessages);
@@ -629,31 +639,31 @@ describe('DM Service - Read Status Management', () => {
   it('既読ステータスの一括更新', async () => {
     // Arrange
     const threadId = 'thread-123';
-    
+
     // Mock unread messages
     const unreadMessages = [
       { id: 'msg-1', isRead: false },
       { id: 'msg-2', isRead: false },
-      { id: 'msg-3', isRead: false }
+      { id: 'msg-3', isRead: false },
     ];
-    
+
     const mockSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce(unreadMessages)
+      execute: vi.fn().mockResolvedValueOnce(unreadMessages),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockSelect as any);
-    
+
     const mockUpdate = {
       set: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce({ rowCount: 3 })
+      execute: vi.fn().mockResolvedValueOnce({ rowCount: 3 }),
     };
     vi.mocked(db.update).mockReturnValueOnce(mockUpdate as any);
-    
+
     // Act
     const result = await dmService.markAllAsRead(threadId);
-    
+
     // Assert
     expect(result.updatedCount).toBe(3);
   });
@@ -662,7 +672,7 @@ describe('DM Service - Read Status Management', () => {
     // Arrange
     const threadId = 'thread-123';
     const lastReadMessageId = 'message-456';
-    
+
     // Mock transaction
     const mockTransaction = vi.fn().mockImplementation(async (fn) => {
       const tx = {
@@ -671,15 +681,15 @@ describe('DM Service - Read Status Management', () => {
         where: vi.fn().mockReturnThis(),
         execute: vi.fn().mockResolvedValueOnce([{ id: lastReadMessageId, createdAt: new Date() }]),
         update: vi.fn().mockReturnThis(),
-        set: vi.fn().mockReturnThis()
+        set: vi.fn().mockReturnThis(),
       };
       return fn(tx);
     });
     vi.mocked(db.transaction).mockImplementation(mockTransaction);
-    
+
     // Act
     const result = await dmService.updateLastReadPosition(threadId, lastReadMessageId);
-    
+
     // Assert
     expect(result.success).toBe(true);
   });
@@ -687,17 +697,18 @@ describe('DM Service - Read Status Management', () => {
   it('存在しないスレッドでエラー', async () => {
     // Arrange
     const nonExistentThreadId = 'thread-999';
-    
+
     // Mock thread not found
     const mockSelect = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      execute: vi.fn().mockResolvedValueOnce([])
+      execute: vi.fn().mockResolvedValueOnce([]),
     };
     vi.mocked(db.select).mockReturnValueOnce(mockSelect as any);
-    
+
     // Act & Assert
-    await expect(dmService.markThreadAsRead(nonExistentThreadId))
-      .rejects.toThrow('スレッドが見つかりません');
+    await expect(dmService.markThreadAsRead(nonExistentThreadId)).rejects.toThrow(
+      'スレッドが見つかりません'
+    );
   });
 });

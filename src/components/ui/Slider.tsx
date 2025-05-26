@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, PanResponder, ViewProps, StyleSheet, Dimensions, ViewStyle } from 'react-native';
+import {
+  Dimensions,
+  PanResponder,
+  StyleSheet,
+  View,
+  type ViewProps,
+  type ViewStyle,
+} from 'react-native';
 
 interface SliderProps extends ViewProps {
   value?: number;
@@ -12,17 +19,17 @@ interface SliderProps extends ViewProps {
   thumbStyle?: ViewStyle;
 }
 
-export function Slider({ 
-  value = 0, 
-  minimumValue = 0, 
-  maximumValue = 100, 
-  onValueChange, 
+export function Slider({
+  value = 0,
+  minimumValue = 0,
+  maximumValue = 100,
+  onValueChange,
   disabled,
   minimumTrackTintColor = '#0070F3',
   maximumTrackTintColor = '#E2E8F0',
   thumbStyle,
   style,
-  ...props 
+  ...props
 }: SliderProps) {
   const [sliderWidth, setSliderWidth] = React.useState(0);
   const percentage = ((value - minimumValue) / (maximumValue - minimumValue)) * 100;
@@ -42,24 +49,30 @@ export function Slider({
 
   const updateValue = (locationX: number) => {
     if (sliderWidth === 0) return;
-    
+
     const newPercentage = Math.max(0, Math.min(100, (locationX / sliderWidth) * 100));
     const newValue = minimumValue + (newPercentage / 100) * (maximumValue - minimumValue);
-    
+
     onValueChange?.(Math.round(newValue));
   };
 
   return (
-    <View 
-      style={[styles.container, disabled && styles.disabled, style]} 
+    <View
+      style={[styles.container, disabled && styles.disabled, style]}
       onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
       {...props}
     >
       <View style={[styles.track, { backgroundColor: maximumTrackTintColor }]}>
-        <View style={[styles.fill, { width: `${percentage}%`, backgroundColor: minimumTrackTintColor }]} />
+        <View
+          style={[styles.fill, { width: `${percentage}%`, backgroundColor: minimumTrackTintColor }]}
+        />
       </View>
       <View
-        style={[styles.thumb, { left: `${percentage}%`, borderColor: minimumTrackTintColor }, thumbStyle]}
+        style={[
+          styles.thumb,
+          { left: `${percentage}%`, borderColor: minimumTrackTintColor },
+          thumbStyle,
+        ]}
         {...panResponder.panHandlers}
       />
     </View>

@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
+import React from 'react';
+import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -12,9 +12,7 @@ interface AvatarProps {
 }
 
 export function Avatar({ source, size = 'md', style, fallbackText }: AvatarProps) {
-  const sizeStyle = typeof size === 'number' 
-    ? { width: size, height: size }
-    : styles[size];
+  const sizeStyle = typeof size === 'number' ? { width: size, height: size } : styles[size];
 
   return (
     <View style={[styles.container, sizeStyle, style]}>
@@ -24,7 +22,9 @@ export function Avatar({ source, size = 'md', style, fallbackText }: AvatarProps
           style={styles.image}
           contentFit="cover"
           transition={300}
-          placeholder={{ uri: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAEVgJJMUZcpAAAAABJRU5ErkJggg==' }}
+          placeholder={{
+            uri: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAEVgJJMUZcpAAAAABJRU5ErkJggg==',
+          }}
         />
       ) : (
         <View style={[styles.fallback, { backgroundColor: '#6366F1' }]}>

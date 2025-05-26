@@ -1,16 +1,8 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Modal,
-  StyleSheet,
-  Switch,
-} from 'react-native';
 import { liveRoomService } from '@/lib/liveRoomService';
-import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import React, { useState } from 'react';
+import { Modal, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Button } from '../ui/Button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
 
 interface CreateLiveRoomDialogProps {
   visible: boolean;
@@ -18,11 +10,7 @@ interface CreateLiveRoomDialogProps {
   onSuccess: (room: any) => void;
 }
 
-export function CreateLiveRoomDialog({
-  visible,
-  onClose,
-  onSuccess,
-}: CreateLiveRoomDialogProps) {
+export function CreateLiveRoomDialog({ visible, onClose, onSuccess }: CreateLiveRoomDialogProps) {
   const [title, setTitle] = useState('');
   const [maxSpeakers, setMaxSpeakers] = useState(10);
   const [isRecording, setIsRecording] = useState(false);
@@ -107,11 +95,7 @@ export function CreateLiveRoomDialog({
 
           <View style={styles.settingRow}>
             <Text style={styles.settingLabel}>録音する</Text>
-            <Switch
-              testID="recording-switch"
-              value={isRecording}
-              onValueChange={setIsRecording}
-            />
+            <Switch testID="recording-switch" value={isRecording} onValueChange={setIsRecording} />
           </View>
 
           {error && <Text style={styles.error}>{error}</Text>}

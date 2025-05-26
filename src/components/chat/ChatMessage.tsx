@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
-import { Avatar } from "../ui/Avatar";
+import React, { useState, useEffect } from 'react';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { Avatar } from '../ui/Avatar';
 
 interface ChatMessageProps {
   isAi?: boolean;
@@ -9,7 +9,7 @@ interface ChatMessageProps {
 
 export function ChatMessage({ isAi = false, message }: ChatMessageProps) {
   const [formattedMessage, setFormattedMessage] = useState(message);
-  
+
   // Process message to handle markdown formatting (simplified for React Native)
   useEffect(() => {
     // For React Native, we'll keep it simple - just preserve the original message
@@ -18,17 +18,14 @@ export function ChatMessage({ isAi = false, message }: ChatMessageProps) {
   }, [message]);
 
   return (
-    <View style={[
-      styles.container,
-      isAi ? styles.aiBackground : styles.userBackground
-    ]}>
+    <View style={[styles.container, isAi ? styles.aiBackground : styles.userBackground]}>
       <Avatar
         size={32}
-        source={isAi ? "/assets/icon.png" : undefined}
-        fallbackText={isAi ? "AI" : "Me"}
+        source={isAi ? '/assets/icon.png' : undefined}
+        fallbackText={isAi ? 'AI' : 'Me'}
       />
       <View style={styles.contentContainer}>
-        <Text style={styles.label}>{isAi ? "アシスタント" : "あなた"}</Text>
+        <Text style={styles.label}>{isAi ? 'アシスタント' : 'あなた'}</Text>
         <Text style={styles.message}>{formattedMessage}</Text>
       </View>
     </View>
@@ -37,15 +34,15 @@ export function ChatMessage({ isAi = false, message }: ChatMessageProps) {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 16,
     padding: 24,
   },
   aiBackground: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#f5f5f5',
   },
   userBackground: {
-    backgroundColor: "#ffffff",
+    backgroundColor: '#ffffff',
   },
   contentContainer: {
     flex: 1,
@@ -53,11 +50,11 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   message: {
     fontSize: 14,
-    color: "#666666",
+    color: '#666666',
     lineHeight: 20,
   },
 });

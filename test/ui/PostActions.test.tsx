@@ -1,5 +1,5 @@
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { PostActions } from '../../src/components/post/PostActions';
 import { AuthContext } from '../../src/context/AuthContext';
 import { supabase } from '../../src/lib/supabase';
@@ -11,45 +11,47 @@ jest.mock('../../src/lib/supabase', () => ({
       select: jest.fn(() => ({
         eq: jest.fn(() => ({
           eq: jest.fn(() => ({
-            maybeSingle: jest.fn()
-          }))
+            maybeSingle: jest.fn(),
+          })),
         })),
-        count: jest.fn()
+        count: jest.fn(),
       })),
       insert: jest.fn(() => ({
-        select: jest.fn()
+        select: jest.fn(),
       })),
       delete: jest.fn(() => ({
         eq: jest.fn(() => ({
-          eq: jest.fn()
-        }))
+          eq: jest.fn(),
+        })),
       })),
       update: jest.fn(() => ({
         eq: jest.fn(() => ({
-          eq: jest.fn()
-        }))
-      }))
-    }))
-  }
+          eq: jest.fn(),
+        })),
+      })),
+    })),
+  },
 }));
 
 // Mock Expo Vector Icons
 jest.mock('@expo/vector-icons', () => ({
-  Feather: 'Feather'
+  Feather: 'Feather',
 }));
 
 const mockUser = {
   id: 'user-123',
-  email: 'test@example.com'
+  email: 'test@example.com',
 };
 
 const MockAuthProvider = ({ children }: { children: React.ReactNode }) => (
-  <AuthContext.Provider value={{ 
-    user: mockUser, 
-    signIn: jest.fn(), 
-    signOut: jest.fn(), 
-    isLoading: false 
-  }}>
+  <AuthContext.Provider
+    value={{
+      user: mockUser,
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      isLoading: false,
+    }}
+  >
     {children}
   </AuthContext.Provider>
 );
@@ -60,7 +62,7 @@ describe('PostActions Component', () => {
   const defaultProps = {
     postId: 'post-123',
     onComment: mockOnComment,
-    onHighlight: mockOnHighlight
+    onHighlight: mockOnHighlight,
   };
 
   beforeEach(() => {
@@ -73,11 +75,11 @@ describe('PostActions Component', () => {
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
-            maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+            maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
           }),
-          count: jest.fn().mockResolvedValue({ count: 0, error: null })
-        })
-      })
+          count: jest.fn().mockResolvedValue({ count: 0, error: null }),
+        }),
+      }),
     }));
 
     const { getByTestId } = render(
@@ -99,9 +101,9 @@ describe('PostActions Component', () => {
       const mockSelect = jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
-            maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
-          })
-        })
+            maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
       });
       const mockCount = jest.fn().mockResolvedValue({ count: 0, error: null });
 
@@ -112,17 +114,17 @@ describe('PostActions Component', () => {
             insert: mockInsert,
             delete: jest.fn().mockReturnValue({
               eq: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ error: null })
-              })
-            })
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            }),
           };
         }
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
-              count: mockCount
-            })
-          })
+              count: mockCount,
+            }),
+          }),
         };
       });
 
@@ -144,7 +146,7 @@ describe('PostActions Component', () => {
         expect(mockInsert).toHaveBeenCalledWith({
           post_id: 'post-123',
           user_id: 'user-123',
-          created_at: expect.any(String)
+          created_at: expect.any(String),
         });
       });
     });
@@ -157,11 +159,11 @@ describe('PostActions Component', () => {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
-              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
             }),
-            count: jest.fn().mockResolvedValue({ count: 0, error: null })
-          })
-        })
+            count: jest.fn().mockResolvedValue({ count: 0, error: null }),
+          }),
+        }),
       }));
 
       const { getByTestId } = render(
@@ -183,9 +185,9 @@ describe('PostActions Component', () => {
       const mockSelect = jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
-            maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
-          })
-        })
+            maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
       });
 
       (supabase.from as jest.Mock).mockImplementation((table) => {
@@ -195,20 +197,20 @@ describe('PostActions Component', () => {
             insert: mockInsert,
             delete: jest.fn().mockReturnValue({
               eq: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ error: null })
-              })
-            })
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            }),
           };
         }
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
               eq: jest.fn().mockReturnValue({
-                maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+                maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
               }),
-              count: jest.fn().mockResolvedValue({ count: 0, error: null })
-            })
-          })
+              count: jest.fn().mockResolvedValue({ count: 0, error: null }),
+            }),
+          }),
         };
       });
 
@@ -241,7 +243,7 @@ describe('PostActions Component', () => {
           post_id: 'post-123',
           user_id: 'user-123',
           reason: '素晴らしい内容です',
-          created_at: expect.any(String)
+          created_at: expect.any(String),
         });
       });
     });
@@ -252,11 +254,11 @@ describe('PostActions Component', () => {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
-              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
             }),
-            count: jest.fn().mockResolvedValue({ count: 0, error: null })
-          })
-        })
+            count: jest.fn().mockResolvedValue({ count: 0, error: null }),
+          }),
+        }),
       }));
 
       const { getByTestId, getByText } = render(
@@ -287,9 +289,9 @@ describe('PostActions Component', () => {
       const mockSelect = jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
-            maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
-          })
-        })
+            maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
       });
 
       (supabase.from as jest.Mock).mockImplementation((table) => {
@@ -299,20 +301,20 @@ describe('PostActions Component', () => {
             insert: mockInsert,
             delete: jest.fn().mockReturnValue({
               eq: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ error: null })
-              })
-            })
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            }),
           };
         }
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
               eq: jest.fn().mockReturnValue({
-                maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+                maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
               }),
-              count: jest.fn().mockResolvedValue({ count: 0, error: null })
-            })
-          })
+              count: jest.fn().mockResolvedValue({ count: 0, error: null }),
+            }),
+          }),
         };
       });
 
@@ -334,7 +336,7 @@ describe('PostActions Component', () => {
         expect(mockInsert).toHaveBeenCalledWith({
           post_id: 'post-123',
           user_id: 'user-123',
-          created_at: expect.any(String)
+          created_at: expect.any(String),
         });
       });
     });
@@ -347,17 +349,17 @@ describe('PostActions Component', () => {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
-              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
             }),
-            count: jest.fn().mockResolvedValue({ count: 0, error: null })
-          })
-        })
+            count: jest.fn().mockResolvedValue({ count: 0, error: null }),
+          }),
+        }),
       }));
 
       const mockOnCommentLocal = jest.fn();
       const propsWithComment = {
         ...defaultProps,
-        onComment: mockOnCommentLocal
+        onComment: mockOnCommentLocal,
       };
 
       const { getByTestId } = render(
@@ -380,11 +382,11 @@ describe('PostActions Component', () => {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
-              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
             }),
-            count: jest.fn().mockResolvedValue({ count: 0, error: null })
-          })
-        })
+            count: jest.fn().mockResolvedValue({ count: 0, error: null }),
+          }),
+        }),
       }));
 
       const { getByTestId } = render(
@@ -409,14 +411,15 @@ describe('PostActions Component', () => {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
-              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
             }),
-            count: jest.fn().mockResolvedValue({ 
-              count: table === 'likes' ? 5 : table === 'comments' ? 3 : table === 'highlights' ? 2 : 1, 
-              error: null 
-            })
-          })
-        })
+            count: jest.fn().mockResolvedValue({
+              count:
+                table === 'likes' ? 5 : table === 'comments' ? 3 : table === 'highlights' ? 2 : 1,
+              error: null,
+            }),
+          }),
+        }),
       }));
 
       const { getByText } = render(
@@ -437,16 +440,18 @@ describe('PostActions Component', () => {
     it('does not perform actions when user is not authenticated', () => {
       const mockInsert = jest.fn();
       (supabase.from as jest.Mock).mockReturnValue({
-        insert: mockInsert
+        insert: mockInsert,
       });
 
       const NotAuthenticatedProvider = ({ children }: { children: React.ReactNode }) => (
-        <AuthContext.Provider value={{ 
-          user: null, 
-          signIn: jest.fn(), 
-          signOut: jest.fn(), 
-          isLoading: false 
-        }}>
+        <AuthContext.Provider
+          value={{
+            user: null,
+            signIn: jest.fn(),
+            signOut: jest.fn(),
+            isLoading: false,
+          }}
+        >
           {children}
         </AuthContext.Provider>
       );

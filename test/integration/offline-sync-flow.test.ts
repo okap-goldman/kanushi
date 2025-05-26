@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { 
+import {
+  clearOldOfflineData,
+  getOfflineContent,
+  saveForLater,
   savePostOffline,
   syncOfflinePosts,
-  saveForLater,
-  getOfflineContent,
-  clearOldOfflineData
 } from '@/lib/offlineService';
+import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { supabase } from '@/lib/supabase';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // モックの設定
 vi.mock('@react-native-async-storage/async-storage', () => ({
@@ -32,26 +32,32 @@ vi.mock('@react-native-community/netinfo', () => ({
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
-      getUser: vi.fn(() => Promise.resolve({
-        data: { user: { id: 'user-1' } },
-        error: null,
-      })),
+      getUser: vi.fn(() =>
+        Promise.resolve({
+          data: { user: { id: 'user-1' } },
+          error: null,
+        })
+      ),
     },
     from: vi.fn(() => ({
       insert: vi.fn(() => ({
         select: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({
-            data: { id: 'synced-post-1' },
-            error: null,
-          })),
+          single: vi.fn(() =>
+            Promise.resolve({
+              data: { id: 'synced-post-1' },
+              error: null,
+            })
+          ),
         })),
       })),
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({
-            data: { id: 'post-1', content: 'Cached content' },
-            error: null,
-          })),
+          single: vi.fn(() =>
+            Promise.resolve({
+              data: { id: 'post-1', content: 'Cached content' },
+              error: null,
+            })
+          ),
         })),
       })),
     })),
@@ -130,10 +136,12 @@ describe('オフライン同期統合テスト', () => {
       (supabase.from as any).mockReturnValueOnce({
         insert: vi.fn(() => ({
           select: vi.fn(() => ({
-            single: vi.fn(() => Promise.resolve({
-              data: null,
-              error: new Error('Network error'),
-            })),
+            single: vi.fn(() =>
+              Promise.resolve({
+                data: null,
+                error: new Error('Network error'),
+              })
+            ),
           })),
         })),
       });
@@ -248,9 +256,7 @@ describe('オフライン同期統合テスト', () => {
       expect(cleanupResult.deletedCount).toBe(1);
 
       // 古いデータのみ削除されることを確認
-      expect(AsyncStorage.multiRemove).toHaveBeenCalledWith([
-        'saved_post_old-post',
-      ]);
+      expect(AsyncStorage.multiRemove).toHaveBeenCalledWith(['saved_post_old-post']);
     });
   });
 
@@ -275,7 +281,7 @@ describe('オフライン同期統合テスト', () => {
       networkListener({ isConnected: true });
 
       // 自動同期が実行されることを確認
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       expect(supabase.from).toHaveBeenCalled();
     });
   });
@@ -318,9 +324,7 @@ describe('オフライン同期統合テスト', () => {
   describe('エラーハンドリング', () => {
     it('ストレージフルエラーの処理', async () => {
       // ストレージフルエラーをシミュレート
-      (AsyncStorage.setItem as any).mockRejectedValueOnce(
-        new Error('QuotaExceededError')
-      );
+      (AsyncStorage.setItem as any).mockRejectedValueOnce(new Error('QuotaExceededError'));
 
       const result = await saveForLater({
         id: 'large-post',

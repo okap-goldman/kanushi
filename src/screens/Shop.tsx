@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-} from 'react-native';
-import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { Image } from 'expo-image';
+import React, { useState } from 'react';
+import {
+  FlatList,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 // Sample product categories
 const PRODUCT_CATEGORIES = [
@@ -36,7 +36,8 @@ const SAMPLE_PRODUCTS = [
     seller: 'Traditional Craft Co.',
     isFeatured: true,
     isNew: false,
-    description: 'Handcrafted tote bag made with traditional Japanese indigo dyeing techniques. Each bag is unique with slight variations in the pattern.',
+    description:
+      'Handcrafted tote bag made with traditional Japanese indigo dyeing techniques. Each bag is unique with slight variations in the pattern.',
   },
   {
     id: '2',
@@ -50,7 +51,8 @@ const SAMPLE_PRODUCTS = [
     seller: 'Tokyo Style',
     isFeatured: true,
     isNew: true,
-    description: 'Contemporary take on the traditional kimono, redesigned as a versatile jacket that can be worn with any outfit.',
+    description:
+      'Contemporary take on the traditional kimono, redesigned as a versatile jacket that can be worn with any outfit.',
   },
   {
     id: '3',
@@ -64,7 +66,8 @@ const SAMPLE_PRODUCTS = [
     seller: 'Kyoto Ceramics',
     isFeatured: false,
     isNew: true,
-    description: 'Handmade ceramic tea set including teapot and four cups. Perfect for enjoying Japanese green tea in style.',
+    description:
+      'Handmade ceramic tea set including teapot and four cups. Perfect for enjoying Japanese green tea in style.',
   },
   {
     id: '4',
@@ -78,7 +81,8 @@ const SAMPLE_PRODUCTS = [
     seller: 'Japan Press',
     isFeatured: false,
     isNew: false,
-    description: 'Comprehensive guide to the most beautiful Japanese gardens, with full-color photographs and practical advice for garden design.',
+    description:
+      'Comprehensive guide to the most beautiful Japanese gardens, with full-color photographs and practical advice for garden design.',
   },
   {
     id: '5',
@@ -92,7 +96,8 @@ const SAMPLE_PRODUCTS = [
     seller: 'Kyoto Woodcraft',
     isFeatured: true,
     isNew: false,
-    description: 'Set of two pairs of handcrafted wooden chopsticks with carrying case. Made from sustainable Japanese cypress wood.',
+    description:
+      'Set of two pairs of handcrafted wooden chopsticks with carrying case. Made from sustainable Japanese cypress wood.',
   },
   {
     id: '6',
@@ -106,20 +111,22 @@ const SAMPLE_PRODUCTS = [
     seller: 'Tokyo Art Collective',
     isFeatured: false,
     isNew: true,
-    description: 'Limited edition art print of Mount Fuji at sunrise. Signed by the artist and numbered. Includes certificate of authenticity.',
+    description:
+      'Limited edition art print of Mount Fuji at sunrise. Signed by the artist and numbered. Includes certificate of authenticity.',
   },
 ];
 
 // Featured products subset
-const FEATURED_PRODUCTS = SAMPLE_PRODUCTS.filter(product => product.isFeatured);
+const FEATURED_PRODUCTS = SAMPLE_PRODUCTS.filter((product) => product.isFeatured);
 
 export default function Shop() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const navigation = useNavigation<any>();
 
-  const filteredProducts = selectedCategory === 'all'
-    ? SAMPLE_PRODUCTS
-    : SAMPLE_PRODUCTS.filter(product => product.category === selectedCategory);
+  const filteredProducts =
+    selectedCategory === 'all'
+      ? SAMPLE_PRODUCTS
+      : SAMPLE_PRODUCTS.filter((product) => product.category === selectedCategory);
 
   const navigateToProductDetail = (productId: string) => {
     navigation.navigate('ProductDetail', { productId });
@@ -130,27 +137,22 @@ export default function Shop() {
   };
 
   const renderProductItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.productCard}
-      onPress={() => navigateToProductDetail(item.id)}
-    >
+    <TouchableOpacity style={styles.productCard} onPress={() => navigateToProductDetail(item.id)}>
       <View style={styles.productImageContainer}>
-        <Image
-          source={{ uri: item.images[0] }}
-          style={styles.productImage}
-          contentFit="cover"
-        />
+        <Image source={{ uri: item.images[0] }} style={styles.productImage} contentFit="cover" />
         {item.isNew && (
           <View style={styles.newBadge}>
             <Text style={styles.newBadgeText}>NEW</Text>
           </View>
         )}
       </View>
-      
+
       <View style={styles.productInfo}>
-        <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+        <Text style={styles.productName} numberOfLines={2}>
+          {item.name}
+        </Text>
         <Text style={styles.sellerName}>{item.seller}</Text>
-        
+
         <View style={styles.priceRow}>
           {item.discountPrice ? (
             <>
@@ -161,7 +163,7 @@ export default function Shop() {
             <Text style={styles.price}>¥{item.price.toLocaleString()}</Text>
           )}
         </View>
-        
+
         <View style={styles.ratingRow}>
           <View style={styles.rating}>
             <Feather name="star" size={12} color="#F59E0B" />
@@ -181,10 +183,7 @@ export default function Shop() {
           <TouchableOpacity style={styles.headerButton}>
             <Feather name="search" size={24} color="#1A202C" />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.headerButton}
-            onPress={navigateToOrders}
-          >
+          <TouchableOpacity style={styles.headerButton} onPress={navigateToOrders}>
             <Feather name="shopping-bag" size={24} color="#1A202C" />
           </TouchableOpacity>
         </View>
@@ -199,13 +198,13 @@ export default function Shop() {
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
-          
+
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.featuredProductsContainer}
           >
-            {FEATURED_PRODUCTS.map(product => (
+            {FEATURED_PRODUCTS.map((product) => (
               <TouchableOpacity
                 key={product.id}
                 style={styles.featuredProductCard}
@@ -228,7 +227,7 @@ export default function Shop() {
             ))}
           </ScrollView>
         </View>
-        
+
         {/* Categories filter */}
         <ScrollView
           horizontal
@@ -236,7 +235,7 @@ export default function Shop() {
           style={styles.categoriesContainer}
           contentContainerStyle={styles.categoriesContent}
         >
-          {PRODUCT_CATEGORIES.map(category => (
+          {PRODUCT_CATEGORIES.map((category) => (
             <TouchableOpacity
               key={category.id}
               style={[
@@ -256,12 +255,12 @@ export default function Shop() {
             </TouchableOpacity>
           ))}
         </ScrollView>
-        
+
         {/* Products grid */}
         <FlatList
           data={filteredProducts}
           renderItem={renderProductItem}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           numColumns={2}
           contentContainerStyle={styles.productsGrid}
           scrollEnabled={false} // Disable scrolling as it's inside a ScrollView

@@ -1,12 +1,6 @@
-import React, { useState, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Animated,
-  Dimensions
-} from 'react-native';
+import type React from 'react';
+import { useRef, useState } from 'react';
+import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface TooltipProps {
   children: React.ReactNode;
@@ -23,17 +17,17 @@ export function Tooltip({ children, content, delay = 500 }: TooltipProps) {
 
   const showTooltip = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    
+
     timeoutRef.current = setTimeout(() => {
       triggerRef.current?.measure((x, y, width, height, pageX, pageY) => {
         const screenWidth = Dimensions.get('window').width;
         const tooltipX = Math.min(pageX, screenWidth - 150);
-        
+
         setPosition({
           x: tooltipX,
           y: pageY - 40,
         });
-        
+
         setVisible(true);
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -46,7 +40,7 @@ export function Tooltip({ children, content, delay = 500 }: TooltipProps) {
 
   const hideTooltip = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    
+
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 200,
@@ -64,17 +58,14 @@ export function Tooltip({ children, content, delay = 500 }: TooltipProps) {
       >
         {children}
       </TouchableOpacity>
-      
+
       {visible && (
         <Animated.View
           style={[
             styles.tooltip,
             {
               opacity: fadeAnim,
-              transform: [
-                { translateX: position.x },
-                { translateY: position.y },
-              ],
+              transform: [{ translateX: position.x }, { translateY: position.y }],
             },
           ]}
           pointerEvents="none"

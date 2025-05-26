@@ -1,11 +1,5 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ViewStyle,
-  TextStyle,
-} from 'react-native';
+import type React from 'react';
+import { StyleSheet, Text, type TextStyle, View, type ViewStyle } from 'react-native';
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
@@ -16,12 +10,7 @@ interface BadgeProps {
   textStyle?: TextStyle;
 }
 
-export function Badge({ 
-  children, 
-  variant = 'default',
-  style,
-  textStyle,
-}: BadgeProps) {
+export function Badge({ children, variant = 'default', style, textStyle }: BadgeProps) {
   const variantStyles = {
     default: {
       container: styles.variantDefault,
@@ -45,9 +34,7 @@ export function Badge({
 
   return (
     <View style={[styles.badge, currentVariant.container, style]}>
-      <Text style={[styles.badgeText, currentVariant.text, textStyle]}>
-        {children}
-      </Text>
+      <Text style={[styles.badgeText, currentVariant.text, textStyle]}>{children}</Text>
     </View>
   );
 }

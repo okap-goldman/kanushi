@@ -1,93 +1,97 @@
+import { Feather } from '@expo/vector-icons';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
-import { Post } from '../components/post/Post';
 import { CreatePostDialog } from '../components/CreatePostDialog';
+import { Post } from '../components/post/Post';
+import { useAuth } from '../context/AuthContext';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { supabase } from '../lib/supabase';
 
 export default function Home() {
   const [timelineType, setTimelineType] = useState<'family' | 'watch'>('family');
   const [showCreatePost, setShowCreatePost] = useState(false);
-  
+
   const { user } = useAuth();
 
-  const fetchPostsData = useCallback(async (page: number, pageSize: number) => {
-    try {
-      // Using different queries based on timeline type
-      let query;
-      
-      if (timelineType === 'family') {
-        // Family timeline: posts from people you follow + your posts
-        query = supabase
-          .from('posts')
-          .select(`
+  const fetchPostsData = useCallback(
+    async (page: number, pageSize: number) => {
+      try {
+        // Using different queries based on timeline type
+        let query;
+
+        if (timelineType === 'family') {
+          // Family timeline: posts from people you follow + your posts
+          query = supabase
+            .from('posts')
+            .select(`
             *,
             profiles!posts_user_id_fkey (id, username, image),
             post_tags (
               tags (id, name)
             )
           `)
-          .order('created_at', { ascending: false })
-          .range(page * pageSize, (page + 1) * pageSize - 1);
-      } else {
-        // Watch timeline: shows all posts
-        query = supabase
-          .from('posts')
-          .select(`
+            .order('created_at', { ascending: false })
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+        } else {
+          // Watch timeline: shows all posts
+          query = supabase
+            .from('posts')
+            .select(`
             *,
             profiles!posts_user_id_fkey (id, username, image),
             post_tags (
               tags (id, name)
             )
           `)
-          .order('created_at', { ascending: false })
-          .range(page * pageSize, (page + 1) * pageSize - 1);
-      }
+            .order('created_at', { ascending: false })
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+        }
 
-      const { data, error } = await query;
+        const { data, error } = await query;
 
-      if (error) {
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          // Process the data to format it properly
+          const formattedPosts = data.map((post) => ({
+            id: post.id,
+            content: post.media_url || post.audio_url || post.text_content,
+            caption: post.text_content,
+            mediaType: post.content_type,
+            author: {
+              id: post.profiles.id,
+              name: post.profiles.username,
+              image: post.profiles.image,
+            },
+            // Consolidate tags from the posts_tags join table
+            tags:
+              post.post_tags?.map((pt: any) => ({
+                id: pt.tags.id,
+                name: pt.tags.name,
+              })) || [],
+          }));
+
+          return formattedPosts;
+        }
+
+        return [];
+      } catch (error) {
+        console.error('Error fetching posts:', error);
         throw error;
       }
-
-      if (data) {
-        // Process the data to format it properly
-        const formattedPosts = data.map((post) => ({
-          id: post.id,
-          content: post.media_url || post.audio_url || post.text_content,
-          caption: post.text_content,
-          mediaType: post.content_type,
-          author: {
-            id: post.profiles.id,
-            name: post.profiles.username,
-            image: post.profiles.image,
-          },
-          // Consolidate tags from the posts_tags join table
-          tags: post.post_tags?.map((pt: any) => ({
-            id: pt.tags.id,
-            name: pt.tags.name,
-          })) || [],
-        }));
-        
-        return formattedPosts;
-      }
-      
-      return [];
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      throw error;
-    }
-  }, [timelineType]);
+    },
+    [timelineType]
+  );
 
   const {
     data: posts,
@@ -96,10 +100,10 @@ export default function Home() {
     hasNextPage,
     loadMore,
     refresh,
-    refreshing
+    refreshing,
   } = useInfiniteScroll({
     fetchData: fetchPostsData,
-    pageSize: 10
+    pageSize: 10,
   });
 
   // Refresh data when timeline type changes
@@ -109,7 +113,7 @@ export default function Home() {
 
   const renderFooter = () => {
     if (!loadingMore) return null;
-    
+
     return (
       <View style={styles.loadingMore} testID="loading-more-indicator">
         <ActivityIndicator size="small" color="#0070F3" />
@@ -124,34 +128,18 @@ export default function Home() {
         <Text style={styles.headerTitle}>Kanushi</Text>
         <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={[
-              styles.tab,
-              timelineType === 'family' && styles.activeTab,
-            ]}
+            style={[styles.tab, timelineType === 'family' && styles.activeTab]}
             onPress={() => setTimelineType('family')}
           >
-            <Text
-              style={[
-                styles.tabText,
-                timelineType === 'family' && styles.activeTabText,
-              ]}
-            >
+            <Text style={[styles.tabText, timelineType === 'family' && styles.activeTabText]}>
               Family
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[
-              styles.tab,
-              timelineType === 'watch' && styles.activeTab,
-            ]}
+            style={[styles.tab, timelineType === 'watch' && styles.activeTab]}
             onPress={() => setTimelineType('watch')}
           >
-            <Text
-              style={[
-                styles.tabText,
-                timelineType === 'watch' && styles.activeTabText,
-              ]}
-            >
+            <Text style={[styles.tabText, timelineType === 'watch' && styles.activeTabText]}>
               Watch
             </Text>
           </TouchableOpacity>
@@ -181,10 +169,7 @@ export default function Home() {
         contentContainerStyle={styles.listContent}
       />
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => setShowCreatePost(true)}
-      >
+      <TouchableOpacity style={styles.fab} onPress={() => setShowCreatePost(true)}>
         <Feather name="plus" size={24} color="#FFFFFF" />
       </TouchableOpacity>
 

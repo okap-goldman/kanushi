@@ -1,19 +1,19 @@
+import { Feather } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
   ActivityIndicator,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { Input } from '../ui/Input';
-import { Avatar } from '../ui/Avatar';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { Avatar } from '../ui/Avatar';
+import { Input } from '../ui/Input';
 
 interface Comment {
   id: string;
@@ -47,20 +47,18 @@ export function PostComments({
 
   const handleSubmitComment = async () => {
     if (!newComment.trim() || !user) return;
-    
+
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('comments')
-        .insert({
-          post_id: postId,
-          user_id: user.id,
-          content: newComment.trim(),
-          created_at: new Date().toISOString(),
-        });
-        
+      const { error } = await supabase.from('comments').insert({
+        post_id: postId,
+        user_id: user.id,
+        content: newComment.trim(),
+        created_at: new Date().toISOString(),
+      });
+
       if (error) throw error;
-      
+
       setNewComment('');
       onCommentAdded();
     } catch (err) {
@@ -72,7 +70,7 @@ export function PostComments({
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('ja-JP', { 
+    return new Intl.DateTimeFormat('ja-JP', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
