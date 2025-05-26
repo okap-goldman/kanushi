@@ -84,7 +84,7 @@ export function PostComments({
       style={styles.container}
     >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Comments</Text>
+        <Text style={styles.headerTitle}>コメント</Text>
         {onClose && (
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Feather name="x" size={20} color="#64748B" />
@@ -98,7 +98,7 @@ export function PostComments({
         </View>
       ) : comments.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No comments yet</Text>
+          <Text style={styles.emptyText}>まだコメントはありません</Text>
         </View>
       ) : (
         <FlatList
@@ -126,7 +126,7 @@ export function PostComments({
 
       <View style={styles.footer}>
         <Input
-          placeholder="Add a comment..."
+          placeholder="コメントを追加..."
           value={newComment}
           onChangeText={setNewComment}
           containerStyle={styles.inputContainer}

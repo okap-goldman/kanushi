@@ -14,12 +14,12 @@ import {
 
 // Sample product categories
 const PRODUCT_CATEGORIES = [
-  { id: 'all', name: 'All' },
-  { id: 'clothing', name: 'Clothing' },
-  { id: 'accessories', name: 'Accessories' },
-  { id: 'books', name: 'Books' },
-  { id: 'art', name: 'Art' },
-  { id: 'homeware', name: 'Homeware' },
+  { id: 'all', name: 'すべて' },
+  { id: 'clothing', name: '衣類' },
+  { id: 'accessories', name: 'アクセサリー' },
+  { id: 'books', name: '書籍' },
+  { id: 'art', name: 'アート' },
+  { id: 'homeware', name: 'ホームウェア' },
 ];
 
 // Sample products data
@@ -142,7 +142,7 @@ export default function Shop() {
         <Image source={{ uri: item.images[0] }} style={styles.productImage} contentFit="cover" />
         {item.isNew && (
           <View style={styles.newBadge}>
-            <Text style={styles.newBadgeText}>NEW</Text>
+            <Text style={styles.newBadgeText}>新着</Text>
           </View>
         )}
       </View>
@@ -169,7 +169,7 @@ export default function Shop() {
             <Feather name="star" size={12} color="#F59E0B" />
             <Text style={styles.ratingText}>{item.rating}</Text>
           </View>
-          <Text style={styles.reviewCount}>({item.reviews} reviews)</Text>
+          <Text style={styles.reviewCount}>({item.reviews} 件のレビュー)</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -178,7 +178,7 @@ export default function Shop() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Shop</Text>
+        <Text style={styles.title}>ショップ</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton}>
             <Feather name="search" size={24} color="#1A202C" />
@@ -193,9 +193,9 @@ export default function Shop() {
         {/* Featured products section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Featured Products</Text>
+            <Text style={styles.sectionTitle}>おすすめ商品</Text>
             <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
+              <Text style={styles.seeAllText}>すべて見る</Text>
             </TouchableOpacity>
           </View>
 

@@ -112,7 +112,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
       return (
         <View style={styles.emptyContainer}>
           <Feather name="image" size={48} color="#CBD5E0" />
-          <Text style={styles.emptyText}>No posts yet</Text>
+          <Text style={styles.emptyText}>まだ投稿がありません</Text>
         </View>
       );
     }
@@ -121,7 +121,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
       return (
         <View style={styles.emptyContainer}>
           <Feather name="star" size={48} color="#CBD5E0" />
-          <Text style={styles.emptyText}>No highlights yet</Text>
+          <Text style={styles.emptyText}>まだハイライトがありません</Text>
         </View>
       );
     }
@@ -130,7 +130,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
       return (
         <View style={styles.emptyContainer}>
           <Feather name="heart" size={48} color="#CBD5E0" />
-          <Text style={styles.emptyText}>No likes yet</Text>
+          <Text style={styles.emptyText}>まだいいねがありません</Text>
         </View>
       );
     }
@@ -172,7 +172,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
               <View style={styles.audioGridItem}>
                 <Feather name="mic" size={24} color="#FFFFFF" />
                 <Text style={styles.audioText} numberOfLines={2}>
-                  {item.text_content || 'Audio'}
+                  {item.text_content || '音声'}
                 </Text>
               </View>
             ) : (

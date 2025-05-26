@@ -52,7 +52,7 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           return {
             success: false,
             data: null,
-            error: new Error(`Text content exceeds maximum limit of ${MAX_TEXT_LENGTH} characters`),
+            error: new Error(`テキストの最大文字数（${MAX_TEXT_LENGTH}文字）を超えています`),
           };
         }
 
@@ -65,7 +65,7 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
             success: false,
             data: null,
             error: new Error(
-              `Audio duration exceeds maximum limit of ${MAX_AUDIO_DURATION} seconds`
+              `音声の最大時間（${MAX_AUDIO_DURATION}秒）を超えています`
             ),
           };
         }
@@ -74,7 +74,7 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           return {
             success: false,
             data: null,
-            error: new Error(`Maximum ${MAX_HASHTAGS} hashtags allowed`),
+            error: new Error(`ハッシュタグは最大${MAX_HASHTAGS}個までです`),
           };
         }
 
@@ -170,7 +170,7 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           return {
             success: false,
             data: null,
-            error: new Error('Post not found'),
+            error: new Error('投稿が見つかりません'),
           };
         }
 
@@ -178,7 +178,7 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           return {
             success: false,
             data: null,
-            error: new Error('You do not have permission to delete this post'),
+            error: new Error('この投稿を削除する権限がありません'),
           };
         }
 
@@ -217,7 +217,7 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           return {
             success: false,
             data: null,
-            error: new Error('Already liked this post'),
+            error: new Error('既にいいねしています'),
           };
         }
 
@@ -253,7 +253,7 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           return {
             success: false,
             data: null,
-            error: new Error('Like not found'),
+            error: new Error('いいねが見つかりません'),
           };
         }
 
@@ -286,7 +286,7 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           return {
             success: false,
             data: null,
-            error: new Error('Reason is required for highlighting'),
+            error: new Error('ハイライトには理由が必要です'),
           };
         }
 
@@ -299,7 +299,7 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           return {
             success: false,
             data: null,
-            error: new Error('Already highlighted this post'),
+            error: new Error('既にハイライトしています'),
           };
         }
 
@@ -335,7 +335,7 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           return {
             success: false,
             data: null,
-            error: new Error('Comment body cannot be empty'),
+            error: new Error('コメントは空にできません'),
           };
         }
 
@@ -397,7 +397,7 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           return {
             success: false,
             data: null,
-            error: new Error('Already bookmarked this post'),
+            error: new Error('既にブックマークしています'),
           };
         }
 
@@ -433,7 +433,7 @@ export function createPostService(supabaseClient = supabase, dbClient = db): Pos
           return {
             success: false,
             data: null,
-            error: new Error('Bookmark not found'),
+            error: new Error('ブックマークが見つかりません'),
           };
         }
 
@@ -679,7 +679,7 @@ export const createPost = async (
       textContent = post.content || post.text_content || '';
       // Validate text length for text posts
       if (textContent.length > 10000) {
-        throw new Error('Text content exceeds maximum length of 10,000 characters');
+        throw new Error('テキストの最大文字数（10,000文字）を超えています');
       }
     } else if (contentType === 'image' || contentType === 'video') {
       mediaUrl = post.content || post.media_url;
@@ -842,7 +842,7 @@ export const createComment = async (
   try {
     // Validate content
     if (!comment.content || comment.content.trim() === '') {
-      throw new Error('Content cannot be empty');
+      throw new Error('コンテンツは空にできません');
     }
 
     // Begin a transaction
@@ -989,12 +989,12 @@ export const deletePost = async (
       .single();
 
     if (fetchError || !post) {
-      throw new Error('Post not found');
+      throw new Error('投稿が見つかりません');
     }
 
     // Check ownership
     if (post.user_id !== user_id) {
-      throw new Error('You do not have permission to delete this post');
+      throw new Error('この投稿を削除する権限がありません');
     }
 
     // Soft delete by setting deleted_at

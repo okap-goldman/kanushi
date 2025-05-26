@@ -57,7 +57,7 @@ export default function ProfileEdit() {
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
-      Alert.alert('Error', 'Failed to load profile data');
+      Alert.alert('エラー', 'プロフィールの読み込みに失敗しました');
     }
   };
 
@@ -96,7 +96,7 @@ export default function ProfileEdit() {
       return data.publicUrl;
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      Alert.alert('Error', 'Failed to upload image');
+      Alert.alert('エラー', '画像のアップロードに失敗しました');
       return null;
     }
   };
@@ -105,7 +105,7 @@ export default function ProfileEdit() {
     if (!user) return;
 
     if (!username.trim()) {
-      Alert.alert('Error', 'Username is required');
+      Alert.alert('エラー', 'ユーザー名は必須です');
       return;
     }
 
@@ -132,11 +132,11 @@ export default function ProfileEdit() {
 
       if (error) throw error;
 
-      Alert.alert('Success', 'Profile updated successfully');
+      Alert.alert('成功', 'プロフィールを更新しました');
       navigation.goBack();
     } catch (err) {
       console.error('Error updating profile:', err);
-      Alert.alert('Error', 'Failed to update profile');
+      Alert.alert('エラー', 'プロフィールの更新に失敗しました');
     } finally {
       setLoading(false);
     }
@@ -152,7 +152,7 @@ export default function ProfileEdit() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Feather name="arrow-left" size={24} color="#1E293B" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Profile</Text>
+          <Text style={styles.headerTitle}>プロフィール編集</Text>
           <View style={styles.headerRight} />
         </View>
 
@@ -172,24 +172,24 @@ export default function ProfileEdit() {
 
           <View style={styles.form}>
             <Input
-              label="Username"
+              label="ユーザー名"
               value={username}
               onChangeText={setUsername}
-              placeholder="Enter username"
+              placeholder="ユーザー名を入力"
             />
 
             <Input
-              label="Full Name"
+              label="フルネーム"
               value={fullName}
               onChangeText={setFullName}
-              placeholder="Enter your full name"
+              placeholder="フルネームを入力"
             />
 
             <Input
-              label="Bio"
+              label="自己紹介"
               value={bio}
               onChangeText={setBio}
-              placeholder="Tell us about yourself"
+              placeholder="自己紹介を入力"
               multiline
               inputStyle={styles.bioInput}
             />
@@ -201,7 +201,7 @@ export default function ProfileEdit() {
               style={styles.saveButton}
               fullWidth
             >
-              Save Changes
+              保存
             </Button>
           </View>
         </ScrollView>

@@ -116,19 +116,19 @@ const SAMPLE_ORDERS = [
     shippingMethod: 'Standard Shipping',
     shippingCost: 500,
     orderTimeline: [
-      { status: 'ordered', date: '2023-05-20T20:12:45Z', description: 'Order placed' },
-      { status: 'processing', date: '2023-05-20T20:15:30Z', description: 'Payment confirmed' },
+      { status: 'ordered', date: '2023-05-20T20:12:45Z', description: '注文が置かれました' },
+      { status: 'processing', date: '2023-05-20T20:15:30Z', description: '支払いが確認されました' },
     ],
   },
 ];
 
 // Status label and color mapping
 const ORDER_STATUS = {
-  ordered: { label: 'Ordered', color: '#805AD5', icon: 'shopping-bag' },
-  processing: { label: 'Processing', color: '#F59E0B', icon: 'clock' },
-  shipped: { label: 'Shipped', color: '#3B82F6', icon: 'truck' },
-  delivered: { label: 'Delivered', color: '#10B981', icon: 'check-circle' },
-  cancelled: { label: 'Cancelled', color: '#EF4444', icon: 'x-circle' },
+  ordered: { label: '注文済み', color: '#805AD5', icon: 'shopping-bag' },
+  processing: { label: '処理中', color: '#F59E0B', icon: 'clock' },
+  shipped: { label: '発送済み', color: '#3B82F6', icon: 'truck' },
+  delivered: { label: '配達済み', color: '#10B981', icon: 'check-circle' },
+  cancelled: { label: 'キャンセル', color: '#EF4444', icon: 'x-circle' },
 };
 
 export default function OrderDetail() {

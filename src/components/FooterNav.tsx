@@ -8,11 +8,11 @@ export function FooterNav() {
   const route = useRoute();
 
   const navItems = [
-    { name: 'Home', icon: 'home', route: 'Home', testId: 'nav-home' },
-    { name: 'Search', icon: 'search', route: 'Search', testId: 'nav-search' },
-    { name: 'Discover', icon: 'compass', route: 'Discover', testId: 'nav-discover' },
-    { name: 'Messages', icon: 'message-circle', route: 'Messages', testId: 'nav-messages' },
-    { name: 'Profile', icon: 'user', route: 'Profile', testId: 'nav-profile' },
+    { name: 'ホーム', icon: 'home', route: 'Home', testId: 'nav-home' },
+    { name: '検索', icon: 'search', route: 'Search', testId: 'nav-search' },
+    { name: '発見', icon: 'compass', route: 'Discover', testId: 'nav-discover' },
+    { name: 'メッセージ', icon: 'message-circle', route: 'Messages', testId: 'nav-messages' },
+    { name: 'プロフィール', icon: 'user', route: 'Profile', testId: 'nav-profile' },
   ];
 
   // Check if the current route matches the nav item

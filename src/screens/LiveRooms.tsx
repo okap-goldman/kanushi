@@ -99,7 +99,7 @@ export default function LiveRooms() {
           </Text>
 
           <View style={styles.roomInfo}>
-            <Text style={styles.hostName}>{item.host?.display_name || 'Unknown Host'}</Text>
+            <Text style={styles.hostName}>{item.host?.display_name || '不明なホスト'}</Text>
             <View style={styles.participantInfo}>
               <Users size={14} color="#666" />
               <Text style={styles.participantCount}>{item.participant_count}</Text>

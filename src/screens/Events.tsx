@@ -77,17 +77,17 @@ const SAMPLE_EVENTS = [
       "One of Tokyo's most famous fireworks displays with over 20,000 fireworks illuminating the summer night sky.",
     category: 'festival',
     attendees: 950,
-    price: 'Free (Premium viewing areas available)',
+    price: '無料（プレミアム観覧エリアあり）',
   },
 ];
 
 const EVENT_CATEGORIES = [
-  { id: 'all', name: 'All' },
-  { id: 'food', name: 'Food' },
-  { id: 'cultural', name: 'Cultural' },
-  { id: 'workshop', name: 'Workshops' },
-  { id: 'market', name: 'Markets' },
-  { id: 'festival', name: 'Festivals' },
+  { id: 'all', name: 'すべて' },
+  { id: 'food', name: 'グルメ' },
+  { id: 'cultural', name: '文化' },
+  { id: 'workshop', name: 'ワークショップ' },
+  { id: 'market', name: 'マーケット' },
+  { id: 'festival', name: 'フェスティバル' },
 ];
 
 export default function Events() {
@@ -119,7 +119,7 @@ export default function Events() {
         <View style={styles.eventFooter}>
           <View style={styles.attendeeCount}>
             <Feather name="users" size={14} color="#718096" />
-            <Text style={styles.attendeeText}>{item.attendees} attending</Text>
+            <Text style={styles.attendeeText}>{item.attendees} 人参加</Text>
           </View>
           <Text style={styles.eventPrice}>{item.price}</Text>
         </View>
@@ -133,7 +133,7 @@ export default function Events() {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color="#1A202C" />
         </TouchableOpacity>
-        <Text style={styles.title}>Events</Text>
+        <Text style={styles.title}>イベント</Text>
         <TouchableOpacity style={styles.searchButton}>
           <Feather name="search" size={24} color="#1A202C" />
         </TouchableOpacity>

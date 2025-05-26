@@ -24,12 +24,12 @@ const REGIONS = [
 ];
 
 const TRENDING_CATEGORIES = [
-  { id: '1', name: 'Food', icon: 'coffee' },
-  { id: '2', name: 'Events', icon: 'calendar' },
-  { id: '3', name: 'Nature', icon: 'tree' },
-  { id: '4', name: 'Art', icon: 'image' },
-  { id: '5', name: 'Shopping', icon: 'shopping-bag' },
-  { id: '6', name: 'Nightlife', icon: 'moon' },
+  { id: '1', name: 'グルメ', icon: 'coffee' },
+  { id: '2', name: 'イベント', icon: 'calendar' },
+  { id: '3', name: '自然', icon: 'tree' },
+  { id: '4', name: 'アート', icon: 'image' },
+  { id: '5', name: 'ショッピング', icon: 'shopping-bag' },
+  { id: '6', name: 'ナイトライフ', icon: 'moon' },
 ];
 
 const TRENDING_POSTS = [
@@ -86,16 +86,16 @@ export default function Discover() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Discover</Text>
+        <Text style={styles.title}>発見</Text>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Regions section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Popular Regions</Text>
+            <Text style={styles.sectionTitle}>人気の地域</Text>
             <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
+              <Text style={styles.seeAllText}>すべて見る</Text>
             </TouchableOpacity>
           </View>
 
@@ -107,7 +107,7 @@ export default function Discover() {
                 <Image source={{ uri: item.image }} style={styles.regionImage} contentFit="cover" />
                 <View style={styles.regionInfo}>
                   <Text style={styles.regionName}>{item.name}</Text>
-                  <Text style={styles.regionCount}>{item.count} posts</Text>
+                  <Text style={styles.regionCount}>{item.count} 件の投稿</Text>
                 </View>
               </TouchableOpacity>
             )}
@@ -121,7 +121,7 @@ export default function Discover() {
 
         {/* Categories */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Explore</Text>
+          <Text style={styles.sectionTitle}>カテゴリで探す</Text>
           <View style={styles.categoriesContainer}>
             {TRENDING_CATEGORIES.map((category) => (
               <TouchableOpacity
@@ -155,9 +155,9 @@ export default function Discover() {
         {/* Trending posts */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Trending Now</Text>
+            <Text style={styles.sectionTitle}>トレンド</Text>
             <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
+              <Text style={styles.seeAllText}>すべて見る</Text>
             </TouchableOpacity>
           </View>
 

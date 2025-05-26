@@ -1,6 +1,6 @@
 import { Avatar } from '@/components/ui/Avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, MessageCircle } from 'lucide-react-native';
+import { Bell, MessageCircle, Settings } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Modal,
@@ -11,12 +11,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { UserAuthStatus } from './UserAuthStatus';
+import { useNavigation } from '@react-navigation/native';
 
 export function Navbar() {
   const { toast: _ } = useToast(); // Keep the import but mark as unused
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showMessages, setShowMessages] = useState(false);
+  const navigation = useNavigation<any>();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -28,11 +28,13 @@ export function Navbar() {
             <Bell size={20} color="#666" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.iconButton} onPress={() => setShowMessages(true)}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Messages')}>
             <MessageCircle size={20} color="#666" />
           </TouchableOpacity>
 
-          <UserAuthStatus />
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Settings')}>
+            <Settings size={20} color="#666" />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -71,38 +73,6 @@ export function Navbar() {
         </View>
       </Modal>
 
-      {/* Messages Modal */}
-      <Modal
-        visible={showMessages}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowMessages(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>メッセージ</Text>
-              <TouchableOpacity onPress={() => setShowMessages(false)}>
-                <Text style={styles.closeButton}>閉じる</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalScroll}>
-              {[1, 2, 3].map((i) => (
-                <TouchableOpacity key={i} style={styles.messageItem}>
-                  <Avatar
-                    source={{ uri: `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}` }}
-                    style={styles.avatar}
-                  />
-                  <View style={styles.messageContent}>
-                    <Text style={styles.messageName}>ユーザー{i}</Text>
-                    <Text style={styles.messagePreview}>最新のメッセージ...</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -170,13 +140,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
-  messageItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
   avatar: {
     width: 40,
     height: 40,
@@ -193,19 +156,6 @@ const styles = StyleSheet.create({
   notificationTime: {
     fontSize: 12,
     color: '#999',
-    marginTop: 2,
-  },
-  messageContent: {
-    flex: 1,
-  },
-  messageName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  messagePreview: {
-    fontSize: 14,
-    color: '#666',
     marginTop: 2,
   },
 });

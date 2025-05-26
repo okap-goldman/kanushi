@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
-import React, { useState, useEffect } from 'react';
-import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View, Animated } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { ShareModal } from '../ShareModal';
 import { supabase } from '../../lib/supabase';
@@ -22,7 +22,12 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
   const [highlightReason, setHighlightReason] = useState('');
   const [highlightError, setHighlightError] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showHighlightBubble, setShowHighlightBubble] = useState(false);
   const { user } = useAuth();
+  
+  // Animation values for highlight bubble
+  const bubbleOpacity = useRef(new Animated.Value(0)).current;
+  const bubbleTranslateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Check if the user has liked this post
@@ -135,6 +140,46 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     getHighlightCount();
   }, [postId, user]);
 
+  const showBubbleAnimation = () => {
+    setShowHighlightBubble(true);
+    
+    // Reset animation values
+    bubbleOpacity.setValue(0);
+    bubbleTranslateY.setValue(0);
+    
+    // Run animations
+    Animated.parallel([
+      Animated.timing(bubbleOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bubbleTranslateY, {
+        toValue: -30,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Hide bubble after delay
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(bubbleOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(bubbleTranslateY, {
+            toValue: -40,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setShowHighlightBubble(false);
+        });
+      }, 1000);
+    });
+  };
+
   const handleLike = async () => {
     if (!user) return;
 
@@ -151,7 +196,9 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
         setLiked(false);
         setLikeCount((prev) => Math.max(0, prev - 1));
       } else {
-        // Like
+        // Like and show highlight bubble
+        showBubbleAnimation();
+        
         const { error } = await supabase.from('likes').insert({
           post_id: postId,
           user_id: user.id,
@@ -253,15 +300,31 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
   return (
     <View style={styles.container}>
       <View style={styles.actionsRow}>
-        <TouchableOpacity onPress={handleLike} style={styles.actionButton} testID="like-button">
-          <Feather
-            name={liked ? 'heart' : 'heart'}
-            size={22}
-            color={liked ? '#E53E3E' : '#64748B'}
-            style={liked ? styles.filledHeart : undefined}
-          />
-          <Text style={styles.actionText}>{likeCount > 0 ? likeCount : ''}</Text>
-        </TouchableOpacity>
+        <View style={styles.likeButtonContainer}>
+          <TouchableOpacity onPress={handleLike} style={styles.actionButton} testID="like-button">
+            <Feather
+              name={liked ? 'heart' : 'heart'}
+              size={22}
+              color={liked ? '#E53E3E' : '#64748B'}
+              style={liked ? styles.filledHeart : undefined}
+            />
+            <Text style={styles.actionText}>{likeCount > 0 ? likeCount : ''}</Text>
+          </TouchableOpacity>
+          
+          {showHighlightBubble && (
+            <Animated.View
+              style={[
+                styles.highlightBubble,
+                {
+                  opacity: bubbleOpacity,
+                  transform: [{ translateY: bubbleTranslateY }],
+                },
+              ]}
+            >
+              <Text style={styles.highlightBubbleText}>ハイライトする！</Text>
+            </Animated.View>
+          )}
+        </View>
 
         <TouchableOpacity onPress={onComment} style={styles.actionButton} testID="comment-button">
           <Feather name="message-circle" size={22} color="#64748B" />
@@ -277,6 +340,10 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           <Text style={styles.actionText}>{highlightCount > 0 ? highlightCount : ''}</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity onPress={handleShare} style={styles.actionButton} testID="share-button">
+          <Feather name="share" size={22} color="#64748B" />
+        </TouchableOpacity>
+
         <TouchableOpacity
           onPress={handleBookmark}
           style={styles.actionButton}
@@ -287,10 +354,6 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
             size={22}
             color={bookmarked ? '#3B82F6' : '#64748B'}
           />
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={handleShare} style={styles.actionButton} testID="share-button">
-          <Feather name="share" size={22} color="#64748B" />
         </TouchableOpacity>
       </View>
 
@@ -369,6 +432,31 @@ const styles = StyleSheet.create({
   },
   filledHeart: {
     // Style for filled heart icon
+  },
+  likeButtonContainer: {
+    position: 'relative',
+  },
+  highlightBubble: {
+    position: 'absolute',
+    top: -35,
+    left: -10,
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  highlightBubbleText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   modalContainer: {
     flex: 1,

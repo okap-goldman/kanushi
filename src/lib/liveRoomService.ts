@@ -124,7 +124,7 @@ class LiveRoomService {
       };
     } catch (error) {
       throw new Error(
-        `ルーム作成に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `ルーム作成に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`
       );
     }
   }

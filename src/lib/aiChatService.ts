@@ -54,6 +54,8 @@ export interface ChatSession {
   user_id: string;
   created_at: string;
   updated_at: string;
+  title?: string;
+  last_message?: string;
 }
 
 class AIChatService {
@@ -70,7 +72,7 @@ class AIChatService {
     } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      throw new Error('User not authenticated');
+      throw new Error('認証が必要です');
     }
 
     // Handle timeout if specified
@@ -133,7 +135,7 @@ class AIChatService {
     } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      throw new Error('User not authenticated');
+      throw new Error('認証が必要です');
     }
 
     const { data, error } = await supabase.functions.invoke('ai-chat', {
@@ -175,7 +177,7 @@ class AIChatService {
     } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      throw new Error('User not authenticated');
+      throw new Error('認証が必要です');
     }
 
     const { data, error } = await supabase
@@ -201,7 +203,7 @@ class AIChatService {
     } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      throw new Error('User not authenticated');
+      throw new Error('認証が必要です');
     }
 
     const { error } = await supabase.from('ai_chat_sessions').delete().eq('id', sessionId);
@@ -221,7 +223,7 @@ class AIChatService {
     } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      throw new Error('User not authenticated');
+      throw new Error('認証が必要です');
     }
 
     let query = supabase.from('ai_chat_messages').select('*');
@@ -251,7 +253,7 @@ class AIChatService {
     } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      throw new Error('User not authenticated');
+      throw new Error('認証が必要です');
     }
 
     const { data, error } = await supabase.functions.invoke('ai-search', {
@@ -275,7 +277,7 @@ class AIChatService {
     } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      throw new Error('User not authenticated');
+      throw new Error('認証が必要です');
     }
 
     const { data, error } = await supabase.functions.invoke('ai-recommendations', {
@@ -298,7 +300,7 @@ class AIChatService {
     } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      throw new Error('User not authenticated');
+      throw new Error('認証が必要です');
     }
 
     const { data, error } = await supabase.functions.invoke('ai-sentiment', {
@@ -325,7 +327,7 @@ class AIChatService {
     } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      throw new Error('User not authenticated');
+      throw new Error('認証が必要です');
     }
 
     const { data, error } = await supabase.functions.invoke('ai-summary', {
@@ -350,7 +352,7 @@ class AIChatService {
     } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      throw new Error('User not authenticated');
+      throw new Error('認証が必要です');
     }
 
     const { error } = await supabase
@@ -361,6 +363,57 @@ class AIChatService {
     if (error) {
       throw new Error(error.message);
     }
+  }
+
+  // Get recent chat sessions with last message preview
+  async getRecentSessions(limit: number = 3): Promise<ChatSession[]> {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      throw new Error('認証が必要です');
+    }
+
+    // First, get recent sessions
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('ai_chat_sessions')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('updated_at', { ascending: false })
+      .limit(limit);
+
+    if (sessionsError) {
+      throw new Error(sessionsError.message);
+    }
+
+    if (!sessions || sessions.length === 0) {
+      return [];
+    }
+
+    // Get last message for each session
+    const sessionsWithLastMessage = await Promise.all(
+      sessions.map(async (session) => {
+        const { data: messages } = await supabase
+          .from('ai_chat_messages')
+          .select('content')
+          .eq('session_id', session.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const lastMessage = messages?.[0]?.content || '';
+        const title = session.title || lastMessage.substring(0, 30) + (lastMessage.length > 30 ? '...' : '');
+
+        return {
+          ...session,
+          title,
+          last_message: lastMessage.substring(0, 50) + (lastMessage.length > 50 ? '...' : ''),
+        };
+      })
+    );
+
+    return sessionsWithLastMessage;
   }
 }
 

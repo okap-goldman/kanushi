@@ -68,7 +68,7 @@ export function Spinner({ size = 'default', variant = 'default', style }: Spinne
         style,
       ]}
       accessibilityRole="progressbar"
-      accessibilityLabel="Loading"
+      accessibilityLabel="読み込み中"
     />
   );
 }

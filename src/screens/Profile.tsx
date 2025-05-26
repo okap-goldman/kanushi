@@ -35,11 +35,12 @@ export default function Profile() {
       setLoading(true);
 
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profile')
         .select(`
           *,
-          followers:followers!follower_id(count),
-          following:following!user_id(count)
+          followers:follow!followee_id(count),
+          following:follow!follower_id(count),
+          posts:post(count)
         `)
         .eq('id', userId)
         .single();
@@ -84,7 +85,7 @@ export default function Profile() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text>Loading profile...</Text>
+          <Text>プロフィールを読み込み中...</Text>
         </View>
       </SafeAreaView>
     );
@@ -97,37 +98,37 @@ export default function Profile() {
       >
         <View style={styles.header}>
           <View style={styles.profileHeader}>
-            <Avatar source={profile.image || 'https://via.placeholder.com/80'} size="xl" />
+            <Avatar source={profile.profileImageUrl || 'https://via.placeholder.com/80'} size="xl" />
 
             <View style={styles.profileStats}>
               <TouchableOpacity style={styles.statItem}>
-                <Text style={styles.statValue}>{profile.post_count || 0}</Text>
-                <Text style={styles.statLabel}>Posts</Text>
+                <Text style={styles.statValue}>{profile.posts?.count || 0}</Text>
+                <Text style={styles.statLabel}>投稿</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.statItem} onPress={handleFollowersPress}>
                 <Text style={styles.statValue}>{profile.followers?.count || 0}</Text>
-                <Text style={styles.statLabel}>Followers</Text>
+                <Text style={styles.statLabel}>フォロワー</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.statItem} onPress={handleFollowingPress}>
                 <Text style={styles.statValue}>{profile.following?.count || 0}</Text>
-                <Text style={styles.statLabel}>Following</Text>
+                <Text style={styles.statLabel}>フォロー中</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.profileInfo}>
-            <Text style={styles.displayName}>{profile.full_name || profile.username}</Text>
-            {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
+            <Text style={styles.displayName}>{profile.displayName}</Text>
+            {profile.profileText && <Text style={styles.bio}>{profile.profileText}</Text>}
 
             {isCurrentUser ? (
               <Button onPress={handleEditProfile} variant="outline" style={styles.editButton}>
-                Edit Profile
+                プロフィールを編集
               </Button>
             ) : (
               <Button onPress={() => {}} style={styles.followButton}>
-                Follow
+                フォロー
               </Button>
             )}
           </View>

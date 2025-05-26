@@ -41,6 +41,8 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [recordedSound, setRecordedSound] = useState<Audio.Sound | null>(null);
+  const [isPlayingRecorded, setIsPlayingRecorded] = useState(false);
 
   const { user } = useAuth();
 
@@ -96,13 +98,28 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
     setIsRecording(false);
     await recording.stopAndUnloadAsync();
 
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      playsInSilentModeIOS: true,
+    });
+
     const uri = recording.getURI();
+    console.log('Recorded audio URI:', uri);
     setAudioUri(uri);
     setRecording(null);
 
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-    });
+    // Load the recorded audio for playback
+    if (uri) {
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          { uri },
+          { shouldPlay: false }
+        );
+        setRecordedSound(sound);
+      } catch (error) {
+        console.error('Error loading recorded audio:', error);
+      }
+    }
   };
 
   const addTag = () => {
@@ -119,7 +136,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  const resetForm = () => {
+  const resetForm = async () => {
     setActiveTab('text');
     setTextContent('');
     setCaption('');
@@ -128,6 +145,13 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
     setAudioUri(null);
     setTagInput('');
     setTags([]);
+    
+    // Cleanup recorded sound
+    if (recordedSound) {
+      await recordedSound.unloadAsync();
+      setRecordedSound(null);
+    }
+    setIsPlayingRecorded(false);
   };
 
   const handleClose = () => {
@@ -218,6 +242,12 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
   };
 
   // Helper function to save post
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const savePost = async (postData: any) => {
     try {
       const { data, error } = await supabase
@@ -300,9 +330,9 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <Feather name="x" size={24} color="#1E293B" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create Post</Text>
+          <Text style={styles.headerTitle}>投稿を作成</Text>
           <Button onPress={handleSubmit} size="sm" disabled={loading} loading={loading}>
-            Post
+            投稿
           </Button>
         </View>
 
@@ -312,7 +342,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
             onPress={() => setActiveTab('text')}
           >
             <Feather name="type" size={20} color={activeTab === 'text' ? '#0070F3' : '#64748B'} />
-            <Text style={[styles.tabText, activeTab === 'text' && styles.activeTabText]}>Text</Text>
+            <Text style={[styles.tabText, activeTab === 'text' && styles.activeTabText]}>テキスト</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -321,7 +351,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
           >
             <Feather name="image" size={20} color={activeTab === 'image' ? '#0070F3' : '#64748B'} />
             <Text style={[styles.tabText, activeTab === 'image' && styles.activeTabText]}>
-              Image
+              画像
             </Text>
           </TouchableOpacity>
 
@@ -331,7 +361,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
           >
             <Feather name="video" size={20} color={activeTab === 'video' ? '#0070F3' : '#64748B'} />
             <Text style={[styles.tabText, activeTab === 'video' && styles.activeTabText]}>
-              Video
+              動画
             </Text>
           </TouchableOpacity>
 
@@ -341,7 +371,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
           >
             <Feather name="mic" size={20} color={activeTab === 'audio' ? '#0070F3' : '#64748B'} />
             <Text style={[styles.tabText, activeTab === 'audio' && styles.activeTabText]}>
-              Audio
+              音声
             </Text>
           </TouchableOpacity>
         </View>
@@ -350,7 +380,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
           {activeTab === 'text' && (
             <View style={styles.textContent}>
               <Input
-                placeholder="What's on your mind?"
+                placeholder="今何を思っていますか？"
                 value={textContent}
                 onChangeText={setTextContent}
                 multiline
@@ -369,18 +399,18 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
                     contentFit="cover"
                   />
                   <TouchableOpacity style={styles.changeButton} onPress={pickImage}>
-                    <Text style={styles.changeButtonText}>Change Image</Text>
+                    <Text style={styles.changeButtonText}>画像を変更</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
                 <TouchableOpacity style={styles.mediaSelector} onPress={pickImage}>
                   <Feather name="image" size={40} color="#94A3B8" />
-                  <Text style={styles.mediaSelectorText}>Select Image</Text>
+                  <Text style={styles.mediaSelectorText}>画像を選択</Text>
                 </TouchableOpacity>
               )}
 
               <Input
-                placeholder="Add a caption..."
+                placeholder="キャプションを追加..."
                 value={caption}
                 onChangeText={setCaption}
                 multiline
@@ -403,18 +433,18 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
                     contentFit="contain"
                   />
                   <TouchableOpacity style={styles.changeButton} onPress={pickVideo}>
-                    <Text style={styles.changeButtonText}>Change Video</Text>
+                    <Text style={styles.changeButtonText}>動画を変更</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
                 <TouchableOpacity style={styles.mediaSelector} onPress={pickVideo}>
                   <Feather name="video" size={40} color="#94A3B8" />
-                  <Text style={styles.mediaSelectorText}>Select Video</Text>
+                  <Text style={styles.mediaSelectorText}>動画を選択</Text>
                 </TouchableOpacity>
               )}
 
               <Input
-                placeholder="Add a caption..."
+                placeholder="キャプションを追加..."
                 value={caption}
                 onChangeText={setCaption}
                 multiline
@@ -429,13 +459,58 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
                 <View style={styles.audioPreviewContainer}>
                   <View style={styles.audioPreview}>
                     <Feather name="music" size={40} color="#6366F1" />
-                    <Text style={styles.audioText}>Audio Selected</Text>
+                    <Text style={styles.audioText}>音声が録音されました</Text>
                   </View>
-                  <View style={styles.audioWaveform}>
-                    <View style={styles.audioWave} />
+                  
+                  <View style={styles.audioControls}>
+                    <TouchableOpacity
+                      style={styles.playButton}
+                      onPress={async () => {
+                        if (!recordedSound) return;
+                        
+                        try {
+                          if (isPlayingRecorded) {
+                            await recordedSound.pauseAsync();
+                            setIsPlayingRecorded(false);
+                          } else {
+                            await recordedSound.playAsync();
+                            setIsPlayingRecorded(true);
+                            
+                            // Set up playback status listener
+                            recordedSound.setOnPlaybackStatusUpdate((status) => {
+                              if (status.isLoaded && status.didJustFinish) {
+                                setIsPlayingRecorded(false);
+                              }
+                            });
+                          }
+                        } catch (error) {
+                          console.error('Error playing audio:', error);
+                        }
+                      }}
+                      disabled={!recordedSound}
+                    >
+                      <Feather
+                        name={isPlayingRecorded ? 'pause' : 'play'}
+                        size={24}
+                        color="#FFFFFF"
+                      />
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity style={styles.recordButton} onPress={startRecording}>
-                    <Text style={styles.recordButtonText}>Record Again</Text>
+                  
+                  <TouchableOpacity
+                    style={styles.reRecordButton}
+                    onPress={async () => {
+                      if (recordedSound) {
+                        await recordedSound.unloadAsync();
+                        setRecordedSound(null);
+                      }
+                      setAudioUri(null);
+                      setIsPlayingRecorded(false);
+                      startRecording();
+                    }}
+                  >
+                    <Feather name="mic" size={20} color="#6366F1" />
+                    <Text style={styles.reRecordButtonText}>再録音</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -446,21 +521,21 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
                   >
                     <Feather name={isRecording ? 'square' : 'mic'} size={24} color="#FFFFFF" />
                     <Text style={styles.recordButtonText}>
-                      {isRecording ? 'Stop Recording' : 'Start Recording'}
+                      {isRecording ? '録音を停止' : '録音を開始'}
                     </Text>
                   </TouchableOpacity>
 
                   {isRecording && (
                     <View style={styles.recordingIndicator}>
                       <View style={styles.recordingDot} />
-                      <Text style={styles.recordingText}>Recording...</Text>
+                      <Text style={styles.recordingText}>録音中...</Text>
                     </View>
                   )}
                 </View>
               )}
 
               <Input
-                placeholder="Add a caption..."
+                placeholder="キャプションを追加..."
                 value={caption}
                 onChangeText={setCaption}
                 multiline
@@ -470,10 +545,10 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
           )}
 
           <View style={styles.tagsSection}>
-            <Text style={styles.sectionTitle}>Tags</Text>
+            <Text style={styles.sectionTitle}>タグ</Text>
             <View style={styles.tagInputContainer}>
               <Input
-                placeholder="Add tags (press Enter to add)"
+                placeholder="タグを追加（Enterで追加）"
                 value={tagInput}
                 onChangeText={setTagInput}
                 onSubmitEditing={addTag}
@@ -721,5 +796,53 @@ const styles = StyleSheet.create({
   removeTagButton: {
     marginLeft: 4,
     padding: 2,
+  },
+  audioControls: {
+    width: '100%',
+    marginVertical: 16,
+  },
+  playButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#6366F1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  progressContainer: {
+    width: '100%',
+  },
+  progressSlider: {
+    width: '100%',
+    height: 40,
+  },
+  timeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  timeText: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  reRecordButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0F9FF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    marginTop: 8,
+  },
+  reRecordButtonText: {
+    color: '#6366F1',
+    marginLeft: 8,
+    fontWeight: '500',
+    fontSize: 14,
   },
 });

@@ -88,10 +88,10 @@ const SAMPLE_ORDERS = [
 
 // Status label and color mapping
 const ORDER_STATUS = {
-  processing: { label: 'Processing', color: '#F59E0B' },
-  shipped: { label: 'Shipped', color: '#3B82F6' },
-  delivered: { label: 'Delivered', color: '#10B981' },
-  cancelled: { label: 'Cancelled', color: '#EF4444' },
+  processing: { label: '処理中', color: '#F59E0B' },
+  shipped: { label: '発送済み', color: '#3B82F6' },
+  delivered: { label: '配達済み', color: '#10B981' },
+  cancelled: { label: 'キャンセル', color: '#EF4444' },
 };
 
 export default function Orders() {

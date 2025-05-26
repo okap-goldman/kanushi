@@ -56,7 +56,7 @@ export function createMediaService(supabaseClient = supabase): MediaService {
         }
 
         if (!data.success) {
-          return { error: data.error || 'Upload failed' };
+          return { error: data.error || 'アップロードに失敗しました' };
         }
 
         return {
@@ -86,7 +86,7 @@ export function createMediaService(supabaseClient = supabase): MediaService {
         }
 
         if (!data.success) {
-          return { error: data.error || 'Audio processing failed' };
+          return { error: data.error || '音声処理に失敗しました' };
         }
 
         return {
@@ -123,7 +123,7 @@ export function createMediaService(supabaseClient = supabase): MediaService {
         }
 
         if (!data.success) {
-          return { error: data.error || 'Image processing failed' };
+          return { error: data.error || '画像処理に失敗しました' };
         }
 
         return {

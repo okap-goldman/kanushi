@@ -116,10 +116,10 @@ export default function Messages() {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Feather name="message-circle" size={48} color="#A0AEC0" />
-      <Text style={styles.emptyStateTitle}>No messages yet</Text>
-      <Text style={styles.emptyStateText}>When you start conversations, they'll appear here</Text>
+      <Text style={styles.emptyStateTitle}>メッセージはまだありません</Text>
+      <Text style={styles.emptyStateText}>会話を始めると、ここに表示されます</Text>
       <TouchableOpacity style={styles.newMessageButton} onPress={navigateToNewMessage}>
-        <Text style={styles.newMessageButtonText}>Start a Conversation</Text>
+        <Text style={styles.newMessageButtonText}>会話を始める</Text>
       </TouchableOpacity>
     </View>
   );
@@ -127,7 +127,7 @@ export default function Messages() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Messages</Text>
+        <Text style={styles.title}>メッセージ</Text>
         <TouchableOpacity onPress={navigateToNewMessage}>
           <Feather name="edit" size={24} color="#0070F3" />
         </TouchableOpacity>

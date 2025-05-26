@@ -12,7 +12,8 @@ interface PostContentProps {
   setIsExpanded: (expanded: boolean) => void;
 }
 
-const { width } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
+const imageSize = screenWidth - 24; // パディングを考慮
 const MAX_TEXT_LENGTH = 100;
 
 export function PostContent({
@@ -134,14 +135,14 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   image: {
-    width: '100%',
-    height: width - 80,
-    borderRadius: 8,
+    width: imageSize,
+    height: imageSize,
+    alignSelf: 'center',
   },
   videoContainer: {
-    width: '100%',
-    height: width - 80,
-    borderRadius: 8,
+    width: imageSize,
+    height: imageSize,
+    alignSelf: 'center',
     overflow: 'hidden',
     backgroundColor: '#000000',
   },
