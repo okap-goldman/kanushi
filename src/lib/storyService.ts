@@ -1,5 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import { supabase } from './supabase';
+import { mockConfig, mockDelay, getMockStoryGroups, generateId, getCurrentTimestamp } from './mockData';
 
 export interface Story {
   id: string;
@@ -26,6 +27,33 @@ export interface UserStories {
 // ストーリーの取得（フォローユーザーのストーリーを含む）
 export async function getStories(): Promise<UserStories[]> {
   try {
+    // モックモードの場合
+    if (mockConfig.enabled) {
+      await mockDelay();
+      
+      const mockGroups = getMockStoryGroups();
+      const userStories: UserStories[] = mockGroups.map(group => ({
+        userId: group.user_id,
+        username: group.user.username,
+        profileImage: group.user.avatar_url,
+        stories: group.stories.map(story => ({
+          id: story.id,
+          userId: story.user_id,
+          username: group.user.username,
+          profileImage: group.user.avatar_url,
+          contentType: story.media_type === 'audio' ? 'image' : story.media_type,
+          mediaUrl: story.media_url,
+          thumbnailUrl: story.media_url,
+          caption: story.content,
+          viewsCount: story.views_count,
+          createdAt: story.created_at,
+          expiresAt: story.expires_at,
+        })),
+        hasUnviewedStory: group.has_unviewed,
+      }));
+      
+      return userStories;
+    }
     // 24時間以内のストーリーを取得
     const { data: stories, error } = await supabase
       .from('stories')

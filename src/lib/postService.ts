@@ -20,6 +20,7 @@ import {
 import { db } from './db/client';
 import { bookmarks, comments, hashtags, highlights, likes, postHashtags, posts } from './db/schema';
 import { supabase } from './supabase';
+import { mockConfig, mockDelay, mockPosts, mockComments, getMockPost, getMockPostComments, generateId, getCurrentTimestamp } from './mockData';
 
 // Constants
 const MAX_TEXT_LENGTH = 10000;

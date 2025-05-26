@@ -1,122 +1,190 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Image } from 'expo-image';
-import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-// Reusing sample events data from Events.tsx
-const SAMPLE_EVENTS = [
-  {
-    id: '1',
-    title: 'Tokyo Food Festival',
-    date: '2023-06-15',
-    time: '11:00 - 20:00',
-    location: 'Yoyogi Park, Tokyo',
-    image: 'https://picsum.photos/500/300?random=30',
-    description:
-      "Explore the best of Tokyo's food scene with over 100 vendors offering traditional and modern Japanese cuisine. The festival will feature food stalls, cooking demonstrations, tasting sessions, and cultural performances throughout the day.\n\nHighlights include:\n- Regional specialties from all over Japan\n- Sake and craft beer tasting area\n- Live cooking demonstrations by renowned chefs\n- Traditional music and dance performances\n- Activities for children including food-themed crafts",
-    category: 'food',
-    attendees: 458,
-    price: 'Free Entry',
-    organizer: {
-      name: 'Tokyo Food Association',
-      logo: 'https://i.pravatar.cc/150?img=30',
-    },
-    address: '2-1 Yoyogi Kamizonocho, Shibuya City, Tokyo 151-0052',
-    website: 'www.tokyofoodfestival.jp',
-  },
-  {
-    id: '2',
-    title: 'Japanese Ink Painting Workshop',
-    date: '2023-06-18',
-    time: '14:00 - 16:30',
-    location: 'Roppongi Arts Center, Tokyo',
-    image: 'https://picsum.photos/500/300?random=31',
-    description:
-      'Learn the traditional art of Sumi-e (Japanese ink painting) with master artist Tanaka Hiroshi. This workshop is suitable for beginners and will cover the basics of brush techniques, composition, and the philosophy behind this ancient art form.\n\nAll materials will be provided, and participants will create their own ink painting to take home. The workshop will be conducted in Japanese with English translation available.',
-    category: 'workshop',
-    attendees: 24,
-    price: '¥5,000',
-    organizer: {
-      name: 'Japan Traditional Arts Society',
-      logo: 'https://i.pravatar.cc/150?img=31',
-    },
-    address: '6-6-9 Roppongi, Minato City, Tokyo 106-0032',
-    website: 'www.japanarts.org/workshops',
-  },
-  {
-    id: '3',
-    title: 'Summer Night Market',
-    date: '2023-06-24',
-    time: '18:00 - 23:00',
-    location: 'Nakameguro, Tokyo',
-    image: 'https://picsum.photos/500/300?random=32',
-    description:
-      'Enjoy a vibrant night market with local crafts, street food, and live music along the Meguro River. As the sun sets, the riverbanks will be illuminated with lanterns creating a magical atmosphere for this summer evening event.\n\nThe market features:\n- Handcrafted goods from local artisans\n- Food stalls offering a variety of cuisines\n- Craft beer and sake tasting\n- Live acoustic performances\n- Riverside seating areas',
-    category: 'market',
-    attendees: 287,
-    price: 'Free Entry',
-    organizer: {
-      name: 'Nakameguro Community Association',
-      logo: 'https://i.pravatar.cc/150?img=32',
-    },
-    address: 'Nakameguro Station Area, Meguro City, Tokyo',
-    website: 'www.nakameguro-nightmarket.jp',
-  },
-  {
-    id: '4',
-    title: 'Traditional Tea Ceremony',
-    date: '2023-06-20',
-    time: '13:00 - 15:00',
-    location: 'Happo-en Garden, Tokyo',
-    image: 'https://picsum.photos/500/300?random=33',
-    description:
-      'Experience the art and philosophy of Japanese tea ceremony in a beautiful traditional garden setting. This session will introduce participants to the customs, etiquette, and spiritual aspects of this important cultural practice.\n\nThe ceremony will be held in an authentic tea house within the historic Happo-en Garden, providing the perfect serene backdrop for this meditative experience. Participants will enjoy matcha tea and traditional Japanese sweets.',
-    category: 'cultural',
-    attendees: 18,
-    price: '¥3,500',
-    organizer: {
-      name: 'Chado Culture Foundation',
-      logo: 'https://i.pravatar.cc/150?img=33',
-    },
-    address: '1-1-1 Shirokanedai, Minato City, Tokyo 108-0071',
-    website: 'www.happo-en.com/teaceremony',
-  },
-  {
-    id: '5',
-    title: 'Sumida River Fireworks Festival',
-    date: '2023-07-29',
-    time: '19:00 - 20:30',
-    location: 'Sumida River, Tokyo',
-    image: 'https://picsum.photos/500/300?random=34',
-    description:
-      "One of Tokyo's most famous fireworks displays with over 20,000 fireworks illuminating the summer night sky. This traditional festival dates back to the Edo period and has become one of the most anticipated summer events in Tokyo.\n\nThe fireworks can be viewed from various locations along the Sumida River, with the main viewing areas around Asakusa and the Tokyo Skytree. Food stalls and festival activities will be available throughout the area, creating a lively atmosphere for this spectacular summer tradition.",
-    category: 'festival',
-    attendees: 950,
-    price: 'Free (Premium viewing areas available)',
-    organizer: {
-      name: 'Tokyo Tourism Association',
-      logo: 'https://i.pravatar.cc/150?img=34',
-    },
-    address: 'Sumida River, between Sakurabashi and Kototoibashi, Tokyo',
-    website: 'www.sumidagawa-hanabi.com',
-  },
-];
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Linking,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useToast } from '../hooks/use-toast';
+import { type ExtendedEvent, eventService } from '../lib/eventService';
 
 export default function EventDetail() {
-  const [attending, setAttending] = useState(false);
+  const [event, setEvent] = useState<ExtendedEvent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [participating, setParticipating] = useState(false);
   const navigation = useNavigation();
   const route = useRoute<any>();
-  const { eventId } = route.params || { eventId: '1' };
+  const { eventId } = route.params;
+  const { toast } = useToast();
 
-  // Find the event from the sample data
-  const event = SAMPLE_EVENTS.find((e) => e.id === eventId) || SAMPLE_EVENTS[0];
+  useEffect(() => {
+    loadEvent();
+  }, [eventId]);
+
+  const loadEvent = async () => {
+    try {
+      setLoading(true);
+      const response = await eventService.getEvent(eventId);
+
+      if (response.data) {
+        setEvent(response.data);
+        setParticipating(response.data.user_participation_status === 'attending');
+      } else {
+        toast({
+          title: 'エラー',
+          description: 'イベント情報の読み込みに失敗しました',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error loading event:', error);
+      toast({
+        title: 'エラー',
+        description: 'イベント情報の読み込みに失敗しました',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleParticipation = async () => {
+    if (!event) return;
+
+    try {
+      if (participating) {
+        // 参加をキャンセル
+        const response = await eventService.leaveEvent(event.id);
+        if (response.data) {
+          setParticipating(false);
+          toast({
+            title: '成功',
+            description: 'イベント参加をキャンセルしました',
+          });
+        }
+      } else {
+        // イベントに参加
+        const response = await eventService.joinEvent(event.id, 'attending');
+        if (response.data) {
+          setParticipating(true);
+          toast({
+            title: '成功',
+            description: 'イベントに参加登録しました',
+          });
+        }
+      }
+    } catch (error) {
+      toast({
+        title: 'エラー',
+        description: '操作に失敗しました',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const formatEventDate = (startDate: string, endDate?: string) => {
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : null;
+
+    const dateOptions: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    };
+    const timeOptions: Intl.DateTimeFormatOptions = {
+      hour: '2-digit',
+      minute: '2-digit',
+    };
+
+    const dateStr = start.toLocaleDateString('ja-JP', dateOptions);
+    const startTimeStr = start.toLocaleTimeString('ja-JP', timeOptions);
+
+    if (end) {
+      const endTimeStr = end.toLocaleTimeString('ja-JP', timeOptions);
+      return {
+        date: dateStr,
+        time: `${startTimeStr} - ${endTimeStr}`,
+      };
+    }
+
+    return {
+      date: dateStr,
+      time: startTimeStr,
+    };
+  };
+
+  const getEventTypeBadge = (eventType?: string) => {
+    switch (eventType) {
+      case 'online':
+        return { text: 'オンライン', color: '#10B981' };
+      case 'offline':
+        return { text: 'オフライン', color: '#F59E0B' };
+      case 'hybrid':
+        return { text: 'ハイブリッド', color: '#8B5CF6' };
+      case 'voice_workshop':
+        return { text: 'ボイスワークショップ', color: '#EC4899' };
+      default:
+        return null;
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0070F3" />
+          <Text style={styles.loadingText}>読み込み中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!event) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Feather name="alert-circle" size={64} color="#CBD5E0" />
+          <Text style={styles.errorText}>イベントが見つかりません</Text>
+          <TouchableOpacity style={styles.backButtonAlt} onPress={() => navigation.goBack()}>
+            <Text style={styles.backButtonAltText}>戻る</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const { date, time } = formatEventDate(event.start_date, event.end_date);
+  const badge = getEventTypeBadge(event.event_type || event.category);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.imageContainer}>
-          <Image source={{ uri: event.image }} style={styles.eventImage} contentFit="cover" />
+          {event.image_url || event.cover_image_url ? (
+            <Image
+              source={{ uri: event.image_url || event.cover_image_url }}
+              style={styles.eventImage}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.eventImage, styles.placeholderImage]}>
+              <Feather name="calendar" size={64} color="#CBD5E0" />
+            </View>
+          )}
+
+          {badge && (
+            <View style={[styles.eventTypeBadge, { backgroundColor: badge.color }]}>
+              <Text style={styles.eventTypeBadgeText}>{badge.text}</Text>
+            </View>
+          )}
+
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Feather name="arrow-left" size={24} color="#FFFFFF" />
           </TouchableOpacity>
@@ -128,15 +196,21 @@ export default function EventDetail() {
         <View style={styles.contentContainer}>
           {/* Event header */}
           <View style={styles.eventHeader}>
-            <Text style={styles.eventCategory}>
-              {event.category.charAt(0).toUpperCase() + event.category.slice(1)}
-            </Text>
             <Text style={styles.eventTitle}>{event.title}</Text>
 
-            <View style={styles.organizerRow}>
-              <Image source={{ uri: event.organizer.logo }} style={styles.organizerLogo} />
-              <Text style={styles.organizerName}>Organized by {event.organizer.name}</Text>
-            </View>
+            {event.creator_profile && (
+              <View style={styles.organizerRow}>
+                {event.creator_profile.avatar_url && (
+                  <Image
+                    source={{ uri: event.creator_profile.avatar_url }}
+                    style={styles.organizerLogo}
+                  />
+                )}
+                <Text style={styles.organizerName}>
+                  主催者: {event.creator_profile.display_name || event.creator_profile.username}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Event details */}
@@ -146,73 +220,102 @@ export default function EventDetail() {
                 <Feather name="calendar" size={20} color="#0070F3" />
               </View>
               <View style={styles.detailContent}>
-                <Text style={styles.detailLabel}>Date & Time</Text>
-                <Text style={styles.detailText}>{event.date}</Text>
-                <Text style={styles.detailText}>{event.time}</Text>
+                <Text style={styles.detailLabel}>日時</Text>
+                <Text style={styles.detailText}>{date}</Text>
+                <Text style={styles.detailText}>{time}</Text>
               </View>
             </View>
 
-            <View style={styles.detailRow}>
-              <View style={styles.detailIconContainer}>
-                <Feather name="map-pin" size={20} color="#0070F3" />
+            {event.location && (
+              <View style={styles.detailRow}>
+                <View style={styles.detailIconContainer}>
+                  <Feather name="map-pin" size={20} color="#0070F3" />
+                </View>
+                <View style={styles.detailContent}>
+                  <Text style={styles.detailLabel}>場所</Text>
+                  <Text style={styles.detailText}>{event.location}</Text>
+                  {event.location_details?.address && (
+                    <Text style={styles.detailAddress}>{event.location_details.address}</Text>
+                  )}
+                </View>
               </View>
-              <View style={styles.detailContent}>
-                <Text style={styles.detailLabel}>Location</Text>
-                <Text style={styles.detailText}>{event.location}</Text>
-                <Text style={styles.detailAddress}>{event.address}</Text>
+            )}
+
+            {event.is_online && event.online_url && (
+              <View style={styles.detailRow}>
+                <View style={styles.detailIconContainer}>
+                  <Feather name="video" size={20} color="#0070F3" />
+                </View>
+                <View style={styles.detailContent}>
+                  <Text style={styles.detailLabel}>オンライン会場</Text>
+                  <TouchableOpacity onPress={() => Linking.openURL(event.online_url!)}>
+                    <Text style={styles.onlineLink}>オンラインリンクを開く</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
+            )}
 
             <View style={styles.detailRow}>
               <View style={styles.detailIconContainer}>
                 <Feather name="users" size={20} color="#0070F3" />
               </View>
               <View style={styles.detailContent}>
-                <Text style={styles.detailLabel}>Attendees</Text>
-                <Text style={styles.detailText}>{event.attendees} people attending</Text>
+                <Text style={styles.detailLabel}>参加者</Text>
+                <Text style={styles.detailText}>
+                  {event.participant_count || 0} 人参加
+                  {event.max_participants && ` / ${event.max_participants} 人定員`}
+                </Text>
               </View>
             </View>
 
             <View style={styles.detailRow}>
               <View style={styles.detailIconContainer}>
-                <Feather name="dollar-sign" size={20} color="#0070F3" />
+                <Feather name="tag" size={20} color="#0070F3" />
               </View>
               <View style={styles.detailContent}>
-                <Text style={styles.detailLabel}>Price</Text>
-                <Text style={styles.detailText}>{event.price}</Text>
+                <Text style={styles.detailLabel}>参加費</Text>
+                <Text style={styles.detailText}>
+                  {event.price ? `¥${event.price.toLocaleString()}` : '無料'}
+                </Text>
               </View>
             </View>
-
-            <TouchableOpacity style={styles.websiteLink}>
-              <Feather name="globe" size={16} color="#0070F3" />
-              <Text style={styles.websiteLinkText}>Visit event website</Text>
-              <Feather name="external-link" size={16} color="#0070F3" />
-            </TouchableOpacity>
           </View>
 
           {/* Event description */}
-          <View style={styles.descriptionSection}>
-            <Text style={styles.sectionTitle}>About Event</Text>
-            <Text style={styles.descriptionText}>{event.description}</Text>
-          </View>
+          {event.description && (
+            <View style={styles.descriptionSection}>
+              <Text style={styles.sectionTitle}>イベント詳細</Text>
+              <Text style={styles.descriptionText}>{event.description}</Text>
+            </View>
+          )}
+
+          {/* Refund policy */}
+          {event.refund_policy && (
+            <View style={styles.descriptionSection}>
+              <Text style={styles.sectionTitle}>キャンセルポリシー</Text>
+              <Text style={styles.descriptionText}>{event.refund_policy}</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
       {/* Bottom action bar */}
       <View style={styles.actionBar}>
         <View style={styles.priceContainer}>
-          <Text style={styles.priceLabel}>Price</Text>
-          <Text style={styles.priceValue}>{event.price}</Text>
+          <Text style={styles.priceLabel}>参加費</Text>
+          <Text style={styles.priceValue}>
+            {event.price ? `¥${event.price.toLocaleString()}` : '無料'}
+          </Text>
         </View>
 
         <TouchableOpacity
-          style={[styles.attendButton, attending && styles.attendingButton]}
-          onPress={() => setAttending(!attending)}
+          style={[styles.attendButton, participating && styles.attendingButton]}
+          onPress={handleParticipation}
         >
-          <Text style={[styles.attendButtonText, attending && styles.attendingButtonText]}>
-            {attending ? 'Going' : 'Attend Event'}
+          <Text style={[styles.attendButtonText, participating && styles.attendingButtonText]}>
+            {participating ? '参加予定' : 'イベントに参加'}
           </Text>
-          {attending && (
+          {participating && (
             <Feather name="check" size={16} color="#FFFFFF" style={styles.attendingIcon} />
           )}
         </TouchableOpacity>
@@ -396,5 +499,63 @@ const styles = StyleSheet.create({
   },
   attendingIcon: {
     marginLeft: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#718096',
+    marginTop: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2D3748',
+    marginTop: 16,
+  },
+  backButtonAlt: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#0070F3',
+    borderRadius: 8,
+  },
+  backButtonAltText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  eventTypeBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  eventTypeBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  placeholderImage: {
+    backgroundColor: '#F7FAFC',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  onlineLink: {
+    fontSize: 14,
+    color: '#0070F3',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

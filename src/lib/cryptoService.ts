@@ -8,6 +8,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from './db/client';
 import { profiles } from './db/schema/profile';
+import { ensureCrypto } from './crypto-polyfill';
 
 // Types
 export interface KeyPair {
@@ -41,16 +42,21 @@ const AES_ALGORITHM = {
 
 export class CryptoService {
   private keyCache = new Map<string, CryptoKey>();
+  private crypto: Crypto;
+
+  constructor() {
+    this.crypto = ensureCrypto();
+  }
 
   /**
    * Generate a new key pair for a user
    */
   async generateKeyPair(): Promise<{ publicKey: string; privateKey: string }> {
-    const keyPair = await crypto.subtle.generateKey(RSA_ALGORITHM, true, ['encrypt', 'decrypt']);
+    const keyPair = await this.crypto.subtle.generateKey(RSA_ALGORITHM, true, ['encrypt', 'decrypt']);
 
     // Export keys to storable format
-    const publicKeyData = await crypto.subtle.exportKey('spki', keyPair.publicKey);
-    const privateKeyData = await crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+    const publicKeyData = await this.crypto.subtle.exportKey('spki', keyPair.publicKey);
+    const privateKeyData = await this.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
 
     return {
       publicKey: this.arrayBufferToBase64(publicKeyData),
@@ -63,25 +69,25 @@ export class CryptoService {
    */
   async encryptMessage(content: string, recipientPublicKey: string): Promise<EncryptedMessage> {
     // Generate a random AES key for this message
-    const aesKey = await crypto.subtle.generateKey(AES_ALGORITHM, true, ['encrypt', 'decrypt']);
+    const aesKey = await this.crypto.subtle.generateKey(AES_ALGORITHM, true, ['encrypt', 'decrypt']);
 
     // Import recipient's public key
     const publicKey = await this.importPublicKey(recipientPublicKey);
 
     // Encrypt the AES key with recipient's RSA public key
-    const exportedAesKey = await crypto.subtle.exportKey('raw', aesKey);
-    const encryptedKey = await crypto.subtle.encrypt(
+    const exportedAesKey = await this.crypto.subtle.exportKey('raw', aesKey);
+    const encryptedKey = await this.crypto.subtle.encrypt(
       { name: 'RSA-OAEP' },
       publicKey,
       exportedAesKey
     );
 
     // Generate IV for AES encryption
-    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const iv = this.crypto.getRandomValues(new Uint8Array(12));
 
     // Encrypt the message with AES
     const encoder = new TextEncoder();
-    const encryptedContent = await crypto.subtle.encrypt(
+    const encryptedContent = await this.crypto.subtle.encrypt(
       {
         name: 'AES-GCM',
         iv: iv,
@@ -106,14 +112,14 @@ export class CryptoService {
 
     // Decrypt the AES key using RSA private key
     const encryptedKeyBuffer = this.base64ToArrayBuffer(encryptedData.encryptedKey);
-    const aesKeyBuffer = await crypto.subtle.decrypt(
+    const aesKeyBuffer = await this.crypto.subtle.decrypt(
       { name: 'RSA-OAEP' },
       privKey,
       encryptedKeyBuffer
     );
 
     // Import the AES key
-    const aesKey = await crypto.subtle.importKey('raw', aesKeyBuffer, AES_ALGORITHM, false, [
+    const aesKey = await this.crypto.subtle.importKey('raw', aesKeyBuffer, AES_ALGORITHM, false, [
       'decrypt',
     ]);
 
@@ -121,7 +127,7 @@ export class CryptoService {
     const encryptedContentBuffer = this.base64ToArrayBuffer(encryptedData.encryptedContent);
     const ivBuffer = this.base64ToArrayBuffer(encryptedData.iv);
 
-    const decryptedContent = await crypto.subtle.decrypt(
+    const decryptedContent = await this.crypto.subtle.decrypt(
       {
         name: 'AES-GCM',
         iv: ivBuffer,
@@ -183,7 +189,7 @@ export class CryptoService {
 
     const keyBuffer = this.base64ToArrayBuffer(keyData);
 
-    const key = await crypto.subtle.importKey('spki', keyBuffer, RSA_ALGORITHM, false, ['encrypt']);
+    const key = await this.crypto.subtle.importKey('spki', keyBuffer, RSA_ALGORITHM, false, ['encrypt']);
 
     this.keyCache.set(`pub_${keyData}`, key);
     return key;
@@ -191,7 +197,7 @@ export class CryptoService {
 
   private async importPrivateKey(keyData: string): Promise<CryptoKey> {
     const keyBuffer = this.base64ToArrayBuffer(keyData);
-    return crypto.subtle.importKey('pkcs8', keyBuffer, RSA_ALGORITHM, false, ['decrypt']);
+    return this.crypto.subtle.importKey('pkcs8', keyBuffer, RSA_ALGORITHM, false, ['decrypt']);
   }
 
   private arrayBufferToBase64(buffer: ArrayBuffer): string {

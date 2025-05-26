@@ -24,6 +24,7 @@ export function PostContent({
   setIsExpanded,
 }: PostContentProps) {
   const contentRef = React.useRef<Video>(null);
+  const [sound, setSound] = React.useState<Audio.Sound | null>(null);
   const [audioStatus, setAudioStatus] = React.useState<AVPlaybackStatus | null>(null);
   const [isPlaying, setIsPlaying] = React.useState(false);
 
@@ -34,18 +35,50 @@ export function PostContent({
     return caption.substring(0, MAX_TEXT_LENGTH) + '...';
   }, [caption, isExpanded]);
 
+  // Load audio when component mounts and media type is audio
+  React.useEffect(() => {
+    if (mediaType === 'audio' && content) {
+      loadAudio();
+    }
+    
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [content, mediaType]);
+  
+  const loadAudio = async () => {
+    try {
+      const { sound: audioSound } = await Audio.Sound.createAsync(
+        { uri: content },
+        { shouldPlay: false },
+        onAudioStatusUpdate
+      );
+      setSound(audioSound);
+    } catch (error) {
+      console.error('Error loading audio:', error);
+    }
+  };
+  
+  const onAudioStatusUpdate = (status: AVPlaybackStatus) => {
+    setAudioStatus(status);
+    if (status.isLoaded) {
+      setIsPlaying(status.isPlaying);
+    }
+  };
+  
   const toggleAudio = async () => {
-    if (!contentRef.current) return;
+    if (!sound) return;
 
     try {
-      const status = await contentRef.current.getStatusAsync();
+      const status = await sound.getStatusAsync();
       if (status.isLoaded) {
         if (status.isPlaying) {
-          await contentRef.current.pauseAsync();
+          await sound.pauseAsync();
         } else {
-          await contentRef.current.playAsync();
+          await sound.playAsync();
         }
-        setIsPlaying(!status.isPlaying);
       }
     } catch (error) {
       console.error('Error toggling audio:', error);
@@ -93,10 +126,9 @@ export function PostContent({
               <View style={styles.waveformBar} />
             </View>
             <Text style={styles.audioDuration}>
-              {audioStatus && audioStatus.positionMillis
-                ? Math.floor(audioStatus.positionMillis / 1000)
-                : 0}
-              s
+              {audioStatus && 'isLoaded' in audioStatus && audioStatus.isLoaded
+                ? `${Math.floor(audioStatus.positionMillis / 1000)}s / ${Math.floor(audioStatus.durationMillis / 1000)}s`
+                : '0s'}
             </Text>
           </View>
         );

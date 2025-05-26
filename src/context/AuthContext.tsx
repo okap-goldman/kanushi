@@ -2,6 +2,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import type React from 'react';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { mockConfig, mockCurrentUser } from '../lib/mockData';
 
 interface AuthContextProps {
   session: Session | null;
@@ -24,6 +25,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // モックモードの場合
+    if (mockConfig.enabled) {
+      const mockUser: User = {
+        id: mockCurrentUser.id,
+        app_metadata: {},
+        user_metadata: {
+          username: mockCurrentUser.username,
+          name: mockCurrentUser.display_name,
+          image: mockCurrentUser.avatar_url,
+          bio: mockCurrentUser.bio,
+        },
+        aud: 'authenticated',
+        created_at: mockCurrentUser.created_at,
+        updated_at: mockCurrentUser.created_at,
+        email: mockCurrentUser.email,
+        role: 'authenticated',
+      };
+      
+      const mockSession: Session = {
+        access_token: 'mock-token',
+        token_type: 'bearer',
+        expires_in: 3600,
+        expires_at: Date.now() + 3600000,
+        refresh_token: 'mock-refresh-token',
+        user: mockUser,
+      };
+      
+      setSession(mockSession);
+      setUser(mockUser);
+      setLoading(false);
+      return;
+    }
+    
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -56,6 +90,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Helper to check if profile exists and create one if needed
   const checkAndCreateProfileIfNeeded = async (user: User) => {
     try {
+      // モックモードの場合はスキップ
+      if (mockConfig.enabled) {
+        return;
+      }
+      
       // Check if profile exists
       const { data, error } = await supabase
         .from('profile')

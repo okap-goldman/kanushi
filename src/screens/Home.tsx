@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { Bell, MessageCircle, Settings } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import { mockConfig, mockPosts } from '../lib/mockData';
+import { createTimelineService } from '../lib/timelineService';
 import { Avatar } from '../components/ui/Avatar';
 import { CreatePostDialog } from '../components/CreatePostDialog';
 import { Post } from '../components/post/Post';
@@ -20,11 +22,16 @@ import { FooterNav } from '../components/FooterNav';
 import { useAuth } from '../context/AuthContext';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { supabase } from '../lib/supabase';
+import StoriesRow from '../components/stories/StoriesRow';
+import CreateStoryDialog from '../components/stories/CreateStoryDialog';
+import { getStories, createStory, viewStory, type UserStories } from '../lib/storyService';
 
 export default function Home() {
   const [timelineType, setTimelineType] = useState<'family' | 'watch'>('family');
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [userStories, setUserStories] = useState<UserStories[]>([]);
+  const [showCreateStoryDialog, setShowCreateStoryDialog] = useState(false);
 
   const { user } = useAuth();
   const navigation = useNavigation<any>();
@@ -32,6 +39,56 @@ export default function Home() {
   const fetchPostsData = useCallback(
     async (page: number, pageSize: number) => {
       try {
+        // モックモードの場合
+        if (mockConfig.enabled) {
+          const timelineService = createTimelineService();
+          const result = await timelineService.getTimeline(
+            user?.id || '1',
+            timelineType,
+            pageSize,
+            page > 0 ? page.toString() : undefined
+          );
+          
+          if (result.success && result.data) {
+            const posts = result.data.data.map(post => {
+              // モックデータからユーザー情報を取得
+              const mockUser = mockPosts.find(p => p.id === post.id)?.user;
+              
+              return {
+                id: post.id,
+                user_id: post.userId,
+                content_type: post.contentType,
+                text_content: post.textContent,
+                media_url: post.mediaUrl,
+                audio_url: post.contentType === 'audio' ? post.mediaUrl : undefined,
+                audio_duration: post.durationSeconds,
+                image_urls: post.contentType === 'image' && post.mediaUrl ? [post.mediaUrl] : undefined,
+                preview_url: post.previewUrl,
+                created_at: post.createdAt.toISOString(),
+                likes_count: post.likesCount,
+                comments_count: post.commentsCount,
+                shares_count: post.sharesCount,
+                highlights_count: post.highlightsCount,
+                profile: mockUser ? {
+                  id: mockUser.id,
+                  display_name: mockUser.display_name,
+                  profile_image_url: mockUser.avatar_url,
+                } : {
+                  id: post.userId,
+                  display_name: 'ユーザー',
+                  profile_image_url: 'https://picsum.photos/200',
+                },
+                post_hashtag: [],
+              };
+            });
+            
+            // useInfiniteScrollは配列を期待しているので、postsを直接返す
+            return posts;
+          }
+          
+          return [];
+        }
+        
         // Using different queries based on timeline type
         let query;
 
@@ -119,6 +176,55 @@ export default function Home() {
     refresh();
   }, [timelineType]);
 
+  // Load stories on mount
+  useEffect(() => {
+    loadStories();
+  }, []);
+
+  const loadStories = async () => {
+    try {
+      const stories = await getStories();
+      setUserStories(stories);
+    } catch (error) {
+      console.error('Error loading stories:', error);
+    }
+  };
+
+  const handleCreateStory = () => {
+    setShowCreateStoryDialog(true);
+  };
+
+  const handleStoryView = async (storyId: string) => {
+    try {
+      await viewStory(storyId);
+    } catch (error) {
+      console.error('Error viewing story:', error);
+    }
+  };
+
+  const handleStorySubmit = async (data: {
+    file: { uri: string; type: string; name: string };
+    caption: string;
+    contentType: 'image' | 'video';
+  }) => {
+    try {
+      const story = await createStory(
+        data.file.uri,
+        data.file.type,
+        data.caption,
+        data.contentType
+      );
+      
+      if (story) {
+        // Refresh stories to show the new one
+        await loadStories();
+      }
+    } catch (error) {
+      console.error('Error creating story:', error);
+      throw error;
+    }
+  };
+
   const renderFooter = () => {
     if (!loadingMore) return null;
 
@@ -167,20 +273,54 @@ export default function Home() {
         </View>
       </View>
 
+      {/* Stories Row */}
+      <View style={styles.storiesContainer}>
+        <StoriesRow
+          userStories={userStories}
+          currentUserId={user?.id || ''}
+          currentUserImage={user?.profileImage || 'https://via.placeholder.com/100'}
+          onCreateStory={handleCreateStory}
+          onStoryView={handleStoryView}
+        />
+      </View>
+
       <FlatList
         testID="posts-flatlist"
         data={posts}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <Post
-            author={item.author}
-            content={item.content}
-            caption={item.caption}
-            mediaType={item.mediaType}
-            postId={item.id}
-            tags={item.tags}
-          />
-        )}
+        renderItem={({ item }) => {
+          // メディアコンテンツの決定
+          let content = item.text_content || '';
+          let caption = item.text_content || '';
+          
+          if (item.content_type === 'audio' && item.audio_url) {
+            content = item.audio_url;
+          } else if (item.content_type === 'image' && item.image_urls && item.image_urls.length > 0) {
+            content = item.image_urls[0];
+          } else if (item.content_type === 'video' && item.media_url) {
+            content = item.media_url;
+          }
+          
+          // テキスト以外のコンテンツの場合、text_contentをキャプションとして使用
+          if (item.content_type !== 'text') {
+            caption = item.text_content || '';
+          }
+          
+          return (
+            <Post
+              author={{
+                name: item.profile?.display_name || 'Unknown',
+                image: item.profile?.profile_image_url || 'https://picsum.photos/200',
+                id: item.profile?.id || item.user_id
+              }}
+              content={content}
+              caption={caption}
+              mediaType={item.content_type || 'text'}
+              postId={item.id}
+              tags={item.tags || []}
+            />
+          );
+        }}
         onEndReached={hasNextPage && !loadingMore ? loadMore : undefined}
         onEndReachedThreshold={0.1}
         ListFooterComponent={renderFooter}
@@ -237,6 +377,13 @@ export default function Home() {
           </View>
         </View>
       </Modal>
+
+      {/* Create Story Dialog */}
+      <CreateStoryDialog
+        isOpen={showCreateStoryDialog}
+        onOpenChange={setShowCreateStoryDialog}
+        onSubmit={handleStorySubmit}
+      />
       
       <FooterNav />
     </SafeAreaView>
@@ -301,7 +448,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 80,
+    bottom: 100,
     right: 16,
     width: 56,
     height: 56,
@@ -376,5 +523,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     marginTop: 2,
+  },
+  storiesContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
 });

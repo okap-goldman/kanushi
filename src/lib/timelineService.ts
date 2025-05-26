@@ -12,6 +12,7 @@ import type {
 import { db } from './db/client';
 import { follows, posts } from './db/schema';
 import { supabase } from './supabase';
+import { mockConfig, mockDelay, mockPosts, paginate } from './mockData';
 
 export interface TimelineService {
   getTimeline(
@@ -72,6 +73,51 @@ export function createTimelineService(
       cursor?: string
     ): Promise<ServiceResult<PaginatedResult<DrizzlePost>>> {
       try {
+        // モックモードの場合
+        if (mockConfig.enabled) {
+          await mockDelay();
+          
+          // カーソルからページ番号を取得
+          const page = cursor ? parseInt(cursor, 10) : 1;
+          
+          // モックの投稿データを変換
+          const drizzlePosts: DrizzlePost[] = mockPosts.map(post => ({
+            id: post.id,
+            userId: post.user_id,
+            contentType: post.audio_url ? 'audio' : (post.image_urls && post.image_urls.length > 0 ? 'image' : (post.video_url ? 'video' : 'text')),
+            textContent: post.content || null,
+            mediaUrl: post.audio_url || post.image_urls?.[0] || null,
+            previewUrl: post.image_urls?.[0] || null,
+            waveformUrl: null,
+            durationSeconds: post.audio_duration || null,
+            youtubeVideoId: null,
+            eventId: null,
+            groupId: null,
+            likesCount: post.likes_count,
+            commentsCount: post.comments_count,
+            sharesCount: post.shares_count,
+            highlightsCount: post.highlights_count,
+            retweetCount: 0,
+            viewsCount: 0,
+            aiMetadata: null,
+            lastActivityAt: new Date(post.created_at),
+            deletedAt: null,
+            createdAt: new Date(post.created_at),
+            updatedAt: new Date(post.updated_at),
+          }));
+          
+          const paginatedPosts = paginate(drizzlePosts, { page, limit });
+          
+          return {
+            success: true,
+            data: {
+              data: paginatedPosts.data,
+              totalCount: paginatedPosts.total,
+              nextCursor: page < paginatedPosts.totalPages ? (page + 1).toString() : null,
+            },
+            error: null,
+          };
+        }
         // Get follows based on timeline type
         const followsData = await dbClient.query.follows.findMany({
           where: and(
@@ -198,6 +244,53 @@ export function createTimelineService(
       cursor?: string
     ): Promise<ServiceResult<PaginatedResult<DrizzlePost>>> {
       try {
+        // モックモードの場合
+        if (mockConfig.enabled) {
+          await mockDelay();
+          
+          // カーソルからページ番号を取得
+          const page = cursor ? parseInt(cursor, 10) : 1;
+          
+          // モックの投稿データを変換
+          const drizzlePosts: DrizzlePost[] = mockPosts.map(post => ({
+            id: post.id,
+            userId: post.user_id,
+            contentType: post.audio_url ? 'audio' : (post.image_urls && post.image_urls.length > 0 ? 'image' : (post.video_url ? 'video' : 'text')),
+            textContent: post.content || null,
+            mediaUrl: post.audio_url || post.image_urls?.[0] || null,
+            previewUrl: post.image_urls?.[0] || null,
+            waveformUrl: null,
+            durationSeconds: post.audio_duration || null,
+            youtubeVideoId: null,
+            eventId: null,
+            groupId: null,
+            likesCount: post.likes_count,
+            commentsCount: post.comments_count,
+            sharesCount: post.shares_count,
+            highlightsCount: post.highlights_count,
+            retweetCount: 0,
+            viewsCount: 0,
+            aiMetadata: null,
+            lastActivityAt: new Date(post.created_at),
+            deletedAt: null,
+            createdAt: new Date(post.created_at),
+            updatedAt: new Date(post.updated_at),
+          }));
+          
+          const paginatedPosts = paginate(drizzlePosts, { page, limit });
+          const hasMore = page < paginatedPosts.totalPages;
+          const nextCursor = hasMore ? (page + 1).toString() : null;
+          
+          return {
+            success: true,
+            data: {
+              items: paginatedPosts.data,
+              hasMore,
+              nextCursor,
+            },
+            error: null,
+          };
+        }
         // Build query conditions
         const conditions = [isNull(posts.deletedAt)];
 

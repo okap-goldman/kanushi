@@ -5,6 +5,18 @@ import { useAuth } from '../../context/AuthContext';
 import { ShareModal } from '../ShareModal';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/use-toast';
+import { 
+  mockConfig, 
+  mockLikes, 
+  mockBookmarks, 
+  mockHighlights, 
+  mockComments,
+  isPostLikedByUser,
+  isPostBookmarkedByUser,
+  isPostHighlightedByUser,
+  getPostLikes,
+  getPostHighlights
+} from '../../lib/mockData';
 
 interface PostActionsProps {
   postId: string;
@@ -37,15 +49,20 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
       if (!user) return;
 
       try {
-        const { data, error } = await supabase
-          .from('like')
-          .select()
-          .eq('post_id', postId)
-          .eq('user_id', user.id)
-          .maybeSingle();
+        if (mockConfig.enabled) {
+          // Use mock data
+          setLiked(isPostLikedByUser(postId, user.id));
+        } else {
+          const { data, error } = await supabase
+            .from('like')
+            .select()
+            .eq('post_id', postId)
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-        if (error) throw error;
-        setLiked(!!data);
+          if (error) throw error;
+          setLiked(!!data);
+        }
       } catch (err) {
         console.error('Error checking like status:', err);
       }
@@ -56,15 +73,20 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
       if (!user) return;
 
       try {
-        const { data, error } = await supabase
-          .from('highlight')
-          .select()
-          .eq('post_id', postId)
-          .eq('user_id', user.id)
-          .maybeSingle();
+        if (mockConfig.enabled) {
+          // Use mock data
+          setHighlighted(isPostHighlightedByUser(postId, user.id));
+        } else {
+          const { data, error } = await supabase
+            .from('highlight')
+            .select()
+            .eq('post_id', postId)
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-        if (error) throw error;
-        setHighlighted(!!data);
+          if (error) throw error;
+          setHighlighted(!!data);
+        }
       } catch (err) {
         console.error('Error checking highlight status:', err);
       }
@@ -75,15 +97,20 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
       if (!user) return;
 
       try {
-        const { data, error } = await supabase
-          .from('bookmark')
-          .select()
-          .eq('post_id', postId)
-          .eq('user_id', user.id)
-          .maybeSingle();
+        if (mockConfig.enabled) {
+          // Use mock data
+          setBookmarked(isPostBookmarkedByUser(postId, user.id));
+        } else {
+          const { data, error } = await supabase
+            .from('bookmark')
+            .select()
+            .eq('post_id', postId)
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-        if (error) throw error;
-        setBookmarked(!!data);
+          if (error) throw error;
+          setBookmarked(!!data);
+        }
       } catch (err) {
         console.error('Error checking bookmark status:', err);
       }
@@ -92,13 +119,19 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     // Get like count
     const getLikeCount = async () => {
       try {
-        const { count, error } = await supabase
-          .from('like')
-          .select('*', { count: 'exact', head: true })
-          .eq('post_id', postId);
+        if (mockConfig.enabled) {
+          // Use mock data
+          const likes = getPostLikes(postId);
+          setLikeCount(likes.length);
+        } else {
+          const { count, error } = await supabase
+            .from('like')
+            .select('*', { count: 'exact', head: true })
+            .eq('post_id', postId);
 
-        if (error) throw error;
-        setLikeCount(count || 0);
+          if (error) throw error;
+          setLikeCount(count || 0);
+        }
       } catch (err) {
         console.error('Error getting like count:', err);
       }
@@ -107,13 +140,19 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     // Get comment count
     const getCommentCount = async () => {
       try {
-        const { count, error } = await supabase
-          .from('comment')
-          .select('*', { count: 'exact', head: true })
-          .eq('post_id', postId);
+        if (mockConfig.enabled) {
+          // Use mock data
+          const comments = mockComments.filter(c => c.post_id === postId);
+          setCommentCount(comments.length);
+        } else {
+          const { count, error } = await supabase
+            .from('comment')
+            .select('*', { count: 'exact', head: true })
+            .eq('post_id', postId);
 
-        if (error) throw error;
-        setCommentCount(count || 0);
+          if (error) throw error;
+          setCommentCount(count || 0);
+        }
       } catch (err) {
         console.error('Error getting comment count:', err);
       }
@@ -122,13 +161,19 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     // Get highlight count
     const getHighlightCount = async () => {
       try {
-        const { count, error } = await supabase
-          .from('highlight')
-          .select('*', { count: 'exact', head: true })
-          .eq('post_id', postId);
+        if (mockConfig.enabled) {
+          // Use mock data
+          const highlights = getPostHighlights(postId);
+          setHighlightCount(highlights.length);
+        } else {
+          const { count, error } = await supabase
+            .from('highlight')
+            .select('*', { count: 'exact', head: true })
+            .eq('post_id', postId);
 
-        if (error) throw error;
-        setHighlightCount(count || 0);
+          if (error) throw error;
+          setHighlightCount(count || 0);
+        }
       } catch (err) {
         console.error('Error getting highlight count:', err);
       }
@@ -190,30 +235,52 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
       const { profileService } = await import('../../lib/profileService');
       await profileService.ensureProfileExists(user);
 
-      if (liked) {
-        // Unlike
-        const { error } = await supabase
-          .from('like')
-          .delete()
-          .eq('post_id', postId)
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-        setLiked(false);
-        setLikeCount((prev) => Math.max(0, prev - 1));
+      if (mockConfig.enabled) {
+        // Mock implementation
+        if (liked) {
+          // Remove like from mock data
+          const index = mockLikes.findIndex(l => l.post_id === postId && l.user_id === user.id);
+          if (index !== -1) mockLikes.splice(index, 1);
+          setLiked(false);
+          setLikeCount((prev) => Math.max(0, prev - 1));
+        } else {
+          // Add like to mock data
+          showBubbleAnimation();
+          mockLikes.push({
+            id: `like-${Date.now()}`,
+            post_id: postId,
+            user_id: user.id,
+            created_at: new Date().toISOString(),
+          });
+          setLiked(true);
+          setLikeCount((prev) => prev + 1);
+        }
       } else {
-        // Like and show highlight bubble
-        showBubbleAnimation();
-        
-        const { error } = await supabase.from('like').insert({
-          post_id: postId,
-          user_id: user.id,
-          created_at: new Date().toISOString(),
-        });
+        if (liked) {
+          // Unlike
+          const { error } = await supabase
+            .from('like')
+            .delete()
+            .eq('post_id', postId)
+            .eq('user_id', user.id);
 
-        if (error) throw error;
-        setLiked(true);
-        setLikeCount((prev) => prev + 1);
+          if (error) throw error;
+          setLiked(false);
+          setLikeCount((prev) => Math.max(0, prev - 1));
+        } else {
+          // Like and show highlight bubble
+          showBubbleAnimation();
+          
+          const { error } = await supabase.from('like').insert({
+            post_id: postId,
+            user_id: user.id,
+            created_at: new Date().toISOString(),
+          });
+
+          if (error) throw error;
+          setLiked(true);
+          setLikeCount((prev) => prev + 1);
+        }
       }
     } catch (err) {
       console.error('Error toggling like:', err);
@@ -254,6 +321,18 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
       }
     }
     
+    // Mock implementation for initial like if needed
+    if (mockConfig.enabled && !liked) {
+      mockLikes.push({
+        id: `like-${Date.now()}`,
+        post_id: postId,
+        user_id: user.id,
+        created_at: new Date().toISOString(),
+      });
+      setLiked(true);
+      setLikeCount((prev) => prev + 1);
+    }
+    
     setShowHighlightDialog(true);
     setHighlightError('');
     setHighlightReason('');
@@ -268,34 +347,59 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     }
 
     try {
-      if (highlighted) {
-        // Remove highlight
-        const { error } = await supabase
-          .from('highlight')
-          .delete()
-          .eq('post_id', postId)
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-        setHighlighted(false);
-        setHighlightCount((prev) => Math.max(0, prev - 1));
+      if (mockConfig.enabled) {
+        // Mock implementation
+        if (highlighted) {
+          // Remove highlight from mock data
+          const index = mockHighlights.findIndex(h => h.post_id === postId && h.user_id === user.id);
+          if (index !== -1) mockHighlights.splice(index, 1);
+          setHighlighted(false);
+          setHighlightCount((prev) => Math.max(0, prev - 1));
+        } else {
+          // Add highlight to mock data
+          mockHighlights.push({
+            id: `highlight-${Date.now()}`,
+            post_id: postId,
+            user_id: user.id,
+            reason: highlightReason,
+            created_at: new Date().toISOString(),
+          });
+          setHighlighted(true);
+          setHighlightCount((prev) => prev + 1);
+          toast({
+            title: 'ハイライトしました✨',
+          });
+        }
       } else {
-        // Add highlight
-        const { error } = await supabase.from('highlight').insert({
-          post_id: postId,
-          user_id: user.id,
-          reason: highlightReason,
-          created_at: new Date().toISOString(),
-        });
+        if (highlighted) {
+          // Remove highlight
+          const { error } = await supabase
+            .from('highlight')
+            .delete()
+            .eq('post_id', postId)
+            .eq('user_id', user.id);
 
-        if (error) throw error;
-        setHighlighted(true);
-        setHighlightCount((prev) => prev + 1);
-        
-        // ハイライト成功のトーストを表示
-        toast({
-          title: 'ハイライトしました✨',
-        });
+          if (error) throw error;
+          setHighlighted(false);
+          setHighlightCount((prev) => Math.max(0, prev - 1));
+        } else {
+          // Add highlight
+          const { error } = await supabase.from('highlight').insert({
+            post_id: postId,
+            user_id: user.id,
+            reason: highlightReason,
+            created_at: new Date().toISOString(),
+          });
+
+          if (error) throw error;
+          setHighlighted(true);
+          setHighlightCount((prev) => prev + 1);
+          
+          // ハイライト成功のトーストを表示
+          toast({
+            title: 'ハイライトしました✨',
+          });
+        }
       }
 
       setShowHighlightDialog(false);
@@ -314,26 +418,45 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     if (!user) return;
 
     try {
-      if (bookmarked) {
-        // Remove bookmark
-        const { error } = await supabase
-          .from('bookmark')
-          .delete()
-          .eq('post_id', postId)
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-        setBookmarked(false);
+      if (mockConfig.enabled) {
+        // Mock implementation
+        if (bookmarked) {
+          // Remove bookmark from mock data
+          const index = mockBookmarks.findIndex(b => b.post_id === postId && b.user_id === user.id);
+          if (index !== -1) mockBookmarks.splice(index, 1);
+          setBookmarked(false);
+        } else {
+          // Add bookmark to mock data
+          mockBookmarks.push({
+            id: `bookmark-${Date.now()}`,
+            post_id: postId,
+            user_id: user.id,
+            created_at: new Date().toISOString(),
+          });
+          setBookmarked(true);
+        }
       } else {
-        // Add bookmark
-        const { error } = await supabase.from('bookmark').insert({
-          post_id: postId,
-          user_id: user.id,
-          created_at: new Date().toISOString(),
-        });
+        if (bookmarked) {
+          // Remove bookmark
+          const { error } = await supabase
+            .from('bookmark')
+            .delete()
+            .eq('post_id', postId)
+            .eq('user_id', user.id);
 
-        if (error) throw error;
-        setBookmarked(true);
+          if (error) throw error;
+          setBookmarked(false);
+        } else {
+          // Add bookmark
+          const { error } = await supabase.from('bookmark').insert({
+            post_id: postId,
+            user_id: user.id,
+            created_at: new Date().toISOString(),
+          });
+
+          if (error) throw error;
+          setBookmarked(true);
+        }
       }
     } catch (err) {
       console.error('Error toggling bookmark:', err);

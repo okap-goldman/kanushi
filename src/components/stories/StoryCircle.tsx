@@ -54,7 +54,7 @@ export default function StoryCircle({
       >
         {hasUnviewedStory ? (
           <LinearGradient
-            colors={['#a855f7', '#ec4899']}
+            colors={['#10b981', '#059669', '#047857']}
             start={[0, 0]}
             end={[1, 1]}
             style={styles.gradientBorder}

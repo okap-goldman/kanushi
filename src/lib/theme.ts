@@ -47,6 +47,10 @@ export const theme = {
         subtle: '#FFF5F8', // Very Light Pink
         light: '#FFECF1', // Light Pink
       },
+      violet: {
+        subtle: '#F5F3FF', // Very Light Violet
+        light: '#EDE9FE', // Light Violet
+      },
     },
     
     // Border colors
@@ -55,6 +59,7 @@ export const theme = {
       light: '#E5E7EB', // Gray-200
       emerald: '#A7F3D0', // Emerald-200
       rose: '#FFE0EC', // Light Pink Border
+      violet: '#DDD6FE', // Light Violet Border
     },
     
     // Status colors

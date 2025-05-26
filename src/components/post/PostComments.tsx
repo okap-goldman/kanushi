@@ -14,6 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Avatar } from '../ui/Avatar';
 import { Input } from '../ui/Input';
+import { mockConfig, mockComments, mockUsers } from '../../lib/mockData';
 
 interface Comment {
   id: string;
@@ -51,14 +52,32 @@ export function PostComments({
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.from('comment').insert({
-        post_id: postId,
-        user_id: user.id,
-        body: newComment.trim(),
-        created_at: new Date().toISOString(),
-      });
+      if (mockConfig.enabled) {
+        // Add comment to mock data
+        const newMockComment = {
+          id: `comment-${Date.now()}`,
+          post_id: postId,
+          user_id: user.id,
+          user: mockUsers.find(u => u.id === user.id),
+          content: newComment.trim(),
+          likes_count: 0,
+          is_liked: false,
+          created_at: new Date().toISOString(),
+        };
+        mockComments.push(newMockComment);
+        
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 300));
+      } else {
+        const { error } = await supabase.from('comment').insert({
+          post_id: postId,
+          user_id: user.id,
+          body: newComment.trim(),
+          created_at: new Date().toISOString(),
+        });
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
       setNewComment('');
       onCommentAdded();

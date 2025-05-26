@@ -1,6 +1,7 @@
 import type { AuthError, User } from '@supabase/supabase-js';
 import type { Account, Profile } from './db/schema/profile';
 import { supabase } from './supabase';
+import { mockConfig, mockDelay, mockCurrentUser } from './mockData';
 
 // 認証サービスのレスポンス型
 export type AuthResponse = {
@@ -535,6 +536,57 @@ export class AuthService implements IAuthService {
   // 現在のユーザー情報を取得
   async getCurrentUser(): Promise<AuthResponse> {
     try {
+      // モックモードの場合
+      if (mockConfig.enabled) {
+        await mockDelay();
+        const mockUser: User = {
+          id: mockCurrentUser.id,
+          app_metadata: {},
+          user_metadata: {
+            username: mockCurrentUser.username,
+            name: mockCurrentUser.display_name,
+            image: mockCurrentUser.avatar_url,
+            bio: mockCurrentUser.bio,
+          },
+          aud: 'authenticated',
+          created_at: mockCurrentUser.created_at,
+          updated_at: mockCurrentUser.created_at,
+          email: mockCurrentUser.email,
+          role: 'authenticated',
+        };
+        
+        const mockProfile: Profile = {
+          id: mockCurrentUser.id,
+          email: mockCurrentUser.email,
+          displayName: mockCurrentUser.display_name,
+          profileImageUrl: mockCurrentUser.avatar_url,
+          bio: mockCurrentUser.bio,
+          followersCount: mockCurrentUser.followers_count,
+          followingCount: mockCurrentUser.following_count,
+          postsCount: mockCurrentUser.posts_count,
+          isVerified: mockCurrentUser.is_verified,
+          createdAt: new Date(mockCurrentUser.created_at),
+          updatedAt: new Date(mockCurrentUser.created_at),
+          lastLoginAt: new Date(),
+        } as Profile;
+        
+        const mockAccount: Account = {
+          id: '1',
+          profileId: mockCurrentUser.id,
+          accountType: 'google',
+          isActive: true,
+          switchOrder: 1,
+          createdAt: new Date(mockCurrentUser.created_at),
+          updatedAt: new Date(mockCurrentUser.created_at),
+        } as Account;
+        
+        return {
+          user: mockUser,
+          profile: mockProfile,
+          account: mockAccount,
+          error: null,
+        };
+      }
       const {
         data: { user },
         error,

@@ -1,9 +1,15 @@
 import { supabase } from './supabase';
 import type { User } from '@supabase/supabase-js';
+import { mockConfig, mockDelay, mockCurrentUser } from './mockData';
 
 export const profileService = {
   async ensureProfileExists(user: User) {
     try {
+      // モックモードの場合
+      if (mockConfig.enabled) {
+        await mockDelay();
+        return true; // モックモードでは常に成功を返す
+      }
       // Check if profile exists
       const { data: existingProfile, error: checkError } = await supabase
         .from('profile')

@@ -15,7 +15,9 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { createHitChartService, type HitChartPost } from '../lib/hitChartService';
+import { liveRoomService } from '../lib/liveRoomService';
 import { useAuth } from '../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 import { Avatar } from '../components/ui/Avatar';
 import { Card } from '../components/ui/Card';
 import { Navbar } from '../components/Navbar';
@@ -135,15 +137,32 @@ const REGIONAL_HITS = [
   },
 ];
 
+interface LiveRoom {
+  id: string;
+  title: string;
+  host_user_id: string;
+  status: string;
+  participant_count: number;
+  is_recording: boolean;
+  created_at: string;
+  host?: {
+    display_name: string;
+    profile_image_url?: string;
+  };
+}
+
 export default function HitChart() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [posts, setPosts] = useState<HitChartPost[]>([]);
+  const [liveRooms, setLiveRooms] = useState<LiveRoom[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const { user } = useAuth();
+  const navigation = useNavigation<any>();
 
   useEffect(() => {
     loadPosts();
+    loadLiveRooms();
   }, [selectedCategory]);
 
   const loadPosts = async () => {
@@ -160,9 +179,18 @@ export default function HitChart() {
     }
   };
 
+  const loadLiveRooms = async () => {
+    try {
+      const activeRooms = await liveRoomService.getActiveRooms();
+      setLiveRooms(activeRooms);
+    } catch (error) {
+      console.error('Failed to load live rooms:', error);
+    }
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadPosts();
+    await Promise.all([loadPosts(), loadLiveRooms()]);
     setRefreshing(false);
   };
 
@@ -247,6 +275,52 @@ export default function HitChart() {
     </TouchableOpacity>
   );
 
+  const handleJoinRoom = (room: LiveRoom) => {
+    const isHost = room.host_user_id === user?.id;
+    navigation.navigate('LiveRoom', {
+      roomId: room.id,
+      userId: user?.id,
+      role: isHost ? 'speaker' : 'listener',
+      preloadedData: room,
+    });
+  };
+
+  const renderLiveRoom = ({ item }: { item: LiveRoom }) => (
+    <TouchableOpacity style={styles.liveRoomCard} onPress={() => handleJoinRoom(item)}>
+      <View style={styles.liveRoomHeader}>
+        <View style={styles.liveIndicator}>
+          <View style={styles.liveDot} />
+          <Text style={styles.liveText}>LIVE</Text>
+        </View>
+        {item.is_recording && (
+          <View style={styles.recordingBadge}>
+            <Text style={styles.recordingText}>REC</Text>
+          </View>
+        )}
+      </View>
+      <Text style={styles.liveRoomTitle} numberOfLines={2}>
+        {item.title}
+      </Text>
+      <View style={styles.liveRoomInfo}>
+        <Avatar 
+          source={{ uri: item.host?.profile_image_url || 'https://i.pravatar.cc/150?u=' + item.host_user_id }} 
+          size="sm" 
+        />
+        <View style={styles.liveRoomHostInfo}>
+          <Text style={styles.liveRoomHostName}>{item.host?.display_name || '匿名ホスト'}</Text>
+          <View style={styles.liveRoomStats}>
+            <Feather name="users" size={12} color={theme.colors.text.muted} />
+            <Text style={styles.liveRoomParticipants}>{item.participant_count || 0}人参加中</Text>
+          </View>
+        </View>
+      </View>
+      <TouchableOpacity style={styles.joinButton}>
+        <Feather name="mic" size={16} color={theme.colors.text.inverse} />
+        <Text style={styles.joinButtonText}>参加する</Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <Navbar />
@@ -284,6 +358,26 @@ export default function HitChart() {
             contentContainerStyle={styles.horizontalList}
           />
         </View>
+
+        {/* Active Live Rooms Section */}
+        {liveRooms.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>今注目のライブルーム</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('LiveRooms')}>
+                <Text style={styles.seeAllText}>すべて見る</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              horizontal
+              data={liveRooms.slice(0, 4)}
+              renderItem={renderLiveRoom}
+              keyExtractor={(item) => item.id}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+            />
+          </View>
+        )}
 
         {/* Trending Users Section */}
         <View style={styles.section}>
@@ -665,5 +759,94 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: theme.colors.text.muted,
+  },
+
+  // Live Room Card Styles
+  liveRoomCard: {
+    width: width * 0.8,
+    backgroundColor: theme.colors.background.violet.subtle,
+    borderRadius: 12,
+    marginRight: 15,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: theme.colors.border.violet,
+  },
+  liveRoomHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF0000',
+  },
+  liveText: {
+    color: '#FF0000',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  recordingBadge: {
+    backgroundColor: '#FF0000',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  recordingText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  liveRoomTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: theme.colors.text.primary,
+    marginBottom: 12,
+  },
+  liveRoomInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  liveRoomHostInfo: {
+    marginLeft: 10,
+    flex: 1,
+  },
+  liveRoomHostName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.colors.text.primary,
+  },
+  liveRoomStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  liveRoomParticipants: {
+    fontSize: 12,
+    color: theme.colors.text.muted,
+  },
+  joinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primary.main,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    gap: 6,
+  },
+  joinButtonText: {
+    color: theme.colors.text.inverse,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

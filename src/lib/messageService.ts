@@ -1,5 +1,6 @@
 import type { ApiResponse } from './data';
 import { supabase } from './supabase';
+import { mockConfig, mockDelay, mockConversations, mockMessages, getMockConversation, getMockMessages, generateId, getCurrentTimestamp } from './mockData';
 
 // Define types for the messaging feature
 export interface Conversation {
@@ -67,6 +68,66 @@ export const getConversations = async (
   current_user_id: string
 ): Promise<ApiResponse<Conversation[]>> => {
   try {
+    // モックモードの場合
+    if (mockConfig.enabled) {
+      await mockDelay();
+      
+      const mockConvs: Conversation[] = mockConversations.map(conv => ({
+        id: conv.id,
+        participants: [
+          {
+            id: generateId(),
+            conversation_id: conv.id,
+            user_id: current_user_id,
+            created_at: conv.updated_at,
+            is_admin: false,
+            last_read_at: conv.updated_at,
+            user: {
+              id: current_user_id,
+              name: 'Current User',
+              image: 'https://picsum.photos/200',
+            },
+          },
+          {
+            id: generateId(),
+            conversation_id: conv.id,
+            user_id: conv.other_user?.id || conv.user2_id,
+            created_at: conv.updated_at,
+            is_admin: false,
+            last_read_at: conv.updated_at,
+            user: {
+              id: conv.other_user?.id || conv.user2_id,
+              name: conv.other_user?.display_name || 'Other User',
+              image: conv.other_user?.avatar_url || 'https://picsum.photos/200',
+              username: conv.other_user?.username,
+            },
+          },
+        ],
+        last_message: conv.last_message ? {
+          id: conv.last_message.id,
+          conversation_id: conv.id,
+          user_id: conv.last_message.sender_id,
+          content: conv.last_message.content,
+          content_type: conv.last_message.audio_url ? 'audio' : 'text',
+          media_url: conv.last_message.audio_url || null,
+          is_read: conv.last_message.is_read,
+          created_at: conv.last_message.created_at,
+          updated_at: conv.last_message.created_at,
+          sender: {
+            id: conv.last_message.sender_id,
+            name: conv.other_user?.display_name || 'Sender',
+            image: conv.other_user?.avatar_url || 'https://picsum.photos/200',
+          },
+        } : undefined,
+        created_at: conv.updated_at,
+        updated_at: conv.updated_at,
+        unread_count: conv.unread_count,
+        display_name: conv.other_user?.display_name,
+        display_image: conv.other_user?.avatar_url,
+      }));
+      
+      return { data: mockConvs, error: null };
+    }
     // Get all conversations that the current user is a part of
     const { data: participantData, error: participantError } = await supabase
       .from('conversation_participants')

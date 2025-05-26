@@ -11,10 +11,13 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
+import { FooterNav } from '../components/FooterNav';
+import { Navbar } from '../components/Navbar';
 import { Input } from '../components/ui/Input';
 import { useToast } from '../hooks/use-toast';
-import { eventService, type ExtendedEvent } from '../lib/eventService';
+import { type ExtendedEvent, eventService } from '../lib/eventService';
 
 const EVENT_CATEGORIES = [
   { id: 'all', name: 'すべて', value: undefined },
@@ -32,7 +35,7 @@ export default function Events() {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [showSearch, setShowSearch] = useState(false);
+  const [showSearch, setShowSearch] = useState(true);
   const navigation = useNavigation<any>();
   const { toast } = useToast();
 
@@ -45,7 +48,7 @@ export default function Events() {
       }
 
       const categoryValue = EVENT_CATEGORIES.find((cat) => cat.id === selectedCategory)?.value;
-      
+
       const response = await eventService.getEvents({
         category: categoryValue,
         search: searchQuery,
@@ -97,16 +100,16 @@ export default function Events() {
   const formatEventDate = (startDate: string, endDate?: string) => {
     const start = new Date(startDate);
     const end = endDate ? new Date(endDate) : null;
-    
+
     const dateOptions: Intl.DateTimeFormatOptions = {
       month: 'numeric',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     };
-    
+
     const startStr = start.toLocaleString('ja-JP', dateOptions);
-    
+
     if (end) {
       const endStr = end.toLocaleString('ja-JP', {
         hour: '2-digit',
@@ -114,7 +117,7 @@ export default function Events() {
       });
       return `${startStr} - ${endStr}`;
     }
-    
+
     return startStr;
   };
 
@@ -135,14 +138,14 @@ export default function Events() {
 
   const renderEventItem = ({ item }: { item: ExtendedEvent }) => {
     const badge = getEventTypeBadge(item.event_type || item.category);
-    
+
     return (
       <TouchableOpacity style={styles.eventCard} onPress={() => navigateToEventDetail(item.id)}>
         {item.image_url || item.cover_image_url ? (
-          <Image 
-            source={{ uri: item.image_url || item.cover_image_url }} 
-            style={styles.eventImage} 
-            contentFit="cover" 
+          <Image
+            source={{ uri: item.image_url || item.cover_image_url }}
+            style={styles.eventImage}
+            contentFit="cover"
           />
         ) : (
           <View style={[styles.eventImage, styles.placeholderImage]}>
@@ -157,11 +160,9 @@ export default function Events() {
         )}
 
         <View style={styles.eventContent}>
-          <Text style={styles.eventDate}>
-            {formatEventDate(item.start_date, item.end_date)}
-          </Text>
+          <Text style={styles.eventDate}>{formatEventDate(item.start_date, item.end_date)}</Text>
           <Text style={styles.eventTitle}>{item.title}</Text>
-          
+
           {item.location && (
             <Text style={styles.eventLocation} numberOfLines={1}>
               <Feather name="map-pin" size={12} color="#718096" /> {item.location}
@@ -171,9 +172,7 @@ export default function Events() {
           <View style={styles.eventFooter}>
             <View style={styles.attendeeCount}>
               <Feather name="users" size={14} color="#718096" />
-              <Text style={styles.attendeeText}>
-                {item.participant_count || 0} 人参加
-              </Text>
+              <Text style={styles.attendeeText}>{item.participant_count || 0} 人参加</Text>
             </View>
             <Text style={styles.eventPrice}>
               {item.price ? `¥${item.price.toLocaleString()}` : '無料'}
@@ -186,10 +185,9 @@ export default function Events() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Navbar />
+      <View style={styles.contentContainer}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={24} color="#1A202C" />
-        </TouchableOpacity>
         <Text style={styles.title}>イベント</Text>
         <TouchableOpacity style={styles.searchButton} onPress={() => setShowSearch(!showSearch)}>
           <Feather name="search" size={24} color="#1A202C" />
@@ -253,8 +251,8 @@ export default function Events() {
           <Feather name="calendar" size={64} color="#CBD5E0" />
           <Text style={styles.emptyText}>イベントがありません</Text>
           <Text style={styles.emptySubText}>
-            {searchQuery 
-              ? '検索条件に一致するイベントが見つかりませんでした' 
+            {searchQuery
+              ? '検索条件に一致するイベントが見つかりませんでした'
               : '新しいイベントが追加されるまでお待ちください'}
           </Text>
         </View>
@@ -265,9 +263,7 @@ export default function Events() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.eventsList}
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
@@ -279,6 +275,17 @@ export default function Events() {
           }
         />
       )}
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('CreateEvent')}
+        activeOpacity={0.8}
+      >
+        <Feather name="plus" size={24} color="#FFFFFF" />
+      </TouchableOpacity>
+      </View>
+      <FooterNav />
     </SafeAreaView>
   );
 }
@@ -287,6 +294,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  contentContainer: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -451,5 +461,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7FAFC',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 80,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#0070F3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });

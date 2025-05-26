@@ -6,6 +6,7 @@ import { Avatar } from './ui/Avatar';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { theme } from '../lib/theme';
+import { mockConfig, mockCurrentUser } from '../lib/mockData';
 
 export function FooterNav() {
   const navigation = useNavigation<any>();
@@ -21,6 +22,12 @@ export function FooterNav() {
 
   const fetchUserAvatar = async () => {
     if (!user?.id) return;
+    
+    // モックモードの場合
+    if (mockConfig.enabled) {
+      setUserAvatar(mockCurrentUser.avatar_url);
+      return;
+    }
     
     try {
       const { data, error } = await supabase
@@ -40,7 +47,8 @@ export function FooterNav() {
   const navItems = [
     { name: 'メニュー', icon: 'menu', route: 'Menu', testId: 'nav-menu' },
     { name: '発見', icon: 'compass', route: 'Discover', testId: 'nav-discover' },
-    { name: 'タイムライン', icon: 'home', route: 'Home', testId: 'nav-home' },
+    { name: 'タイムライン', icon: 'home', route: 'HomeScreen', testId: 'nav-home' },
+    { name: 'イベント', icon: 'calendar', route: 'Events', testId: 'nav-events' },
     { name: 'マーケット', icon: 'shopping-bag', route: 'Market', testId: 'nav-market' },
   ];
 

@@ -1,5 +1,6 @@
 import type { ApiResponse } from './data';
 import { supabase } from './supabase';
+import { mockConfig, mockDelay, mockEvents, getMockEvent, getMockUserEvents } from './mockData';
 
 export interface UserProfile {
   id: string;
@@ -341,6 +342,64 @@ export const eventService = {
     filters: EventsFilter = {}
   ): Promise<ApiResponse<{ events: ExtendedEvent[]; count: number | null }>> {
     try {
+      // モックモードの場合
+      if (mockConfig.enabled) {
+        await mockDelay();
+        
+        const extendedEvents: ExtendedEvent[] = mockEvents.map(event => ({
+          id: event.id,
+          title: event.title,
+          description: event.description,
+          start_date: event.start_date,
+          end_date: event.end_date,
+          location: event.location || '',
+          capacity: event.capacity,
+          current_participants: event.current_participants,
+          image_url: event.cover_image,
+          organizer_id: event.host_id,
+          created_at: event.created_at,
+          updated_at: event.created_at,
+          location_details: event.location ? {
+            address: event.location,
+            venue_name: event.location,
+          } : null,
+          is_online: event.event_type === 'online',
+          online_url: event.online_url || null,
+          max_participants: event.capacity || null,
+          price: event.price,
+          currency: event.currency,
+          cover_image_url: event.cover_image || null,
+          is_published: true,
+          is_cancelled: false,
+          category: event.category || null,
+          privacy_level: 'public' as const,
+          organizer: {
+            id: event.host?.id || event.host_id,
+            name: event.host?.display_name || 'Unknown',
+            username: event.host?.username || 'unknown',
+            image: event.host?.avatar_url,
+          },
+          user_participation_status: event.is_registered ? 'attending' as const : undefined,
+        }));
+        
+        // フィルタリング
+        let filteredEvents = extendedEvents;
+        if (filters.search) {
+          const searchLower = filters.search.toLowerCase();
+          filteredEvents = filteredEvents.filter(event => 
+            event.title.toLowerCase().includes(searchLower) ||
+            event.description.toLowerCase().includes(searchLower)
+          );
+        }
+        
+        return { 
+          data: { 
+            events: filteredEvents, 
+            count: filteredEvents.length 
+          }, 
+          error: null 
+        };
+      }
       let query = supabase.from('events').select(
         `
           *,

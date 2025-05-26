@@ -14,6 +14,7 @@ import Discover from '../screens/Discover';
 import RegionDetail from '../screens/RegionDetail';
 import EventDetailScreen from '../screens/EventDetail';
 import EventsScreen from '../screens/Events';
+import CreateEvent from '../screens/CreateEvent';
 // Main Screens
 import Home from '../screens/Home';
 import { AIChat } from '../components/ai/AIChat';
@@ -30,6 +31,13 @@ import Shop from '../screens/Shop';
 import Market from '../screens/Market';
 import Settings from '../screens/Settings';
 import HitChart from '../screens/HitChart';
+import MyEvents from '../screens/MyEvents';
+import Premium from '../screens/Premium';
+import MyShop from '../screens/MyShop';
+import CreateProduct from '../screens/CreateProduct';
+import EditProduct from '../screens/EditProduct';
+import Bookmarks from '../screens/Bookmarks';
+import WatchLater from '../screens/WatchLater';
 
 // LiveRoom Screens
 import { LiveRoomScreen } from '../components/liveroom/LiveRoomScreen';
@@ -50,33 +58,41 @@ function CustomDrawerContent(props: any) {
       <DrawerContentScrollView {...props} contentContainerStyle={drawerStyles.scrollContent}>
         <DrawerItem
           label="プロフィール"
-          onPress={() => navigation.navigate('Profile', { userId: user?.id })}
+          onPress={() => navigation.navigate('Main', {
+            screen: 'Profile',
+            params: { userId: user?.id }
+          })}
           icon={({ color, size }) => <Feather name="user" color={color} size={size} />}
         />
         <DrawerItem
           label="ブックマーク"
-          onPress={() => navigation.navigate('Bookmarks')}
+          onPress={() => navigation.navigate('Main', { screen: 'Bookmarks' })}
           icon={({ color, size }) => <Feather name="bookmark" color={color} size={size} />}
         />
         <DrawerItem
           label="マイイベント"
-          onPress={() => navigation.navigate('MyEvents')}
+          onPress={() => navigation.navigate('Main', { screen: 'MyEvents' })}
           icon={({ color, size }) => <Feather name="calendar" color={color} size={size} />}
         />
         <DrawerItem
           label="マイショップ"
-          onPress={() => navigation.navigate('MyShop')}
+          onPress={() => navigation.navigate('Main', { screen: 'MyShop' })}
           icon={({ color, size }) => <Feather name="shopping-bag" color={color} size={size} />}
         />
         <DrawerItem
           label="ヒットチャート"
-          onPress={() => navigation.navigate('HitChart')}
+          onPress={() => navigation.navigate('Main', { screen: 'HitChart' })}
           icon={({ color, size }) => <Feather name="trending-up" color={color} size={size} />}
         />
         <DrawerItem
           label="後で見る"
-          onPress={() => navigation.navigate('WatchLater')}
+          onPress={() => navigation.navigate('Main', { screen: 'WatchLater' })}
           icon={({ color, size }) => <Feather name="clock" color={color} size={size} />}
+        />
+        <DrawerItem
+          label="プレミアム"
+          onPress={() => navigation.navigate('Main', { screen: 'Premium' })}
+          icon={({ color, size }) => <Feather name="award" color={color} size={size} />}
         />
       </DrawerContentScrollView>
       <View style={drawerStyles.bottomSection}>
@@ -109,6 +125,64 @@ const drawerStyles = StyleSheet.create({
 });
 
 
+function MainStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+      }}
+    >
+      <Stack.Screen name="HomeScreen" component={Home} />
+      <Stack.Screen name="Search" component={Search} />
+      <Stack.Screen name="Discover" component={Discover} />
+      <Stack.Screen name="RegionDetail" component={RegionDetail} />
+      <Stack.Screen name="AIChat" component={AIChat} />
+
+      {/* Profile Stack */}
+      <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen name="ProfileEdit" component={ProfileEdit} />
+      <Stack.Screen name="Settings" component={Settings} />
+      <Stack.Screen name="HitChart" component={HitChart} />
+      <Stack.Screen name="Premium" component={Premium} />
+      <Stack.Screen name="Bookmarks" component={Bookmarks} />
+      <Stack.Screen name="WatchLater" component={WatchLater} />
+
+      {/* Messages Stack */}
+      <Stack.Screen name="Messages" component={Messages} />
+      <Stack.Screen name="MessageDetail" component={MessageDetail} />
+      <Stack.Screen name="NewMessage" component={NewMessage} />
+
+      {/* Events Stack */}
+      <Stack.Screen name="Events" component={EventsScreen} />
+      <Stack.Screen name="EventDetail" component={EventDetailScreen} />
+      <Stack.Screen name="CreateEvent" component={CreateEvent} />
+      <Stack.Screen name="MyEvents" component={MyEvents} />
+
+      {/* Shop Stack */}
+      <Stack.Screen name="Shop" component={Shop} />
+      <Stack.Screen name="Market" component={Market} />
+      <Stack.Screen name="ProductDetail" component={ProductDetail} />
+      <Stack.Screen name="Orders" component={Orders} />
+      <Stack.Screen name="OrderDetail" component={OrderDetail} />
+      <Stack.Screen name="MyShop" component={MyShop} />
+      <Stack.Screen name="CreateProduct" component={CreateProduct} />
+      <Stack.Screen name="EditProduct" component={EditProduct} />
+
+      {/* LiveRoom Stack */}
+      <Stack.Screen name="LiveRooms" component={LiveRooms} />
+      <Stack.Screen
+        name="LiveRoom"
+        component={LiveRoomScreen}
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 function DrawerNavigator() {
   return (
     <Drawer.Navigator
@@ -117,7 +191,7 @@ function DrawerNavigator() {
         headerShown: false,
       }}
     >
-      <Drawer.Screen name="Main" component={Home} />
+      <Drawer.Screen name="Main" component={MainStack} />
     </Drawer.Navigator>
   );
 }
@@ -129,11 +203,19 @@ const linking = {
     screens: {
       Home: {
         screens: {
-          LiveRoomsTab: 'live',
+          Main: {
+            screens: {
+              HomeScreen: {
+                screens: {
+                  LiveRoomsTab: 'live',
+                },
+              },
+              LiveRoom: 'liveroom/:roomId',
+              PostDetail: 'post/:postId',
+            },
+          },
         },
       },
-      LiveRoom: 'liveroom/:roomId',
-      PostDetail: 'post/:postId',
       Login: {
         path: 'login',
         parse: {
@@ -178,47 +260,8 @@ export default function Navigation() {
             <Stack.Screen name="Register" component={Register} />
           </>
         ) : (
-          // Main App Screens
-          <>
-            <Stack.Screen name="Home" component={DrawerNavigator} />
-            <Stack.Screen name="Search" component={Search} />
-            <Stack.Screen name="Discover" component={Discover} />
-            <Stack.Screen name="RegionDetail" component={RegionDetail} />
-            <Stack.Screen name="AIChat" component={AIChat} />
-
-            {/* Profile Stack */}
-            <Stack.Screen name="Profile" component={Profile} />
-            <Stack.Screen name="ProfileEdit" component={ProfileEdit} />
-            <Stack.Screen name="Settings" component={Settings} />
-            <Stack.Screen name="HitChart" component={HitChart} />
-
-            {/* Messages Stack */}
-            <Stack.Screen name="Messages" component={Messages} />
-            <Stack.Screen name="MessageDetail" component={MessageDetail} />
-            <Stack.Screen name="NewMessage" component={NewMessage} />
-
-            {/* Events Stack */}
-            <Stack.Screen name="Events" component={EventsScreen} />
-            <Stack.Screen name="EventDetail" component={EventDetailScreen} />
-
-            {/* Shop Stack */}
-            <Stack.Screen name="Shop" component={Shop} />
-            <Stack.Screen name="Market" component={Market} />
-            <Stack.Screen name="ProductDetail" component={ProductDetail} />
-            <Stack.Screen name="Orders" component={Orders} />
-            <Stack.Screen name="OrderDetail" component={OrderDetail} />
-
-            {/* LiveRoom Stack */}
-            <Stack.Screen name="LiveRooms" component={LiveRooms} />
-            <Stack.Screen
-              name="LiveRoom"
-              component={LiveRoomScreen}
-              options={{
-                presentation: 'modal',
-                animation: 'slide_from_bottom',
-              }}
-            />
-          </>
+          // Main App Screens - All wrapped in DrawerNavigator
+          <Stack.Screen name="Home" component={DrawerNavigator} />
         )}
       </Stack.Navigator>
     </NavigationContainer>

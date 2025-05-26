@@ -5,6 +5,12 @@ import { beforeEach, vi } from 'vitest';
 (global as any).__DEV__ = true;
 (global as any).fetch = vi.fn();
 
+// Mock Web Crypto API for Node.js environment
+if (typeof global !== 'undefined' && !global.crypto) {
+  const { webcrypto } = await import('crypto');
+  global.crypto = webcrypto as any;
+}
+
 // React NativeとExpo関連のモック
 vi.mock('react-native', () => ({
   Platform: {

@@ -14,6 +14,11 @@ import PostCard from '../components/PostCard';
 import { Tabs } from '../components/ui/Tabs';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
+import StoriesRow from '../components/stories/StoriesRow';
+import CreateStoryDialog from '../components/stories/CreateStoryDialog';
+import { getStories, createStory, viewStory, type UserStories } from '../lib/storyService';
+import { createTimelineService } from '../lib/timelineService';
+import { mockPosts } from '../lib/mockData';
 
 interface Post {
   id: string;
@@ -48,6 +53,8 @@ export default function Timeline(_props: TimelineProps) {
   const [hasNextPage, setHasNextPage] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [userStories, setUserStories] = useState<UserStories[]>([]);
+  const [showCreateStoryDialog, setShowCreateStoryDialog] = useState(false);
 
   const { user } = useAuth();
 
@@ -94,21 +101,67 @@ export default function Timeline(_props: TimelineProps) {
 
   useEffect(() => {
     loadTimeline();
+    loadStories();
   }, [activeTab]);
 
   const loadTimeline = async () => {
     setLoading(true);
     try {
-      // Simulate API call - here we would use activeTab to filter posts
-      setTimeout(() => {
-        // Filter posts based on activeTab if needed
-        const filteredPosts = mockPosts; // In real implementation, filter by activeTab
-        setPosts(filteredPosts);
-        setLoading(false);
-      }, 1000);
+      const timelineService = createTimelineService();
+      const result = await timelineService.getTimeline(
+        user?.id || '1',
+        activeTab === 'family' ? 'family' : 'public',
+        20
+      );
+      
+      if (result.success && result.data) {
+        const formattedPosts: Post[] = result.data.data.map(post => {
+          // モックデータからユーザー情報を取得
+          const mockUser = mockPosts.find(p => p.id === post.id)?.user;
+          
+          return {
+            id: post.id,
+            user: mockUser ? {
+              id: mockUser.id,
+              displayName: mockUser.display_name,
+              profileImageUrl: mockUser.avatar_url,
+            } : {
+              id: post.userId,
+              displayName: 'ユーザー',
+              profileImageUrl: 'https://picsum.photos/200',
+            },
+            contentType: post.contentType as 'text' | 'image' | 'audio' | 'video',
+            textContent: post.textContent || undefined,
+            mediaUrl: post.mediaUrl || undefined,
+            waveformUrl: post.waveformUrl || undefined,
+            durationSeconds: post.durationSeconds || undefined,
+            aiMetadata: post.aiMetadata || undefined,
+            createdAt: post.createdAt.toISOString(),
+            likes: post.likesCount,
+            comments: post.commentsCount,
+            isLiked: false,
+            isHighlighted: false,
+            isBookmarked: false,
+          };
+        });
+        
+        setPosts(formattedPosts);
+        setHasNextPage(result.data.nextCursor !== null);
+      }
+      
+      setLoading(false);
     } catch (error) {
       console.error('Error loading timeline:', error);
       setLoading(false);
+    }
+  };
+
+  const loadStories = async () => {
+    try {
+      const stories = await getStories();
+      setUserStories(stories);
+    } catch (error) {
+      console.error('Error loading stories:', error);
     }
   };
 
@@ -120,6 +173,8 @@ export default function Timeline(_props: TimelineProps) {
         setPosts(mockPosts);
         setRefreshing(false);
       }, 500);
+      // Also refresh stories
+      await loadStories();
     } catch (error) {
       console.error('Error refreshing timeline:', error);
       setRefreshing(false);
@@ -220,6 +275,41 @@ export default function Timeline(_props: TimelineProps) {
     setShowConfirmDialog(false);
   };
 
+  const handleCreateStory = () => {
+    setShowCreateStoryDialog(true);
+  };
+
+  const handleStoryView = async (storyId: string) => {
+    try {
+      await viewStory(storyId);
+    } catch (error) {
+      console.error('Error viewing story:', error);
+    }
+  };
+
+  const handleStorySubmit = async (data: {
+    file: { uri: string; type: string; name: string };
+    caption: string;
+    contentType: 'image' | 'video';
+  }) => {
+    try {
+      const story = await createStory(
+        data.file.uri,
+        data.file.type,
+        data.caption,
+        data.contentType
+      );
+      
+      if (story) {
+        // Refresh stories to show the new one
+        await loadStories();
+      }
+    } catch (error) {
+      console.error('Error creating story:', error);
+      throw error;
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -230,6 +320,17 @@ export default function Timeline(_props: TimelineProps) {
 
   return (
     <View style={styles.container}>
+      {/* Stories Row - Fixed at top */}
+      <View style={styles.storiesContainer}>
+        <StoriesRow
+          userStories={userStories}
+          currentUserId={user?.id || ''}
+          currentUserImage={user?.profileImage || 'https://via.placeholder.com/100'}
+          onCreateStory={handleCreateStory}
+          onStoryView={handleStoryView}
+        />
+      </View>
+
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
         <Tabs
@@ -302,6 +403,13 @@ export default function Timeline(_props: TimelineProps) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Create Story Dialog */}
+      <CreateStoryDialog
+        isOpen={showCreateStoryDialog}
+        onOpenChange={setShowCreateStoryDialog}
+        onSubmit={handleStorySubmit}
+      />
     </View>
   );
 }
@@ -390,5 +498,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
+  },
+  storiesContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
 });

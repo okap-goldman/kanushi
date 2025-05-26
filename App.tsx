@@ -9,6 +9,8 @@ import { AuthProvider } from './src/context/AuthContext';
 import Navigation from './src/navigation';
 // Polyfill for Animated.createAnimatedComponent
 import 'react-native-reanimated';
+// Crypto polyfill for web
+import './src/lib/crypto-polyfill';
 
 export default function App() {
   const [queryClient] = useState(() => new QueryClient());
