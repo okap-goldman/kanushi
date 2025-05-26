@@ -127,7 +127,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
     if (loading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0070F3" />
+          <ActivityIndicator size="large" color="#10B981" />
         </View>
       );
     }
@@ -136,7 +136,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
       return (
         <View style={styles.emptyContainer}>
           <Feather name="image" size={48} color="#CBD5E0" />
-          <Text style={styles.emptyText}>No posts yet</Text>
+          <Text style={styles.emptyText}>まだ投稿がありません</Text>
         </View>
       );
     }
@@ -145,7 +145,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
       return (
         <View style={styles.emptyContainer}>
           <Feather name="star" size={48} color="#CBD5E0" />
-          <Text style={styles.emptyText}>No highlights yet</Text>
+          <Text style={styles.emptyText}>まだハイライトがありません</Text>
         </View>
       );
     }
@@ -154,7 +154,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
       return (
         <View style={styles.emptyContainer}>
           <Feather name="heart" size={48} color="#CBD5E0" />
-          <Text style={styles.emptyText}>No likes yet</Text>
+          <Text style={styles.emptyText}>まだいいねがありません</Text>
         </View>
       );
     }
@@ -207,7 +207,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
               <View style={styles.audioGridItem}>
                 <Feather name="mic" size={24} color="#FFFFFF" />
                 <Text style={styles.audioText} numberOfLines={2}>
-                  {item.text_content || 'Audio'}
+                  {item.text_content || '音声'}
                 </Text>
               </View>
             ) : (
@@ -230,7 +230,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
           style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
           onPress={() => onChangeTab('posts')}
         >
-          <Feather name="grid" size={20} color={activeTab === 'posts' ? '#0070F3' : '#64748B'} />
+          <Feather name="grid" size={20} color={activeTab === 'posts' ? '#10B981' : '#64748B'} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -240,7 +240,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
           <Feather
             name="star"
             size={20}
-            color={activeTab === 'highlights' ? '#0070F3' : '#64748B'}
+            color={activeTab === 'highlights' ? '#10B981' : '#64748B'}
           />
         </TouchableOpacity>
 
@@ -248,7 +248,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
           style={[styles.tab, activeTab === 'likes' && styles.activeTab]}
           onPress={() => onChangeTab('likes')}
         >
-          <Feather name="heart" size={20} color={activeTab === 'likes' ? '#0070F3' : '#64748B'} />
+          <Feather name="heart" size={20} color={activeTab === 'likes' ? '#10B981' : '#64748B'} />
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -259,7 +259,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
           <Feather
             name="bookmark"
             size={20}
-            color={activeTab === 'bookmarks' ? '#0070F3' : '#64748B'}
+            color={activeTab === 'bookmarks' ? '#10B981' : '#64748B'}
           />
         </TouchableOpacity>
       </View>
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderBottomColor: '#0070F3',
+    borderBottomColor: '#10B981', // Emerald-500
   },
   tabContent: {
     flex: 1,
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   audioGridItem: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#0070F3',
+    backgroundColor: '#10B981', // Emerald-500
     justifyContent: 'center',
     alignItems: 'center',
     padding: 8,

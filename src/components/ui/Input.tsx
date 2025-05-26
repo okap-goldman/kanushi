@@ -8,6 +8,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
+import { theme } from '../../lib/theme';
 
 interface InputProps extends RNTextInputProps {
   label?: string;
@@ -32,7 +33,7 @@ export function Input({
       {label && <Text style={[styles.label, labelStyle]}>{label}</Text>}
       <TextInput
         style={[styles.input, error ? styles.inputError : null, inputStyle]}
-        placeholderTextColor="#A0AEC0"
+        placeholderTextColor={theme.colors.text.light}
         autoCapitalize="none"
         {...props}
       />
@@ -49,24 +50,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 6,
-    color: '#4A5568',
+    color: theme.colors.text.secondary,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border.default,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    backgroundColor: '#FFFFFF',
-    color: '#1A202C',
+    backgroundColor: theme.colors.background.primary,
+    color: theme.colors.text.primary,
   },
   inputError: {
-    borderColor: '#E53E3E',
+    borderColor: theme.colors.status.error,
   },
   error: {
     fontSize: 12,
-    color: '#E53E3E',
+    color: theme.colors.status.error,
     marginTop: 4,
   },
 });

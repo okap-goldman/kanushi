@@ -1,6 +1,6 @@
 import { Avatar } from '@/components/ui/Avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, MessageCircle } from 'lucide-react-native';
+import { Bell, MessageCircle, Settings } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Modal,
@@ -11,12 +11,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { UserAuthStatus } from './UserAuthStatus';
+import { useNavigation } from '@react-navigation/native';
+import { theme } from '../lib/theme';
 
 export function Navbar() {
   const { toast: _ } = useToast(); // Keep the import but mark as unused
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showMessages, setShowMessages] = useState(false);
+  const navigation = useNavigation<any>();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -25,14 +26,16 @@ export function Navbar() {
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.iconButton} onPress={() => setShowNotifications(true)}>
-            <Bell size={20} color="#666" />
+            <Bell size={20} color={theme.colors.text.secondary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.iconButton} onPress={() => setShowMessages(true)}>
-            <MessageCircle size={20} color="#666" />
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Messages')}>
+            <MessageCircle size={20} color={theme.colors.text.secondary} />
           </TouchableOpacity>
 
-          <UserAuthStatus />
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Settings')}>
+            <Settings size={20} color={theme.colors.text.secondary} />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -71,47 +74,15 @@ export function Navbar() {
         </View>
       </Modal>
 
-      {/* Messages Modal */}
-      <Modal
-        visible={showMessages}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowMessages(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>メッセージ</Text>
-              <TouchableOpacity onPress={() => setShowMessages(false)}>
-                <Text style={styles.closeButton}>閉じる</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalScroll}>
-              {[1, 2, 3].map((i) => (
-                <TouchableOpacity key={i} style={styles.messageItem}>
-                  <Avatar
-                    source={{ uri: `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}` }}
-                    style={styles.avatar}
-                  />
-                  <View style={styles.messageContent}>
-                    <Text style={styles.messageName}>ユーザー{i}</Text>
-                    <Text style={styles.messagePreview}>最新のメッセージ...</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background.primary,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: theme.colors.border.light,
   },
   navbar: {
     flexDirection: 'row',
@@ -123,7 +94,7 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#6366f1',
+    color: theme.colors.primary.main,
   },
   actions: {
     flexDirection: 'row',
@@ -139,7 +110,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background.primary,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '70%',
@@ -150,14 +121,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: theme.colors.border.light,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
   },
   closeButton: {
-    color: '#6366f1',
+    color: theme.colors.accent.main,
     fontSize: 16,
   },
   modalScroll: {
@@ -168,14 +139,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  messageItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.background.tertiary,
   },
   avatar: {
     width: 40,
@@ -188,24 +152,11 @@ const styles = StyleSheet.create({
   },
   notificationText: {
     fontSize: 14,
-    color: '#333',
+    color: theme.colors.text.primary,
   },
   notificationTime: {
     fontSize: 12,
-    color: '#999',
-    marginTop: 2,
-  },
-  messageContent: {
-    flex: 1,
-  },
-  messageName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  messagePreview: {
-    fontSize: 14,
-    color: '#666',
+    color: theme.colors.text.muted,
     marginTop: 2,
   },
 });

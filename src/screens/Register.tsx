@@ -27,7 +27,7 @@ export default function Register() {
 
   const handleRegister = async () => {
     if (!email || !password || !username) {
-      setError('Please fill out all fields');
+      setError('すべての項目を入力してください');
       return;
     }
 
@@ -43,7 +43,7 @@ export default function Register() {
         // Registration successful - the auth listener will redirect to the main app
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError('予期しないエラーが発生しました');
       console.error(err);
     } finally {
       setLoading(false);
@@ -66,24 +66,24 @@ export default function Register() {
               style={styles.logo}
               contentFit="contain"
             />
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join Kanushi today</Text>
+            <Text style={styles.title}>アカウント作成</Text>
+            <Text style={styles.subtitle}>Kanushiに参加しよう</Text>
           </View>
 
           <View style={styles.form}>
             {error && <Text style={styles.errorText}>{error}</Text>}
 
             <Input
-              label="Username"
-              placeholder="Choose a username"
+              label="ユーザー名"
+              placeholder="ユーザー名を入力"
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
             />
 
             <Input
-              label="Email"
-              placeholder="Enter your email"
+              label="メールアドレス"
+              placeholder="メールアドレスを入力"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -91,21 +91,21 @@ export default function Register() {
             />
 
             <Input
-              label="Password"
-              placeholder="Create a password"
+              label="パスワード"
+              placeholder="パスワードを設定"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
             />
 
             <Button onPress={handleRegister} disabled={loading} loading={loading} fullWidth>
-              Sign Up
+              登録
             </Button>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Already have an account?</Text>
+              <Text style={styles.footerText}>すでにアカウントをお持ちの方は</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.footerLink}>Sign In</Text>
+                <Text style={styles.footerLink}>ログイン</Text>
               </TouchableOpacity>
             </View>
           </View>

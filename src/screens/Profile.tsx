@@ -16,6 +16,8 @@ import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { Navbar } from '../components/Navbar';
+import { FooterNav } from '../components/FooterNav';
 
 export default function Profile() {
   const [profile, setProfile] = useState<any>(null);
@@ -34,20 +36,46 @@ export default function Profile() {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          followers:followers!follower_id(count),
-          following:following!user_id(count)
-        `)
+      // Fetch profile data
+      const { data: profileData, error: profileError } = await supabase
+        .from('profile')
+        .select('*')
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        throw profileError;
+      }
 
-      if (data) {
-        setProfile(data);
+      // Fetch followers count
+      const { count: followersCount } = await supabase
+        .from('follow')
+        .select('*', { count: 'exact', head: true })
+        .eq('followee_id', userId)
+        .eq('status', 'active');
+
+      // Fetch following count
+      const { count: followingCount } = await supabase
+        .from('follow')
+        .select('*', { count: 'exact', head: true })
+        .eq('follower_id', userId)
+        .eq('status', 'active');
+
+      // Fetch posts count
+      const { count: postsCount } = await supabase
+        .from('post')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .is('deleted_at', null);
+
+      if (profileData) {
+        setProfile({
+          ...profileData,
+          followers: { count: followersCount || 0 },
+          following: { count: followingCount || 0 },
+          posts: { count: postsCount || 0 }
+        });
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -80,54 +108,72 @@ export default function Profile() {
 
   const isCurrentUser = user?.id === userId;
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Navbar />
+        <View style={styles.loadingContainer}>
+          <Text>プロフィールを読み込み中...</Text>
+        </View>
+        <FooterNav />
+      </SafeAreaView>
+    );
+  }
+
   if (!profile) {
     return (
       <SafeAreaView style={styles.container}>
+        <Navbar />
         <View style={styles.loadingContainer}>
-          <Text>Loading profile...</Text>
+          <Text style={styles.errorText}>プロフィールが見つかりません</Text>
+          <Button onPress={handleRefresh} variant="outline" style={styles.retryButton}>
+            再読み込み
+          </Button>
         </View>
+        <FooterNav />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
+      <Navbar />
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         <View style={styles.header}>
           <View style={styles.profileHeader}>
-            <Avatar source={profile.image || 'https://via.placeholder.com/80'} size="xl" />
+            <Avatar source={profile.profileImageUrl || 'https://via.placeholder.com/80'} size="xl" />
 
             <View style={styles.profileStats}>
               <TouchableOpacity style={styles.statItem}>
-                <Text style={styles.statValue}>{profile.post_count || 0}</Text>
-                <Text style={styles.statLabel}>Posts</Text>
+                <Text style={styles.statValue}>{profile.posts?.count || 0}</Text>
+                <Text style={styles.statLabel}>投稿</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.statItem} onPress={handleFollowersPress}>
                 <Text style={styles.statValue}>{profile.followers?.count || 0}</Text>
-                <Text style={styles.statLabel}>Followers</Text>
+                <Text style={styles.statLabel}>フォロワー</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.statItem} onPress={handleFollowingPress}>
                 <Text style={styles.statValue}>{profile.following?.count || 0}</Text>
-                <Text style={styles.statLabel}>Following</Text>
+                <Text style={styles.statLabel}>フォロー中</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.profileInfo}>
-            <Text style={styles.displayName}>{profile.full_name || profile.username}</Text>
-            {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
+            <Text style={styles.displayName}>{profile.displayName}</Text>
+            {profile.profileText && <Text style={styles.bio}>{profile.profileText}</Text>}
 
             {isCurrentUser ? (
               <Button onPress={handleEditProfile} variant="outline" style={styles.editButton}>
-                Edit Profile
+                プロフィールを編集
               </Button>
             ) : (
               <Button onPress={() => {}} style={styles.followButton}>
-                Follow
+                フォロー
               </Button>
             )}
           </View>
@@ -135,6 +181,7 @@ export default function Profile() {
 
         <ProfileTabs userId={userId} activeTab={activeTab} onChangeTab={setActiveTab} />
       </ScrollView>
+      <FooterNav />
     </SafeAreaView>
   );
 }
@@ -148,6 +195,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#64748B',
+    marginBottom: 16,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
   },
   header: {
     padding: 16,

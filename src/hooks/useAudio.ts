@@ -25,32 +25,35 @@ export function useAudio(audioUrl: string | null): UseAudioReturn {
 
   const positionUpdateInterval = useRef<NodeJS.Timeout | null>(null);
 
-  const loadAudio = useCallback(async () => {
-    if (!audioUrl) return;
+  const loadAudio = useCallback(
+    async (url: string) => {
+      if (!url) return;
 
-    try {
-      setIsLoading(true);
-      setError(null);
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      // Unload previous audio if exists
-      if (audio) {
-        await audio.unloadAsync();
+        // Unload previous audio if exists
+        if (audio) {
+          await audio.unloadAsync();
+        }
+
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: url },
+          { shouldPlay: false },
+          onPlaybackStatusUpdate
+        );
+
+        setAudio(sound);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load audio');
+        console.error('Error loading audio:', err);
+      } finally {
+        setIsLoading(false);
       }
-
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: audioUrl },
-        { shouldPlay: false },
-        onPlaybackStatusUpdate
-      );
-
-      setAudio(sound);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load audio');
-      console.error('Error loading audio:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [audioUrl]);
+    },
+    [audio, onPlaybackStatusUpdate]
+  );
 
   const onPlaybackStatusUpdate = useCallback((status: any) => {
     if (status.isLoaded) {
@@ -136,18 +139,24 @@ export function useAudio(audioUrl: string | null): UseAudioReturn {
   // Load audio when URL changes
   useEffect(() => {
     if (audioUrl) {
-      loadAudio();
+      loadAudio(audioUrl);
     }
 
     return () => {
-      if (audio) {
-        audio.unloadAsync();
-      }
       if (positionUpdateInterval.current) {
         clearInterval(positionUpdateInterval.current);
       }
     };
   }, [audioUrl, loadAudio]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audio) {
+        audio.unloadAsync();
+      }
+    };
+  }, [audio]);
 
   // Setup position update interval when playing
   useEffect(() => {

@@ -40,7 +40,7 @@ export function createFollowService(supabaseClient = supabase, dbClient = db): F
           return {
             success: false,
             data: null,
-            error: new Error('Cannot follow yourself'),
+            error: new Error('自分自身をフォローすることはできません'),
           };
         }
 
@@ -52,7 +52,7 @@ export function createFollowService(supabaseClient = supabase, dbClient = db): F
           return {
             success: false,
             data: null,
-            error: new Error('Family follow requires a reason'),
+            error: new Error('ファミリーフォローには理由が必要です'),
           };
         }
 
@@ -69,7 +69,7 @@ export function createFollowService(supabaseClient = supabase, dbClient = db): F
           return {
             success: false,
             data: null,
-            error: new Error('Already following this user'),
+            error: new Error('既にこのユーザーをフォローしています'),
           };
         }
 
@@ -116,7 +116,7 @@ export function createFollowService(supabaseClient = supabase, dbClient = db): F
           return {
             success: false,
             data: null,
-            error: new Error('Follow relationship not found'),
+            error: new Error('フォロー関係が見つかりません'),
           };
         }
 
@@ -124,7 +124,7 @@ export function createFollowService(supabaseClient = supabase, dbClient = db): F
           return {
             success: false,
             data: null,
-            error: new Error('You can only unfollow your own follows'),
+            error: new Error('自分のフォローのみ解除できます'),
           };
         }
 

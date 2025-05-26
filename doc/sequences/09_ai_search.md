@@ -90,11 +90,13 @@ sequenceDiagram
     participant Gemini as Gemini-2.5-Pro API
 
     User->>App: AIチャット画面を開く
-    App->>API: GET /chat/sessions
-    API->>DB: SELECT FROM chat_sessions WHERE user_id
-    DB->>API: 既存セッションリスト
-    API->>App: セッション一覧
-    App->>User: チャット履歴表示
+    App->>API: GET /chat/sessions?limit=3
+    API->>DB: SELECT FROM chat_sessions WHERE user_id ORDER BY updated_at DESC LIMIT 3
+    note right of DB: 最新3件のチャット履歴を取得
+    DB->>API: 直近3件のセッション
+    API->>App: セッション一覧（最大3件）
+    App->>User: チャット履歴表示（直近3件）
+    note right of User: 各セッションには<br/>- セッションタイトル<br/>- 最終メッセージプレビュー<br/>- 最終更新日時
     
     alt 新規セッション
         User->>App: 新規チャット開始
@@ -103,12 +105,14 @@ sequenceDiagram
         DB->>API: セッションID
         API->>App: 新規セッション情報
     else 既存セッション継続
-        User->>App: 既存セッション選択
+        User->>App: チャット履歴項目タップ
+        note right of User: 直近3件から選択
         App->>API: GET /chat/sessions/{sessionId}/messages
-        API->>DB: SELECT FROM chat_messages
+        API->>DB: SELECT FROM chat_messages WHERE session_id ORDER BY created_at ASC
         DB->>API: メッセージ履歴
         API->>App: チャット履歴
-        App->>User: メッセージ表示
+        App->>User: メッセージ詳細表示
+        note right of User: 選択したセッションの<br/>全メッセージを表示
     end
     
     User->>App: メッセージ入力

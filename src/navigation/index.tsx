@@ -1,9 +1,9 @@
 import { Feather } from '@expo/vector-icons';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, type NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import React from 'react';
-import { Linking } from 'react-native';
+import { Linking, View, StyleSheet } from 'react-native';
 
 // Auth Screens
 import Login from '../screens/Login';
@@ -11,10 +11,12 @@ import Register from '../screens/Register';
 
 import { useAuth } from '../context/AuthContext';
 import Discover from '../screens/Discover';
+import RegionDetail from '../screens/RegionDetail';
 import EventDetailScreen from '../screens/EventDetail';
 import EventsScreen from '../screens/Events';
 // Main Screens
 import Home from '../screens/Home';
+import { AIChat } from '../components/ai/AIChat';
 import MessageDetail from '../screens/MessageDetail';
 import Messages from '../screens/Messages';
 import NewMessage from '../screens/NewMessage';
@@ -25,6 +27,9 @@ import Profile from '../screens/Profile';
 import ProfileEdit from '../screens/ProfileEdit';
 import { Search } from '../screens/Search';
 import Shop from '../screens/Shop';
+import Market from '../screens/Market';
+import Settings from '../screens/Settings';
+import HitChart from '../screens/HitChart';
 
 // LiveRoom Screens
 import { LiveRoomScreen } from '../components/liveroom/LiveRoomScreen';
@@ -34,68 +39,86 @@ import LiveRooms from '../screens/LiveRooms';
 export const navigationRef = React.createRef<NavigationContainerRef<any>>();
 
 const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+const Drawer = createDrawerNavigator();
 
-function HomeTabs() {
+function CustomDrawerContent(props: any) {
+  const navigation = props.navigation;
+  const { user } = useAuth();
+
   return (
-    <Tab.Navigator
+    <View style={drawerStyles.container}>
+      <DrawerContentScrollView {...props} contentContainerStyle={drawerStyles.scrollContent}>
+        <DrawerItem
+          label="プロフィール"
+          onPress={() => navigation.navigate('Profile', { userId: user?.id })}
+          icon={({ color, size }) => <Feather name="user" color={color} size={size} />}
+        />
+        <DrawerItem
+          label="ブックマーク"
+          onPress={() => navigation.navigate('Bookmarks')}
+          icon={({ color, size }) => <Feather name="bookmark" color={color} size={size} />}
+        />
+        <DrawerItem
+          label="マイイベント"
+          onPress={() => navigation.navigate('MyEvents')}
+          icon={({ color, size }) => <Feather name="calendar" color={color} size={size} />}
+        />
+        <DrawerItem
+          label="マイショップ"
+          onPress={() => navigation.navigate('MyShop')}
+          icon={({ color, size }) => <Feather name="shopping-bag" color={color} size={size} />}
+        />
+        <DrawerItem
+          label="ヒットチャート"
+          onPress={() => navigation.navigate('HitChart')}
+          icon={({ color, size }) => <Feather name="trending-up" color={color} size={size} />}
+        />
+        <DrawerItem
+          label="後で見る"
+          onPress={() => navigation.navigate('WatchLater')}
+          icon={({ color, size }) => <Feather name="clock" color={color} size={size} />}
+        />
+      </DrawerContentScrollView>
+      <View style={drawerStyles.bottomSection}>
+        <DrawerItem
+          label="メニューを閉じる"
+          onPress={() => navigation.closeDrawer()}
+          icon={({ color, size }) => <Feather name="menu" color={color} size={size} />}
+          style={drawerStyles.closeButton}
+        />
+      </View>
+    </View>
+  );
+}
+
+const drawerStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  bottomSection: {
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    paddingBottom: 20,
+  },
+  closeButton: {
+    marginTop: 8,
+  },
+});
+
+
+function DrawerNavigator() {
+  return (
+    <Drawer.Navigator
+      drawerContent={CustomDrawerContent}
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: true,
-        tabBarActiveTintColor: '#0070F3',
-        tabBarInactiveTintColor: '#64748B',
-        tabBarStyle: {
-          borderTopWidth: 1,
-          borderTopColor: '#E2E8F0',
-          paddingTop: 5,
-          paddingBottom: 5,
-          height: 60,
-        },
       }}
     >
-      <Tab.Screen
-        name="HomeTab"
-        component={Home}
-        options={{
-          tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size }) => <Feather name="home" color={color} size={size} />,
-        }}
-      />
-      <Tab.Screen
-        name="SearchTab"
-        component={Search}
-        options={{
-          tabBarLabel: 'Search',
-          tabBarIcon: ({ color, size }) => <Feather name="search" color={color} size={size} />,
-        }}
-      />
-      <Tab.Screen
-        name="LiveRoomsTab"
-        component={LiveRooms}
-        options={{
-          tabBarLabel: 'Live',
-          tabBarIcon: ({ color, size }) => <Feather name="radio" color={color} size={size} />,
-        }}
-      />
-      <Tab.Screen
-        name="MessagesTab"
-        component={Messages}
-        options={{
-          tabBarLabel: 'Messages',
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="message-circle" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="ProfileTab"
-        component={Profile}
-        options={{
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size }) => <Feather name="user" color={color} size={size} />,
-        }}
-      />
-    </Tab.Navigator>
+      <Drawer.Screen name="Main" component={Home} />
+    </Drawer.Navigator>
   );
 }
 
@@ -157,11 +180,17 @@ export default function Navigation() {
         ) : (
           // Main App Screens
           <>
-            <Stack.Screen name="Home" component={HomeTabs} />
+            <Stack.Screen name="Home" component={DrawerNavigator} />
+            <Stack.Screen name="Search" component={Search} />
+            <Stack.Screen name="Discover" component={Discover} />
+            <Stack.Screen name="RegionDetail" component={RegionDetail} />
+            <Stack.Screen name="AIChat" component={AIChat} />
 
             {/* Profile Stack */}
             <Stack.Screen name="Profile" component={Profile} />
             <Stack.Screen name="ProfileEdit" component={ProfileEdit} />
+            <Stack.Screen name="Settings" component={Settings} />
+            <Stack.Screen name="HitChart" component={HitChart} />
 
             {/* Messages Stack */}
             <Stack.Screen name="Messages" component={Messages} />
@@ -174,6 +203,7 @@ export default function Navigation() {
 
             {/* Shop Stack */}
             <Stack.Screen name="Shop" component={Shop} />
+            <Stack.Screen name="Market" component={Market} />
             <Stack.Screen name="ProductDetail" component={ProductDetail} />
             <Stack.Screen name="Orders" component={Orders} />
             <Stack.Screen name="OrderDetail" component={OrderDetail} />

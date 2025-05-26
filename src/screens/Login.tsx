@@ -26,7 +26,7 @@ export default function Login() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      setError('Please enter both email and password');
+      setError('メールアドレスとパスワードを入力してください');
       return;
     }
 
@@ -40,7 +40,7 @@ export default function Login() {
         setError(error.message);
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError('予期しないエラーが発生しました');
       console.error(err);
     } finally {
       setLoading(false);
@@ -63,16 +63,16 @@ export default function Login() {
               style={styles.logo}
               contentFit="contain"
             />
-            <Text style={styles.title}>Welcome to Kanushi</Text>
-            <Text style={styles.subtitle}>Sign in to continue</Text>
+            <Text style={styles.title}>Kanushiへようこそ</Text>
+            <Text style={styles.subtitle}>サインインして続ける</Text>
           </View>
 
           <View style={styles.form}>
             {error && <Text style={styles.errorText}>{error}</Text>}
 
             <Input
-              label="Email"
-              placeholder="Enter your email"
+              label="メールアドレス"
+              placeholder="メールアドレスを入力"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -80,21 +80,21 @@ export default function Login() {
             />
 
             <Input
-              label="Password"
-              placeholder="Enter your password"
+              label="パスワード"
+              placeholder="パスワードを入力"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
             />
 
             <Button onPress={handleLogin} disabled={loading} loading={loading} fullWidth>
-              Sign In
+              ログイン
             </Button>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Don't have an account?</Text>
+              <Text style={styles.footerText}>アカウントをお持ちでない方は</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.footerLink}>Sign Up</Text>
+                <Text style={styles.footerLink}>新規登録</Text>
               </TouchableOpacity>
             </View>
           </View>

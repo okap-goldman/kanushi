@@ -1,9 +1,10 @@
 import { Feather } from '@expo/vector-icons';
-import React, { useState, useEffect } from 'react';
-import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View, Animated } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { ShareModal } from '../ShareModal';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../../hooks/use-toast';
 
 interface PostActionsProps {
   postId: string;
@@ -22,7 +23,13 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
   const [highlightReason, setHighlightReason] = useState('');
   const [highlightError, setHighlightError] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showHighlightBubble, setShowHighlightBubble] = useState(false);
   const { user } = useAuth();
+  const { toast } = useToast();
+  
+  // Animation values for highlight bubble
+  const bubbleOpacity = useRef(new Animated.Value(0)).current;
+  const bubbleTranslateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Check if the user has liked this post
@@ -31,7 +38,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
 
       try {
         const { data, error } = await supabase
-          .from('likes')
+          .from('like')
           .select()
           .eq('post_id', postId)
           .eq('user_id', user.id)
@@ -50,7 +57,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
 
       try {
         const { data, error } = await supabase
-          .from('highlights')
+          .from('highlight')
           .select()
           .eq('post_id', postId)
           .eq('user_id', user.id)
@@ -69,7 +76,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
 
       try {
         const { data, error } = await supabase
-          .from('bookmarks')
+          .from('bookmark')
           .select()
           .eq('post_id', postId)
           .eq('user_id', user.id)
@@ -86,7 +93,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     const getLikeCount = async () => {
       try {
         const { count, error } = await supabase
-          .from('likes')
+          .from('like')
           .select('*', { count: 'exact', head: true })
           .eq('post_id', postId);
 
@@ -101,7 +108,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     const getCommentCount = async () => {
       try {
         const { count, error } = await supabase
-          .from('comments')
+          .from('comment')
           .select('*', { count: 'exact', head: true })
           .eq('post_id', postId);
 
@@ -116,7 +123,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     const getHighlightCount = async () => {
       try {
         const { count, error } = await supabase
-          .from('highlights')
+          .from('highlight')
           .select('*', { count: 'exact', head: true })
           .eq('post_id', postId);
 
@@ -135,14 +142,58 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     getHighlightCount();
   }, [postId, user]);
 
+  const showBubbleAnimation = () => {
+    setShowHighlightBubble(true);
+    
+    // Reset animation values
+    bubbleOpacity.setValue(0);
+    bubbleTranslateY.setValue(0);
+    
+    // Run animations
+    Animated.parallel([
+      Animated.timing(bubbleOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bubbleTranslateY, {
+        toValue: -30,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Hide bubble after delay
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(bubbleOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(bubbleTranslateY, {
+            toValue: -40,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setShowHighlightBubble(false);
+        });
+      }, 1000);
+    });
+  };
+
   const handleLike = async () => {
     if (!user) return;
 
     try {
+      // Ensure profile exists before liking
+      const { profileService } = await import('../../lib/profileService');
+      await profileService.ensureProfileExists(user);
+
       if (liked) {
         // Unlike
         const { error } = await supabase
-          .from('likes')
+          .from('like')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
@@ -151,8 +202,10 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
         setLiked(false);
         setLikeCount((prev) => Math.max(0, prev - 1));
       } else {
-        // Like
-        const { error } = await supabase.from('likes').insert({
+        // Like and show highlight bubble
+        showBubbleAnimation();
+        
+        const { error } = await supabase.from('like').insert({
           post_id: postId,
           user_id: user.id,
           created_at: new Date().toISOString(),
@@ -164,11 +217,43 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
       }
     } catch (err) {
       console.error('Error toggling like:', err);
+      toast({
+        title: 'エラーが発生しました',
+        description: 'もう一度お試しください',
+        variant: 'destructive',
+      });
     }
   };
 
-  const handleHighlight = () => {
+  const handleHighlight = async () => {
     if (!user) return;
+    
+    // Ensure profile exists before highlighting
+    const { profileService } = await import('../../lib/profileService');
+    await profileService.ensureProfileExists(user);
+    
+    // いいねしていない場合は先にいいねする
+    if (!liked) {
+      try {
+        const { error } = await supabase.from('like').insert({
+          post_id: postId,
+          user_id: user.id,
+          created_at: new Date().toISOString(),
+        });
+
+        if (error) throw error;
+        setLiked(true);
+        setLikeCount((prev) => prev + 1);
+      } catch (err) {
+        console.error('Error adding like:', err);
+        toast({
+          title: 'エラーが発生しました',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+    
     setShowHighlightDialog(true);
     setHighlightError('');
     setHighlightReason('');
@@ -186,7 +271,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
       if (highlighted) {
         // Remove highlight
         const { error } = await supabase
-          .from('highlights')
+          .from('highlight')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
@@ -196,7 +281,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
         setHighlightCount((prev) => Math.max(0, prev - 1));
       } else {
         // Add highlight
-        const { error } = await supabase.from('highlights').insert({
+        const { error } = await supabase.from('highlight').insert({
           post_id: postId,
           user_id: user.id,
           reason: highlightReason,
@@ -206,6 +291,11 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
         if (error) throw error;
         setHighlighted(true);
         setHighlightCount((prev) => prev + 1);
+        
+        // ハイライト成功のトーストを表示
+        toast({
+          title: 'ハイライトしました✨',
+        });
       }
 
       setShowHighlightDialog(false);
@@ -213,6 +303,10 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     } catch (err) {
       console.error('Error toggling highlight:', err);
       setHighlightError('ハイライトの更新に失敗しました');
+      toast({
+        title: 'ハイライトの更新に失敗しました',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -223,7 +317,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
       if (bookmarked) {
         // Remove bookmark
         const { error } = await supabase
-          .from('bookmarks')
+          .from('bookmark')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
@@ -232,7 +326,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
         setBookmarked(false);
       } else {
         // Add bookmark
-        const { error } = await supabase.from('bookmarks').insert({
+        const { error } = await supabase.from('bookmark').insert({
           post_id: postId,
           user_id: user.id,
           created_at: new Date().toISOString(),
@@ -253,28 +347,41 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
   return (
     <View style={styles.container}>
       <View style={styles.actionsRow}>
-        <TouchableOpacity onPress={handleLike} style={styles.actionButton} testID="like-button">
-          <Feather
-            name={liked ? 'heart' : 'heart'}
-            size={22}
-            color={liked ? '#E53E3E' : '#64748B'}
-            style={liked ? styles.filledHeart : undefined}
-          />
-          <Text style={styles.actionText}>{likeCount > 0 ? likeCount : ''}</Text>
-        </TouchableOpacity>
+        <View style={styles.likeButtonContainer}>
+          <TouchableOpacity onPress={handleLike} style={styles.actionButton} testID="like-button">
+            <Feather
+              name="heart"
+              size={22}
+              color={liked ? '#E53E3E' : '#64748B'}
+              style={liked ? styles.filledHeart : undefined}
+            />
+            <Text style={styles.actionText}>{likeCount > 0 ? likeCount : ''}</Text>
+          </TouchableOpacity>
+          
+          {showHighlightBubble && (
+            <Animated.View
+              style={[
+                styles.highlightBubble,
+                {
+                  opacity: bubbleOpacity,
+                  transform: [{ translateY: bubbleTranslateY }],
+                },
+              ]}
+            >
+              <TouchableOpacity onPress={handleHighlight} activeOpacity={0.8}>
+                <Text style={styles.highlightBubbleText}>ハイライトする！</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+        </View>
 
         <TouchableOpacity onPress={onComment} style={styles.actionButton} testID="comment-button">
           <Feather name="message-circle" size={22} color="#64748B" />
           <Text style={styles.actionText}>{commentCount > 0 ? commentCount : ''}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={handleHighlight}
-          style={styles.actionButton}
-          testID="highlight-button"
-        >
-          <Feather name="star" size={22} color={highlighted ? '#F59E0B' : '#64748B'} />
-          <Text style={styles.actionText}>{highlightCount > 0 ? highlightCount : ''}</Text>
+        <TouchableOpacity onPress={handleShare} style={styles.actionButton} testID="share-button">
+          <Feather name="share" size={22} color="#64748B" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -283,14 +390,10 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           testID="bookmark-button"
         >
           <Feather
-            name={bookmarked ? 'bookmark' : 'bookmark'}
+            name="bookmark"
             size={22}
             color={bookmarked ? '#3B82F6' : '#64748B'}
           />
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={handleShare} style={styles.actionButton} testID="share-button">
-          <Feather name="share" size={22} color="#64748B" />
         </TouchableOpacity>
       </View>
 
@@ -369,6 +472,31 @@ const styles = StyleSheet.create({
   },
   filledHeart: {
     // Style for filled heart icon
+  },
+  likeButtonContainer: {
+    position: 'relative',
+  },
+  highlightBubble: {
+    position: 'absolute',
+    top: -35,
+    left: -10,
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  highlightBubbleText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   modalContainer: {
     flex: 1,

@@ -125,7 +125,7 @@ export function AudioPlayer({ post, sound: externalSound }: AudioPlayerProps) {
             maximumValue={duration}
             value={position}
             onValueChange={onSeek}
-            minimumTrackTintColor="#0070F3"
+            minimumTrackTintColor="#10B981"
             maximumTrackTintColor="#E2E8F0"
             thumbStyle={styles.thumb}
             testID="seek-bar"
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#0070F3',
+    backgroundColor: '#10B981', // Emerald-500
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   thumb: {
     width: 16,
     height: 16,
-    backgroundColor: '#0070F3',
+    backgroundColor: '#10B981', // Emerald-500
   },
   summaryContainer: {
     flexDirection: 'row',

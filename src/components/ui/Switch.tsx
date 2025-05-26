@@ -1,5 +1,6 @@
 import React from 'react';
 import { Switch as RNSwitch, type SwitchProps as RNSwitchProps, StyleSheet } from 'react-native';
+import { theme } from '../../lib/theme';
 
 interface SwitchProps extends RNSwitchProps {
   checked?: boolean;
@@ -12,9 +13,9 @@ export function Switch({ checked = false, onChange, disabled, ...props }: Switch
       value={checked}
       onValueChange={onChange}
       disabled={disabled}
-      trackColor={{ false: '#E2E8F0', true: '#0070F3' }}
-      thumbColor={checked ? '#FFFFFF' : '#F8FAFC'}
-      ios_backgroundColor="#E2E8F0"
+      trackColor={{ false: theme.colors.border.light, true: theme.colors.primary.main }}
+      thumbColor={checked ? theme.colors.text.inverse : theme.colors.background.secondary}
+      ios_backgroundColor={theme.colors.border.light}
       style={[styles.switch, disabled && styles.disabled]}
       {...props}
     />

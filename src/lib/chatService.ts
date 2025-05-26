@@ -60,10 +60,10 @@ export async function sendChatRequest(
     });
 
     // Return the assistant's response
-    return response.choices[0]?.message?.content || 'No response from the assistant.';
+    return response.choices[0]?.message?.content || 'アシスタントからの応答がありません。';
   } catch (error) {
     console.error('Error in chat request:', error);
-    throw new Error('Failed to get response from AI model');
+    throw new Error('AIモデルからの応答取得に失敗しました');
   }
 }
 
@@ -81,7 +81,7 @@ export async function getAvailableModels(): Promise<string[]> {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch models');
+      throw new Error('モデルの取得に失敗しました');
     }
 
     const data = await response.json();

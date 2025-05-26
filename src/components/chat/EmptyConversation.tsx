@@ -14,9 +14,9 @@ export function EmptyConversation({ userName }: EmptyConversationProps) {
         <Feather name="message-circle" size={64} color="#CBD5E0" />
       </View>
       <Text style={styles.title}>
-        {userName ? `Start a conversation with ${userName}` : 'No messages yet'}
+        {userName ? `${userName}さんとの会話を始める` : 'メッセージはまだありません'}
       </Text>
-      <Text style={styles.subtitle}>Send a message to start the conversation</Text>
+      <Text style={styles.subtitle}>メッセージを送信して会話を始めましょう</Text>
     </View>
   );
 }

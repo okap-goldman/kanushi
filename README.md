@@ -23,9 +23,14 @@ npm run test:integration # 結合テストのみ実行
 npm run test:e2e     # E2Eテストのみ実行
 
 # データベース操作
-npm run db:generate  # スキーマ変更からマイグレーションを生成
-npm run db:migrate   # データベースにマイグレーションを適用
-npm run db:studio    # DB管理のためにDrizzle Studioを開く
+npm run db:generate        # スキーマ変更からマイグレーションを生成
+npm run db:migrate         # データベースにマイグレーションを適用
+npm run db:studio          # DB管理のためにDrizzle Studioを開く
+
+# データベース完全リセット & セットアップ（開発環境専用）
+npm run db:reset-and-setup # 🚀 完全リセット→マイグレーション→シーディング（一括実行）
+npm run db:reset           # データベース完全リセット
+npm run db:seed-drizzle    # Drizzle ORM使用シーディング
 ```
 
 ## アーキテクチャ概要
@@ -76,6 +81,28 @@ supabase/
 - スキーマの変更は `src/lib/db/schema/` に行います
 - スキーマ変更後、`npm run db:generate` を実行し、その後 `npm run db:migrate` を実行します
 - すべてのDB操作にはDrizzleの型安全なクエリビルダーを使用します
+
+#### データベース完全リセット
+開発時にデータベースを完全にクリーンな状態に戻したい場合：
+
+```bash
+# ワンコマンドで完全リセット・セットアップ・シーディング実行
+npm run db:reset-and-setup
+
+# または段階的に実行
+npm run db:reset           # データベース完全リセット
+npm run db:generate        # 新しいマイグレーション生成
+npm run db:migrate         # マイグレーション適用
+npm run db:seed-drizzle    # 日本語モックデータ投入
+```
+
+**注意**: `reset` コマンドは破壊的です。本番環境では絶対に実行しないでください。
+
+**投入されるモックデータ**:
+- プロフィール: 8件（スピリチュアル系日本語ユーザー）
+- ハッシュタグ: 15件（#目醒め、#アセンション等）
+- 投稿: 5件（音声・テキスト投稿）
+- フォロー関係: 3件
 
 ### 認証フロー
 - Supabase AuthがOAuthおよびメール/パスキー認証を処理します

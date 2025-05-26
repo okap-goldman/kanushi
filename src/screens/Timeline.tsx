@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { 
+  ActivityIndicator, 
+  FlatList, 
+  Modal, 
+  Pressable,
+  RefreshControl, 
+  StyleSheet, 
+  Text, 
+  TouchableOpacity,
+  View 
+} from 'react-native';
 import PostCard from '../components/PostCard';
 import { Tabs } from '../components/ui/Tabs';
 import { useAuth } from '../context/AuthContext';
+import { Button } from '../components/ui/Button';
 
 interface Post {
   id: string;
@@ -36,6 +47,7 @@ export default function Timeline(_props: TimelineProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const { user } = useAuth();
 
@@ -187,6 +199,27 @@ export default function Timeline(_props: TimelineProps) {
     );
   };
 
+  const handleTabChange = (value: string) => {
+    console.log('handleTabChange called with:', value);
+    console.log('current activeTab:', activeTab);
+    // If switching from family to watch, show confirmation dialog
+    if (activeTab === 'family' && value === 'watch') {
+      console.log('Showing confirmation dialog');
+      setShowConfirmDialog(true);
+    } else {
+      setActiveTab(value as 'family' | 'watch');
+    }
+  };
+
+  const handleConfirmSwitch = () => {
+    setActiveTab('watch');
+    setShowConfirmDialog(false);
+  };
+
+  const handleCancelSwitch = () => {
+    setShowConfirmDialog(false);
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -201,7 +234,7 @@ export default function Timeline(_props: TimelineProps) {
       <View style={styles.tabContainer}>
         <Tabs
           value={activeTab}
-          onValueChange={(value) => setActiveTab(value as 'family' | 'watch')}
+          onValueChange={handleTabChange}
         >
           <Tabs.List style={styles.tabsList}>
             <Tabs.Trigger value="family" style={styles.tabTrigger}>
@@ -242,6 +275,33 @@ export default function Timeline(_props: TimelineProps) {
           ListFooterComponent={renderFooter}
         />
       </View>
+
+      {/* Confirmation Modal */}
+      <Modal
+        visible={showConfirmDialog}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCancelSwitch}
+      >
+        <Pressable style={styles.modalOverlay} onPress={handleCancelSwitch}>
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>タイムライン切り替えの確認</Text>
+            <Text style={styles.modalDescription}>
+              ファミリータイムラインからウォッチタイムラインに切り替えますか？
+              {'\n\n'}
+              ウォッチタイムラインでは、ウォッチしているユーザーの投稿が表示されます。
+            </Text>
+            <View style={styles.modalButtons}>
+              <Button variant="outline" onPress={handleCancelSwitch}>
+                キャンセル
+              </Button>
+              <Button variant="primary" onPress={handleConfirmSwitch}>
+                切り替える
+              </Button>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -290,5 +350,45 @@ const styles = StyleSheet.create({
   loadingMore: {
     paddingVertical: 20,
     alignItems: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: '#666666',
+    lineHeight: 20,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
   },
 });

@@ -25,7 +25,7 @@ export interface CategorySearchResult {
   count: number;
 }
 
-export class SearchService {
+class SearchService {
   async search(keyword: string): Promise<SearchResult> {
     try {
       const searchPattern = `%${keyword}%`;
@@ -291,6 +291,106 @@ export class SearchService {
       throw new Error('Paginated search failed');
     }
   }
+
+  async getRecommendedPosts(limit: number = 20): Promise<any[]> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // ログインしていない場合は人気の投稿を返す
+      if (!user) {
+        const { data: posts, error } = await supabase
+          .from('post')
+          .select(`
+            id,
+            text_content,
+            media_url,
+            content_type,
+            created_at,
+            user_id,
+            profile!user_id(id, display_name, profile_image_url)
+          `)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (error) throw error;
+        return posts || [];
+      }
+
+      // ログインしている場合は、フォローしているユーザーの投稿や興味のありそうな投稿を返す
+      const { data: posts, error } = await supabase
+        .from('post')
+        .select(`
+          id,
+          text_content,
+          media_url,
+          content_type,
+          created_at,
+          user_id,
+          profile!user_id(id, display_name, profile_image_url)
+        `)
+        .is('deleted_at', null)
+        .neq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+
+      // フォローしているユーザーの投稿を優先的に表示するロジックを追加できます
+      return posts || [];
+    } catch (error) {
+      console.error('Get recommended posts error:', error);
+      return [];
+    }
+  }
+
+  async getDiscoverContent(type: 'posts' | 'users' | 'events' | 'items', limit: number = 20): Promise<any[]> {
+    try {
+      switch (type) {
+        case 'posts':
+          const { data: posts, error: postsError } = await supabase
+            .from('posts')
+            .select(`
+              id,
+              content,
+              media_url,
+              media_type,
+              created_at,
+              author_id,
+              profiles:author_id(id, name, username, avatar_url)
+            `)
+            .eq('is_draft', false)
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+          if (postsError) throw postsError;
+          return posts || [];
+
+        case 'users':
+          const { data: users, error: usersError } = await supabase
+            .from('profiles')
+            .select('id, name, username, avatar_url, bio')
+            .limit(limit);
+
+          if (usersError) throw usersError;
+          return users || [];
+
+        case 'events':
+          // TODO: イベントテーブルの実装後に追加
+          return [];
+
+        case 'items':
+          // TODO: ショップアイテムテーブルの実装後に追加
+          return [];
+
+        default:
+          return [];
+      }
+    } catch (error) {
+      console.error('Get discover content error:', error);
+      return [];
+    }
+  }
 }
 
 // 既存の関数も残しておく（互換性のため）
@@ -518,3 +618,5 @@ export const searchEvents = async (query: string) => {
   console.log('イベント検索は実装されていません:', query);
   return { data: [], error: null };
 };
+
+export const searchService = new SearchService();

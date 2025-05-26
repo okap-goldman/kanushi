@@ -68,7 +68,7 @@ export function MessageInput({
 
         if (error || !url) {
           console.error('Error uploading media:', error);
-          Alert.alert('Error', 'Failed to upload media');
+          Alert.alert('エラー', 'メディアのアップロードに失敗しました');
           return;
         }
 
@@ -110,7 +110,7 @@ export function MessageInput({
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission required', 'Camera permission is required to take photos');
+      Alert.alert('許可が必要です', '写真を撮影するにはカメラの許可が必要です');
       return;
     }
 
@@ -159,7 +159,7 @@ export function MessageInput({
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Permission required', 'Microphone permission is required to record audio');
+        Alert.alert('許可が必要です', '音声を録音するにはマイクの許可が必要です');
         return;
       }
 
@@ -176,7 +176,7 @@ export function MessageInput({
       setIsRecording(true);
     } catch (error) {
       console.error('Error starting recording:', error);
-      Alert.alert('Error', 'Failed to start recording');
+      Alert.alert('エラー', '録音の開始に失敗しました');
     }
   };
 
@@ -200,12 +200,12 @@ export function MessageInput({
 
         if (error || !url) {
           console.error('Error uploading audio:', error);
-          Alert.alert('Error', 'Failed to upload audio');
+          Alert.alert('エラー', '音声のアップロードに失敗しました');
           return;
         }
 
         // Send message with audio URL
-        onSendMessage(message || 'Audio message', 'audio', url);
+        onSendMessage(message || '音声メッセージ', 'audio', url);
 
         // Reset state
         setMessage('');
@@ -214,7 +214,7 @@ export function MessageInput({
       recordingRef.current = null;
     } catch (error) {
       console.error('Error stopping recording:', error);
-      Alert.alert('Error', 'Failed to stop recording');
+      Alert.alert('エラー', '録音の停止に失敗しました');
     }
   };
 
@@ -248,14 +248,14 @@ export function MessageInput({
             {mediaType === 'video' && (
               <View style={styles.videoPreview}>
                 <Video size={24} color="#666" />
-                <Text style={styles.videoText}>Video selected</Text>
+                <Text style={styles.videoText}>動画が選択されました</Text>
               </View>
             )}
 
             {mediaType === 'audio' && (
               <View style={styles.audioPreview}>
                 <FileAudio size={24} color="#666" />
-                <Text style={styles.audioText}>{mediaFile?.name || 'Audio file'}</Text>
+                <Text style={styles.audioText}>{mediaFile?.name || '音声ファイル'}</Text>
               </View>
             )}
           </View>

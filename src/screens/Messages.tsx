@@ -3,6 +3,8 @@ import { useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import React from 'react';
 import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Navbar from '../components/Navbar';
+import { FooterNav } from '../components/FooterNav';
 
 // Sample data for messages
 const SAMPLE_MESSAGES = [
@@ -116,18 +118,19 @@ export default function Messages() {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Feather name="message-circle" size={48} color="#A0AEC0" />
-      <Text style={styles.emptyStateTitle}>No messages yet</Text>
-      <Text style={styles.emptyStateText}>When you start conversations, they'll appear here</Text>
+      <Text style={styles.emptyStateTitle}>メッセージはまだありません</Text>
+      <Text style={styles.emptyStateText}>会話を始めると、ここに表示されます</Text>
       <TouchableOpacity style={styles.newMessageButton} onPress={navigateToNewMessage}>
-        <Text style={styles.newMessageButtonText}>Start a Conversation</Text>
+        <Text style={styles.newMessageButtonText}>会話を始める</Text>
       </TouchableOpacity>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
+      <Navbar />
       <View style={styles.header}>
-        <Text style={styles.title}>Messages</Text>
+        <Text style={styles.title}>メッセージ</Text>
         <TouchableOpacity onPress={navigateToNewMessage}>
           <Feather name="edit" size={24} color="#0070F3" />
         </TouchableOpacity>
@@ -140,6 +143,7 @@ export default function Messages() {
         contentContainerStyle={styles.messagesList}
         ListEmptyComponent={renderEmptyState}
       />
+      <FooterNav />
     </SafeAreaView>
   );
 }

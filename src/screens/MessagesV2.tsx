@@ -73,7 +73,7 @@ export default function MessagesV2() {
       if (diffInDays === 0) {
         lastMessageTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       } else if (diffInDays === 1) {
-        lastMessageTime = 'Yesterday';
+        lastMessageTime = '昨日';
       } else if (diffInDays < 7) {
         lastMessageTime = date.toLocaleDateString([], { weekday: 'short' });
       } else {
@@ -87,9 +87,9 @@ export default function MessagesV2() {
       if (item.lastMessage.messageType === 'text') {
         lastMessagePreview = item.lastMessage.content;
       } else if (item.lastMessage.messageType === 'image') {
-        lastMessagePreview = '📷 Photo';
+        lastMessagePreview = '📷 写真';
       } else if (item.lastMessage.messageType === 'audio') {
-        lastMessagePreview = '🎤 Voice message';
+        lastMessagePreview = '🎤 音声メッセージ';
       }
     }
 
@@ -123,13 +123,13 @@ export default function MessagesV2() {
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Feather name="message-circle" size={64} color="#CBD5E0" />
-      <Text style={styles.emptyTitle}>No conversations yet</Text>
-      <Text style={styles.emptySubtitle}>Start a new conversation to connect with others</Text>
+      <Text style={styles.emptyTitle}>まだ会話がありません</Text>
+      <Text style={styles.emptySubtitle}>新しい会話を始めて、他の人とつながりましょう</Text>
       <TouchableOpacity
         style={styles.newMessageButton}
         onPress={() => navigation.navigate('NewMessage' as any)}
       >
-        <Text style={styles.newMessageButtonText}>Start New Conversation</Text>
+        <Text style={styles.newMessageButtonText}>新しい会話を始める</Text>
       </TouchableOpacity>
     </View>
   );
@@ -138,7 +138,7 @@ export default function MessagesV2() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Messages</Text>
+          <Text style={styles.headerTitle}>メッセージ</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0070F3" />

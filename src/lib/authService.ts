@@ -75,7 +75,7 @@ export class AuthService implements IAuthService {
         user: null,
         profile: null,
         account: null,
-        error: new Error('Auto login is disabled') as any,
+        error: new Error('自動ログインは無効です') as any,
       };
     }
 
@@ -132,10 +132,10 @@ export class AuthService implements IAuthService {
 
       if (error) {
         if (error.message.includes('invalid') || error.message.includes('token')) {
-          throw new Error('INVALID_TOKEN');
+          throw new Error('無効なトークンです');
         }
         if (error.message.includes('network') || error.message.includes('fetch')) {
-          throw new Error('NETWORK_ERROR');
+          throw new Error('ネットワークエラーが発生しました');
         }
         throw error;
       }
@@ -145,7 +145,7 @@ export class AuthService implements IAuthService {
           user: null,
           profile: null,
           account: null,
-          error: new Error('Authentication failed') as any,
+          error: new Error('認証に失敗しました') as any,
         };
       }
 
@@ -231,7 +231,7 @@ export class AuthService implements IAuthService {
   async signInWithApple(identityToken: string | null): Promise<AuthResponse> {
     try {
       if (!identityToken) {
-        throw new Error('AUTH_CANCELLED');
+        throw new Error('認証がキャンセルされました');
       }
 
       // Supabaseを使用してApple IDトークンで認証
@@ -242,10 +242,10 @@ export class AuthService implements IAuthService {
 
       if (error) {
         if (error.message.includes('invalid') || error.message.includes('token')) {
-          throw new Error('INVALID_TOKEN');
+          throw new Error('無効なトークンです');
         }
         if (error.message.includes('network') || error.message.includes('fetch')) {
-          throw new Error('NETWORK_ERROR');
+          throw new Error('ネットワークエラーが発生しました');
         }
         throw error;
       }
@@ -255,7 +255,7 @@ export class AuthService implements IAuthService {
           user: null,
           profile: null,
           account: null,
-          error: new Error('Authentication failed') as any,
+          error: new Error('認証に失敗しました') as any,
         };
       }
 
@@ -348,7 +348,7 @@ export class AuthService implements IAuthService {
         .single();
 
       if (existingProfile) {
-        throw new Error('EMAIL_ALREADY_EXISTS');
+        throw new Error('このメールアドレスは既に登録されています');
       }
 
       // Supabaseでパスキー認証のユーザー登録（仮実装）
@@ -366,7 +366,7 @@ export class AuthService implements IAuthService {
           user: null,
           profile: null,
           account: null,
-          error: new Error('Registration failed') as any,
+          error: new Error('登録に失敗しました') as any,
         };
       }
 
@@ -428,7 +428,7 @@ export class AuthService implements IAuthService {
 
       if (error) {
         if (error.message.includes('invalid') || error.message.includes('credentials')) {
-          throw new Error('INVALID_CREDENTIALS');
+          throw new Error('メールアドレスまたはパスワードが正しくありません');
         }
         throw error;
       }
@@ -438,7 +438,7 @@ export class AuthService implements IAuthService {
           user: null,
           profile: null,
           account: null,
-          error: new Error('Authentication failed') as any,
+          error: new Error('認証に失敗しました') as any,
         };
       }
 
@@ -488,7 +488,7 @@ export class AuthService implements IAuthService {
 
       if (error) {
         if (error.message.includes('expired') || error.message.includes('invalid')) {
-          throw new Error('TOKEN_EXPIRED');
+          throw new Error('トークンの有効期限が切れています');
         }
         throw error;
       }
@@ -498,7 +498,7 @@ export class AuthService implements IAuthService {
           user: null,
           profile: null,
           account: null,
-          error: new Error('Refresh failed') as any,
+          error: new Error('トークンの更新に失敗しました') as any,
         };
       }
 
@@ -541,7 +541,7 @@ export class AuthService implements IAuthService {
       } = await this.supabase.auth.getUser();
 
       if (error || !user) {
-        throw new Error('UNAUTHORIZED');
+        throw new Error('認証されていません');
       }
 
       // プロフィール取得
