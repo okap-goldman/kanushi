@@ -303,7 +303,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
         <View style={styles.likeButtonContainer}>
           <TouchableOpacity onPress={handleLike} style={styles.actionButton} testID="like-button">
             <Feather
-              name={liked ? 'heart' : 'heart'}
+              name="heart"
               size={22}
               color={liked ? '#E53E3E' : '#64748B'}
               style={liked ? styles.filledHeart : undefined}
@@ -350,7 +350,7 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
           testID="bookmark-button"
         >
           <Feather
-            name={bookmarked ? 'bookmark' : 'bookmark'}
+            name="bookmark"
             size={22}
             color={bookmarked ? '#3B82F6' : '#64748B'}
           />
