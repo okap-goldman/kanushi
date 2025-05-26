@@ -28,9 +28,9 @@ describe('TypingIndicator', () => {
 
   it('カスタムスタイルが適用される', () => {
     const customStyle = { backgroundColor: 'red' };
-    const { container } = render(<TypingIndicator style={customStyle} testID="typing-indicator" />);
+    const { getByTestId } = render(<TypingIndicator style={customStyle} testID="typing-indicator" />);
 
     // コンポーネントがレンダリングされることを確認
-    expect(container).toBeTruthy();
+    expect(getByTestId('typing-indicator')).toBeTruthy();
   });
 });
