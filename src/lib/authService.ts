@@ -587,10 +587,6 @@ export class AuthService implements IAuthService {
 
   // 複数アカウント管理：アカウント一覧取得
   async getAccounts(): Promise<{ accounts: AccountInfo[]; error: Error | null }> {
-<<<<<<< HEAD
-    // TODO: 実装
-    throw new Error('未実装の機能です');
-=======
     try {
       const {
         data: { user },
@@ -626,15 +622,10 @@ export class AuthService implements IAuthService {
     } catch (error) {
       return { accounts: [], error: error as Error };
     }
->>>>>>> develop
   }
 
   // 複数アカウント管理：アカウント切替
   async switchAccount(accountId: string): Promise<AuthResponse> {
-<<<<<<< HEAD
-    // TODO: 実装
-    throw new Error('未実装の機能です');
-=======
     try {
       const {
         data: { user },
@@ -731,15 +722,10 @@ export class AuthService implements IAuthService {
     } catch (error) {
       return { success: false, error: error as Error };
     }
->>>>>>> develop
   }
 
   // 複数アカウント管理：アカウント追加
   async addAccount(authData: any): Promise<AuthResponse> {
-<<<<<<< HEAD
-    // TODO: 実装
-    throw new Error('未実装の機能です');
-=======
     try {
       const {
         data: { user },
@@ -789,7 +775,6 @@ export class AuthService implements IAuthService {
         error: error as AuthError,
       };
     }
->>>>>>> develop
   }
 
   // Alias for registerWithPasskey (used in tests)
