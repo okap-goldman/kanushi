@@ -1,9 +1,9 @@
-import { createHighlight, getHighlights, removeHighlight } from '@/lib/highlightService';
-import { supabase } from '@/lib/supabase';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { createHighlight, removeHighlight, getHighlights } from '../../src/lib/highlightService';
+import { supabase } from '../../src/lib/supabase';
 
 // モックの設定
-vi.mock('@/lib/supabase', () => ({
+vi.mock('../../src/lib/supabase', () => ({
   supabase: {
     from: vi.fn(),
     auth: {
