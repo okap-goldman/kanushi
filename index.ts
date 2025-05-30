@@ -1,3 +1,4 @@
+import './src/lib/node-polyfills';
 import { registerRootComponent } from 'expo';
 
 import App from './App';
