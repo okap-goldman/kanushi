@@ -84,6 +84,11 @@ export class SearchHistoryService {
 
   async getSuggestedUsers(limit: number = 5): Promise<any[]> {
     try {
+      // For development, use mock data
+      if (__DEV__ || process.env.NODE_ENV === 'development') {
+        return [];
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 

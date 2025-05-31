@@ -103,11 +103,13 @@ UPDATE posts SET comments_count = (SELECT COUNT(*) FROM comments WHERE post_id =
 -- ストーリーズデータの挿入
 -- 注意: storyテーブルは002_create_post_and_story_tables.sqlで作成されます
 -- テーブルが存在しない場合は、先にそのマイグレーションを実行してください
-INSERT INTO story (id, user_id, image_url, edit_data, is_repost, original_story_id, expires_at, created_at)
+INSERT INTO story (id, user_id, image_url, audio_url, audio_transcript, edit_data, is_repost, original_story_id, expires_at, created_at)
 VALUES
   -- 光の導き手 明子のストーリー（朝の瞑想風景）
   ('BB0e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440001', 
-   'https://example.com/stories/meditation-sunrise.jpg', 
+   'https://example.com/stories/meditation-sunrise.jpg',
+   'https://f004.backblazeb2.com/b2api/v1/b2_download_file_by_id?fileId=4_za01f9bab90e30e6d997f091c_f1107d3a67562ef44_d20250526_m000952_c004_v0402009_t0045_u01748218192024',
+   '朝日と共に瞑想の時間です。深く息を吸って、この美しい光のエネルギーを感じてください。今日も光と共に歩んでいきましょう。', 
    '{"filters": ["warm"], "stickers": [{"type": "sparkle", "x": 100, "y": 200}], "caption": "朝日と共に瞑想の時間✨ 今日も光と共に歩みます", "location": "富士山麓瞑想センター"}',
    false,
    NULL,
@@ -116,7 +118,9 @@ VALUES
    
   -- 宇宙意識 龍馬のストーリー（11:11のポータル）
   ('BB0e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440002', 
-   'https://example.com/stories/portal-1111.jpg', 
+   'https://example.com/stories/portal-1111.jpg',
+   'https://f004.backblazeb2.com/b2api/v1/b2_download_file_by_id?fileId=4_za01f9bab90e30e6d997f091c_f1107d3a67562ef44_d20250526_m000952_c004_v0402009_t0045_u01748218192024',
+   '今夜のチャネリングセッションを開始します。宇宙からの愛のメッセージを受け取る準備はできていますか。心を開いて、このエネルギーと共鳴してください。', 
    '{"text_content": "11:11\n今、宇宙のポータルが開いています\n深呼吸をして\nエネルギーを受け取ってください", "background_color": "#1a0033", "font_style": "cosmic", "textPosition": {"x": "center", "y": "center"}, "animation": "glow", "caption": "特別なエネルギーが降り注いでいます"}',
    false,
    NULL,
@@ -125,7 +129,9 @@ VALUES
    
   -- 癒しの音 さくらのストーリー（クリスタルボウル準備）
   ('BB0e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440003', 
-   'https://example.com/stories/crystal-bowls.jpg', 
+   'https://example.com/stories/crystal-bowls.jpg',
+   'https://f004.backblazeb2.com/b2api/v1/b2_download_file_by_id?fileId=4_za01f9bab90e30e6d997f091c_f1107d3a67562ef44_d20250526_m000952_c004_v0402009_t0045_u01748218192024',
+   '今夜のヒーリングセッションの準備をしています。クリスタルボウルの音で、皆さまの心と体を深く癒していきたいと思います。', 
    '{"filters": ["ethereal"], "stickers": [{"type": "musical_note", "x": 150, "y": 100}, {"type": "heart", "x": 200, "y": 150}], "caption": "今夜のヒーリングセッションの準備中です🎵", "location": "ヒーリングサロン光の音"}',
    false,
    NULL,

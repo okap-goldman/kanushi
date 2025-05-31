@@ -17,6 +17,8 @@ interface InputProps extends RNTextInputProps {
   inputStyle?: TextStyle;
   labelStyle?: TextStyle;
   errorStyle?: TextStyle;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
 export function Input({
@@ -26,17 +28,28 @@ export function Input({
   inputStyle,
   labelStyle,
   errorStyle,
+  leftIcon,
+  rightIcon,
   ...props
 }: InputProps) {
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={[styles.label, labelStyle]}>{label}</Text>}
-      <TextInput
-        style={[styles.input, error ? styles.inputError : null, inputStyle]}
-        placeholderTextColor={theme.colors.text.light}
-        autoCapitalize="none"
-        {...props}
-      />
+      <View style={[styles.inputContainer, error ? styles.inputContainerError : null]}>
+        {leftIcon && <View style={styles.leftIconContainer}>{leftIcon}</View>}
+        <TextInput
+          style={[
+            styles.input,
+            leftIcon && styles.inputWithLeftIcon,
+            rightIcon && styles.inputWithRightIcon,
+            inputStyle,
+          ]}
+          placeholderTextColor={theme.colors.text.light}
+          autoCapitalize="none"
+          {...props}
+        />
+        {rightIcon && <View style={styles.rightIconContainer}>{rightIcon}</View>}
+      </View>
       {error && <Text style={[styles.error, errorStyle]}>{error}</Text>}
     </View>
   );
@@ -52,18 +65,39 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     color: theme.colors.text.secondary,
   },
-  input: {
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: theme.colors.border.default,
     borderRadius: 8,
+    backgroundColor: theme.colors.background.primary,
+  },
+  inputContainerError: {
+    borderColor: theme.colors.status.error,
+  },
+  input: {
+    flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    backgroundColor: theme.colors.background.primary,
     color: theme.colors.text.primary,
   },
-  inputError: {
-    borderColor: theme.colors.status.error,
+  inputWithLeftIcon: {
+    paddingLeft: 8,
+  },
+  inputWithRightIcon: {
+    paddingRight: 8,
+  },
+  leftIconContainer: {
+    paddingLeft: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rightIconContainer: {
+    paddingRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   error: {
     fontSize: 12,

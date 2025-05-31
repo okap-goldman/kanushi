@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Image } from 'expo-image';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dimensions,
   SafeAreaView,
@@ -10,7 +10,14 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { Product, ecService, createApplePayOrder } from '../lib/ecService';
+import { useAuth } from '../context/AuthContext';
+import { cartService } from '../lib/cartService';
+import { ApplePayButton } from '../components/shop/ApplePayButton';
+import { Avatar } from '../components/ui/Avatar';
 
 const { width } = Dimensions.get('window');
 
@@ -102,13 +109,53 @@ const SAMPLE_PRODUCTS = [
 export default function ProductDetail() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const navigation = useNavigation();
   const route = useRoute<any>();
-  const { productId } = route.params || { productId: '1' };
+  const { user } = useAuth();
+  const { productId } = route.params || {};
 
-  // Find the product from the sample data
-  const product = SAMPLE_PRODUCTS.find((p) => p.id === productId) || SAMPLE_PRODUCTS[0];
+  useEffect(() => {
+    if (productId) {
+      loadProduct();
+    }
+  }, [productId]);
+
+  const loadProduct = async () => {
+    try {
+      setLoading(true);
+      const productData = await ecService.getProductById(productId);
+      setProduct(productData);
+    } catch (error) {
+      Alert.alert('エラー', '商品の取得に失敗しました');
+      navigation.goBack();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0070F3" />
+          <Text style={styles.loadingText}>商品を読み込み中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!product) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>商品が見つかりません</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const incrementQuantity = () => {
     if (quantity < product.stock) {
@@ -122,9 +169,88 @@ export default function ProductDetail() {
     }
   };
 
-  const addToCart = () => {
-    // In a real app, this would add the product to the shopping cart
-    alert(`Added ${quantity} item(s) to cart`);
+  const addToCart = async () => {
+    if (!user) {
+      Alert.alert('ログインが必要です', 'カートに追加するにはログインしてください');
+      return;
+    }
+
+    if (!product) return;
+
+    try {
+      await cartService.addToCart({
+        productId: product.id,
+        title: product.title,
+        price: product.price,
+        currency: product.currency,
+        imageUrl: product.image_url,
+        quantity: quantity,
+        stock: product.stock,
+        sellerId: product.seller_user_id,
+      });
+      
+      Alert.alert(
+        'カートに追加しました', 
+        `${product.title} × ${quantity}個をカートに追加しました`,
+        [
+          { text: 'ショッピングを続ける', style: 'cancel' },
+          { 
+            text: 'カートを見る', 
+            onPress: () => navigation.navigate('Cart' as never)
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('エラー', (error as Error).message);
+    }
+  };
+
+  const handleApplePayStart = () => {
+    console.log('Apple Pay決済を開始します...');
+  };
+
+  const handleApplePaySuccess = async (result: any) => {
+    try {
+      if (!user || !product) {
+        Alert.alert('エラー', 'ユーザー情報または商品情報が見つかりません');
+        return;
+      }
+
+      // TODO: 実際の配送先住所IDを取得する必要があります
+      // ここでは仮のIDを使用
+      const shippingAddressId = 'default-address-id';
+
+      const order = await createApplePayOrder(user.id, {
+        productId: product.id,
+        quantity,
+        shippingAddressId,
+        applePayResult: result,
+      });
+
+      Alert.alert(
+        '注文完了',
+        `Apple Payでの決済が完了しました。\n注文ID: ${order.id}`,
+        [
+          {
+            text: '注文履歴を見る',
+            onPress: () => navigation.navigate('Orders' as never),
+          },
+          { text: 'OK' },
+        ]
+      );
+    } catch (error) {
+      console.error('Apple Pay order creation failed:', error);
+      Alert.alert('エラー', 'Apple Pay決済の処理に失敗しました');
+    }
+  };
+
+  const handleApplePayError = (error: Error) => {
+    console.error('Apple Pay payment failed:', error);
+    Alert.alert('エラー', 'Apple Pay決済に失敗しました');
+  };
+
+  const handleApplePayCancel = () => {
+    console.log('Apple Pay決済がキャンセルされました');
   };
 
   return (
@@ -142,9 +268,9 @@ export default function ProductDetail() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerButton}
-            onPress={() => navigation.navigate('Orders' as never)}
+            onPress={() => navigation.navigate('Cart' as never)}
           >
-            <Feather name="shopping-bag" size={24} color="#1A202C" />
+            <Feather name="shopping-cart" size={24} color="#1A202C" />
           </TouchableOpacity>
         </View>
       </View>
@@ -152,86 +278,47 @@ export default function ProductDetail() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Product images */}
         <View style={styles.imageGallery}>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(event) => {
-              const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
-              setCurrentImageIndex(newIndex);
-            }}
-          >
-            {product.images.map((image, index) => (
-              <Image
-                key={index}
-                source={{ uri: image }}
-                style={styles.productImage}
-                contentFit="cover"
-              />
-            ))}
-          </ScrollView>
-
-          {/* Image pagination indicators */}
-          <View style={styles.paginationContainer}>
-            {product.images.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.paginationDot,
-                  currentImageIndex === index && styles.paginationDotActive,
-                ]}
-              />
-            ))}
-          </View>
+          <Image
+            source={{ uri: product.image_url }}
+            style={styles.productImage}
+            contentFit="cover"
+          />
         </View>
 
         {/* Product info */}
         <View style={styles.productInfo}>
           <View style={styles.priceRow}>
-            {product.discountPrice ? (
-              <>
-                <Text style={styles.discountPrice}>¥{product.discountPrice.toLocaleString()}</Text>
-                <Text style={styles.originalPrice}>¥{product.price.toLocaleString()}</Text>
-              </>
-            ) : (
-              <Text style={styles.price}>¥{product.price.toLocaleString()}</Text>
-            )}
-
-            {product.isNew && (
-              <View style={styles.newBadge}>
-                <Text style={styles.newBadgeText}>NEW</Text>
-              </View>
-            )}
+            <Text style={styles.price}>
+              {new Intl.NumberFormat('ja-JP', {
+                style: 'currency',
+                currency: product.currency,
+                minimumFractionDigits: 0,
+              }).format(product.price)}
+            </Text>
           </View>
 
-          <Text style={styles.productName}>{product.name}</Text>
+          <Text style={styles.productName}>{product.title}</Text>
 
-          <View style={styles.ratingRow}>
-            <View style={styles.rating}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Feather
-                  key={star}
-                  name="star"
-                  size={16}
-                  color={star <= Math.floor(product.rating) ? '#F59E0B' : '#E2E8F0'}
-                  solid={star <= Math.floor(product.rating)}
-                />
-              ))}
-              <Text style={styles.ratingText}>{product.rating}</Text>
-            </View>
-            <Text style={styles.reviewCount}>{product.reviews} reviews</Text>
-          </View>
-
-          <TouchableOpacity style={styles.sellerRow}>
-            <Text style={styles.sellerLabel}>Seller:</Text>
-            <Text style={styles.sellerName}>{product.seller}</Text>
-            <Feather name="chevron-right" size={16} color="#718096" />
-          </TouchableOpacity>
+          {product.seller && (
+            <TouchableOpacity 
+              style={styles.sellerRow}
+              onPress={() => navigation.navigate('Profile', { userId: product.seller!.id })}
+            >
+              <Avatar
+                source={product.seller.profile_image_url}
+                size={32}
+                style={styles.sellerAvatar}
+              />
+              <Text style={styles.sellerLabel}>出品者:</Text>
+              <Text style={styles.sellerName}>{product.seller.display_name}</Text>
+              <Feather name="chevron-right" size={16} color="#718096" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Quantity selector */}
         <View style={styles.quantityContainer}>
-          <Text style={styles.quantityLabel}>Quantity:</Text>
+          <Text style={styles.quantityLabel}>数量:</Text>
           <View style={styles.quantitySelector}>
             <TouchableOpacity
               style={[styles.quantityButton, quantity <= 1 && styles.quantityButtonDisabled]}
@@ -259,46 +346,51 @@ export default function ProductDetail() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.stockText}>{product.stock} available</Text>
+          <Text style={styles.stockText}>在庫: {product.stock}個</Text>
         </View>
 
         {/* Description */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Description</Text>
+          <Text style={styles.sectionTitle}>商品説明</Text>
           <Text style={styles.descriptionText}>{product.description}</Text>
-        </View>
-
-        {/* Specifications */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Specifications</Text>
-
-          {product.specifications.map((spec, index) => (
-            <View
-              key={index}
-              style={[
-                styles.specRow,
-                index === product.specifications.length - 1 && styles.lastSpecRow,
-              ]}
-            >
-              <Text style={styles.specName}>{spec.name}</Text>
-              <Text style={styles.specValue}>{spec.value}</Text>
-            </View>
-          ))}
         </View>
       </ScrollView>
 
       {/* Bottom action bar */}
-      <View style={styles.actionBar}>
+      <View style={styles.actionBarContainer}>
         <View style={styles.totalContainer}>
-          <Text style={styles.totalLabel}>Total</Text>
+          <Text style={styles.totalLabel}>合計</Text>
           <Text style={styles.totalPrice}>
-            ¥{((product.discountPrice || product.price) * quantity).toLocaleString()}
+            {new Intl.NumberFormat('ja-JP', {
+              style: 'currency',
+              currency: product.currency,
+              minimumFractionDigits: 0,
+            }).format(product.price * quantity)}
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.addToCartButton} onPress={addToCart}>
+        {/* Apple Pay Button */}
+        <ApplePayButton
+          amount={product.price * quantity}
+          currency={product.currency}
+          label={product.title}
+          onPaymentStart={handleApplePayStart}
+          onPaymentSuccess={handleApplePaySuccess}
+          onPaymentError={handleApplePayError}
+          onPaymentCancel={handleApplePayCancel}
+          disabled={product.stock === 0}
+          style={styles.applePayButton}
+        />
+
+        <TouchableOpacity 
+          style={[styles.addToCartButton, product.stock === 0 && styles.addToCartButtonDisabled]} 
+          onPress={addToCart}
+          disabled={product.stock === 0}
+        >
           <Feather name="shopping-cart" size={20} color="#FFFFFF" />
-          <Text style={styles.addToCartText}>Add to Cart</Text>
+          <Text style={styles.addToCartText}>
+            {product.stock === 0 ? '在庫切れ' : 'カートに追加'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -506,10 +598,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 2,
   },
-  actionBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  actionBarContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
@@ -517,7 +606,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   totalContainer: {
-    flex: 1,
+    marginBottom: 16,
+  },
+  applePayButton: {
+    marginBottom: 8,
   },
   totalLabel: {
     fontSize: 12,
@@ -534,13 +626,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderRadius: 8,
+    width: '100%',
   },
   addToCartText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
     marginLeft: 8,
+  },
+  addToCartButtonDisabled: {
+    backgroundColor: '#A0AEC0',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#718096',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#E53E3E',
+  },
+  sellerAvatar: {
+    marginRight: 8,
   },
 });

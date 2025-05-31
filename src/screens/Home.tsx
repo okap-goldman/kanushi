@@ -8,8 +8,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Modal,
-  ScrollView,
 } from 'react-native';
 import { Bell, MessageCircle, Settings } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -18,7 +16,6 @@ import { createTimelineService } from '../lib/timelineService';
 import { Avatar } from '../components/ui/Avatar';
 import { CreatePostDialog } from '../components/CreatePostDialog';
 import { Post } from '../components/post/Post';
-import { FooterNav } from '../components/FooterNav';
 import { useAuth } from '../context/AuthContext';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { supabase } from '../lib/supabase';
@@ -29,7 +26,6 @@ import { getStories, createStory, viewStory, type UserStories } from '../lib/sto
 export default function Home() {
   const [timelineType, setTimelineType] = useState<'family' | 'watch'>('family');
   const [showCreatePost, setShowCreatePost] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [userStories, setUserStories] = useState<UserStories[]>([]);
   const [showCreateStoryDialog, setShowCreateStoryDialog] = useState(false);
 
@@ -39,54 +35,38 @@ export default function Home() {
   const fetchPostsData = useCallback(
     async (page: number, pageSize: number) => {
       try {
+        console.log('fetchPostsData called with:', { page, pageSize, timelineType, mockConfigEnabled: mockConfig.enabled });
+        
         // モックモードの場合
         if (mockConfig.enabled) {
-          const timelineService = createTimelineService();
-          const result = await timelineService.getTimeline(
-            user?.id || '1',
-            timelineType,
-            pageSize,
-            page > 0 ? page.toString() : undefined
-          );
+          console.log('Using mock mode, available mockPosts:', mockPosts.length);
           
-          if (result.success && result.data) {
-            const posts = result.data.data.map(post => {
-              // モックデータからユーザー情報を取得
-              const mockUser = mockPosts.find(p => p.id === post.id)?.user;
-              
-              return {
-                id: post.id,
-                user_id: post.userId,
-                content_type: post.contentType,
-                text_content: post.textContent,
-                media_url: post.mediaUrl,
-                audio_url: post.contentType === 'audio' ? post.mediaUrl : undefined,
-                audio_duration: post.durationSeconds,
-                image_urls: post.contentType === 'image' && post.mediaUrl ? [post.mediaUrl] : undefined,
-                preview_url: post.previewUrl,
-                created_at: post.createdAt.toISOString(),
-                likes_count: post.likesCount,
-                comments_count: post.commentsCount,
-                shares_count: post.sharesCount,
-                highlights_count: post.highlightsCount,
-                profile: mockUser ? {
-                  id: mockUser.id,
-                  display_name: mockUser.display_name,
-                  profile_image_url: mockUser.avatar_url,
-                } : {
-                  id: post.userId,
-                  display_name: 'ユーザー',
-                  profile_image_url: 'https://picsum.photos/200',
-                },
-                post_hashtag: [],
-              };
-            });
-            
-            // useInfiniteScrollは配列を期待しているので、postsを直接返す
-            return posts;
-          }
+          // 直接モックデータを返す
+          const posts = mockPosts.map(post => ({
+            id: post.id,
+            user_id: post.user.id,
+            content_type: post.contentType,
+            text_content: post.textContent,
+            media_url: post.mediaUrl,
+            audio_url: post.contentType === 'audio' ? post.mediaUrl : undefined,
+            audio_duration: post.durationSeconds,
+            image_urls: post.contentType === 'image' && post.mediaUrl ? [post.mediaUrl] : undefined,
+            preview_url: post.mediaUrl,
+            created_at: post.createdAt,
+            likes_count: post.likes,
+            comments_count: post.comments,
+            shares_count: 0,
+            highlights_count: 0,
+            profile: {
+              id: post.user.id,
+              display_name: post.user.displayName,
+              profile_image_url: post.user.profileImageUrl,
+            },
+            post_hashtag: [],
+          }));
           
-          return [];
+          console.log('Returning mock posts:', posts.length);
+          return posts;
         }
         
         // Using different queries based on timeline type
@@ -155,7 +135,7 @@ export default function Home() {
         throw error;
       }
     },
-    [timelineType]
+    [timelineType, user?.id]
   );
 
   const {
@@ -169,6 +149,12 @@ export default function Home() {
   } = useInfiniteScroll({
     fetchData: fetchPostsData,
     pageSize: 10,
+  });
+
+  console.log('Home component render:', { 
+    postsLength: posts?.length, 
+    loading, 
+    mockConfigEnabled: mockConfig.enabled 
   });
 
   // Refresh data when timeline type changes
@@ -203,16 +189,17 @@ export default function Home() {
   };
 
   const handleStorySubmit = async (data: {
-    file: { uri: string; type: string; name: string };
+    audioFile: { uri: string; type: string; name: string };
+    imageFile: { uri: string; type: string; name: string };
+    audioTranscript?: string;
     caption: string;
-    contentType: 'image' | 'video';
   }) => {
     try {
       const story = await createStory(
-        data.file.uri,
-        data.file.type,
-        data.caption,
-        data.contentType
+        data.audioFile,
+        data.imageFile,
+        data.audioTranscript,
+        data.caption
       );
       
       if (story) {
@@ -242,7 +229,7 @@ export default function Home() {
         <View style={styles.headerTop}>
           <Text style={styles.headerTitle}>Kanushi</Text>
           <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconButton} onPress={() => setShowNotifications(true)}>
+            <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Notifications')}>
               <Bell size={20} color="#666" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Messages')}>
@@ -278,7 +265,7 @@ export default function Home() {
         <StoriesRow
           userStories={userStories}
           currentUserId={user?.id || ''}
-          currentUserImage={user?.profileImage || 'https://via.placeholder.com/100'}
+          currentUserImage={user?.profileImage || 'https://picsum.photos/100'}
           onCreateStory={handleCreateStory}
           onStoryView={handleStoryView}
         />
@@ -289,6 +276,8 @@ export default function Home() {
         data={posts}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
+          console.log('Rendering post item:', item);
+          
           // メディアコンテンツの決定
           let content = item.text_content || '';
           let caption = item.text_content || '';
@@ -328,6 +317,11 @@ export default function Home() {
         onRefresh={refresh}
         style={styles.list}
         contentContainerStyle={styles.listContent}
+        ListEmptyComponent={() => (
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <Text>投稿がありません</Text>
+          </View>
+        )}
       />
 
       <TouchableOpacity style={styles.fab} onPress={() => setShowCreatePost(true)}>
@@ -343,40 +337,6 @@ export default function Home() {
         }}
       />
 
-      {/* Notifications Modal */}
-      <Modal
-        visible={showNotifications}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowNotifications(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>通知</Text>
-              <TouchableOpacity onPress={() => setShowNotifications(false)}>
-                <Text style={styles.closeButton}>閉じる</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalScroll}>
-              {[1, 2, 3].map((i) => (
-                <TouchableOpacity key={i} style={styles.notificationItem}>
-                  <Avatar
-                    source={{ uri: `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}` }}
-                    style={styles.avatar}
-                  />
-                  <View style={styles.notificationContent}>
-                    <Text style={styles.notificationText}>
-                      ユーザー{i}があなたの投稿にいいねしました
-                    </Text>
-                    <Text style={styles.notificationTime}>1時間前</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
 
       {/* Create Story Dialog */}
       <CreateStoryDialog
@@ -385,7 +345,6 @@ export default function Home() {
         onSubmit={handleStorySubmit}
       />
       
-      <FooterNav />
     </SafeAreaView>
   );
 }
@@ -468,61 +427,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     color: '#64748B',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: '70%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  closeButton: {
-    color: '#10B981', // Emerald-500
-    fontSize: 16,
-  },
-  modalScroll: {
-    flex: 1,
-  },
-  notificationItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  notificationContent: {
-    flex: 1,
-  },
-  notificationText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  notificationTime: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 2,
   },
   storiesContainer: {
     backgroundColor: '#FFFFFF',

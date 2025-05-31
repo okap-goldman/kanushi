@@ -104,9 +104,10 @@ Deno.serve(async (req: Request) => {
     return new Response(null, {
       status: 200,
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': 'http://localhost:8081',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Credentials': 'true',
       },
     });
   }
@@ -175,7 +176,8 @@ Deno.serve(async (req: Request) => {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': 'http://localhost:8081',
+          'Access-Control-Allow-Credentials': 'true',
         },
       }
     );
@@ -190,7 +192,8 @@ Deno.serve(async (req: Request) => {
         status: 500,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': 'http://localhost:8081',
+          'Access-Control-Allow-Credentials': 'true',
         },
       }
     );

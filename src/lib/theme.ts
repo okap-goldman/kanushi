@@ -80,6 +80,7 @@ export const theme = {
   // Common shadow styles
   shadows: {
     sm: {
+      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.05,
@@ -87,6 +88,7 @@ export const theme = {
       elevation: 2,
     },
     md: {
+      boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
@@ -94,6 +96,7 @@ export const theme = {
       elevation: 4,
     },
     lg: {
+      boxShadow: '0 4px 8px 0 rgba(0, 0, 0, 0.15)',
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.15,
@@ -101,6 +104,7 @@ export const theme = {
       elevation: 8,
     },
     emerald: {
+      boxShadow: '0 4px 8px 0 rgba(16, 185, 129, 0.2)',
       shadowColor: '#10B981',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.2,
@@ -108,6 +112,7 @@ export const theme = {
       elevation: 8,
     },
     rose: {
+      boxShadow: '0 4px 8px 0 rgba(255, 184, 200, 0.2)',
       shadowColor: '#FFB8C8',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.2,

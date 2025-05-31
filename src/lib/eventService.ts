@@ -1,6 +1,7 @@
 import type { ApiResponse } from './data';
 import { supabase } from './supabase';
 import { mockConfig, mockDelay, mockEvents, getMockEvent, getMockUserEvents } from './mockData';
+import { mockEventParticipants } from './mockData/events';
 
 export interface UserProfile {
   id: string;
@@ -500,6 +501,101 @@ export const eventService = {
     type: 'created' | 'attending' | 'interested' = 'attending'
   ): Promise<ApiResponse<ExtendedEvent[]>> {
     try {
+      // モックモードの場合
+      if (mockConfig.enabled) {
+        await mockDelay();
+        
+        let filteredEvents: ExtendedEvent[] = [];
+        
+        if (type === 'created') {
+          // ユーザーが主催しているイベントを取得
+          const userEvents = mockEvents.filter(event => event.host_id === userId);
+          filteredEvents = userEvents.map(event => ({
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            start_date: event.start_date,
+            end_date: event.end_date,
+            location: event.location || '',
+            capacity: event.capacity,
+            current_participants: event.current_participants,
+            image_url: event.cover_image,
+            organizer_id: event.host_id,
+            created_at: event.created_at,
+            updated_at: event.created_at,
+            location_details: event.location ? {
+              address: event.location,
+              venue_name: event.location,
+            } : null,
+            is_online: event.event_type === 'online',
+            online_url: event.online_url || null,
+            max_participants: event.capacity || null,
+            price: event.price,
+            currency: event.currency,
+            cover_image_url: event.cover_image || null,
+            is_published: true,
+            is_cancelled: false,
+            category: event.category || null,
+            privacy_level: 'public' as const,
+            event_type: event.event_type,
+            participant_count: event.current_participants,
+            creator_profile: {
+              id: event.host?.id || event.host_id,
+              username: event.host?.username || 'unknown',
+              avatar_url: event.host?.avatar_url,
+              display_name: event.host?.display_name || 'Unknown',
+            },
+            user_participation_status: undefined,
+          }));
+        } else {
+          // ユーザーが参加しているイベントを取得
+          const participatingEventIds = mockEventParticipants
+            .filter(participant => participant.user_id === userId && participant.status === type)
+            .map(participant => participant.event_id);
+          
+          const userEvents = mockEvents.filter(event => participatingEventIds.includes(event.id));
+          filteredEvents = userEvents.map(event => ({
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            start_date: event.start_date,
+            end_date: event.end_date,
+            location: event.location || '',
+            capacity: event.capacity,
+            current_participants: event.current_participants,
+            image_url: event.cover_image,
+            organizer_id: event.host_id,
+            created_at: event.created_at,
+            updated_at: event.created_at,
+            location_details: event.location ? {
+              address: event.location,
+              venue_name: event.location,
+            } : null,
+            is_online: event.event_type === 'online',
+            online_url: event.online_url || null,
+            max_participants: event.capacity || null,
+            price: event.price,
+            currency: event.currency,
+            cover_image_url: event.cover_image || null,
+            is_published: true,
+            is_cancelled: false,
+            category: event.category || null,
+            privacy_level: 'public' as const,
+            event_type: event.event_type,
+            participant_count: event.current_participants,
+            creator_profile: {
+              id: event.host?.id || event.host_id,
+              username: event.host?.username || 'unknown',
+              avatar_url: event.host?.avatar_url,
+              display_name: event.host?.display_name || 'Unknown',
+            },
+            user_participation_status: 'attending' as const,
+          }));
+        }
+        
+        return { data: filteredEvents, error: null };
+      }
+
       if (type === 'created') {
         const { data, error } = await supabase
           .from('events')
@@ -633,6 +729,36 @@ export const eventService = {
     status?: 'attending' | 'interested'
   ): Promise<ApiResponse<EventParticipant[]>> {
     try {
+      // モックモードの場合
+      if (mockConfig.enabled) {
+        await mockDelay();
+        
+        let participants = mockEventParticipants.filter(p => p.event_id === eventId);
+        
+        if (status) {
+          participants = participants.filter(p => p.status === status);
+        }
+        
+        const formattedParticipants: EventParticipant[] = participants.map(participant => ({
+          id: participant.id,
+          event_id: participant.event_id,
+          user_id: participant.user_id,
+          status: participant.status as 'attending' | 'interested' | 'declined',
+          payment_status: participant.event_id === '1' && participant.status === 'attending' ? 'paid' : null,
+          payment_amount: participant.event_id === '1' && participant.status === 'attending' ? 3000 : null,
+          payment_id: null,
+          created_at: participant.joined_at,
+          updated_at: participant.joined_at,
+          profile: participant.user ? {
+            username: participant.user.username,
+            avatar_url: participant.user.avatar_url,
+            display_name: participant.user.display_name,
+          } : undefined,
+        }));
+        
+        return { data: formattedParticipants, error: null };
+      }
+
       let query = supabase
         .from('event_participants')
         .select(`

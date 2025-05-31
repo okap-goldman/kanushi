@@ -11,7 +11,6 @@ import {
   View 
 } from 'react-native';
 import PostCard from '../components/PostCard';
-import { Tabs } from '../components/ui/Tabs';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import StoriesRow from '../components/stories/StoriesRow';
@@ -59,16 +58,16 @@ export default function Timeline(_props: TimelineProps) {
   const { user } = useAuth();
 
   // Mock data for testing
-  const mockPosts = [
+  const mockFamilyPosts = [
     {
-      id: 'post-1',
+      id: 'family-post-1',
       user: {
         id: 'user-1',
-        displayName: 'テストユーザー1',
+        displayName: 'ファミリーユーザー1',
         profileImageUrl: 'https://example.com/avatar1.jpg',
       },
       contentType: 'text' as const,
-      textContent: 'これは家族タイムラインのテスト投稿です',
+      textContent: 'これは家族タイムラインのテスト投稿です。家族の温かいメッセージをお届けします。',
       createdAt: '2024-01-01T10:00:00Z',
       likes: 5,
       comments: 2,
@@ -77,10 +76,10 @@ export default function Timeline(_props: TimelineProps) {
       isBookmarked: false,
     },
     {
-      id: 'post-2',
+      id: 'family-post-2',
       user: {
         id: 'user-2',
-        displayName: 'テストユーザー2',
+        displayName: 'ファミリーユーザー2',
         profileImageUrl: 'https://example.com/avatar2.jpg',
       },
       contentType: 'audio' as const,
@@ -88,7 +87,7 @@ export default function Timeline(_props: TimelineProps) {
       waveformUrl: 'https://example.com/waveform.png',
       durationSeconds: 180,
       aiMetadata: {
-        summary: '瞑想についての音声投稿',
+        summary: '家族の絆についての瞑想音声',
       },
       createdAt: '2024-01-01T09:00:00Z',
       likes: 12,
@@ -99,10 +98,51 @@ export default function Timeline(_props: TimelineProps) {
     },
   ];
 
+  const mockWatchPosts = [
+    {
+      id: 'watch-post-1',
+      user: {
+        id: 'user-3',
+        displayName: 'ウォッチユーザー1',
+        profileImageUrl: 'https://example.com/avatar3.jpg',
+      },
+      contentType: 'text' as const,
+      textContent: 'これはウォッチタイムラインの投稿です。興味深いコンテンツをお楽しみください。',
+      createdAt: '2024-01-01T11:00:00Z',
+      likes: 8,
+      comments: 3,
+      isLiked: false,
+      isHighlighted: true,
+      isBookmarked: false,
+    },
+    {
+      id: 'watch-post-2',
+      user: {
+        id: 'user-4',
+        displayName: 'ウォッチユーザー2',
+        profileImageUrl: 'https://example.com/avatar4.jpg',
+      },
+      contentType: 'audio' as const,
+      mediaUrl: 'https://example.com/audio2.mp3',
+      waveformUrl: 'https://example.com/waveform2.png',
+      durationSeconds: 240,
+      aiMetadata: {
+        summary: '目醒めのプロセスについての深い洞察',
+      },
+      createdAt: '2024-01-01T08:30:00Z',
+      likes: 15,
+      comments: 6,
+      isLiked: true,
+      isHighlighted: false,
+      isBookmarked: true,
+    },
+  ];
+
   useEffect(() => {
     loadTimeline();
     loadStories();
   }, [activeTab]);
+
 
   const loadTimeline = async () => {
     setLoading(true);
@@ -116,8 +156,9 @@ export default function Timeline(_props: TimelineProps) {
       
       if (result.success && result.data) {
         const formattedPosts: Post[] = result.data.data.map(post => {
-          // モックデータからユーザー情報を取得
-          const mockUser = mockPosts.find(p => p.id === post.id)?.user;
+          // Use appropriate mock data based on active tab
+          const currentMockData = activeTab === 'family' ? mockFamilyPosts : mockWatchPosts;
+          const mockUser = currentMockData.find(p => p.id === post.id)?.user;
           
           return {
             id: post.id,
@@ -136,7 +177,7 @@ export default function Timeline(_props: TimelineProps) {
             waveformUrl: post.waveformUrl || undefined,
             durationSeconds: post.durationSeconds || undefined,
             aiMetadata: post.aiMetadata || undefined,
-            createdAt: post.createdAt.toISOString(),
+            createdAt: post.createdAt instanceof Date ? post.createdAt.toISOString() : post.createdAt,
             likes: post.likesCount,
             comments: post.commentsCount,
             isLiked: false,
@@ -147,6 +188,10 @@ export default function Timeline(_props: TimelineProps) {
         
         setPosts(formattedPosts);
         setHasNextPage(result.data.nextCursor !== null);
+      } else {
+        // Fallback to mock data if service fails
+        const currentMockData = activeTab === 'family' ? mockFamilyPosts : mockWatchPosts;
+        setPosts(currentMockData);
       }
       
       setLoading(false);
@@ -168,9 +213,10 @@ export default function Timeline(_props: TimelineProps) {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      // Simulate refresh
+      // Simulate refresh with appropriate mock data
       setTimeout(() => {
-        setPosts(mockPosts);
+        const currentMockData = activeTab === 'family' ? mockFamilyPosts : mockWatchPosts;
+        setPosts(currentMockData);
         setRefreshing(false);
       }, 500);
       // Also refresh stories
@@ -186,9 +232,10 @@ export default function Timeline(_props: TimelineProps) {
 
     setLoadingMore(true);
     try {
-      // Simulate loading more posts
+      // Simulate loading more posts with appropriate mock data
       setTimeout(() => {
-        const morePosts = mockPosts.map((post, index) => ({
+        const currentMockData = activeTab === 'family' ? mockFamilyPosts : mockWatchPosts;
+        const morePosts = currentMockData.map((post, index) => ({
           ...post,
           id: `${post.id}-more-${index}`,
         }));
@@ -226,7 +273,6 @@ export default function Timeline(_props: TimelineProps) {
 
   const handleComment = (postId: string) => {
     // Navigate to comments or open comment modal
-    console.log('Comment on post:', postId);
   };
 
   const handleDelete = (postId: string) => {
@@ -255,11 +301,8 @@ export default function Timeline(_props: TimelineProps) {
   };
 
   const handleTabChange = (value: string) => {
-    console.log('handleTabChange called with:', value);
-    console.log('current activeTab:', activeTab);
     // If switching from family to watch, show confirmation dialog
     if (activeTab === 'family' && value === 'watch') {
-      console.log('Showing confirmation dialog');
       setShowConfirmDialog(true);
     } else {
       setActiveTab(value as 'family' | 'watch');
@@ -325,7 +368,7 @@ export default function Timeline(_props: TimelineProps) {
         <StoriesRow
           userStories={userStories}
           currentUserId={user?.id || ''}
-          currentUserImage={user?.profileImage || 'https://via.placeholder.com/100'}
+          currentUserImage={user?.profileImage || 'https://picsum.photos/100'}
           onCreateStory={handleCreateStory}
           onStoryView={handleStoryView}
         />
@@ -333,23 +376,25 @@ export default function Timeline(_props: TimelineProps) {
 
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
-        <Tabs
-          value={activeTab}
-          onValueChange={handleTabChange}
-        >
-          <Tabs.List style={styles.tabsList}>
-            <Tabs.Trigger value="family" style={styles.tabTrigger}>
-              <Text style={[styles.tabText, activeTab === 'family' && styles.activeTabText]}>
-                ファミリー
-              </Text>
-            </Tabs.Trigger>
-            <Tabs.Trigger value="watch" style={styles.tabTrigger}>
-              <Text style={[styles.tabText, activeTab === 'watch' && styles.activeTabText]}>
-                ウォッチ
-              </Text>
-            </Tabs.Trigger>
-          </Tabs.List>
-        </Tabs>
+        <View style={styles.tabsList}>
+          <TouchableOpacity 
+            style={[styles.tabTrigger, activeTab === 'family' && styles.tabTriggerActive]}
+            onPress={() => handleTabChange('family')}
+          >
+            <Text style={[styles.tabText, activeTab === 'family' && styles.activeTabText]}>
+              ファミリー
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.tabTrigger, activeTab === 'watch' && styles.tabTriggerActive]}
+            onPress={() => handleTabChange('watch')}
+          >
+            <Text style={[styles.tabText, activeTab === 'watch' && styles.activeTabText]}>
+              ウォッチ
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Timeline Content */}
@@ -380,12 +425,13 @@ export default function Timeline(_props: TimelineProps) {
       {/* Confirmation Modal */}
       <Modal
         visible={showConfirmDialog}
-        transparent
+        transparent={true}
         animationType="fade"
         onRequestClose={handleCancelSwitch}
+        testID="confirm-modal"
       >
-        <Pressable style={styles.modalOverlay} onPress={handleCancelSwitch}>
-          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>タイムライン切り替えの確認</Text>
             <Text style={styles.modalDescription}>
               ファミリータイムラインからウォッチタイムラインに切り替えますか？
@@ -393,15 +439,15 @@ export default function Timeline(_props: TimelineProps) {
               ウォッチタイムラインでは、ウォッチしているユーザーの投稿が表示されます。
             </Text>
             <View style={styles.modalButtons}>
-              <Button variant="outline" onPress={handleCancelSwitch}>
-                キャンセル
-              </Button>
-              <Button variant="primary" onPress={handleConfirmSwitch}>
-                切り替える
-              </Button>
+              <TouchableOpacity style={styles.modalButton} onPress={handleCancelSwitch}>
+                <Text style={styles.modalButtonText}>キャンセル</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalButton, styles.modalButtonPrimary]} onPress={handleConfirmSwitch}>
+                <Text style={[styles.modalButtonText, styles.modalButtonTextPrimary]}>切り替える</Text>
+              </TouchableOpacity>
             </View>
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
 
       {/* Create Story Dialog */}
@@ -432,11 +478,28 @@ const styles = StyleSheet.create({
   },
   tabsList: {
     flexDirection: 'row',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    padding: 4,
+    margin: 16,
+  },
+  tabTriggerActive: {
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   tabTrigger: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     alignItems: 'center',
+    borderRadius: 6,
   },
   tabText: {
     fontSize: 16,
@@ -464,6 +527,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000,
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
@@ -478,7 +542,8 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5,
+    elevation: 10,
+    zIndex: 1001,
   },
   modalTitle: {
     fontSize: 18,
@@ -498,6 +563,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+  },
+  modalButtonPrimary: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  modalButtonTextPrimary: {
+    color: 'white',
   },
   storiesContainer: {
     backgroundColor: '#FFFFFF',

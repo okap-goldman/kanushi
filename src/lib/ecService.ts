@@ -1,5 +1,287 @@
 import { v4 as uuidv4 } from 'uuid';
 import { supabase, uploadFile } from './supabase';
+import { stripeService } from './stripeService';
+
+// Mock data for development
+// 現在ログインしているユーザーのID（開発用）
+const CURRENT_USER_ID = '1';
+
+const MOCK_PRODUCTS: Product[] = [
+  {
+    id: '1',
+    seller_user_id: '1', // 現在のユーザーの商品
+    title: '浄化パワーストーン ブレスレット',
+    description: '天然水晶とアメジストを使用した浄化ブレスレット。瞑想やエネルギーワークにおすすめ。職人による手作りの一点物です。',
+    price: 8800,
+    currency: 'JPY',
+    image_url: 'https://picsum.photos/400/400?random=100',
+    stock: 15,
+    created_at: '2024-01-15T10:00:00Z',
+    seller: {
+      id: '1',
+      display_name: '明子☆スピリチュアルガイド',
+      profile_image_url: 'https://picsum.photos/100/100?random=200'
+    }
+  },
+  {
+    id: '9',
+    seller_user_id: '1', // 現在のユーザーの商品
+    title: 'レイキヒーリング遠隔セッション（60分）',
+    description: 'オンラインで行うレイキヒーリングセッション。エネルギーの浄化と調整を行い、心身のバランスを整えます。事前カウンセリング込み。',
+    price: 12000,
+    currency: 'JPY',
+    image_url: 'https://picsum.photos/400/400?random=109',
+    stock: 5,
+    created_at: '2024-03-01T10:00:00Z',
+    seller: {
+      id: '1',
+      display_name: '明子☆スピリチュアルガイド',
+      profile_image_url: 'https://picsum.photos/100/100?random=200'
+    }
+  },
+  {
+    id: '10',
+    seller_user_id: '1', // 現在のユーザーの商品
+    title: 'チャクラバランシング音響セラピー動画',
+    description: '7つのチャクラを整える60分の音響セラピー動画。528Hzなどの癒しの周波数を使用した瞑想音楽で深いリラクゼーションを。',
+    price: 3500,
+    currency: 'JPY',
+    image_url: 'https://picsum.photos/400/400?random=110',
+    stock: 999,
+    created_at: '2024-03-05T14:30:00Z',
+    seller: {
+      id: '1',
+      display_name: '明子☆スピリチュアルガイド',
+      profile_image_url: 'https://picsum.photos/100/100?random=200'
+    }
+  },
+  {
+    id: '2',
+    seller_user_id: 'seller2',
+    title: '音叉ヒーリング セット',
+    description: 'チャクラ調整に使用する7種類の音叉セット。各チャクラに対応した周波数で、深いリラクゼーションとバランス調整を促します。',
+    price: 28000,
+    currency: 'JPY',
+    image_url: 'https://picsum.photos/400/400?random=101',
+    stock: 8,
+    created_at: '2024-01-20T14:30:00Z',
+    seller: {
+      id: 'seller2',
+      display_name: 'サウンドヒーラー 健太',
+      profile_image_url: 'https://picsum.photos/100/100?random=201'
+    }
+  },
+  {
+    id: '3',
+    seller_user_id: 'seller3',
+    title: 'アロマディフューザー ＆ エッセンシャルオイルセット',
+    description: '瞑想や浄化に最適な天然エッセンシャルオイル3本とディフューザーのセット。ラベンダー、フランキンセンス、ユーカリ入り。',
+    price: 12500,
+    currency: 'JPY',
+    image_url: 'https://picsum.photos/400/400?random=102',
+    stock: 22,
+    created_at: '2024-02-01T09:15:00Z',
+    seller: {
+      id: 'seller3',
+      display_name: 'アロマセラピスト 香織',
+      profile_image_url: 'https://picsum.photos/100/100?random=202'
+    }
+  },
+  {
+    id: '4',
+    seller_user_id: 'seller4',
+    title: 'タロットカード 78枚セット（日本語解説書付き）',
+    description: '美しいイラストのタロットカードセット。初心者にも分かりやすい日本語解説書とスプレッドガイド付き。直感を磨くのに最適です。',
+    price: 5800,
+    currency: 'JPY',
+    image_url: 'https://picsum.photos/400/400?random=103',
+    stock: 30,
+    created_at: '2024-02-05T16:20:00Z',
+    seller: {
+      id: 'seller4',
+      display_name: 'タロットリーダー 星子',
+      profile_image_url: 'https://picsum.photos/100/100?random=203'
+    }
+  },
+  {
+    id: '5',
+    seller_user_id: 'seller5',
+    title: 'セージ スマッジングスティック 3本セット',
+    description: '浄化儀式に使用するホワイトセージのスマッジングスティック。空間や自分自身の浄化に。お香立て付き。',
+    price: 3200,
+    currency: 'JPY',
+    image_url: 'https://picsum.photos/400/400?random=104',
+    stock: 50,
+    created_at: '2024-02-10T11:45:00Z',
+    seller: {
+      id: 'seller5',
+      display_name: 'シャーマン 自然',
+      profile_image_url: 'https://picsum.photos/100/100?random=204'
+    }
+  },
+  {
+    id: '6',
+    seller_user_id: 'seller6',
+    title: '瞑想クッション オーガニックコットン',
+    description: 'オーガニックコットン100%の瞑想用クッション。そば殻入りで座り心地抜群。長時間の瞑想にも最適です。',
+    price: 15800,
+    currency: 'JPY',
+    image_url: 'https://picsum.photos/400/400?random=105',
+    stock: 12,
+    created_at: '2024-02-12T08:30:00Z',
+    seller: {
+      id: 'seller6',
+      display_name: '瞑想指導者 禅',
+      profile_image_url: 'https://picsum.photos/100/100?random=205'
+    }
+  },
+  {
+    id: '7',
+    seller_user_id: 'seller7',
+    title: 'アフォメーション カードデッキ',
+    description: '毎日の気づきと自己成長のための50枚のアフォメーションカード。朝の習慣やジャーナリングのお供に。',
+    price: 4800,
+    currency: 'JPY',
+    image_url: 'https://picsum.photos/400/400?random=106',
+    stock: 35,
+    created_at: '2024-02-15T13:10:00Z',
+    seller: {
+      id: 'seller7',
+      display_name: 'ライフコーチ 愛',
+      profile_image_url: 'https://picsum.photos/100/100?random=206'
+    }
+  },
+  {
+    id: '8',
+    seller_user_id: 'seller8',
+    title: 'クリスタル浄化皿 セレナイト',
+    description: '他のクリスタルを浄化するセレナイトの皿。満月の夜に作られた特別なエネルギーを持つ天然石です。',
+    price: 6900,
+    currency: 'JPY',
+    image_url: 'https://picsum.photos/400/400?random=107',
+    stock: 18,
+    created_at: '2024-02-18T15:45:00Z',
+    seller: {
+      id: 'seller8',
+      display_name: 'ストーンヒーラー 月',
+      profile_image_url: 'https://picsum.photos/100/100?random=207'
+    }
+  }
+];
+
+// Mock orders data for development
+const MOCK_ORDERS: Order[] = [
+  {
+    id: 'order1',
+    buyer_user_id: 'buyer1',
+    product_id: '1',
+    quantity: 1,
+    amount: 8800,
+    stripe_payment_id: 'pi_test_123456',
+    status: 'paid',
+    created_at: '2024-03-10T14:30:00Z',
+    paid_at: '2024-03-10T14:30:00Z',
+    product: {
+      id: '1',
+      seller_user_id: '1',
+      title: '浄化パワーストーン ブレスレット',
+      description: '天然水晶とアメジストを使用した浄化ブレスレット。瞑想やエネルギーワークにおすすめ。職人による手作りの一点物です。',
+      price: 8800,
+      currency: 'JPY',
+      image_url: 'https://picsum.photos/400/400?random=100',
+      stock: 15,
+      created_at: '2024-01-15T10:00:00Z',
+    },
+    buyer: {
+      id: 'buyer1',
+      display_name: '田中 花子',
+      profile_image_url: 'https://picsum.photos/100/100?random=301'
+    }
+  },
+  {
+    id: 'order2',
+    buyer_user_id: 'buyer2',
+    product_id: '9',
+    quantity: 1,
+    amount: 12000,
+    stripe_payment_id: 'pi_test_789012',
+    status: 'shipped',
+    created_at: '2024-03-08T09:15:00Z',
+    paid_at: '2024-03-08T09:15:00Z',
+    shipped_at: '2024-03-09T16:20:00Z',
+    tracking_number: 'JP123456789012',
+    shipping_carrier: 'Japan Post',
+    product: {
+      id: '9',
+      seller_user_id: '1',
+      title: 'レイキヒーリング遠隔セッション（60分）',
+      description: 'オンラインで行うレイキヒーリングセッション。エネルギーの浄化と調整を行い、心身のバランスを整えます。事前カウンセリング込み。',
+      price: 12000,
+      currency: 'JPY',
+      image_url: 'https://picsum.photos/400/400?random=109',
+      stock: 5,
+      created_at: '2024-03-01T10:00:00Z',
+    },
+    buyer: {
+      id: 'buyer2',
+      display_name: '佐藤 太郎',
+      profile_image_url: 'https://picsum.photos/100/100?random=302'
+    }
+  },
+  {
+    id: 'order3',
+    buyer_user_id: 'buyer3',
+    product_id: '10',
+    quantity: 2,
+    amount: 7000,
+    stripe_payment_id: 'pi_test_345678',
+    status: 'paid',
+    created_at: '2024-03-12T11:45:00Z',
+    paid_at: '2024-03-12T11:45:00Z',
+    product: {
+      id: '10',
+      seller_user_id: '1',
+      title: 'チャクラバランシング音響セラピー動画',
+      description: '7つのチャクラを整える60分の音響セラピー動画。528Hzなどの癒しの周波数を使用した瞑想音楽で深いリラクゼーションを。',
+      price: 3500,
+      currency: 'JPY',
+      image_url: 'https://picsum.photos/400/400?random=110',
+      stock: 999,
+      created_at: '2024-03-05T14:30:00Z',
+    },
+    buyer: {
+      id: 'buyer3',
+      display_name: '山田 美智子',
+      profile_image_url: 'https://picsum.photos/100/100?random=303'
+    }
+  },
+  {
+    id: 'order4',
+    buyer_user_id: 'buyer4',
+    product_id: '1',
+    quantity: 1,
+    amount: 8800,
+    stripe_payment_id: 'pi_test_901234',
+    status: 'pending',
+    created_at: '2024-03-13T16:20:00Z',
+    product: {
+      id: '1',
+      seller_user_id: '1',
+      title: '浄化パワーストーン ブレスレット',
+      description: '天然水晶とアメジストを使用した浄化ブレスレット。瞑想やエネルギーワークにおすすめ。職人による手作りの一点物です。',
+      price: 8800,
+      currency: 'JPY',
+      image_url: 'https://picsum.photos/400/400?random=100',
+      stock: 15,
+      created_at: '2024-01-15T10:00:00Z',
+    },
+    buyer: {
+      id: 'buyer4',
+      display_name: '鈴木 一郎',
+      profile_image_url: 'https://picsum.photos/100/100?random=304'
+    }
+  }
+];
 
 // Types for EC domain
 export interface Product {
@@ -177,6 +459,47 @@ export const getProducts = async (
   filters: ProductFilter = {}
 ): Promise<ApiResponse<Product[]>> => {
   try {
+    // For development, use mock data
+    if (__DEV__ || process.env.NODE_ENV === 'development') {
+      const {
+        seller_id,
+        search,
+        min_price,
+        max_price,
+        page = 1,
+        limit = 20,
+      } = filters;
+
+      let filteredProducts = [...MOCK_PRODUCTS];
+
+      // Apply filters
+      if (seller_id) {
+        filteredProducts = filteredProducts.filter(p => p.seller_user_id === seller_id);
+      }
+
+      if (search) {
+        filteredProducts = filteredProducts.filter(p => 
+          p.title.toLowerCase().includes(search.toLowerCase()) ||
+          p.description.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
+      if (min_price !== undefined) {
+        filteredProducts = filteredProducts.filter(p => p.price >= min_price);
+      }
+
+      if (max_price !== undefined) {
+        filteredProducts = filteredProducts.filter(p => p.price <= max_price);
+      }
+
+      // Pagination
+      const offset = (page - 1) * limit;
+      const paginatedProducts = filteredProducts.slice(offset, offset + limit);
+
+      return { success: true, data: paginatedProducts };
+    }
+
+    // Production code
     const {
       seller_id,
       search,
@@ -247,6 +570,16 @@ export const getProducts = async (
 
 export const getProductById = async (id: string): Promise<Product> => {
   try {
+    // For development, use mock data
+    if (__DEV__ || process.env.NODE_ENV === 'development') {
+      const product = MOCK_PRODUCTS.find(p => p.id === id);
+      if (!product) {
+        throw new Error('商品が見つかりません');
+      }
+      return product;
+    }
+
+    // Production code
     const { data, error } = await supabase
       .from('products')
       .select(`
@@ -446,6 +779,38 @@ export const getOrders = async (
   try {
     const { as_seller = false, status = 'all', page = 1, limit = 20 } = filters;
 
+    // For development, use mock data
+    if (__DEV__ || process.env.NODE_ENV === 'development') {
+      let filteredOrders = [...MOCK_ORDERS];
+
+      if (as_seller) {
+        // Filter orders for products sold by this user
+        filteredOrders = filteredOrders.filter(order => 
+          order.product?.seller_user_id === userId
+        );
+      } else {
+        // Filter orders bought by this user
+        filteredOrders = filteredOrders.filter(order => 
+          order.buyer_user_id === userId
+        );
+      }
+
+      if (status !== 'all') {
+        filteredOrders = filteredOrders.filter(order => order.status === status);
+      }
+
+      // Sort by creation date (newest first)
+      filteredOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      // Pagination
+      const offset = (page - 1) * limit;
+      const paginatedOrders = filteredOrders.slice(offset, offset + limit);
+      const next_page = offset + limit < filteredOrders.length ? page + 1 : null;
+
+      return { orders: paginatedOrders, next_page };
+    }
+
+    // Production code continues below
     const offset = (page - 1) * limit;
 
     let query;
@@ -1129,4 +1494,226 @@ export const ecService = {
   deleteShippingAddress,
   getPaymentHistory,
   getSellerDashboard,
+};
+
+// Apple Pay決済関連の関数
+export interface ApplePayOrderRequest {
+  productId: string;
+  quantity: number;
+  shippingAddressId: string;
+  applePayResult: any; // Apple Payの結果オブジェクト
+}
+
+export interface ApplePayCartRequest {
+  items: { productId: string; quantity: number }[];
+  shippingAddressId: string;
+  applePayResult: any; // Apple Payの結果オブジェクト
+}
+
+// Apple Payで単一商品を購入
+export const createApplePayOrder = async (
+  userId: string,
+  request: ApplePayOrderRequest
+): Promise<Order> => {
+  try {
+    // 商品詳細を取得
+    const product = await getProductById(request.productId);
+    
+    if (product.stock < request.quantity) {
+      throw new Error('在庫が不足しています');
+    }
+
+    // 配送先住所を確認
+    const { data: address } = await supabase
+      .from('shipping_addresses')
+      .select('*')
+      .eq('id', request.shippingAddressId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!address) {
+      throw new Error('配送先住所が見つかりません');
+    }
+
+    const amount = product.price * request.quantity;
+
+    // Stripe PaymentIntentを作成
+    const { data: paymentIntent, error: stripeError } = await stripeService.createApplePaymentIntent({
+      amount,
+      currency: product.currency,
+      metadata: {
+        userId,
+        type: 'product_purchase',
+      },
+    });
+
+    if (stripeError || !paymentIntent) {
+      throw new Error('決済処理の初期化に失敗しました');
+    }
+
+    // 注文を作成
+    const orderData = {
+      buyer_user_id: userId,
+      product_id: request.productId,
+      quantity: request.quantity,
+      amount,
+      stripe_payment_id: paymentIntent.id,
+      status: 'paid' as OrderStatus, // Apple Pay決済完了済み
+      paid_at: new Date().toISOString(),
+    };
+
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert(orderData)
+      .select()
+      .single();
+
+    if (orderError) {
+      throw orderError;
+    }
+
+    // 在庫を更新
+    const { error: stockError } = await supabase
+      .from('products')
+      .update({ stock: product.stock - request.quantity })
+      .eq('id', request.productId);
+
+    if (stockError) {
+      // ロールバック処理
+      await supabase.from('orders').delete().eq('id', order.id);
+      throw stockError;
+    }
+
+    // 決済履歴を記録
+    await supabase.from('payment_history').insert({
+      order_id: order.id,
+      payment_method: 'apple_pay',
+      amount,
+      status: 'success',
+      transaction_id: paymentIntent.id,
+    });
+
+    return order;
+  } catch (error) {
+    console.error('Error creating Apple Pay order:', error);
+    throw new Error('Apple Pay注文の作成に失敗しました');
+  }
+};
+
+// Apple Payでカート内商品を一括購入
+export const createApplePayCartOrder = async (
+  userId: string,
+  request: ApplePayCartRequest
+): Promise<Order[]> => {
+  try {
+    // 配送先住所を確認
+    const { data: address } = await supabase
+      .from('shipping_addresses')
+      .select('*')
+      .eq('id', request.shippingAddressId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!address) {
+      throw new Error('配送先住所が見つかりません');
+    }
+
+    const orders: Order[] = [];
+    let totalAmount = 0;
+
+    // 各商品の詳細を取得し、在庫確認
+    for (const item of request.items) {
+      const product = await getProductById(item.productId);
+      
+      if (product.stock < item.quantity) {
+        throw new Error(`${product.title}の在庫が不足しています`);
+      }
+      
+      totalAmount += product.price * item.quantity;
+    }
+
+    // Stripe PaymentIntentを作成
+    const { data: paymentIntent, error: stripeError } = await stripeService.createApplePaymentIntent({
+      amount: totalAmount,
+      currency: 'JPY',
+      metadata: {
+        userId,
+        type: 'product_purchase',
+        itemCount: request.items.length.toString(),
+      },
+    });
+
+    if (stripeError || !paymentIntent) {
+      throw new Error('決済処理の初期化に失敗しました');
+    }
+
+    // 各商品の注文を作成
+    for (const item of request.items) {
+      const product = await getProductById(item.productId);
+      const amount = product.price * item.quantity;
+
+      const orderData = {
+        buyer_user_id: userId,
+        product_id: item.productId,
+        quantity: item.quantity,
+        amount,
+        stripe_payment_id: paymentIntent.id,
+        status: 'paid' as OrderStatus, // Apple Pay決済完了済み
+        paid_at: new Date().toISOString(),
+      };
+
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert(orderData)
+        .select()
+        .single();
+
+      if (orderError) {
+        throw orderError;
+      }
+
+      orders.push(order);
+
+      // 在庫を更新
+      const { error: stockError } = await supabase
+        .from('products')
+        .update({ stock: product.stock - item.quantity })
+        .eq('id', item.productId);
+
+      if (stockError) {
+        // ロールバック処理
+        for (const createdOrder of orders) {
+          await supabase.from('orders').delete().eq('id', createdOrder.id);
+        }
+        throw stockError;
+      }
+    }
+
+    // 決済履歴を記録
+    await supabase.from('payment_history').insert({
+      order_id: orders[0].id, // 最初の注文IDを代表として使用
+      payment_method: 'apple_pay',
+      amount: totalAmount,
+      status: 'success',
+      transaction_id: paymentIntent.id,
+    });
+
+    return orders;
+  } catch (error) {
+    console.error('Error creating Apple Pay cart order:', error);
+    throw new Error('Apple Payカート注文の作成に失敗しました');
+  }
+};
+
+// Apple Pay決済の可用性チェック
+export const checkApplePayAvailability = async (): Promise<boolean> => {
+  return await stripeService.isApplePayAvailable();
+};
+
+// 拡張されたecServiceにApple Pay関数を追加
+export const ecServiceWithApplePay = {
+  ...ecService,
+  createApplePayOrder,
+  createApplePayCartOrder,
+  checkApplePayAvailability,
 };

@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import StoryCircle from './StoryCircle';
 import StoryViewer from './StoryViewer';
 
@@ -9,7 +9,10 @@ interface Story {
   userId: string;
   username: string;
   profileImage: string;
-  mediaUrl: string;
+  imageUrl: string; // 画像必須
+  audioUrl: string; // 音声必須
+  audioTranscript?: string; // 音声の文字起こし
+  mediaUrl: string; // 下位互換性のため残す
   contentType: 'image' | 'video';
   caption?: string;
   createdAt: string;
@@ -53,27 +56,51 @@ export default function StoriesRow({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Create Story Button */}
-        <View style={styles.storyItem}>
-          <View style={styles.createStoryCircle}>
-            <TouchableOpacity onPress={onCreateStory} style={styles.createStoryButton}>
-              <Plus size={32} color="#fff" />
-            </TouchableOpacity>
+        {/* Create Story Card */}
+        <TouchableOpacity onPress={onCreateStory} style={styles.createStoryCard}>
+          <Image 
+            source={{ uri: currentUserImage }} 
+            style={styles.createStoryBackground}
+          />
+          <View style={styles.createStoryOverlay}>
+            <View style={styles.createStoryContent}>
+              <View style={styles.plusIconContainer}>
+                <Plus size={20} color="#fff" />
+              </View>
+              <Text style={styles.createStoryText}>ストーリーズを作成</Text>
+            </View>
           </View>
-          <Text style={styles.username}>ストーリー作成</Text>
-        </View>
+        </TouchableOpacity>
 
         {/* User Stories */}
         {userStories.length > 0 ? (
           userStories.map((userStory, index) => (
-            <StoryCircle
+            <TouchableOpacity 
               key={userStory.userId}
-              userId={userStory.userId}
-              username={userStory.username}
-              profileImage={userStory.profileImage}
-              hasUnviewedStory={userStory.hasUnviewedStory}
+              style={styles.storyCard}
               onPress={() => handleStoryCircleClick(index)}
-            />
+            >
+              <Image 
+                source={{ uri: userStory.stories[0]?.imageUrl || userStory.profileImage }} 
+                style={styles.storyCardBackground}
+              />
+              <View style={styles.storyCardOverlay}>
+                <View style={styles.storyProfileContainer}>
+                  <View style={[
+                    styles.storyProfileBorder, 
+                    userStory.hasUnviewedStory ? styles.unviewedBorder : styles.viewedBorder
+                  ]}>
+                    <Image 
+                      source={{ uri: userStory.profileImage }} 
+                      style={styles.storyProfileImage}
+                    />
+                  </View>
+                </View>
+                <Text style={styles.storyUsername} numberOfLines={1}>
+                  {userStory.username}
+                </Text>
+              </View>
+            </TouchableOpacity>
           ))
         ) : (
           <View style={styles.emptyContainer}>
@@ -103,33 +130,121 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
     gap: 8,
   },
-  storyItem: {
-    alignItems: 'center',
+  createStoryCard: {
+    width: 120,
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginRight: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  createStoryBackground: {
+    width: '100%',
+    height: '75%',
+    resizeMode: 'cover',
+  },
+  createStoryOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  createStoryContent: {
+    backgroundColor: '#fff',
+    height: '25%',
     justifyContent: 'center',
-    marginHorizontal: 8,
-    minWidth: 60,
-  },
-  createStoryCircle: {
-    borderRadius: 30,
-    backgroundColor: '#f3f4f6',
-    padding: 2,
-    marginBottom: 4,
-  },
-  createStoryButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#000',
     alignItems: 'center',
-    justifyContent: 'center',
+    position: 'relative',
   },
-  username: {
+  plusIconContainer: {
+    position: 'absolute',
+    top: -15,
+    left: '50%',
+    marginLeft: -15,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#1877f2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+  createStoryText: {
     fontSize: 12,
+    fontWeight: '600',
+    color: '#000',
     textAlign: 'center',
-    fontWeight: '500',
+    marginTop: 8,
+  },
+  storyCard: {
+    width: 120,
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginRight: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  storyCardBackground: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  storyCardOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    justifyContent: 'space-between',
+    padding: 12,
+  },
+  storyProfileContainer: {
+    alignSelf: 'flex-start',
+  },
+  storyProfileBorder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    padding: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  unviewedBorder: {
+    backgroundColor: '#10b981',
+  },
+  viewedBorder: {
+    backgroundColor: '#9ca3af',
+  },
+  storyProfileImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  storyUsername: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   emptyContainer: {
     flex: 1,

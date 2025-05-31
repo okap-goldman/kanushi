@@ -1,4 +1,5 @@
-import { mockPosts, mockUsers } from './index';
+import { mockPosts } from './posts';
+import { mockUsers } from './users';
 
 // タイムライン用にユーザー情報を含む投稿データを生成
 export const getMockTimelinePosts = () => {

@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { useNavigation, useRoute, DrawerActions } from '@react-navigation/native';
+import { useNavigation, useRoute, DrawerActions, useNavigationState } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Avatar } from './ui/Avatar';
@@ -13,6 +13,7 @@ export function FooterNav() {
   const route = useRoute();
   const { user } = useAuth();
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const navigationState = useNavigationState(state => state);
 
   useEffect(() => {
     if (user?.id) {
@@ -54,7 +55,11 @@ export function FooterNav() {
 
   // Check if the current route matches the nav item
   const isActive = (itemRoute: string) => {
-    return route.name === itemRoute;
+    // Main -> Stack Navigator -> Current Screen の構造をたどる
+    const mainState = navigationState?.routes?.find(route => route.name === 'Main')?.state;
+    const currentScreen = mainState?.routes?.[mainState.index]?.name;
+    
+    return currentScreen === itemRoute;
   };
 
   return (
@@ -67,7 +72,8 @@ export function FooterNav() {
             if (item.route === 'Menu') {
               navigation.dispatch(DrawerActions.openDrawer());
             } else {
-              navigation.navigate(item.route);
+              // ネストされたナビゲーターの画面にナビゲート
+              navigation.navigate('Main', { screen: item.route });
             }
           }}
           testID={item.testId}

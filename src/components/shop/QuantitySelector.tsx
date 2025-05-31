@@ -3,26 +3,32 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-nativ
 
 interface QuantitySelectorProps {
   quantity: number;
-  onChange: (value: number) => void;
+  onChange?: (value: number) => void;
+  onQuantityChange?: (value: number) => void;
   maxQuantity?: number;
   minQuantity?: number;
+  style?: any;
 }
 
 const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   quantity,
   onChange,
+  onQuantityChange,
   maxQuantity = Number.POSITIVE_INFINITY,
   minQuantity = 1,
+  style,
 }) => {
+  const handleChange = onChange || onQuantityChange || (() => {});
+
   const handleIncrement = () => {
     if (quantity < maxQuantity) {
-      onChange(quantity + 1);
+      handleChange(quantity + 1);
     }
   };
 
   const handleDecrement = () => {
     if (quantity > minQuantity) {
-      onChange(quantity - 1);
+      handleChange(quantity - 1);
     }
   };
 
@@ -30,12 +36,12 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
     const value = Number.parseInt(text);
     if (!isNaN(value)) {
       const newValue = Math.min(Math.max(value, minQuantity), maxQuantity);
-      onChange(newValue);
+      handleChange(newValue);
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <TouchableOpacity
         onPress={handleDecrement}
         disabled={quantity <= minQuantity}
@@ -106,3 +112,4 @@ const styles = StyleSheet.create({
 });
 
 export default QuantitySelector;
+export { QuantitySelector };

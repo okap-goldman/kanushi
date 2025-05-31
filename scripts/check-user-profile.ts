@@ -50,7 +50,7 @@ async function checkUserProfile() {
     const { error: createError } = await supabase.from('profile').insert({
       id: userId,
       displayName: authUser.user.email?.split('@')[0] || 'User',
-      profileImageUrl: 'https://via.placeholder.com/150',
+      profileImageUrl: 'https://picsum.photos/150',
       profileText: '',
     });
     

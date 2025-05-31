@@ -17,13 +17,18 @@ import { Button } from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Navbar } from '../components/Navbar';
-import { FooterNav } from '../components/FooterNav';
+import { mockConfig, mockDelay, getMockUser, mockCurrentUser } from '../lib/mockData';
+import { followServiceInstance } from '../lib/followService';
 
 export default function Profile() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'highlights' | 'likes' | 'bookmarks'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'highlights' | 'shop' | 'events'>('posts');
+  const [followStatsByType, setFollowStatsByType] = useState<{
+    family: { followersCount: number; followingCount: number };
+    watch: { followersCount: number; followingCount: number };
+  } | null>(null);
  
   const navigation = useNavigation<any>();
   const route = useRoute();
@@ -35,6 +40,35 @@ export default function Profile() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
+
+      // モックモードの場合
+      if (mockConfig.enabled) {
+        await mockDelay();
+        
+        // 指定されたuserIdのモックユーザーを取得、なければ現在のユーザー
+        const mockUser = getMockUser(userId) || mockCurrentUser;
+        
+        setProfile({
+          id: mockUser.id,
+          displayName: mockUser.display_name,
+          profileImageUrl: mockUser.avatar_url,
+          profileText: mockUser.bio,
+          username: mockUser.username,
+          email: mockUser.email,
+          isVerified: mockUser.is_verified,
+          createdAt: mockUser.created_at,
+          followers: { count: mockUser.followers_count },
+          following: { count: mockUser.following_count },
+          posts: { count: mockUser.posts_count }
+        });
+
+        // ファミリー・ウォッチ別の統計データを取得
+        const followStatsResult = await followServiceInstance.getFollowStatsByType(userId);
+        if (followStatsResult.success) {
+          setFollowStatsByType(followStatsResult.data);
+        }
+        return;
+      }
 
       // Fetch profile data
       const { data: profileData, error: profileError } = await supabase
@@ -76,6 +110,12 @@ export default function Profile() {
           following: { count: followingCount || 0 },
           posts: { count: postsCount || 0 }
         });
+
+        // ファミリー・ウォッチ別の統計データを取得
+        const followStatsResult = await followServiceInstance.getFollowStatsByType(userId);
+        if (followStatsResult.success) {
+          setFollowStatsByType(followStatsResult.data);
+        }
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -98,12 +138,12 @@ export default function Profile() {
     navigation.navigate('ProfileEdit');
   };
 
-  const handleFollowersPress = () => {
-    navigation.navigate('FollowersList', { userId, type: 'followers' });
+  const handleFollowersPress = (followType?: 'family' | 'watch') => {
+    navigation.navigate('FollowersList', { userId, type: 'followers', followType });
   };
 
-  const handleFollowingPress = () => {
-    navigation.navigate('FollowersList', { userId, type: 'following' });
+  const handleFollowingPress = (followType?: 'family' | 'watch') => {
+    navigation.navigate('FollowersList', { userId, type: 'following', followType });
   };
 
   const isCurrentUser = user?.id === userId;
@@ -115,7 +155,6 @@ export default function Profile() {
         <View style={styles.loadingContainer}>
           <Text>プロフィールを読み込み中...</Text>
         </View>
-        <FooterNav />
       </SafeAreaView>
     );
   }
@@ -130,7 +169,6 @@ export default function Profile() {
             再読み込み
           </Button>
         </View>
-        <FooterNav />
       </SafeAreaView>
     );
   }
@@ -143,22 +181,11 @@ export default function Profile() {
       >
         <View style={styles.header}>
           <View style={styles.profileHeader}>
-            <Avatar source={profile.profileImageUrl || 'https://via.placeholder.com/80'} size="xl" />
-
-            <View style={styles.profileStats}>
-              <TouchableOpacity style={styles.statItem}>
-                <Text style={styles.statValue}>{profile.posts?.count || 0}</Text>
-                <Text style={styles.statLabel}>投稿</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.statItem} onPress={handleFollowersPress}>
-                <Text style={styles.statValue}>{profile.followers?.count || 0}</Text>
-                <Text style={styles.statLabel}>フォロワー</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.statItem} onPress={handleFollowingPress}>
-                <Text style={styles.statValue}>{profile.following?.count || 0}</Text>
-                <Text style={styles.statLabel}>フォロー中</Text>
+            <Avatar source={profile.profileImageUrl || 'https://picsum.photos/80'} size="xl" />
+            <View style={styles.profileBasicStats}>
+              <TouchableOpacity style={styles.postStatItem}>
+                <Text style={styles.postStatValue}>{profile.posts?.count || 0}</Text>
+                <Text style={styles.postStatLabel}>投稿</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -177,11 +204,39 @@ export default function Profile() {
               </Button>
             )}
           </View>
+
+          <View style={styles.followStatsContainer}>
+            <View style={styles.followTypeSection}>
+              <Text style={styles.followTypeSectionTitle}>ファミリー</Text>
+              <View style={styles.followTypeStatsRow}>
+                <TouchableOpacity style={styles.followStatItem} onPress={() => handleFollowersPress('family')}>
+                  <Text style={styles.followStatValue}>{followStatsByType?.family.followersCount || 0}</Text>
+                  <Text style={styles.followStatLabel}>フォロワー</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.followStatItem} onPress={() => handleFollowingPress('family')}>
+                  <Text style={styles.followStatValue}>{followStatsByType?.family.followingCount || 0}</Text>
+                  <Text style={styles.followStatLabel}>フォロー中</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.followTypeSection}>
+              <Text style={styles.followTypeSectionTitle}>ウォッチ</Text>
+              <View style={styles.followTypeStatsRow}>
+                <TouchableOpacity style={styles.followStatItem} onPress={() => handleFollowersPress('watch')}>
+                  <Text style={styles.followStatValue}>{followStatsByType?.watch.followersCount || 0}</Text>
+                  <Text style={styles.followStatLabel}>フォロワー</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.followStatItem} onPress={() => handleFollowingPress('watch')}>
+                  <Text style={styles.followStatValue}>{followStatsByType?.watch.followingCount || 0}</Text>
+                  <Text style={styles.followStatLabel}>フォロー中</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         </View>
 
         <ProfileTabs userId={userId} activeTab={activeTab} onChangeTab={setActiveTab} />
       </ScrollView>
-      <FooterNav />
     </SafeAreaView>
   );
 }
@@ -212,22 +267,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  profileStats: {
+  profileBasicStats: {
     flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginLeft: 24,
   },
-  statItem: {
+  postStatItem: {
     alignItems: 'center',
   },
-  statValue: {
-    fontSize: 18,
+  postStatValue: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1E293B',
   },
-  statLabel: {
-    fontSize: 12,
+  postStatLabel: {
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  followStatsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  followTypeSection: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  followTypeSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: 8,
+  },
+  followTypeStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  followStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  followStatValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1E293B',
+  },
+  followStatLabel: {
+    fontSize: 11,
     color: '#64748B',
     marginTop: 2,
   },

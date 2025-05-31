@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { error: profileError } = await supabase.from('profile').insert({
           id: user.id,
           display_name: user.user_metadata?.name || username,
-          profile_image_url: user.user_metadata?.image || 'https://via.placeholder.com/150',
+          profile_image_url: user.user_metadata?.image || 'https://picsum.photos/150',
           profile_text: user.user_metadata?.bio || '',
         });
 
@@ -158,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { error: profileError } = await supabase.from('profile').insert({
           id: data.user!.id,
           display_name: username,
-          profile_image_url: 'https://via.placeholder.com/150',
+          profile_image_url: 'https://picsum.photos/150',
           profile_text: '',
         });
 

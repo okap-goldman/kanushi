@@ -21,7 +21,6 @@ import { useNavigation } from '@react-navigation/native';
 import { Avatar } from '../components/ui/Avatar';
 import { Card } from '../components/ui/Card';
 import { Navbar } from '../components/Navbar';
-import { FooterNav } from '../components/FooterNav';
 import { theme } from '../lib/theme';
 
 const hitChartService = createHitChartService();
@@ -448,8 +447,6 @@ export default function HitChart() {
           )}
         </View>
       </ScrollView>
-      
-      <FooterNav />
     </SafeAreaView>
   );
 }

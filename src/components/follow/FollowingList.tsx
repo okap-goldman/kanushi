@@ -108,7 +108,7 @@ export function FollowingList({ userId }: FollowingListProps) {
       style={styles.followingItem}
     >
       <Image
-        source={{ uri: item.followee.profileImageUrl || 'https://via.placeholder.com/50' }}
+        source={{ uri: item.followee.profileImageUrl || 'https://picsum.photos/50' }}
         style={styles.profileImage}
       />
 

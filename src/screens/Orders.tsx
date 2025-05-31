@@ -1,8 +1,20 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
-import React from 'react';
-import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  FlatList, 
+  SafeAreaView, 
+  StyleSheet, 
+  Text, 
+  TouchableOpacity, 
+  View,
+  RefreshControl,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { Order, ecService } from '../lib/ecService';
+import { useAuth } from '../context/AuthContext';
 
 // Sample orders data
 const SAMPLE_ORDERS = [
@@ -88,34 +100,73 @@ const SAMPLE_ORDERS = [
 
 // Status label and color mapping
 const ORDER_STATUS = {
-  processing: { label: '処理中', color: '#F59E0B' },
-  shipped: { label: '発送済み', color: '#3B82F6' },
-  delivered: { label: '配達済み', color: '#10B981' },
-  cancelled: { label: 'キャンセル', color: '#EF4444' },
+  pending: { label: '支払い待ち', color: '#F59E0B' },
+  paid: { label: '支払い済み', color: '#3B82F6' },
+  shipped: { label: '発送済み', color: '#10B981' },
+  refunded: { label: '返金済み', color: '#EF4444' },
 };
 
 export default function Orders() {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  
   const navigation = useNavigation<any>();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      loadOrders();
+    }
+  }, [user]);
+
+  const loadOrders = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      const result = await ecService.getOrders(user.id);
+      setOrders(result.orders);
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+      Alert.alert('エラー', '注文履歴の取得に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadOrders();
+    setRefreshing(false);
+  }, [user]);
 
   const navigateToOrderDetail = (orderId: string) => {
     navigation.navigate('OrderDetail', { orderId });
   };
 
   const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = {
+    return new Date(dateString).toLocaleDateString('ja-JP', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-    };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+    });
   };
 
-  const renderOrderItem = ({ item }: { item: any }) => (
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
+      currency: 'JPY',
+      minimumFractionDigits: 0,
+    }).format(price);
+  };
+
+  const renderOrderItem = ({ item }: { item: Order }) => (
     <TouchableOpacity style={styles.orderCard} onPress={() => navigateToOrderDetail(item.id)}>
       <View style={styles.orderHeader}>
         <View>
-          <Text style={styles.orderDate}>{formatDate(item.date)}</Text>
-          <Text style={styles.orderId}>Order #{item.id}</Text>
+          <Text style={styles.orderDate}>{formatDate(item.created_at)}</Text>
+          <Text style={styles.orderId}>注文 #{item.id.slice(0, 8)}</Text>
         </View>
 
         <View
@@ -137,28 +188,28 @@ export default function Orders() {
         </View>
       </View>
 
-      <View style={styles.itemsContainer}>
-        {item.items.map((orderItem: any) => (
-          <View key={orderItem.id} style={styles.orderItem}>
-            <Image source={{ uri: orderItem.image }} style={styles.itemImage} contentFit="cover" />
+      {item.product && (
+        <View style={styles.itemsContainer}>
+          <View style={styles.orderItem}>
+            <Image source={{ uri: item.product.image_url }} style={styles.itemImage} contentFit="cover" />
 
             <View style={styles.itemDetails}>
               <Text style={styles.itemName} numberOfLines={1}>
-                {orderItem.name}
+                {item.product.title}
               </Text>
 
               <View style={styles.itemPriceRow}>
-                <Text style={styles.itemPrice}>¥{orderItem.price.toLocaleString()}</Text>
-                <Text style={styles.itemQuantity}>× {orderItem.quantity}</Text>
+                <Text style={styles.itemPrice}>{formatPrice(item.product.price)}</Text>
+                <Text style={styles.itemQuantity}>× {item.quantity}</Text>
               </View>
             </View>
           </View>
-        ))}
-      </View>
+        </View>
+      )}
 
       <View style={styles.orderFooter}>
-        <Text style={styles.totalLabel}>Total:</Text>
-        <Text style={styles.totalAmount}>¥{item.total.toLocaleString()}</Text>
+        <Text style={styles.totalLabel}>合計:</Text>
+        <Text style={styles.totalAmount}>{formatPrice(item.amount)}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -166,13 +217,30 @@ export default function Orders() {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Feather name="shopping-bag" size={48} color="#A0AEC0" />
-      <Text style={styles.emptyStateTitle}>No orders yet</Text>
-      <Text style={styles.emptyStateText}>When you place orders, they'll appear here</Text>
+      <Text style={styles.emptyStateTitle}>注文履歴がありません</Text>
+      <Text style={styles.emptyStateText}>商品を購入すると、ここに表示されます</Text>
       <TouchableOpacity style={styles.shopButton} onPress={() => navigation.navigate('Shop')}>
-        <Text style={styles.shopButtonText}>Browse Products</Text>
+        <Text style={styles.shopButtonText}>商品を見る</Text>
       </TouchableOpacity>
     </View>
   );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Feather name="arrow-left" size={24} color="#1A202C" />
+          </TouchableOpacity>
+          <Text style={styles.title}>注文履歴</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0070F3" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -180,16 +248,19 @@ export default function Orders() {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color="#1A202C" />
         </TouchableOpacity>
-        <Text style={styles.title}>My Orders</Text>
+        <Text style={styles.title}>注文履歴</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <FlatList
-        data={SAMPLE_ORDERS}
+        data={orders}
         renderItem={renderOrderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.ordersList}
         ListEmptyComponent={renderEmptyState}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       />
     </SafeAreaView>
   );
@@ -344,5 +415,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

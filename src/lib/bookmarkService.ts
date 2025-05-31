@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 import { ApiResponse } from './data';
+import { mockConfig, mockDelay, mockBookmarks, MockBookmark } from './mockData';
+import { mockPosts } from './mockData/posts';
 
 /**
  * ブックマークのデータ型定義
@@ -66,6 +68,27 @@ export const removeBookmark = async (
   post_id: string,
   user_id: string
 ): Promise<ApiResponse<boolean>> => {
+  if (mockConfig.enabled) {
+    await mockDelay();
+    
+    try {
+      // モックデータから該当のブックマークを削除
+      const bookmarkIndex = mockBookmarks.findIndex(
+        bookmark => bookmark.post_id === post_id && bookmark.user_id === user_id
+      );
+      
+      if (bookmarkIndex === -1) {
+        return { data: null, error: new Error('Bookmark not found') };
+      }
+      
+      mockBookmarks.splice(bookmarkIndex, 1);
+      return { data: true, error: null };
+    } catch (error) {
+      console.error('Error removing mock bookmark:', error);
+      return { data: null, error: error as Error };
+    }
+  }
+
   try {
     const { error } = await supabase
       .from('bookmarks')
@@ -92,6 +115,45 @@ export const removeBookmark = async (
 export const getBookmarks = async (
   user_id: string
 ): Promise<ApiResponse<Bookmark[]>> => {
+  if (mockConfig.enabled) {
+    await mockDelay();
+    
+    try {
+      // モックデータからユーザーのブックマークを取得
+      const userBookmarks = mockBookmarks
+        .filter(bookmark => bookmark.user_id === user_id)
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      
+      // 各ブックマークに対応する投稿データを取得
+      const bookmarksWithPosts: Bookmark[] = userBookmarks.map(bookmark => {
+        const post = mockPosts.find(p => p.id === bookmark.post_id);
+        
+        return {
+          id: bookmark.id,
+          post_id: bookmark.post_id,
+          user_id: bookmark.user_id,
+          created_at: bookmark.created_at,
+          post: post ? {
+            id: post.id,
+            content_type: post.contentType,
+            text_content: post.textContent,
+            media_url: post.mediaUrl,
+            user: {
+              id: post.user.id,
+              name: post.user.displayName,
+              image: post.user.profileImageUrl,
+            },
+          } : undefined,
+        };
+      }).filter(bookmark => bookmark.post); // 投稿が見つからないブックマークは除外
+      
+      return { data: bookmarksWithPosts, error: null };
+    } catch (error) {
+      console.error('Error fetching mock bookmarks:', error);
+      return { data: null, error: error as Error };
+    }
+  }
+
   try {
     const { data, error } = await supabase
       .from('bookmarks')

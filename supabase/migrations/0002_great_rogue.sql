@@ -1,0 +1,1 @@
+ALTER TABLE "ai_playlist" ALTER COLUMN "expires_at" SET DEFAULT '2025-06-06T19:42:50.902Z';

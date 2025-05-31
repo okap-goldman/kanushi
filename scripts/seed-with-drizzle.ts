@@ -605,6 +605,8 @@ const mockStories = [
     id: 'bb0e8400-e29b-41d4-a716-446655440001',
     userId: '550e8400-e29b-41d4-a716-446655440001',
     imageUrl: 'https://example.com/stories/meditation-sunrise.jpg',
+    audioUrl: 'https://f004.backblazeb2.com/b2api/v1/b2_download_file_by_id?fileId=4_za01f9bab90e30e6d997f091c_f1107d3a67562ef44_d20250526_m000952_c004_v0402009_t0045_u01748218192024',
+    audioTranscript: '朝日と共に瞑想の時間です。深く息を吸って、この美しい光のエネルギーを感じてください。今日も光と共に歩んでいきましょう。',
     editData: JSON.stringify({
       filters: ['warm'],
       stickers: [{ type: 'sparkle', x: 100, y: 200 }],
@@ -619,6 +621,8 @@ const mockStories = [
     id: 'bb0e8400-e29b-41d4-a716-446655440002',
     userId: '550e8400-e29b-41d4-a716-446655440002',
     imageUrl: 'https://example.com/stories/starlight-channeling.jpg',
+    audioUrl: 'https://f004.backblazeb2.com/b2api/v1/b2_download_file_by_id?fileId=4_za01f9bab90e30e6d997f091c_f1107d3a67562ef44_d20250526_m000952_c004_v0402009_t0045_u01748218192024',
+    audioTranscript: '今夜のチャネリングセッションを開始します。宇宙からの愛のメッセージを受け取る準備はできていますか。心を開いて、このエネルギーと共鳴してください。',
     editData: JSON.stringify({
       filters: ['cosmic'],
       stickers: [{ type: 'stars', x: 150, y: 100 }],
@@ -962,6 +966,8 @@ const seedStories = async () => {
       id: story.id,
       userId: story.userId,
       imageUrl: story.imageUrl,
+      audioUrl: story.audioUrl, // 新しく追加された必須フィールド
+      audioTranscript: story.audioTranscript, // 新しく追加されたフィールド
       textContent: null, // textContent は別のフィールド
       backgroundColor: null,
       fontStyle: null,

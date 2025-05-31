@@ -13,7 +13,6 @@ import {
   View,
   Platform,
 } from 'react-native';
-import { FooterNav } from '../components/FooterNav';
 import { Navbar } from '../components/Navbar';
 import { Input } from '../components/ui/Input';
 import { useToast } from '../hooks/use-toast';
@@ -164,9 +163,12 @@ export default function Events() {
           <Text style={styles.eventTitle}>{item.title}</Text>
 
           {item.location && (
-            <Text style={styles.eventLocation} numberOfLines={1}>
-              <Feather name="map-pin" size={12} color="#718096" /> {item.location}
-            </Text>
+            <View style={styles.eventLocationContainer}>
+              <Feather name="map-pin" size={12} color="#718096" />
+              <Text style={styles.eventLocation} numberOfLines={1}>
+                {item.location}
+              </Text>
+            </View>
           )}
 
           <View style={styles.eventFooter}>
@@ -187,12 +189,12 @@ export default function Events() {
     <SafeAreaView style={styles.container}>
       <Navbar />
       <View style={styles.contentContainer}>
-      <View style={styles.header}>
-        <Text style={styles.title}>イベント</Text>
-        <TouchableOpacity style={styles.searchButton} onPress={() => setShowSearch(!showSearch)}>
-          <Feather name="search" size={24} color="#1A202C" />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.header}>
+          <Text style={styles.title}>イベント</Text>
+          <TouchableOpacity style={styles.searchButton} onPress={() => setShowSearch(!showSearch)}>
+            <Feather name="search" size={24} color="#1A202C" />
+          </TouchableOpacity>
+        </View>
 
       {/* Search Bar */}
       {showSearch && (
@@ -276,16 +278,15 @@ export default function Events() {
         />
       )}
 
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate('CreateEvent')}
-        activeOpacity={0.8}
-      >
-        <Feather name="plus" size={24} color="#FFFFFF" />
-      </TouchableOpacity>
+        {/* Floating Action Button */}
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => navigation.navigate('CreateEvent')}
+          activeOpacity={0.8}
+        >
+          <Feather name="plus" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
-      <FooterNav />
     </SafeAreaView>
   );
 }
@@ -297,14 +298,18 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
+    minHeight: 56,
   },
   backButton: {
     padding: 4,
@@ -313,18 +318,24 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1A202C',
+    flex: 1,
+    textAlign: 'left',
   },
   searchButton: {
-    padding: 4,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
   },
   categoriesContainer: {
     maxHeight: 60,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
   },
   categoriesContent: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingVertical: 12,
+    alignItems: 'center',
   },
   categoryButton: {
     paddingHorizontal: 16,
@@ -352,11 +363,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
     elevation: 3,
     marginBottom: 16,
+    marginHorizontal: 0,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   eventImage: {
     width: '100%',
@@ -376,10 +390,16 @@ const styles = StyleSheet.create({
     color: '#1A202C',
     marginBottom: 8,
   },
+  eventLocationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   eventLocation: {
     fontSize: 14,
     color: '#4A5568',
-    marginBottom: 12,
+    marginLeft: 4,
+    flex: 1,
   },
   eventFooter: {
     flexDirection: 'row',
@@ -402,12 +422,15 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   searchInput: {
     backgroundColor: '#F7FAFC',
+    borderRadius: 8,
+    minHeight: 44,
   },
   loadingContainer: {
     flex: 1,

@@ -82,7 +82,7 @@ export function FollowersList({ userId, currentUserId }: FollowersListProps) {
       style={styles.followerItem}
     >
       <Image
-        source={{ uri: item.follower.profileImageUrl || 'https://via.placeholder.com/50' }}
+        source={{ uri: item.follower.profileImageUrl || 'https://picsum.photos/50' }}
         style={styles.profileImage}
       />
 

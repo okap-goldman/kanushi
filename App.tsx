@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SplashScreen } from './src/components/SplashScreen';
 import { AuthProvider } from './src/context/AuthContext';
+import { AudioProvider } from './src/context/AudioContext';
 import Navigation from './src/navigation';
 // Polyfill for Animated.createAnimatedComponent
 import 'react-native-reanimated';
@@ -34,8 +35,10 @@ export default function App() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <Navigation />
-            <StatusBar style="auto" />
+            <AudioProvider>
+              <Navigation />
+              <StatusBar style="auto" />
+            </AudioProvider>
           </AuthProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

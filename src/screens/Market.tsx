@@ -12,7 +12,6 @@ import {
   View,
 } from 'react-native';
 import { Bell, Check, Heart, Search } from 'lucide-react-native';
-import { FooterNav } from '../components/FooterNav';
 import Avatar from '../components/ui/Avatar';
 import { useAuth } from '../context/AuthContext';
 import { ecService, type Product } from '../lib/ecService';
@@ -40,26 +39,10 @@ const ProductGridItem: React.FC<ProductGridItemProps> = ({ product, onPress }) =
   );
 };
 
-interface TabProps {
-  title: string;
-  isActive: boolean;
-  onPress: () => void;
-  hasNotification?: boolean;
-}
-
-const Tab: React.FC<TabProps> = ({ title, isActive, onPress, hasNotification }) => {
-  return (
-    <TouchableOpacity style={[styles.tab, isActive && styles.activeTab]} onPress={onPress}>
-      <Text style={[styles.tabText, isActive && styles.activeTabText]}>{title}</Text>
-      {hasNotification && <View style={styles.notificationDot} />}
-    </TouchableOpacity>
-  );
-};
 
 const Market: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('mylist');
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
@@ -69,7 +52,7 @@ const Market: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [activeTab]);
+  }, []);
 
   const loadData = async () => {
     try {
@@ -114,125 +97,97 @@ const Market: React.FC = () => {
     navigation.navigate('Search', { initialQuery: searchQuery, type: 'products' });
   };
 
-  const renderProductGrid = () => {
+
+  const renderContent = () => {
     return (
-      <FlatList
-        data={products}
-        renderItem={({ item }) => (
-          <ProductGridItem
-            product={item}
-            onPress={() => handleProductPress(item.id)}
-          />
-        )}
-        keyExtractor={(item) => item.id}
-        numColumns={3}
-        columnWrapperStyle={styles.gridRow}
-        contentContainerStyle={styles.gridContainer}
+      <ScrollView
+        style={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-      />
-    );
-  };
-
-  const renderContent = () => {
-    if (activeTab === 'mylist') {
-      return (
-        <ScrollView
-          style={styles.content}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-        >
-          {/* 検索条件の保存 */}
-          <TouchableOpacity style={styles.saveSearchLink}>
-            <Text style={styles.saveSearchText}>すべての保存した検索条件を見る</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-
-          {/* あなたの興味のある商品 */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>あなたの興味のある商品</Text>
-            
-            {/* 最近閲覧した商品 */}
-            <View style={styles.recentlyViewedSection}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.subSectionTitle}>最近閲覧した商品</Text>
-                <TouchableOpacity>
-                  <Text style={styles.seeMoreText}>すべて見る ›</Text>
-                </TouchableOpacity>
-              </View>
-              
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.horizontalList}>
-                  {recentlyViewed.map((product) => (
-                    <TouchableOpacity
-                      key={product.id}
-                      style={styles.recentItem}
-                      onPress={() => handleProductPress(product.id)}
-                    >
-                      <Image source={{ uri: product.image_url }} style={styles.recentImage} />
-                      <View style={styles.recentPriceTag}>
-                        <Text style={styles.recentPrice}>¥ {product.price.toLocaleString()}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
+      >
+        {/* あなたの興味のある商品 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>あなたの興味のある商品</Text>
+          
+          {/* 最近閲覧した商品 */}
+          <View style={styles.recentlyViewedSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.subSectionTitle}>最近閲覧した商品</Text>
+              <TouchableOpacity>
+                <Text style={styles.seeMoreText}>すべて見る ›</Text>
+              </TouchableOpacity>
             </View>
-          </View>
-
-          {/* フォロー中のユーザー */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>フォロー中のユーザー</Text>
             
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.userList}>
-                {followedUsers.map((profile) => (
+              <View style={styles.horizontalList}>
+                {recentlyViewed.map((product) => (
                   <TouchableOpacity
-                    key={profile.id}
-                    style={styles.userItem}
-                    onPress={() => navigation.navigate('Profile', { userId: profile.id })}
+                    key={product.id}
+                    style={styles.recentItem}
+                    onPress={() => handleProductPress(product.id)}
                   >
-                    <Avatar
-                      source={{ uri: profile.profile_image_url }}
-                      size={56}
-                      style={styles.userAvatar}
-                    />
-                    <Text style={styles.userName} numberOfLines={1}>
-                      {profile.display_name}
-                    </Text>
-                    <Text style={styles.userInfo}>出品数: {profile.product_count || 3}</Text>
+                    <Image source={{ uri: product.image_url }} style={styles.recentImage} />
+                    <View style={styles.recentPriceTag}>
+                      <Text style={styles.recentPrice}>¥ {product.price.toLocaleString()}</Text>
+                    </View>
                   </TouchableOpacity>
                 ))}
               </View>
             </ScrollView>
           </View>
+        </View>
 
-          {/* 商品一覧 */}
-          <View style={styles.productsGridSection}>
-            <Text style={styles.sectionTitle}>新着商品</Text>
-            <View style={styles.productsGrid}>
-              {products.slice(0, 9).map((product) => (
-                <ProductGridItem
-                  key={product.id}
-                  product={product}
-                  onPress={() => handleProductPress(product.id)}
-                />
+        {/* フォロー中のユーザー */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>フォロー中のユーザー</Text>
+          
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.userList}>
+              {followedUsers.map((profile) => (
+                <TouchableOpacity
+                  key={profile.id}
+                  style={styles.userItem}
+                  onPress={() => navigation.navigate('Profile', { userId: profile.id })}
+                >
+                  <Avatar
+                    source={{ uri: profile.profile_image_url }}
+                    size={56}
+                    style={styles.userAvatar}
+                  />
+                  <Text style={styles.userName} numberOfLines={1}>
+                    {profile.display_name}
+                  </Text>
+                  <Text style={styles.userInfo}>出品数: {profile.product_count || 3}</Text>
+                </TouchableOpacity>
               ))}
             </View>
-          </View>
-        </ScrollView>
-      );
-    } else if (activeTab === 'recommend') {
-      return renderProductGrid();
-    } else {
-      return (
-        <View style={styles.campaignContainer}>
-          <Text style={styles.campaignText}>キャンペーン情報はありません</Text>
+          </ScrollView>
         </View>
-      );
-    }
+
+        {/* 商品一覧 */}
+        <View style={styles.productsGridSection}>
+          <Text style={styles.sectionTitle}>新着商品</Text>
+          <View style={styles.productsGrid}>
+            {products.slice(0, 9).map((product) => (
+              <ProductGridItem
+                key={product.id}
+                product={product}
+                onPress={() => handleProductPress(product.id)}
+              />
+            ))}
+          </View>
+          
+          {/* もっと見るボタン */}
+          <TouchableOpacity 
+            style={styles.seeMoreButton}
+            onPress={() => navigation.navigate('Shop')}
+          >
+            <Text style={styles.seeMoreButtonText}>もっと見る</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
   };
 
   return (
@@ -253,36 +208,17 @@ const Market: React.FC = () => {
         <TouchableOpacity style={styles.headerIcon}>
           <Bell color={theme.colors.text.primary} size={24} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.headerIcon}>
+        <TouchableOpacity 
+          style={styles.headerIcon}
+          onPress={() => navigation.navigate('Cart')}
+        >
           <Check color={theme.colors.text.primary} size={24} />
         </TouchableOpacity>
-      </View>
-
-      {/* タブ */}
-      <View style={styles.tabs}>
-        <Tab
-          title="マイリスト"
-          isActive={activeTab === 'mylist'}
-          onPress={() => setActiveTab('mylist')}
-        />
-        <Tab
-          title="おすすめ"
-          isActive={activeTab === 'recommend'}
-          onPress={() => setActiveTab('recommend')}
-        />
-        <Tab
-          title="キャンペーン"
-          isActive={activeTab === 'campaign'}
-          onPress={() => setActiveTab('campaign')}
-          hasNotification
-        />
       </View>
 
       {/* コンテンツ */}
       {renderContent()}
 
-      {/* フッターナビゲーション */}
-      <FooterNav />
     </View>
   );
 };
@@ -323,59 +259,8 @@ const styles = StyleSheet.create({
   headerIcon: {
     padding: 8,
   },
-  tabs: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.background.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.light,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: 'center',
-    position: 'relative',
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: theme.colors.primary.main,
-  },
-  tabText: {
-    fontSize: 16,
-    color: theme.colors.text.muted,
-    fontWeight: '500',
-  },
-  activeTabText: {
-    color: theme.colors.primary.main,
-    fontWeight: '600',
-  },
-  notificationDot: {
-    position: 'absolute',
-    top: 8,
-    right: 20,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: theme.colors.secondary.main,
-  },
   content: {
     flex: 1,
-  },
-  saveSearchLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.colors.background.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 8,
-  },
-  saveSearchText: {
-    fontSize: 14,
-    color: theme.colors.secondary.main,
-  },
-  chevron: {
-    fontSize: 20,
-    color: theme.colors.secondary.main,
   },
   section: {
     backgroundColor: theme.colors.background.primary,
@@ -468,14 +353,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     paddingHorizontal: 12,
   },
-  gridContainer: {
-    paddingHorizontal: 4,
-    paddingVertical: 8,
-  },
-  gridRow: {
-    justifyContent: 'space-between',
-    paddingHorizontal: 4,
-  },
   gridItem: {
     width: '31%',
     aspectRatio: 1,
@@ -504,14 +381,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  campaignContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  seeMoreButton: {
+    backgroundColor: theme.colors.primary.main,
+    marginHorizontal: 16,
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
   },
-  campaignText: {
+  seeMoreButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
-    color: theme.colors.text.muted,
+    fontWeight: '600',
   },
 });
 

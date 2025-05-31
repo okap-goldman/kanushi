@@ -11,8 +11,11 @@ import {
   View,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
+import { mockConfig, mockDelay, mockPosts } from '../../lib/mockData';
+import { mockProducts } from '../../lib/mockData/products';
+import { getMockUserEvents } from '../../lib/mockData/events';
 
-type Tab = 'posts' | 'highlights' | 'likes' | 'bookmarks';
+type Tab = 'posts' | 'highlights' | 'shop' | 'events';
 
 interface ProfileTabsProps {
   userId: string;
@@ -23,8 +26,8 @@ interface ProfileTabsProps {
 export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps) {
   const [posts, setPosts] = useState<any[]>([]);
   const [highlights, setHighlights] = useState<any[]>([]);
-  const [likes, setLikes] = useState<any[]>([]);
-  const [bookmarks, setBookmarks] = useState<any[]>([]);
+  const [shop, setShop] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -32,16 +35,45 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
       fetchPosts();
     } else if (activeTab === 'highlights') {
       fetchHighlights();
-    } else if (activeTab === 'likes') {
-      fetchLikes();
-    } else if (activeTab === 'bookmarks') {
-      fetchBookmarks();
+    } else if (activeTab === 'shop') {
+      fetchShop();
+    } else if (activeTab === 'events') {
+      fetchEvents();
     }
   }, [activeTab, userId]);
 
   const fetchPosts = async () => {
     try {
       setLoading(true);
+
+      // モックモードの場合
+      if (mockConfig.enabled) {
+        await mockDelay();
+        
+        // 指定されたuserIdの投稿をフィルタリング
+        const userPosts = mockPosts
+          .filter(post => post.user_id === userId)
+          .map(post => ({
+            id: post.id,
+            user_id: post.user_id,
+            content: post.content,
+            text_content: post.content,
+            content_type: post.audio_url ? 'audio' : post.image_urls?.length ? 'image' : post.video_url ? 'video' : 'text',
+            media_url: post.image_urls?.[0] || post.video_url,
+            audio_url: post.audio_url,
+            audio_duration: post.audio_duration,
+            thumbnail_url: post.image_urls?.[0] || 'https://picsum.photos/150',
+            likes_count: post.likes_count,
+            comments_count: post.comments_count,
+            shares_count: post.shares_count,
+            created_at: post.created_at,
+            updated_at: post.updated_at
+          }));
+        
+        setPosts(userPosts);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('posts')
         .select('*')
@@ -63,6 +95,36 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
   const fetchHighlights = async () => {
     try {
       setLoading(true);
+
+      // モックモードの場合
+      if (mockConfig.enabled) {
+        await mockDelay();
+        
+        // ハイライトされた投稿を取得（is_highlighted: trueの投稿）
+        const highlightedPosts = mockPosts
+          .filter(post => post.user_id === userId && post.is_highlighted)
+          .map(post => ({
+            id: `highlight-${post.id}`,
+            user_id: userId,
+            post_id: post.id,
+            created_at: post.created_at,
+            posts: {
+              id: post.id,
+              user_id: post.user_id,
+              content: post.content,
+              text_content: post.content,
+              content_type: post.audio_url ? 'audio' : post.image_urls?.length ? 'image' : post.video_url ? 'video' : 'text',
+              media_url: post.image_urls?.[0] || post.video_url,
+              audio_url: post.audio_url,
+              thumbnail_url: post.image_urls?.[0] || 'https://picsum.photos/150',
+              created_at: post.created_at
+            }
+          }));
+        
+        setHighlights(highlightedPosts);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('highlights')
         .select('*, posts!inner(*)')
@@ -81,43 +143,103 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
     }
   };
 
-  const fetchLikes = async () => {
+  const fetchShop = async () => {
     try {
       setLoading(true);
+
+      // モックモードの場合
+      if (mockConfig.enabled) {
+        await mockDelay();
+        
+        // 指定されたuserIdが販売している商品を取得
+        const userProducts = mockProducts
+          .filter(product => product.seller_id === userId)
+          .map(product => ({
+            id: product.id,
+            seller_id: product.seller_id,
+            name: product.name,
+            description: product.description,
+            category: product.category,
+            price: product.price,
+            currency: product.currency,
+            stock_quantity: product.stock_quantity,
+            images: product.images,
+            is_digital: product.is_digital,
+            rating: product.rating,
+            reviews_count: product.reviews_count,
+            thumbnail_url: product.images[0] || 'https://picsum.photos/150',
+            created_at: product.created_at
+          }));
+        
+        setShop(userProducts);
+        return;
+      }
+
       const { data, error } = await supabase
-        .from('likes')
-        .select('*, posts!inner(*)')
-        .eq('user_id', userId)
+        .from('products')
+        .select('*')
+        .eq('seller_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       if (data) {
-        setLikes(data);
+        setShop(data);
       }
     } catch (err) {
-      console.error('Error fetching likes:', err);
+      console.error('Error fetching shop products:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchBookmarks = async () => {
+  const fetchEvents = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('bookmarks')
-        .select('*, posts!inner(*)')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+
+      // モックモードの場合
+      if (mockConfig.enabled) {
+        await mockDelay();
         
+        // 指定されたuserIdが主催するイベントを取得
+        const userEvents = getMockUserEvents(userId)
+          .map(event => ({
+            id: event.id,
+            host_id: event.host_id,
+            title: event.title,
+            description: event.description,
+            event_type: event.event_type,
+            category: event.category,
+            start_date: event.start_date,
+            end_date: event.end_date,
+            location: event.location,
+            online_url: event.online_url,
+            capacity: event.capacity,
+            current_participants: event.current_participants,
+            price: event.price,
+            currency: event.currency,
+            cover_image: event.cover_image,
+            thumbnail_url: event.cover_image || 'https://picsum.photos/150',
+            created_at: event.created_at
+          }));
+        
+        setEvents(userEvents);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('host_id', userId)
+        .order('created_at', { ascending: false });
+
       if (error) throw error;
-      
+
       if (data) {
-        setBookmarks(data);
+        setEvents(data);
       }
     } catch (err) {
-      console.error('Error fetching bookmarks:', err);
+      console.error('Error fetching events:', err);
     } finally {
       setLoading(false);
     }
@@ -150,20 +272,20 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
       );
     }
 
-    if (activeTab === 'likes' && likes.length === 0) {
+    if (activeTab === 'shop' && shop.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Feather name="heart" size={48} color="#CBD5E0" />
-          <Text style={styles.emptyText}>まだいいねがありません</Text>
+          <Feather name="shopping-bag" size={48} color="#CBD5E0" />
+          <Text style={styles.emptyText}>まだ商品がありません</Text>
         </View>
       );
     }
 
-    if (activeTab === 'bookmarks' && bookmarks.length === 0) {
+    if (activeTab === 'events' && events.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Feather name="bookmark" size={48} color="#CBD5E0" />
-          <Text style={styles.emptyText}>No bookmarks yet</Text>
+          <Feather name="calendar" size={48} color="#CBD5E0" />
+          <Text style={styles.emptyText}>まだイベントがありません</Text>
         </View>
       );
     }
@@ -173,10 +295,10 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
       data = posts;
     } else if (activeTab === 'highlights') {
       data = highlights.map((h) => h.posts);
-    } else if (activeTab === 'likes') {
-      data = likes.map(l => l.posts);
-    } else if (activeTab === 'bookmarks') {
-      data = bookmarks.map(b => b.posts);
+    } else if (activeTab === 'shop') {
+      data = shop;
+    } else if (activeTab === 'events') {
+      data = events;
     }
 
     return (
@@ -186,7 +308,39 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
         numColumns={3}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.gridItem}>
-            {item.content_type === 'image' ? (
+            {activeTab === 'shop' ? (
+              <View style={styles.gridItem}>
+                <Image
+                  source={{ uri: item.images?.[0] || item.thumbnail_url || 'https://picsum.photos/150' }}
+                  style={styles.gridImage}
+                  contentFit="cover"
+                />
+                <View style={styles.productInfo}>
+                  <Text style={styles.productName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.productPrice}>
+                    ¥{item.price?.toLocaleString()}
+                  </Text>
+                </View>
+              </View>
+            ) : activeTab === 'events' ? (
+              <View style={styles.gridItem}>
+                <Image
+                  source={{ uri: item.cover_image || item.thumbnail_url || 'https://picsum.photos/150' }}
+                  style={styles.gridImage}
+                  contentFit="cover"
+                />
+                <View style={styles.eventInfo}>
+                  <Text style={styles.eventTitle} numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                  <Text style={styles.eventPrice}>
+                    ¥{item.price?.toLocaleString()}
+                  </Text>
+                </View>
+              </View>
+            ) : item.content_type === 'image' ? (
               <Image
                 source={{ uri: item.media_url || item.thumbnail_url }}
                 style={styles.gridImage}
@@ -195,7 +349,7 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
             ) : item.content_type === 'video' ? (
               <View style={styles.gridItem}>
                 <Image
-                  source={{ uri: item.thumbnail_url || 'https://via.placeholder.com/150' }}
+                  source={{ uri: item.thumbnail_url || 'https://picsum.photos/150' }}
                   style={styles.gridImage}
                   contentFit="cover"
                 />
@@ -245,21 +399,20 @@ export function ProfileTabs({ userId, activeTab, onChangeTab }: ProfileTabsProps
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'likes' && styles.activeTab]}
-          onPress={() => onChangeTab('likes')}
+          style={[styles.tab, activeTab === 'shop' && styles.activeTab]}
+          onPress={() => onChangeTab('shop')}
         >
-          <Feather name="heart" size={20} color={activeTab === 'likes' ? '#10B981' : '#64748B'} />
+          <Feather name="shopping-bag" size={20} color={activeTab === 'shop' ? '#10B981' : '#64748B'} />
         </TouchableOpacity>
         
         <TouchableOpacity
-          testID="bookmark-tab"
-          style={[styles.tab, activeTab === 'bookmarks' && styles.activeTab]}
-          onPress={() => onChangeTab('bookmarks')}
+          style={[styles.tab, activeTab === 'events' && styles.activeTab]}
+          onPress={() => onChangeTab('events')}
         >
           <Feather
-            name="bookmark"
+            name="calendar"
             size={20}
-            color={activeTab === 'bookmarks' ? '#10B981' : '#64748B'}
+            color={activeTab === 'events' ? '#10B981' : '#64748B'}
           />
         </TouchableOpacity>
       </View>
@@ -357,5 +510,41 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#94A3B8',
+  },
+  productInfo: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 4,
+  },
+  productName: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  productPrice: {
+    color: '#10B981',
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
+  eventInfo: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 4,
+  },
+  eventTitle: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  eventPrice: {
+    color: '#10B981',
+    fontSize: 9,
+    fontWeight: 'bold',
   },
 });

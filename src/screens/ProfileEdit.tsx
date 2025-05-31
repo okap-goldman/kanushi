@@ -160,7 +160,7 @@ export default function ProfileEdit() {
           <View style={styles.avatarContainer}>
             <TouchableOpacity onPress={handlePickImage}>
               <Avatar
-                source={avatarUrl || 'https://via.placeholder.com/120'}
+                source={avatarUrl || 'https://picsum.photos/120'}
                 size="xl"
                 style={styles.avatar}
               />

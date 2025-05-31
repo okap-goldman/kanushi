@@ -6,6 +6,7 @@ import { VideoPlayer, VideoView } from 'expo-video';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -16,11 +17,14 @@ import {
   View,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
 import { uploadToB2 } from '../lib/b2Service';
+import { type ExtendedEvent, eventService } from '../lib/eventService';
+import { type Hashtag, searchHashtags } from '../lib/hashtagService';
 import { uploadToSupabaseStorage } from '../lib/storageService';
+import { supabase } from '../lib/supabase';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import { Select } from './ui/Select';
 
 interface CreatePostDialogProps {
   visible: boolean;
@@ -31,65 +35,258 @@ interface CreatePostDialogProps {
 type MediaType = 'text' | 'image' | 'video' | 'audio';
 
 export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDialogProps) {
-  const [activeTab, setActiveTab] = useState<MediaType>('text');
   const [textContent, setTextContent] = useState('');
-  const [caption, setCaption] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [audioUri, setAudioUri] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<any | null>(null);
-  const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [recordedSound, setRecordedSound] = useState<Audio.Sound | null>(null);
   const [isPlayingRecorded, setIsPlayingRecorded] = useState(false);
 
+  // Event selection
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [userEvents, setUserEvents] = useState<ExtendedEvent[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+
+  // Hashtag suggestions
+  const [hashtagSuggestions, setHashtagSuggestions] = useState<Hashtag[]>([]);
+  const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false);
+  const [hashtagQueryStart, setHashtagQueryStart] = useState(0);
+
   const { user } = useAuth();
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
+  // Load user's created events on component mount
+  React.useEffect(() => {
+    if (visible && user) {
+      loadUserEvents();
+    }
+  }, [visible, user]);
 
-    if (!result.canceled && result.assets.length > 0) {
-      setImageUri(result.assets[0].uri);
+  const loadUserEvents = async () => {
+    if (!user) return;
+
+    setLoadingEvents(true);
+    try {
+      const result = await eventService.getUserEvents(user.id, 'created');
+      if (result.data) {
+        // Filter to only show upcoming events
+        const now = new Date();
+        const upcomingEvents = result.data.filter((event) => new Date(event.start_date) > now);
+        setUserEvents(upcomingEvents);
+      }
+    } catch (error) {
+      console.error('Error loading user events:', error);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
+  const pickImage = async () => {
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (file) {
+          const url = URL.createObjectURL(file);
+          setImageUri(url);
+        }
+      };
+      input.click();
+    } else {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        setImageUri(result.assets[0].uri);
+      }
+    }
+  };
+
+  const takePhoto = async () => {
+    if (Platform.OS === 'web') {
+      // Web環境では、カメラ入力を使用
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      (input as any).capture = 'environment'; // カメラを使用
+      input.onchange = (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (file) {
+          const url = URL.createObjectURL(file);
+          setImageUri(url);
+        }
+      };
+      input.click();
+    } else {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        setImageUri(result.assets[0].uri);
+      }
+    }
+  };
+
+  const takeVideo = async () => {
+    if (Platform.OS === 'web') {
+      // Web環境では、ビデオ入力を使用
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'video/*';
+      (input as any).capture = 'environment'; // カメラを使用
+      input.onchange = (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (file) {
+          const url = URL.createObjectURL(file);
+          setVideoUri(url);
+        }
+      };
+      input.click();
+    } else {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        videoMaxDuration: 60,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        setVideoUri(result.assets[0].uri);
+      }
     }
   };
 
   const pickVideo = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-      videoMaxDuration: 60,
-    });
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'video/*';
+      input.onchange = (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (file) {
+          const url = URL.createObjectURL(file);
+          setVideoUri(url);
+        }
+      };
+      input.click();
+    } else {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+        videoMaxDuration: 60,
+      });
 
-    if (!result.canceled && result.assets.length > 0) {
-      setVideoUri(result.assets[0].uri);
+      if (!result.canceled && result.assets.length > 0) {
+        setVideoUri(result.assets[0].uri);
+      }
+    }
+  };
+
+  const pickAudio = async () => {
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'audio/*';
+      input.onchange = (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (file) {
+          const url = URL.createObjectURL(file);
+          setAudioUri(url);
+        }
+      };
+      input.click();
+    } else {
+      // Use DocumentPicker for audio files
+      try {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.All,
+          allowsEditing: false,
+          quality: 1,
+        });
+
+        if (!result.canceled && result.assets.length > 0) {
+          const asset = result.assets[0];
+          // Check if it's an audio file
+          if (asset.type === 'video' && asset.fileName?.match(/\.(mp3|wav|m4a|aac|ogg)$/i)) {
+            setAudioUri(asset.uri);
+          } else if (asset.fileName?.match(/\.(mp3|wav|m4a|aac|ogg)$/i)) {
+            setAudioUri(asset.uri);
+          } else {
+            Alert.alert('エラー', '音声ファイルを選択してください。');
+          }
+        }
+      } catch (error) {
+        console.error('Error picking audio:', error);
+        Alert.alert('エラー', '音声ファイルの選択に失敗しました。');
+      }
     }
   };
 
   const startRecording = async () => {
-    try {
-      await Audio.requestPermissionsAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
+    if (Platform.OS === 'web') {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('MediaDevices API is not supported');
+        }
 
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        const chunks: BlobPart[] = [];
 
-      setRecording(recording);
-      setIsRecording(true);
-    } catch (err) {
-      console.error('Failed to start recording', err);
+        mediaRecorder.ondataavailable = (event) => {
+          chunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'audio/wav' });
+          const url = URL.createObjectURL(blob);
+          setAudioUri(url);
+          stream.getTracks().forEach((track) => track.stop());
+        };
+
+        setRecording(mediaRecorder);
+        mediaRecorder.start();
+        setIsRecording(true);
+      } catch (err) {
+        console.error('Failed to start recording', err);
+        Alert.alert('エラー', 'マイクへのアクセスが許可されていません。');
+      }
+    } else {
+      try {
+        await Audio.requestPermissionsAsync();
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+
+        const { recording } = await Audio.Recording.createAsync(
+          Audio.RecordingOptionsPresets.HIGH_QUALITY
+        );
+
+        setRecording(recording);
+        setIsRecording(true);
+      } catch (err) {
+        console.error('Failed to start recording', err);
+      }
     }
   };
 
@@ -97,56 +294,192 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
     if (!recording) return;
 
     setIsRecording(false);
-    await recording.stopAndUnloadAsync();
 
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      playsInSilentModeIOS: true,
-    });
+    if (Platform.OS === 'web') {
+      if (recording instanceof MediaRecorder) {
+        recording.stop();
+        setRecording(null);
+      }
+    } else {
+      await recording.stopAndUnloadAsync();
 
-    const uri = recording.getURI();
-    console.log('Recorded audio URI:', uri);
-    setAudioUri(uri);
-    setRecording(null);
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+      });
 
-    // Load the recorded audio for playback
-    if (uri) {
-      try {
-        const { sound } = await Audio.Sound.createAsync(
-          { uri },
-          { shouldPlay: false }
-        );
-        setRecordedSound(sound);
-      } catch (error) {
-        console.error('Error loading recorded audio:', error);
+      const uri = recording.getURI();
+      setAudioUri(uri);
+      setRecording(null);
+
+      // Load the recorded audio for playback
+      if (uri) {
+        try {
+          const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: false });
+          setRecordedSound(sound);
+        } catch (error) {
+          console.error('Error loading recorded audio:', error);
+        }
       }
     }
   };
 
-  const addTag = () => {
-    if (!tagInput.trim()) return;
-
-    const newTag = tagInput.trim().toLowerCase();
-    if (!tags.includes(newTag)) {
-      setTags([...tags, newTag]);
+  const handleMicButton = () => {
+    if (Platform.OS === 'web') {
+      pickAudio();
+    } else {
+      Alert.alert(
+        '音声を追加',
+        '音声を録音するか、ファイルから選択してください',
+        [
+          {
+            text: 'キャンセル',
+            style: 'cancel',
+          },
+          {
+            text: '録音する',
+            onPress: startRecording,
+          },
+          {
+            text: 'ファイルから選択',
+            onPress: pickAudio,
+          },
+        ],
+        { cancelable: true }
+      );
     }
-    setTagInput('');
   };
 
-  const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove));
+  const pickMedia = async () => {
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*,video/*';
+      input.onchange = (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (file) {
+          const url = URL.createObjectURL(file);
+          if (file.type.startsWith('image/')) {
+            setImageUri(url);
+          } else if (file.type.startsWith('video/')) {
+            setVideoUri(url);
+          }
+        }
+      };
+      input.click();
+    } else {
+      Alert.alert(
+        '画像・動画を追加',
+        'カメラで撮影するか、ファイルから選択してください',
+        [
+          {
+            text: 'キャンセル',
+            style: 'cancel',
+          },
+          {
+            text: '写真を撮影',
+            onPress: takePhoto,
+          },
+          {
+            text: '動画を撮影',
+            onPress: takeVideo,
+          },
+          {
+            text: '画像を選択',
+            onPress: pickImage,
+          },
+          {
+            text: '動画を選択',
+            onPress: pickVideo,
+          },
+        ],
+        { cancelable: true }
+      );
+    }
+  };
+
+  const handleCameraButton = () => {
+    pickMedia();
+  };
+
+  // Hashtag suggestion logic
+  const detectHashtagQuery = (text: string, cursorPosition: number) => {
+    if (!text || cursorPosition < 0) {
+      setShowHashtagSuggestions(false);
+      return;
+    }
+
+    // Find the last # before cursor position
+    let hashPosition = -1;
+    for (let i = cursorPosition - 1; i >= 0; i--) {
+      if (text[i] === '#') {
+        hashPosition = i;
+        break;
+      }
+      if (text[i] === ' ' || text[i] === '\n') {
+        break;
+      }
+    }
+
+    if (hashPosition === -1) {
+      setShowHashtagSuggestions(false);
+      return;
+    }
+
+    // Extract query from # to cursor
+    const query = text.substring(hashPosition + 1, cursorPosition);
+
+    // Check if there's a space in the query (indicates end of hashtag)
+    if (query.includes(' ') || query.includes('\n')) {
+      setShowHashtagSuggestions(false);
+      return;
+    }
+
+    if (query.length >= 2) {
+      setHashtagQueryStart(hashPosition);
+      searchAndShowHashtags(query);
+    } else {
+      setShowHashtagSuggestions(false);
+    }
+  };
+
+  const searchAndShowHashtags = async (query: string) => {
+    try {
+      const result = await searchHashtags(query, 5);
+      setHashtagSuggestions(result.hashtags);
+      setShowHashtagSuggestions(result.hashtags.length > 0);
+    } catch (error) {
+      console.error('Error searching hashtags:', error);
+      setShowHashtagSuggestions(false);
+    }
+  };
+
+  const insertHashtag = (hashtag: string) => {
+    const currentCursor = textContent.length; // Fallback cursor position
+    const beforeHashtag = textContent.substring(0, hashtagQueryStart);
+    const afterCursor = textContent.substring(currentCursor);
+    const newText = `${beforeHashtag}#${hashtag} ${afterCursor}`;
+
+    setTextContent(newText);
+    setShowHashtagSuggestions(false);
+  };
+
+  const handleTextChange = (text: string) => {
+    setTextContent(text);
+    // Use text length as cursor position approximation
+    detectHashtagQuery(text, text.length);
   };
 
   const resetForm = async () => {
-    setActiveTab('text');
     setTextContent('');
-    setCaption('');
     setImageUri(null);
     setVideoUri(null);
     setAudioUri(null);
-    setTagInput('');
-    setTags([]);
-    
+    setSelectedEventId(null);
+    setHashtagSuggestions([]);
+    setShowHashtagSuggestions(false);
+
     // Cleanup recorded sound
     if (recordedSound) {
       await recordedSound.unloadAsync();
@@ -161,85 +494,108 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
   };
 
   const canSubmit = (): boolean => {
-    if (activeTab === 'text') return textContent.trim().length > 0;
-    if (activeTab === 'image') return imageUri !== null;
-    if (activeTab === 'video') return videoUri !== null;
-    if (activeTab === 'audio') return audioUri !== null;
-    return false;
+    return (
+      textContent.trim().length > 0 || imageUri !== null || videoUri !== null || audioUri !== null
+    );
   };
 
   const handleSubmit = async () => {
     if (!user) return;
-
-    if (activeTab === 'text' && !textContent.trim()) {
-      // No content to post
-      return;
-    }
 
     setLoading(true);
 
     try {
       let mediaUrl = null;
       let audioUrl = null;
-      const contentType = activeTab;
+      let contentType: MediaType = 'text';
+
+      // Determine content type based on what's present
+      if (audioUri) {
+        contentType = 'audio';
+      } else if (videoUri) {
+        contentType = 'video';
+      } else if (imageUri) {
+        contentType = 'image';
+      }
 
       // Upload media based on type
-      if (activeTab === 'image' && imageUri) {
-        // Convert URI to File object for B2 upload
-        const response = await fetch(imageUri);
-        const blob = await response.blob();
-        const file = new File([blob], `image_${Date.now()}.jpg`, {
-          type: 'image/jpeg',
-        });
+      if (imageUri) {
+        try {
+          // Convert URI to File object for upload
+          const response = await fetch(imageUri);
+          const blob = await response.blob();
+          const file = new File([blob], `image_${Date.now()}.jpg`, {
+            type: 'image/jpeg',
+          });
 
-        // Try B2 first, fallback to Supabase Storage
-        let result = await uploadToB2(file, 'posts');
-        if (!result.success) {
-          console.log('B2 upload failed, trying Supabase Storage:', result.error);
-          result = await uploadToSupabaseStorage(file, 'posts');
-          if (!result.success) throw new Error(result.error);
+          // Try Supabase Storage first (more reliable for local development)
+          let result = await uploadToSupabaseStorage(file, 'posts');
+          if (!result.success) {
+            result = await uploadToB2(file, 'posts');
+            if (!result.success)
+              throw new Error(`Both upload methods failed. Last error: ${result.error}`);
+          }
+          mediaUrl = result.url;
+        } catch (uploadError) {
+          console.error('Image upload error:', uploadError);
+          throw new Error(
+            `画像のアップロードに失敗しました: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`
+          );
         }
-        mediaUrl = result.url;
-      } else if (activeTab === 'video' && videoUri) {
-        const response = await fetch(videoUri);
-        const blob = await response.blob();
-        const file = new File([blob], `video_${Date.now()}.mp4`, {
-          type: 'video/mp4',
-        });
+      } else if (videoUri) {
+        try {
+          const response = await fetch(videoUri);
+          const blob = await response.blob();
+          const file = new File([blob], `video_${Date.now()}.mp4`, {
+            type: 'video/mp4',
+          });
 
-        // Try B2 first, fallback to Supabase Storage
-        let result = await uploadToB2(file, 'posts');
-        if (!result.success) {
-          console.log('B2 upload failed, trying Supabase Storage:', result.error);
-          result = await uploadToSupabaseStorage(file, 'posts');
-          if (!result.success) throw new Error(result.error);
+          // Try Supabase Storage first (more reliable for local development)
+          let result = await uploadToSupabaseStorage(file, 'posts');
+          if (!result.success) {
+            result = await uploadToB2(file, 'posts');
+            if (!result.success)
+              throw new Error(`Both upload methods failed. Last error: ${result.error}`);
+          }
+          mediaUrl = result.url;
+        } catch (uploadError) {
+          console.error('Video upload error:', uploadError);
+          throw new Error(
+            `動画のアップロードに失敗しました: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`
+          );
         }
-        mediaUrl = result.url;
-      } else if (activeTab === 'audio' && audioUri) {
-        const response = await fetch(audioUri);
-        const blob = await response.blob();
-        const file = new File([blob], `audio_${Date.now()}.m4a`, {
-          type: 'audio/m4a',
-        });
+      } else if (audioUri) {
+        try {
+          const response = await fetch(audioUri);
+          const blob = await response.blob();
+          const file = new File([blob], `audio_${Date.now()}.m4a`, {
+            type: 'audio/m4a',
+          });
 
-        // Try B2 first, fallback to Supabase Storage
-        let result = await uploadToB2(file, 'posts');
-        if (!result.success) {
-          console.log('B2 upload failed, trying Supabase Storage:', result.error);
-          result = await uploadToSupabaseStorage(file, 'posts');
-          if (!result.success) throw new Error(result.error);
+          // Try Supabase Storage first (more reliable for local development)
+          let result = await uploadToSupabaseStorage(file, 'posts');
+          if (!result.success) {
+            result = await uploadToB2(file, 'posts');
+            if (!result.success)
+              throw new Error(`Both upload methods failed. Last error: ${result.error}`);
+          }
+          audioUrl = result.url;
+        } catch (uploadError) {
+          console.error('Audio upload error:', uploadError);
+          throw new Error(
+            `音声のアップロードに失敗しました: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`
+          );
         }
-        audioUrl = result.url;
       }
 
       // Prepare post data
       const postData = {
         user_id: user.id,
         content_type: contentType,
-        text_content: activeTab === 'text' ? textContent : caption,
+        text_content: textContent,
         media_url: mediaUrl,
         audio_url: audioUrl,
-        tags: tags,
+        event_id: selectedEventId,
       };
 
       // Save post to Supabase
@@ -253,14 +609,17 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
       }
     } catch (err) {
       console.error('Error creating post:', err);
-      // Show error message
+      Alert.alert(
+        'エラー',
+        err instanceof Error ? err.message : '投稿の作成に失敗しました。もう一度お試しください。'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   // Helper function to save post
-  const formatTime = (seconds: number) => {
+  const _formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -276,60 +635,12 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
           text_content: postData.text_content,
           media_url: postData.media_url,
           audio_url: postData.audio_url,
+          event_id: postData.event_id,
           created_at: new Date().toISOString(),
         })
         .select();
 
       if (error) throw error;
-
-      // Handle tags if provided
-      if (postData.tags && postData.tags.length > 0 && data && data.length > 0) {
-        const postId = data[0].id;
-
-        for (const tagName of postData.tags) {
-          // Check if tag exists
-          const { data: existingTag, error: findError } = await supabase
-            .from('tags')
-            .select('id')
-            .eq('name', tagName)
-            .maybeSingle();
-
-          if (findError) {
-            console.error(`Error finding tag ${tagName}:`, findError);
-            continue;
-          }
-
-          let tagId;
-
-          // Create tag if it doesn't exist
-          if (!existingTag) {
-            const { data: newTag, error: createError } = await supabase
-              .from('tags')
-              .insert({ name: tagName })
-              .select()
-              .single();
-
-            if (createError) {
-              console.error(`Error creating tag ${tagName}:`, createError);
-              continue;
-            }
-
-            tagId = newTag.id;
-          } else {
-            tagId = existingTag.id;
-          }
-
-          // Link tag to post
-          const { error: linkError } = await supabase.from('post_tags').insert({
-            post_id: postId,
-            tag_id: tagId,
-          });
-
-          if (linkError) {
-            console.error(`Error linking tag ${tagName} to post:`, linkError);
-          }
-        }
-      }
 
       return { success: true, error: null, data };
     } catch (error) {
@@ -349,97 +660,112 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
             <Feather name="x" size={24} color="#1E293B" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>投稿を作成</Text>
-          <Button onPress={handleSubmit} size="sm" disabled={loading || !canSubmit()} loading={loading}>
+          <Button
+            onPress={handleSubmit}
+            size="sm"
+            disabled={loading || !canSubmit()}
+            loading={loading}
+          >
             投稿
           </Button>
         </View>
 
-        <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'text' && styles.activeTab]}
-            onPress={() => setActiveTab('text')}
-          >
-            <Feather name="type" size={20} color={activeTab === 'text' ? '#0070F3' : '#64748B'} />
-            <Text style={[styles.tabText, activeTab === 'text' && styles.activeTabText]}>テキスト</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'image' && styles.activeTab]}
-            onPress={() => setActiveTab('image')}
-          >
-            <Feather name="image" size={20} color={activeTab === 'image' ? '#0070F3' : '#64748B'} />
-            <Text style={[styles.tabText, activeTab === 'image' && styles.activeTabText]}>
-              画像
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'video' && styles.activeTab]}
-            onPress={() => setActiveTab('video')}
-          >
-            <Feather name="video" size={20} color={activeTab === 'video' ? '#0070F3' : '#64748B'} />
-            <Text style={[styles.tabText, activeTab === 'video' && styles.activeTabText]}>
-              動画
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'audio' && styles.activeTab]}
-            onPress={() => setActiveTab('audio')}
-          >
-            <Feather name="mic" size={20} color={activeTab === 'audio' ? '#0070F3' : '#64748B'} />
-            <Text style={[styles.tabText, activeTab === 'audio' && styles.activeTabText]}>
-              音声
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
-          {activeTab === 'text' && (
-            <View style={styles.textContent}>
-              <Input
-                placeholder="今何を思っていますか？"
-                value={textContent}
-                onChangeText={setTextContent}
-                multiline
-                inputStyle={styles.textInput}
-              />
+          {/* Main Text Input */}
+          <View style={styles.textContent}>
+            <Input
+              placeholder="今何を思っていますか？"
+              value={textContent}
+              onChangeText={handleTextChange}
+              multiline
+              inputStyle={styles.textInput}
+            />
+
+            {/* Hashtag Suggestions */}
+            {showHashtagSuggestions && hashtagSuggestions.length > 0 && (
+              <View style={styles.hashtagSuggestions}>
+                {hashtagSuggestions.map((hashtag) => (
+                  <TouchableOpacity
+                    key={hashtag.id}
+                    style={styles.hashtagSuggestionItem}
+                    onPress={() => insertHashtag(hashtag.name)}
+                  >
+                    <Text style={styles.hashtagSuggestionText}>#{hashtag.name}</Text>
+                    <Text style={styles.hashtagUseCount}>{hashtag.use_count}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Event Selection */}
+          {userEvents.length > 0 && (
+            <View style={styles.eventSelection}>
+              <Text style={styles.sectionTitle}>開催中のイベント（任意）</Text>
+              <Select
+                value={selectedEventId || ''}
+                onValueChange={(value) => setSelectedEventId(value || null)}
+                placeholder="イベントを選択してください"
+                disabled={loadingEvents}
+              >
+                <Select.Trigger>
+                  <Select.Value placeholder="イベントを選択してください" />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="">イベントを選択しない</Select.Item>
+                  {userEvents.map((event) => (
+                    <Select.Item key={event.id} value={event.id}>
+                      {event.title} - {new Date(event.start_date).toLocaleDateString()}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select>
             </View>
           )}
 
-          {activeTab === 'image' && (
-            <View style={styles.mediaContent}>
-              {imageUri ? (
+          {/* Media Buttons */}
+          <View style={styles.mediaButtons}>
+            <TouchableOpacity style={styles.mediaButton} onPress={handleCameraButton}>
+              <Feather name="camera" size={24} color="#64748B" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.mediaButton} onPress={handleMicButton}>
+              <Feather name="folder" size={24} color="#64748B" />
+            </TouchableOpacity>
+            {Platform.OS === 'web' && (
+              <TouchableOpacity
+                style={[styles.mediaButton, isRecording && styles.recordingButtonActive]}
+                onPress={isRecording ? stopRecording : startRecording}
+              >
+                <Feather
+                  name={isRecording ? 'square' : 'mic'}
+                  size={20}
+                  color={isRecording ? '#FFFFFF' : '#64748B'}
+                />
+                {isRecording && <Text style={styles.recordingTextSmall}>録音中</Text>}
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Media Preview Area */}
+          {(imageUri || videoUri || audioUri) && (
+            <View style={styles.mediaPreview}>
+              {imageUri && (
                 <View style={styles.previewContainer}>
                   <Image
                     source={{ uri: imageUri }}
                     style={styles.imagePreview}
                     contentFit="cover"
                   />
-                  <TouchableOpacity style={styles.changeButton} onPress={pickImage}>
-                    <Text style={styles.changeButtonText}>画像を変更</Text>
+                  <TouchableOpacity
+                    style={styles.removeMediaButton}
+                    onPress={() => setImageUri(null)}
+                  >
+                    <Feather name="x" size={16} color="#FFFFFF" />
                   </TouchableOpacity>
                 </View>
-              ) : (
-                <TouchableOpacity style={styles.mediaSelector} onPress={pickImage}>
-                  <Feather name="image" size={40} color="#94A3B8" />
-                  <Text style={styles.mediaSelectorText}>画像を選択</Text>
-                </TouchableOpacity>
               )}
 
-              <Input
-                placeholder="キャプションを追加..."
-                value={caption}
-                onChangeText={setCaption}
-                multiline
-                inputStyle={styles.captionInput}
-              />
-            </View>
-          )}
-
-          {activeTab === 'video' && (
-            <View style={styles.mediaContent}>
-              {videoUri ? (
+              {videoUri && (
                 <View style={styles.previewContainer}>
                   <VideoView
                     player={React.useMemo(() => {
@@ -450,42 +776,28 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
                     nativeControls={true}
                     contentFit="contain"
                   />
-                  <TouchableOpacity style={styles.changeButton} onPress={pickVideo}>
-                    <Text style={styles.changeButtonText}>動画を変更</Text>
+                  <TouchableOpacity
+                    style={styles.removeMediaButton}
+                    onPress={() => setVideoUri(null)}
+                  >
+                    <Feather name="x" size={16} color="#FFFFFF" />
                   </TouchableOpacity>
                 </View>
-              ) : (
-                <TouchableOpacity style={styles.mediaSelector} onPress={pickVideo}>
-                  <Feather name="video" size={40} color="#94A3B8" />
-                  <Text style={styles.mediaSelectorText}>動画を選択</Text>
-                </TouchableOpacity>
               )}
 
-              <Input
-                placeholder="キャプションを追加..."
-                value={caption}
-                onChangeText={setCaption}
-                multiline
-                inputStyle={styles.captionInput}
-              />
-            </View>
-          )}
-
-          {activeTab === 'audio' && (
-            <View style={styles.mediaContent}>
-              {audioUri ? (
+              {audioUri && (
                 <View style={styles.audioPreviewContainer}>
                   <View style={styles.audioPreview}>
                     <Feather name="music" size={40} color="#6366F1" />
                     <Text style={styles.audioText}>音声が録音されました</Text>
                   </View>
-                  
+
                   <View style={styles.audioControls}>
                     <TouchableOpacity
                       style={styles.playButton}
                       onPress={async () => {
                         if (!recordedSound) return;
-                        
+
                         try {
                           if (isPlayingRecorded) {
                             await recordedSound.pauseAsync();
@@ -493,8 +805,7 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
                           } else {
                             await recordedSound.playAsync();
                             setIsPlayingRecorded(true);
-                            
-                            // Set up playback status listener
+
                             recordedSound.setOnPlaybackStatusUpdate((status) => {
                               if (status.isLoaded && status.didJustFinish) {
                                 setIsPlayingRecorded(false);
@@ -514,9 +825,9 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
                       />
                     </TouchableOpacity>
                   </View>
-                  
+
                   <TouchableOpacity
-                    style={styles.reRecordButton}
+                    style={styles.removeMediaButton}
                     onPress={async () => {
                       if (recordedSound) {
                         await recordedSound.unloadAsync();
@@ -524,74 +835,14 @@ export function CreatePostDialog({ visible, onClose, onSuccess }: CreatePostDial
                       }
                       setAudioUri(null);
                       setIsPlayingRecorded(false);
-                      startRecording();
                     }}
                   >
-                    <Feather name="mic" size={20} color="#6366F1" />
-                    <Text style={styles.reRecordButtonText}>再録音</Text>
+                    <Feather name="x" size={16} color="#FFFFFF" />
                   </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={styles.recordContainer}>
-                  <TouchableOpacity
-                    style={[styles.recordButton, isRecording && styles.recordingButton]}
-                    onPress={isRecording ? stopRecording : startRecording}
-                  >
-                    <Feather name={isRecording ? 'square' : 'mic'} size={24} color="#FFFFFF" />
-                    <Text style={styles.recordButtonText}>
-                      {isRecording ? '録音を停止' : '録音を開始'}
-                    </Text>
-                  </TouchableOpacity>
-
-                  {isRecording && (
-                    <View style={styles.recordingIndicator}>
-                      <View style={styles.recordingDot} />
-                      <Text style={styles.recordingText}>録音中...</Text>
-                    </View>
-                  )}
                 </View>
               )}
-
-              <Input
-                placeholder="キャプションを追加..."
-                value={caption}
-                onChangeText={setCaption}
-                multiline
-                inputStyle={styles.captionInput}
-              />
             </View>
           )}
-
-          <View style={styles.tagsSection}>
-            <Text style={styles.sectionTitle}>タグ</Text>
-            <View style={styles.tagInputContainer}>
-              <Input
-                placeholder="タグを追加（Enterで追加）"
-                value={tagInput}
-                onChangeText={setTagInput}
-                onSubmitEditing={addTag}
-                containerStyle={styles.tagInput}
-              />
-              <TouchableOpacity
-                style={styles.addTagButton}
-                onPress={addTag}
-                disabled={!tagInput.trim()}
-              >
-                <Feather name="plus" size={20} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.tagsContainer}>
-              {tags.map((tag) => (
-                <View key={tag} style={styles.tag}>
-                  <Text style={styles.tagText}>#{tag}</Text>
-                  <TouchableOpacity onPress={() => removeTag(tag)} style={styles.removeTagButton}>
-                    <Feather name="x" size={14} color="#64748B" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
@@ -619,30 +870,84 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1E293B',
   },
-  tabs: {
+  mediaButtons: {
     flexDirection: 'row',
+    justifyContent: 'flex-start',
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
+  mediaButton: {
+    padding: 12,
+    marginRight: 16,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    minWidth: 48,
   },
-  activeTab: {
-    borderBottomColor: '#0070F3',
+  recordingButtonActive: {
+    backgroundColor: '#E53E3E',
+    borderColor: '#E53E3E',
   },
-  tabText: {
-    marginLeft: 4,
-    color: '#64748B',
+  recordingTextSmall: {
+    fontSize: 10,
+    color: '#FFFFFF',
+    marginTop: 2,
     fontWeight: '500',
   },
-  activeTabText: {
+  mediaPreview: {
+    marginTop: 16,
+  },
+  removeMediaButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  hashtagSuggestions: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    marginTop: 8,
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  hashtagSuggestionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  hashtagSuggestionText: {
+    fontSize: 16,
     color: '#0070F3',
+    fontWeight: '500',
+  },
+  hashtagUseCount: {
+    fontSize: 12,
+    color: '#64748B',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
   content: {
     flex: 1,
@@ -728,9 +1033,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginLeft: 8,
     fontWeight: '500',
-  },
-  recordingButton: {
-    backgroundColor: '#E53E3E',
   },
   recordingIndicator: {
     flexDirection: 'row',
@@ -844,6 +1146,12 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 12,
     color: '#64748B',
+  },
+  eventSelection: {
+    marginVertical: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
   reRecordButton: {
     flexDirection: 'row',

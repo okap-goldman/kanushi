@@ -29,6 +29,12 @@ export interface FollowService {
   getFollowStats(
     userId: string
   ): Promise<ServiceResult<{ followersCount: number; followingCount: number }>>;
+  getFollowStatsByType(
+    userId: string
+  ): Promise<ServiceResult<{
+    family: { followersCount: number; followingCount: number };
+    watch: { followersCount: number; followingCount: number };
+  }>>;
 }
 
 export function createFollowService(supabaseClient = supabase, dbClient = db): FollowService {
@@ -159,6 +165,29 @@ export function createFollowService(supabaseClient = supabase, dbClient = db): F
       cursor?: string
     ): Promise<ServiceResult<DrizzleFollow[]>> {
       try {
+        // モックデータを使用する場合
+        if (process.env.EXPO_PUBLIC_USE_MOCK_DATA === 'true') {
+          const mockFollowersData: DrizzleFollow[] = [
+            {
+              id: '3',
+              followerId: '2',
+              followeeId: userId,
+              followType: 'watch',
+              status: 'active',
+              followReason: null,
+              unfollowReason: null,
+              createdAt: new Date('2024-01-03'),
+              updatedAt: new Date('2024-01-03'),
+            },
+          ];
+
+          return {
+            success: true,
+            data: mockFollowersData,
+            error: null,
+          };
+        }
+
         const followersData = await dbClient.query.follows.findMany({
           where: and(eq(follows.followeeId, userId), eq(follows.status, 'active')),
           orderBy: [desc(follows.createdAt)],
@@ -185,6 +214,41 @@ export function createFollowService(supabaseClient = supabase, dbClient = db): F
       followType?: FollowType
     ): Promise<ServiceResult<DrizzleFollow[]>> {
       try {
+        // モックデータを使用する場合
+        if (process.env.EXPO_PUBLIC_USE_MOCK_DATA === 'true') {
+          // モックフォローデータを返す
+          const mockFollowData: DrizzleFollow[] = [
+            {
+              id: '1',
+              followerId: userId,
+              followeeId: '2',
+              followType: followType || 'watch',
+              status: 'active',
+              followReason: null,
+              unfollowReason: null,
+              createdAt: new Date('2024-01-01'),
+              updatedAt: new Date('2024-01-01'),
+            },
+            {
+              id: '2',
+              followerId: userId,
+              followeeId: '3',
+              followType: followType || 'watch',
+              status: 'active',
+              followReason: null,
+              unfollowReason: null,
+              createdAt: new Date('2024-01-02'),
+              updatedAt: new Date('2024-01-02'),
+            },
+          ];
+
+          return {
+            success: true,
+            data: mockFollowData,
+            error: null,
+          };
+        }
+
         const conditions = [eq(follows.followerId, userId), eq(follows.status, 'active')];
 
         if (followType) {
@@ -216,6 +280,21 @@ export function createFollowService(supabaseClient = supabase, dbClient = db): F
       userId2: string
     ): Promise<ServiceResult<MutualFollowInfo>> {
       try {
+        // モックデータを使用する場合
+        if (process.env.EXPO_PUBLIC_USE_MOCK_DATA === 'true') {
+          const mutualInfo: MutualFollowInfo = {
+            isMutual: false,
+            user1FollowsUser2: true,
+            user2FollowsUser1: false,
+          };
+
+          return {
+            success: true,
+            data: mutualInfo,
+            error: null,
+          };
+        }
+
         // Check if user1 follows user2
         const user1FollowsUser2 = await dbClient.query.follows.findFirst({
           where: and(
@@ -259,6 +338,18 @@ export function createFollowService(supabaseClient = supabase, dbClient = db): F
       userId: string
     ): Promise<ServiceResult<{ followersCount: number; followingCount: number }>> {
       try {
+        // モックデータを使用する場合
+        if (process.env.EXPO_PUBLIC_USE_MOCK_DATA === 'true') {
+          return {
+            success: true,
+            data: {
+              followersCount: 42,
+              followingCount: 17,
+            },
+            error: null,
+          };
+        }
+
         // Count followers
         const [followersCountResult] = await dbClient
           .select({ count: count() })
@@ -281,6 +372,95 @@ export function createFollowService(supabaseClient = supabase, dbClient = db): F
         };
       } catch (error) {
         console.error('Error getting follow stats:', error);
+        return {
+          success: false,
+          data: null,
+          error: error as Error,
+        };
+      }
+    },
+
+    async getFollowStatsByType(
+      userId: string
+    ): Promise<ServiceResult<{
+      family: { followersCount: number; followingCount: number };
+      watch: { followersCount: number; followingCount: number };
+    }>> {
+      try {
+        // モックデータを使用する場合
+        if (process.env.EXPO_PUBLIC_USE_MOCK_DATA === 'true') {
+          return {
+            success: true,
+            data: {
+              family: {
+                followersCount: 15,
+                followingCount: 8,
+              },
+              watch: {
+                followersCount: 27,
+                followingCount: 9,
+              },
+            },
+            error: null,
+          };
+        }
+
+        // Count family followers
+        const [familyFollowersResult] = await dbClient
+          .select({ count: count() })
+          .from(follows)
+          .where(and(
+            eq(follows.followeeId, userId),
+            eq(follows.status, 'active'),
+            eq(follows.followType, 'family')
+          ));
+
+        // Count family following
+        const [familyFollowingResult] = await dbClient
+          .select({ count: count() })
+          .from(follows)
+          .where(and(
+            eq(follows.followerId, userId),
+            eq(follows.status, 'active'),
+            eq(follows.followType, 'family')
+          ));
+
+        // Count watch followers
+        const [watchFollowersResult] = await dbClient
+          .select({ count: count() })
+          .from(follows)
+          .where(and(
+            eq(follows.followeeId, userId),
+            eq(follows.status, 'active'),
+            eq(follows.followType, 'watch')
+          ));
+
+        // Count watch following
+        const [watchFollowingResult] = await dbClient
+          .select({ count: count() })
+          .from(follows)
+          .where(and(
+            eq(follows.followerId, userId),
+            eq(follows.status, 'active'),
+            eq(follows.followType, 'watch')
+          ));
+
+        return {
+          success: true,
+          data: {
+            family: {
+              followersCount: familyFollowersResult.count,
+              followingCount: familyFollowingResult.count,
+            },
+            watch: {
+              followersCount: watchFollowersResult.count,
+              followingCount: watchFollowingResult.count,
+            },
+          },
+          error: null,
+        };
+      } catch (error) {
+        console.error('Error getting follow stats by type:', error);
         return {
           success: false,
           data: null,

@@ -72,6 +72,8 @@ export function Post({ author, content, caption, mediaType, postId, tags = [] }:
           mediaType={mediaType}
           isExpanded={isExpanded}
           setIsExpanded={setIsExpanded}
+          postId={postId}
+          authorName={author.name}
         />
       </TouchableOpacity>
 
@@ -124,6 +126,8 @@ export function Post({ author, content, caption, mediaType, postId, tags = [] }:
               mediaType={mediaType}
               isExpanded={true}
               setIsExpanded={setIsExpanded}
+              postId={postId}
+              authorName={author.name}
             />
 
             <View style={styles.fullPostDetails}>

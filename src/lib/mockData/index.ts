@@ -16,7 +16,7 @@ export interface MockConfig {
 }
 
 export const mockConfig: MockConfig = {
-  enabled: process.env.EXPO_PUBLIC_USE_MOCK_DATA === 'true',
+  enabled: process.env.EXPO_PUBLIC_USE_MOCK_DATA === 'true' || true, // 一時的にモックモードを有効化
   delay: 300,
 };
 

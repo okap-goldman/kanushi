@@ -294,6 +294,11 @@ class SearchService {
 
   async getRecommendedPosts(limit: number = 20): Promise<any[]> {
     try {
+      // For development, use mock data
+      if (__DEV__ || process.env.NODE_ENV === 'development') {
+        return [];
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       
       // ログインしていない場合は人気の投稿を返す
@@ -346,6 +351,11 @@ class SearchService {
 
   async getDiscoverContent(type: 'posts' | 'users' | 'events' | 'items', limit: number = 20): Promise<any[]> {
     try {
+      // For development, use mock data
+      if (__DEV__ || process.env.NODE_ENV === 'development') {
+        return [];
+      }
+
       switch (type) {
         case 'posts':
           const { data: posts, error: postsError } = await supabase

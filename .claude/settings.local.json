@@ -12,5 +12,6 @@
       "Bash(npm test)"
     ],
     "deny": []
-  }
+  },
+  "enableAllProjectMcpServers": false
 }

@@ -56,7 +56,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // File upload function
 export const uploadFile = async (
   file: any,
-  bucket = 'media',
+  bucket = 'posts',
   folder = 'uploads'
 ): Promise<{ url: string | null; error: Error | null }> => {
   try {
@@ -87,7 +87,7 @@ export const uploadFile = async (
 // Audio blob upload function for voice messages
 export const uploadAudioBlob = async (
   blob: Blob,
-  bucket = 'media',
+  bucket = 'posts',
   folder = 'audio-messages'
 ): Promise<{ url: string | null; error: Error | null }> => {
   try {

@@ -1,6 +1,7 @@
-import { Feather } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { Image } from 'expo-image';
+import { format } from 'date-fns';
+import { ja } from 'date-fns/locale';
 import React, { useEffect, useState } from 'react';
 import {
   FlatList,
@@ -69,79 +70,123 @@ export default function MyEvents() {
     loadEvents(true);
   };
 
-  const formatEventDate = (startDate: string) => {
-    const date = new Date(startDate);
-    const dateOptions: Intl.DateTimeFormatOptions = {
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    };
+  const formatEventDate = (startDate: string, endDate?: string) => {
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : start;
+    const isSameDay = start.toDateString() === end.toDateString();
 
-    return date.toLocaleString('ja-JP', dateOptions);
-  };
-
-  const getEventTypeBadge = (eventType?: string) => {
-    switch (eventType) {
-      case 'online':
-        return { text: 'オンライン', color: '#10B981' };
-      case 'offline':
-        return { text: 'オフライン', color: '#F59E0B' };
-      case 'hybrid':
-        return { text: 'ハイブリッド', color: '#8B5CF6' };
-      case 'voice_workshop':
-        return { text: 'ボイスワークショップ', color: '#EC4899' };
-      default:
-        return null;
+    if (isSameDay) {
+      return {
+        date: format(start, 'PPP', { locale: ja }),
+        time: `${format(start, 'p', { locale: ja })} - ${format(end, 'p', { locale: ja })}`,
+      };
+    } else {
+      return {
+        date: `${format(start, 'PPP', { locale: ja })} 〜 ${format(end, 'PPP', { locale: ja })}`,
+        time: `${format(start, 'p', { locale: ja })} - ${format(end, 'p', { locale: ja })}`,
+      };
     }
   };
 
+  const getEventTypeInfo = (event: ExtendedEvent) => {
+    const eventType = event.event_type || event.category;
+    
+    let typeInfo = { text: '', icon: 'calendar-outline' as const, color: '#666' };
+    
+    switch (eventType) {
+      case 'online':
+        typeInfo = { text: 'オンライン', icon: 'globe-outline', color: '#10B981' };
+        break;
+      case 'offline':
+        typeInfo = { text: 'オフライン', icon: 'location-outline', color: '#F59E0B' };
+        break;
+      case 'hybrid':
+        typeInfo = { text: 'ハイブリッド', icon: 'git-merge-outline', color: '#8B5CF6' };
+        break;
+      case 'voice_workshop':
+        typeInfo = { text: '音声ワークショップ', icon: 'mic-outline', color: '#EC4899' };
+        break;
+      default:
+        typeInfo = { text: 'イベント', icon: 'calendar-outline', color: '#666' };
+    }
+    
+    return typeInfo;
+  };
+
   const renderEventItem = ({ item }: { item: ExtendedEvent }) => {
-    const badge = getEventTypeBadge(item.event_type || item.category);
+    const typeInfo = getEventTypeInfo(item);
+    const dateInfo = formatEventDate(item.start_date, item.end_date);
+    const priceDisplay = item.price && item.price > 0 ? `¥${item.price.toLocaleString()}` : '無料';
+    const isUserParticipating = item.user_participation_status === 'attending';
+    const locationDisplay = item.is_online ? 'オンラインイベント' : item.location || '場所未定';
 
     return (
       <TouchableOpacity
         style={styles.eventCard}
         onPress={() => navigation.navigate('EventDetail', { eventId: item.id })}
+        activeOpacity={0.7}
       >
-        {item.image_url || item.cover_image_url ? (
-          <Image
-            source={{ uri: item.image_url || item.cover_image_url }}
-            style={styles.eventImage}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={[styles.eventImage, styles.placeholderImage]}>
-            <Feather name="calendar" size={32} color="#CBD5E0" />
+        <View style={styles.cardHeader}>
+          <View style={styles.badgeContainer}>
+            <View style={[styles.badge, item.price && item.price > 0 ? styles.badgePrimary : styles.badgeOutline]}>
+              <Text style={[styles.badgeText, item.price && item.price > 0 && styles.badgeTextPrimary]}>
+                {priceDisplay}
+              </Text>
+            </View>
+            
+            <View style={styles.badgeSecondary}>
+              <Ionicons name={typeInfo.icon} size={12} color={typeInfo.color} />
+              <Text style={styles.badgeTextSecondary}>{typeInfo.text}</Text>
+            </View>
+            
+            {isUserParticipating && (
+              <View style={[styles.badge, styles.badgePrimary]}>
+                <Text style={styles.badgeTextPrimary}>参加中</Text>
+              </View>
+            )}
           </View>
-        )}
 
-        {badge && (
-          <View style={[styles.eventTypeBadge, { backgroundColor: badge.color }]}>
-            <Text style={styles.eventTypeBadgeText}>{badge.text}</Text>
-          </View>
-        )}
-
-        <View style={styles.eventContent}>
-          <Text style={styles.eventDate}>{formatEventDate(item.start_date)}</Text>
-          <Text style={styles.eventTitle} numberOfLines={2}>
+          <Text style={styles.title} numberOfLines={2}>
             {item.title}
           </Text>
 
-          {item.location && (
-            <Text style={styles.eventLocation} numberOfLines={1}>
-              <Feather name="map-pin" size={12} color="#718096" /> {item.location}
-            </Text>
-          )}
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar-outline" size={16} color="#666" />
+            <Text style={styles.infoText}>{dateInfo.date}</Text>
+          </View>
 
-          <View style={styles.eventFooter}>
-            <View style={styles.attendeeCount}>
-              <Feather name="users" size={12} color="#718096" />
-              <Text style={styles.attendeeText}>{item.participant_count || 0} 人参加</Text>
-            </View>
-            <Text style={styles.eventPrice}>
-              {item.price ? `¥${item.price.toLocaleString()}` : '無料'}
+          <View style={styles.infoRow}>
+            <Ionicons name="time-outline" size={16} color="#666" />
+            <Text style={styles.infoText}>{dateInfo.time}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name={typeInfo.icon} size={16} color="#666" />
+            <Text style={styles.infoText}>{locationDisplay}</Text>
+          </View>
+        </View>
+
+        {item.description && (
+          <View style={styles.cardContent}>
+            <Text style={styles.description} numberOfLines={3}>
+              {item.description}
             </Text>
+          </View>
+        )}
+
+        <View style={styles.cardFooter}>
+          <View style={styles.statsContainer}>
+            {item.participant_count && item.participant_count > 0 && (
+              <View style={styles.statItem}>
+                <Ionicons name="people-outline" size={16} color="#666" />
+                <Text style={styles.statText}>{item.participant_count}人参加</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.actionContainer}>
+            <Text style={styles.viewDetailText}>詳細を見る</Text>
+            <Ionicons name="chevron-forward" size={16} color="#007AFF" />
           </View>
         </View>
       </TouchableOpacity>
@@ -150,14 +195,30 @@ export default function MyEvents() {
 
   const renderEmptyState = (type: 'attending' | 'created') => (
     <View style={styles.emptyContainer}>
-      <Feather name="calendar" size={64} color="#CBD5E0" />
+      <Ionicons name="calendar-outline" size={64} color="#CBD5E0" />
       <Text style={styles.emptyText}>
         {type === 'attending'
           ? '参加予定のイベントはありません'
           : '主催しているイベントはありません'}
       </Text>
-      <TouchableOpacity style={styles.exploreButton} onPress={() => navigation.navigate('Events')}>
-        <Text style={styles.exploreButtonText}>イベントを探す</Text>
+      <Text style={styles.emptySubText}>
+        {type === 'attending'
+          ? '興味のあるイベントを見つけて参加してみましょう'
+          : '新しいイベントを作成して、仲間を集めましょう'}
+      </Text>
+      <TouchableOpacity 
+        style={styles.exploreButton} 
+        onPress={() => navigation.navigate(type === 'attending' ? 'Events' : 'CreateEvent')}
+      >
+        <Ionicons 
+          name={type === 'attending' ? 'search-outline' : 'add-outline'} 
+          size={16} 
+          color="#FFFFFF" 
+          style={{ marginRight: 8 }} 
+        />
+        <Text style={styles.exploreButtonText}>
+          {type === 'attending' ? 'イベントを探す' : 'イベントを作成'}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -166,14 +227,14 @@ export default function MyEvents() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={24} color="#1A202C" />
+          <Ionicons name="arrow-back" size={24} color="#1A202C" />
         </TouchableOpacity>
-        <Text style={styles.title}>マイイベント</Text>
+        <Text style={styles.headerTitle}>マイイベント</Text>
         <TouchableOpacity
           style={styles.createButton}
           onPress={() => navigation.navigate('CreateEvent')}
         >
-          <Feather name="plus" size={24} color="#0070F3" />
+          <Ionicons name="add" size={24} color="#007AFF" />
         </TouchableOpacity>
       </View>
 
@@ -245,7 +306,7 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 4,
   },
-  title: {
+  headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1A202C',
@@ -270,77 +331,117 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   eventCard: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
     marginBottom: 16,
     overflow: 'hidden',
   },
-  eventImage: {
-    width: 100,
-    height: 100,
+  cardHeader: {
+    padding: 16,
   },
-  placeholderImage: {
-    backgroundColor: '#F7FAFC',
-    justifyContent: 'center',
-    alignItems: 'center',
+  badgeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
   },
-  eventTypeBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    paddingHorizontal: 8,
+  badge: {
+    paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  eventTypeBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
+  badgePrimary: {
+    backgroundColor: '#007AFF',
+  },
+  badgeOutline: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  badgeSecondary: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  badgeText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  badgeTextPrimary: {
+    color: '#fff',
+  },
+  badgeTextSecondary: {
+    fontSize: 12,
+    color: '#666',
+  },
+  title: {
+    fontSize: 18,
     fontWeight: '600',
+    marginBottom: 12,
+    color: '#000',
   },
-  eventContent: {
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#666',
     flex: 1,
-    padding: 12,
   },
-  eventDate: {
-    fontSize: 12,
-    color: '#718096',
-    marginBottom: 4,
+  cardContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
-  eventTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A202C',
-    marginBottom: 8,
+  description: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
   },
-  eventLocation: {
-    fontSize: 12,
-    color: '#4A5568',
-    marginBottom: 8,
-  },
-  eventFooter: {
+  cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
-  attendeeCount: {
+  statsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 16,
   },
-  attendeeText: {
-    fontSize: 11,
-    color: '#718096',
-    marginLeft: 4,
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  eventPrice: {
+  statText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0070F3',
+    color: '#666',
+  },
+  actionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewDetailText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
   },
   loadingContainer: {
     flex: 1,
@@ -358,16 +459,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#718096',
+    fontSize: 18,
+    color: '#1A202C',
     textAlign: 'center',
     marginTop: 16,
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#718096',
+    textAlign: 'center',
     marginBottom: 24,
+    lineHeight: 20,
   },
   exploreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#0070F3',
+    backgroundColor: '#007AFF',
     borderRadius: 8,
   },
   exploreButtonText: {

@@ -20,7 +20,6 @@ import { useToast } from '../hooks/use-toast';
 import { searchHistoryService, type SearchHistoryItem } from '../lib/searchHistoryService';
 import { searchService } from '../lib/searchService';
 import { Navbar } from '../components/Navbar';
-import { FooterNav } from '../components/FooterNav';
 
 type SearchTab = 'all' | 'users' | 'posts' | 'hashtags' | 'events' | 'products';
 
@@ -203,7 +202,7 @@ export const Search = () => {
             {suggestedUsers.map((user) => (
               <TouchableOpacity key={user.id} style={styles.userItem}>
                 <Avatar
-                  source={user.avatar_url || 'https://via.placeholder.com/40'}
+                  source={user.avatar_url || 'https://picsum.photos/40'}
                   size={40}
                 />
                 <View style={styles.userInfo}>
@@ -249,7 +248,7 @@ export const Search = () => {
               {searchResults.users.map((user: any) => (
                 <View key={user.id} style={styles.userItem}>
                   <Avatar
-                    source={user.avatar_url || 'https://via.placeholder.com/40'}
+                    source={user.avatar_url || 'https://picsum.photos/40'}
                     size={40}
                   />
                   <View style={styles.userInfo}>
@@ -375,8 +374,6 @@ export const Search = () => {
           </>
         )}
       </View>
-      
-      <FooterNav />
     </SafeAreaView>
   );
 };

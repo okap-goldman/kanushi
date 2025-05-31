@@ -32,7 +32,7 @@ sequenceDiagram
     App->>App: ストーリービューアを開く
 ```
 
-## 2. ストーリー投稿（画像編集付き）
+## 2. ストーリー投稿（音声録音 + 画像編集付き）
 
 ```mermaid
 sequenceDiagram
@@ -44,27 +44,39 @@ sequenceDiagram
     participant Function as Edge Function
 
     User->>App: ストーリー作成ボタンタップ
+    App->>App: 音声録音UIを表示
+    User->>App: 音声を録音
+    
+    App->>Function: 音声ファイルを文字起こし処理
+    Function-->>App: 音声の文字起こしテキスト
+    
     App->>App: カメラ/ギャラリーを開く
     User->>App: 画像を選択/撮影
     
-    App->>App: 画像編集画面を表示
+    App->>App: 画像編集画面を表示<br/>(正方形にリサイズ、白背景埋め)
     User->>App: 編集を適用<br/>(テキスト、スタンプ、位置情報)
     
-    App->>App: 編集データをJSON形式で生成<br/>{text: [], stickers: [], location: {}}
+    App->>App: 編集データをJSON形式で生成<br/>{text: [], stickers: [], location: {}, audioTranscript: ""}
     
-    App->>API: POST /uploads/presigned<br/>{fileType: "story", contentType: "image/jpeg"}
-    API-->>App: プリサインドURL + objectKey
+    App->>API: POST /uploads/presigned<br/>{fileType: "story-image", contentType: "image/jpeg"}
+    API-->>App: 画像用プリサインドURL + objectKey
     
     App->>Storage: 画像アップロード (PUT)
-    Storage-->>App: アップロード完了
+    Storage-->>App: 画像アップロード完了
     
-    App->>API: POST /stories<br/>{imageUrl, editData, location}
+    App->>API: POST /uploads/presigned<br/>{fileType: "story-audio", contentType: "audio/mp3"}
+    API-->>App: 音声用プリサインドURL + objectKey
+    
+    App->>Storage: 音声アップロード (PUT)
+    Storage-->>App: 音声アップロード完了
+    
+    App->>API: POST /stories<br/>{imageUrl, audioUrl, audioTranscript, editData, location}
     
     Note over API: JWT検証
     
     API->>DB: BEGIN TRANSACTION
     
-    API->>DB: INSERT INTO stories<br/>(user_id, image_url, edit_data,<br/>expires_at = NOW() + 24h)
+    API->>DB: INSERT INTO stories<br/>(user_id, image_url, audio_url, audio_transcript,<br/>edit_data, expires_at = NOW() + 24h)
     
     DB-->>API: ストーリーID
     
@@ -107,7 +119,7 @@ sequenceDiagram
     else ストーリーが有効
         API->>DB: BEGIN TRANSACTION
         
-        API->>DB: INSERT INTO stories<br/>(user_id, image_url, edit_data,<br/>is_repost = true,<br/>original_story_id = {storyId},<br/>expires_at = NOW() + 24h)
+        API->>DB: INSERT INTO stories<br/>(user_id, image_url, audio_url, audio_transcript,<br/>edit_data, is_repost = true,<br/>original_story_id = {storyId},<br/>expires_at = NOW() + 24h)
         
         DB-->>API: 新しいストーリーID
         
@@ -155,7 +167,10 @@ sequenceDiagram
         API->>DB: DELETE FROM stories<br/>WHERE id = {storyId}
         
         API->>Storage: 画像削除リクエスト
-        Storage-->>API: 削除完了
+        Storage-->>API: 画像削除完了
+        
+        API->>Storage: 音声削除リクエスト
+        Storage-->>API: 音声削除完了
         
         API->>DB: COMMIT
         
@@ -197,7 +212,10 @@ sequenceDiagram
     
     loop 各ストーリー表示時
         App->>App: プログレスバー更新
-        App->>App: 画像と編集データを合成表示
+        App->>App: 正方形画像を上半分に表示<br/>(リサイズ処理済み)
+        App->>App: 音声文字起こしを下半分に表示
+        App->>App: 音声再生コントロールを表示
+        App->>App: 画像編集データを合成表示<br/>(テキスト、スタンプ等)
         
         opt 位置情報がある場合
             App->>App: 位置情報を表示
@@ -239,7 +257,10 @@ sequenceDiagram
         Function->>DB: DELETE FROM stories<br/>WHERE id = {storyId}
         
         Function->>Storage: 画像削除リクエスト
-        Storage-->>Function: 削除完了
+        Storage-->>Function: 画像削除完了
+        
+        Function->>Storage: 音声削除リクエスト
+        Storage-->>Function: 音声削除完了
         
         Function->>DB: COMMIT
         

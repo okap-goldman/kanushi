@@ -14,6 +14,7 @@ import Register from '../screens/Register';
 
 import { useAuth } from '../context/AuthContext';
 import { AudioProvider } from '../context/AudioContext';
+import { AppStripeProvider } from '../components/providers/StripeProvider';
 import Discover from '../screens/Discover';
 import RegionDetail from '../screens/RegionDetail';
 import EventDetailScreen from '../screens/EventDetail';
@@ -34,6 +35,7 @@ import { Search } from '../screens/Search';
 import Shop from '../screens/Shop';
 import Market from '../screens/Market';
 import Cart from '../screens/Cart';
+import Checkout from '../screens/Checkout';
 import Settings from '../screens/Settings';
 import HitChart from '../screens/HitChart';
 import MyEvents from '../screens/MyEvents';
@@ -43,6 +45,7 @@ import CreateProduct from '../screens/CreateProduct';
 import EditProduct from '../screens/EditProduct';
 import Bookmarks from '../screens/Bookmarks';
 import WatchLater from '../screens/WatchLater';
+import Notifications from '../screens/Notifications';
 
 // LiveRoom Screens
 import { LiveRoomScreen } from '../components/liveroom/LiveRoomScreen';
@@ -130,62 +133,69 @@ const drawerStyles = StyleSheet.create({
 });
 
 
-function MainStack() {
+function MainStackWithFooter() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        animation: 'slide_from_right',
-      }}
-    >
-      <Stack.Screen name="HomeScreen" component={Home} />
-      <Stack.Screen name="Search" component={Search} />
-      <Stack.Screen name="Discover" component={Discover} />
-      <Stack.Screen name="RegionDetail" component={RegionDetail} />
-      <Stack.Screen name="AIChat" component={AIChat} />
+    <View style={mainLayoutStyles.container}>
+      <View style={mainLayoutStyles.content}>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        >
+          <Stack.Screen name="HomeScreen" component={Home} />
+          <Stack.Screen name="Search" component={Search} />
+          <Stack.Screen name="Discover" component={Discover} />
+          <Stack.Screen name="RegionDetail" component={RegionDetail} />
+          <Stack.Screen name="AIChat" component={AIChat} />
 
-      {/* Profile Stack */}
-      <Stack.Screen name="Profile" component={Profile} />
-      <Stack.Screen name="ProfileEdit" component={ProfileEdit} />
-      <Stack.Screen name="Settings" component={Settings} />
-      <Stack.Screen name="HitChart" component={HitChart} />
-      <Stack.Screen name="Premium" component={Premium} />
-      <Stack.Screen name="Bookmarks" component={Bookmarks} />
-      <Stack.Screen name="WatchLater" component={WatchLater} />
+          {/* Profile Stack */}
+          <Stack.Screen name="Profile" component={Profile} />
+          <Stack.Screen name="ProfileEdit" component={ProfileEdit} />
+          <Stack.Screen name="Settings" component={Settings} />
+          <Stack.Screen name="HitChart" component={HitChart} />
+          <Stack.Screen name="Premium" component={Premium} />
+          <Stack.Screen name="Bookmarks" component={Bookmarks} />
+          <Stack.Screen name="WatchLater" component={WatchLater} />
 
-      {/* Messages Stack */}
-      <Stack.Screen name="Messages" component={Messages} />
-      <Stack.Screen name="MessageDetail" component={MessageDetail} />
-      <Stack.Screen name="NewMessage" component={NewMessage} />
+          {/* Messages Stack */}
+          <Stack.Screen name="Messages" component={Messages} />
+          <Stack.Screen name="MessageDetail" component={MessageDetail} />
+          <Stack.Screen name="NewMessage" component={NewMessage} />
+          <Stack.Screen name="Notifications" component={Notifications} />
 
-      {/* Events Stack */}
-      <Stack.Screen name="Events" component={EventsScreen} />
-      <Stack.Screen name="EventDetail" component={EventDetailScreen} />
-      <Stack.Screen name="CreateEvent" component={CreateEvent} />
-      <Stack.Screen name="MyEvents" component={MyEvents} />
+          {/* Events Stack */}
+          <Stack.Screen name="Events" component={EventsScreen} />
+          <Stack.Screen name="EventDetail" component={EventDetailScreen} />
+          <Stack.Screen name="CreateEvent" component={CreateEvent} />
+          <Stack.Screen name="MyEvents" component={MyEvents} />
 
-      {/* Shop Stack */}
-      <Stack.Screen name="Shop" component={Shop} />
-      <Stack.Screen name="Market" component={Market} />
-      <Stack.Screen name="ProductDetail" component={ProductDetail} />
-      <Stack.Screen name="Cart" component={Cart} />
-      <Stack.Screen name="Orders" component={Orders} />
-      <Stack.Screen name="OrderDetail" component={OrderDetail} />
-      <Stack.Screen name="MyShop" component={MyShop} />
-      <Stack.Screen name="CreateProduct" component={CreateProduct} />
-      <Stack.Screen name="EditProduct" component={EditProduct} />
+          {/* Shop Stack */}
+          <Stack.Screen name="Shop" component={Shop} />
+          <Stack.Screen name="Market" component={Market} />
+          <Stack.Screen name="ProductDetail" component={ProductDetail} />
+          <Stack.Screen name="Cart" component={Cart} />
+          <Stack.Screen name="Checkout" component={Checkout} />
+          <Stack.Screen name="Orders" component={Orders} />
+          <Stack.Screen name="OrderDetail" component={OrderDetail} />
+          <Stack.Screen name="MyShop" component={MyShop} />
+          <Stack.Screen name="CreateProduct" component={CreateProduct} />
+          <Stack.Screen name="EditProduct" component={EditProduct} />
 
-      {/* LiveRoom Stack */}
-      <Stack.Screen name="LiveRooms" component={LiveRooms} />
-      <Stack.Screen
-        name="LiveRoom"
-        component={LiveRoomScreen}
-        options={{
-          presentation: 'modal',
-          animation: 'slide_from_bottom',
-        }}
-      />
-    </Stack.Navigator>
+          {/* LiveRoom Stack */}
+          <Stack.Screen name="LiveRooms" component={LiveRooms} />
+          <Stack.Screen
+            name="LiveRoom"
+            component={LiveRoomScreen}
+            options={{
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
+        </Stack.Navigator>
+      </View>
+      <FooterNav />
+    </View>
   );
 }
 
@@ -197,23 +207,24 @@ function DrawerNavigator() {
         headerShown: false,
       }}
     >
-      <Drawer.Screen name="Main" component={MainStack} />
+      <Drawer.Screen name="Main" component={MainStackWithFooter} />
     </Drawer.Navigator>
   );
 }
 
 function MainLayout() {
   return (
-    <AudioProvider>
-      <View style={mainLayoutStyles.container}>
-        <View style={mainLayoutStyles.content}>
-          <DrawerNavigator />
-        </View>
+    <AppStripeProvider 
+      publishableKey="pk_test_mock_key_for_development"
+      merchantIdentifier="merchant.com.kanushi.app"
+      urlScheme="kanushi"
+    >
+      <AudioProvider>
+        <DrawerNavigator />
         <GlobalAudioPlayer />
-        <FooterNav />
         <FullScreenAudioPlayer visible={true} onClose={() => {}} />
-      </View>
-    </AudioProvider>
+      </AudioProvider>
+    </AppStripeProvider>
   );
 }
 

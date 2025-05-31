@@ -52,7 +52,9 @@ export const stories = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => profiles.id, { onDelete: 'cascade' }),
-    imageUrl: text('image_url'),
+    imageUrl: text('image_url').notNull(), // 画像必須
+    audioUrl: text('audio_url').notNull(), // 音声必須
+    audioTranscript: text('audio_transcript'), // 音声の文字起こし
     textContent: text('text_content'),
     backgroundColor: text('background_color'),
     fontStyle: text('font_style'),

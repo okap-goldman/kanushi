@@ -19,7 +19,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     borderWidth: 1,
     borderColor: theme.colors.border.light,
-    // Themed shadow
-    ...theme.shadows.md,
+    // Web-compatible shadow
+    boxShadow: theme.shadows.md.boxShadow,
   },
 });

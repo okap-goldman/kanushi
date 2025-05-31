@@ -32,6 +32,23 @@ export async function uploadToSupabaseStorage(file: File, path: string = 'posts'
     const extension = file.name.split('.').pop() || '';
     const fileName = `${timestamp}-${randomString}.${extension}`;
 
+    // Check if bucket exists, if not create it
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const bucketExists = buckets?.some(bucket => bucket.name === path);
+    
+    if (!bucketExists) {
+      const { error: createError } = await supabase.storage.createBucket(path, {
+        public: true,
+        fileSizeLimit: 100 * 1024 * 1024, // 100MB
+        allowedMimeTypes: ['image/*', 'video/*', 'audio/*']
+      });
+      
+      if (createError) {
+        console.warn('Could not create bucket:', createError.message);
+        // Continue with upload even if bucket creation fails
+      }
+    }
+
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from(path)
@@ -41,7 +58,7 @@ export async function uploadToSupabaseStorage(file: File, path: string = 'posts'
       });
 
     if (error) {
-      throw error;
+      throw new Error(`Supabase Storage upload failed: ${error.message}`);
     }
 
     // Get public URL

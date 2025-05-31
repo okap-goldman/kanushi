@@ -178,6 +178,15 @@ export function SelectSeparator() {
   return <View style={styles.separator} />;
 }
 
+// Attach Item and other components to Select for convenient access
+Select.Trigger = SelectTrigger;
+Select.Value = SelectValue;
+Select.Content = SelectContent;
+Select.Item = SelectItem;
+Select.Group = SelectGroup;
+Select.Label = SelectLabel;
+Select.Separator = SelectSeparator;
+
 const styles = StyleSheet.create({
   trigger: {
     flexDirection: 'row',

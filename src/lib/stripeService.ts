@@ -2,10 +2,18 @@ import Stripe from 'stripe';
 import type { ApiResponse } from './data';
 import { env } from './env';
 
-// Stripeクライアントの初期化
-const stripe = new Stripe(env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia',
-});
+// Stripeクライアントの初期化（条件付き）
+let stripe: Stripe | null = null;
+
+try {
+  if (env.STRIPE_SECRET_KEY && env.STRIPE_SECRET_KEY.length > 0) {
+    stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-12-18.acacia',
+    });
+  }
+} catch (error) {
+  console.warn('Stripe initialization failed:', error);
+}
 
 export interface CreatePaymentIntentRequest {
   amount: number;
@@ -16,6 +24,7 @@ export interface CreatePaymentIntentRequest {
     participantId?: string;
     type?: 'event_participation' | 'archive_purchase' | 'gift' | 'product_purchase';
   };
+  useApplePay?: boolean;
 }
 
 export interface ConfirmPaymentRequest {
@@ -35,22 +44,29 @@ export const stripeService = {
     request: CreatePaymentIntentRequest
   ): Promise<ApiResponse<Stripe.PaymentIntent>> {
     try {
-      if (!env.STRIPE_SECRET_KEY) {
-        return { data: null, error: new Error('Stripe API key is not configured') };
+      if (!stripe) {
+        return { data: null, error: new Error('Stripe is not configured') };
       }
 
       if (request.amount < 50) {
         return { data: null, error: new Error('金額は50円以上である必要があります') };
       }
 
-      const paymentIntent = await stripe.paymentIntents.create({
+      const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
         amount: request.amount,
         currency: request.currency || 'jpy',
         metadata: request.metadata || {},
         automatic_payment_methods: {
           enabled: true,
         },
-      });
+      };
+
+      // Apple Pay使用時の追加設定
+      if (request.useApplePay) {
+        paymentIntentParams.payment_method_types = ['card', 'apple_pay'];
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
 
       return { data: paymentIntent, error: null };
     } catch (error) {
@@ -168,5 +184,50 @@ export const stripeService = {
       console.error('Error creating customer:', error);
       return { data: null, error: error as Error };
     }
+  },
+
+  // Apple Pay決済の可用性チェック（フロントエンド用）
+  async isApplePayAvailable(): Promise<boolean> {
+    try {
+      // React Nativeの場合、プラットフォームチェックが必要
+      // この関数はフロントエンドで呼び出されることを想定
+      if (typeof window !== 'undefined' && window.ApplePaySession) {
+        return window.ApplePaySession.canMakePayments();
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking Apple Pay availability:', error);
+      return false;
+    }
+  },
+
+  // Apple Pay決済専用のPayment Intent作成
+  async createApplePaymentIntent(
+    request: Omit<CreatePaymentIntentRequest, 'useApplePay'>
+  ): Promise<ApiResponse<Stripe.PaymentIntent>> {
+    return this.createPaymentIntent({
+      ...request,
+      useApplePay: true,
+    });
+  },
+
+  // Apple Pay Payment Request設定の生成（フロントエンド用）
+  createApplePaymentRequest(
+    amount: number,
+    currency: string = 'JPY',
+    label: string = 'Kanushi ショップ'
+  ): any {
+    return {
+      currency: currency.toLowerCase(),
+      total: {
+        label,
+        amount: (amount / 100).toString(), // 円からセントに変換
+      },
+      countryCode: 'JP',
+      merchantCapabilities: ['supports3DS'],
+      supportedNetworks: ['visa', 'masterCard', 'amex', 'jcb'],
+      requiredBillingContactFields: ['postalAddress'],
+      requiredShippingContactFields: ['postalAddress', 'name', 'phoneNumber'],
+    };
   },
 };

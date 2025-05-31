@@ -7,8 +7,11 @@ export interface Story {
   userId: string;
   username: string;
   profileImage: string;
-  contentType: 'image' | 'video';
-  mediaUrl: string;
+  imageUrl: string; // 画像必須
+  audioUrl: string; // 音声必須
+  audioTranscript?: string; // 音声の文字起こし
+  contentType: 'image' | 'video'; // 下位互換性のため残す
+  mediaUrl: string; // 下位互換性のため残す
   thumbnailUrl?: string;
   caption?: string;
   viewsCount: number;
@@ -41,6 +44,9 @@ export async function getStories(): Promise<UserStories[]> {
           userId: story.user_id,
           username: group.user.username,
           profileImage: group.user.avatar_url,
+          imageUrl: story.image_url,
+          audioUrl: story.audio_url,
+          audioTranscript: story.audio_transcript,
           contentType: story.media_type === 'audio' ? 'image' : story.media_type,
           mediaUrl: story.media_url,
           thumbnailUrl: story.media_url,
@@ -60,6 +66,9 @@ export async function getStories(): Promise<UserStories[]> {
       .select(`
         id,
         user_id,
+        image_url,
+        audio_url,
+        audio_transcript,
         content_type,
         media_url,
         thumbnail_url,
@@ -106,6 +115,9 @@ export async function getStories(): Promise<UserStories[]> {
         userId: profile.id,
         username: profile.username,
         profileImage: profile.image,
+        imageUrl: story.image_url,
+        audioUrl: story.audio_url,
+        audioTranscript: story.audio_transcript || undefined,
         contentType: story.content_type as 'image' | 'video',
         mediaUrl: story.media_url,
         thumbnailUrl: story.thumbnail_url || undefined,
@@ -187,12 +199,12 @@ export async function viewStory(storyId: string): Promise<void> {
   }
 }
 
-// ストーリーの投稿
+// ストーリーの投稿（音声と画像の両方必須）
 export async function createStory(
-  fileUri: string,
-  fileType: string,
-  caption?: string,
-  contentType: 'image' | 'video' = 'image'
+  audioFile: { uri: string; type: string; name: string },
+  imageFile: { uri: string; type: string; name: string },
+  audioTranscript?: string,
+  caption?: string
 ): Promise<Story | null> {
   try {
     const { data: currentUser } = await supabase.auth.getUser();
@@ -201,42 +213,61 @@ export async function createStory(
       throw new Error('User not authenticated');
     }
 
-    // 一意のファイル名を生成
-    const fileExt = fileType.split('/')[1] || 'jpg';
-    const fileName = `${Crypto.randomUUID()}.${fileExt}`;
-    const filePath = `stories/${currentUser.user.id}/${fileName}`;
+    // 音声ファイルのアップロード
+    const audioExt = audioFile.type.split('/')[1] || 'mp3';
+    const audioFileName = `${Crypto.randomUUID()}.${audioExt}`;
+    const audioFilePath = `stories/audio/${currentUser.user.id}/${audioFileName}`;
 
-    // ファイルを読み込んでBlobに変換
-    const response = await fetch(fileUri);
-    const blob = await response.blob();
+    const audioResponse = await fetch(audioFile.uri);
+    const audioBlob = await audioResponse.blob();
 
-    // ファイルをアップロード
-    const { error: uploadError } = await supabase.storage.from('media').upload(filePath, blob, {
-      contentType: fileType,
-      cacheControl: '3600',
-      upsert: false,
-    });
+    const { error: audioUploadError } = await supabase.storage
+      .from('stories')
+      .upload(audioFilePath, audioBlob, {
+        contentType: audioFile.type,
+        cacheControl: '3600',
+        upsert: false,
+      });
 
-    if (uploadError) throw uploadError;
+    if (audioUploadError) throw audioUploadError;
 
-    // 公開URLを取得
-    const { data: urlData } = supabase.storage.from('media').getPublicUrl(filePath);
+    const { data: audioUrlData } = supabase.storage.from('stories').getPublicUrl(audioFilePath);
+    if (!audioUrlData) throw new Error('Failed to get audio public URL');
+    const audioUrl = audioUrlData.publicUrl;
 
-    if (!urlData) throw new Error('Failed to get public URL');
+    // 画像ファイルのアップロード
+    const imageExt = imageFile.type.split('/')[1] || 'jpg';
+    const imageFileName = `${Crypto.randomUUID()}.${imageExt}`;
+    const imageFilePath = `stories/images/${currentUser.user.id}/${imageFileName}`;
 
-    const mediaUrl = urlData.publicUrl;
+    const imageResponse = await fetch(imageFile.uri);
+    const imageBlob = await imageResponse.blob();
 
-    // サムネイルURL (ビデオの場合は別途サムネイル生成が必要)
-    const thumbnailUrl = contentType === 'image' ? mediaUrl : undefined;
+    const { error: imageUploadError } = await supabase.storage
+      .from('stories')
+      .upload(imageFilePath, imageBlob, {
+        contentType: imageFile.type,
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (imageUploadError) throw imageUploadError;
+
+    const { data: imageUrlData } = supabase.storage.from('stories').getPublicUrl(imageFilePath);
+    if (!imageUrlData) throw new Error('Failed to get image public URL');
+    const imageUrl = imageUrlData.publicUrl;
 
     // ストーリーをデータベースに保存
     const { data: story, error: insertError } = await supabase
       .from('stories')
       .insert({
         user_id: currentUser.user.id,
-        content_type: contentType,
-        media_url: mediaUrl,
-        thumbnail_url: thumbnailUrl,
+        image_url: imageUrl,
+        audio_url: audioUrl,
+        audio_transcript: audioTranscript || null,
+        content_type: 'image',
+        media_url: imageUrl, // 下位互換性のため
+        thumbnail_url: imageUrl,
         caption: caption || null,
         views_count: 0,
         created_at: new Date().toISOString(),
@@ -261,6 +292,9 @@ export async function createStory(
       userId: story.user_id,
       username: profile.username,
       profileImage: profile.image,
+      imageUrl: story.image_url,
+      audioUrl: story.audio_url,
+      audioTranscript: story.audio_transcript || undefined,
       contentType: story.content_type,
       mediaUrl: story.media_url,
       thumbnailUrl: story.thumbnail_url || undefined,
@@ -273,6 +307,19 @@ export async function createStory(
     console.error('Error creating story:', error);
     return null;
   }
+}
+
+// 下位互換性のための旧関数（非推奨）
+export async function createStoryLegacy(
+  fileUri: string,
+  fileType: string,
+  caption?: string,
+  contentType: 'image' | 'video' = 'image'
+): Promise<Story | null> {
+  console.warn('createStoryLegacy is deprecated. Use createStory with both audio and image files.');
+  
+  // 新仕様では音声と画像の両方が必須のため、この関数は使用不可
+  throw new Error('Legacy story creation is not supported. Audio and image are both required.');
 }
 
 // ストーリーの削除

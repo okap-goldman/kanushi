@@ -29,8 +29,12 @@ export const mockLikes: MockLike[] = [
 
 // Mock bookmarks data
 export const mockBookmarks: MockBookmark[] = [
-  { id: 'bookmark-1', post_id: 'post-2', user_id: '1', created_at: '2024-01-19T20:30:00Z' },
-  { id: 'bookmark-2', post_id: 'post-3', user_id: '1', created_at: '2024-01-18T14:45:00Z' },
+  { id: 'bookmark-1', post_id: 'post-1', user_id: '1', created_at: '2024-01-20T08:00:00Z' },
+  { id: 'bookmark-2', post_id: 'post-2', user_id: '1', created_at: '2024-01-19T22:00:00Z' },
+  { id: 'bookmark-3', post_id: 'post-3', user_id: '1', created_at: '2024-01-18T15:30:00Z' },
+  { id: 'bookmark-4', post_id: 'post-4', user_id: '1', created_at: '2024-01-17T09:15:00Z' },
+  { id: 'bookmark-5', post_id: 'post-6', user_id: '1', created_at: '2024-01-15T07:00:00Z' },
+  { id: 'bookmark-6', post_id: 'post-7', user_id: '1', created_at: '2024-01-14T23:45:00Z' },
 ];
 
 // Mock highlights data

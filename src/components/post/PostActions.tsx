@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ShareModal } from '../ShareModal';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/use-toast';
+import { profileService } from '../../lib/profileService';
 import { 
   mockConfig, 
   mockLikes, 
@@ -232,7 +233,6 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
 
     try {
       // Ensure profile exists before liking
-      const { profileService } = await import('../../lib/profileService');
       await profileService.ensureProfileExists(user);
 
       if (mockConfig.enabled) {
@@ -296,7 +296,6 @@ export function PostActions({ postId, onComment, onHighlight }: PostActionsProps
     if (!user) return;
     
     // Ensure profile exists before highlighting
-    const { profileService } = await import('../../lib/profileService');
     await profileService.ensureProfileExists(user);
     
     // いいねしていない場合は先にいいねする

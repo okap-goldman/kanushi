@@ -4,7 +4,6 @@ import { useNavigation } from '@react-navigation/native';
 import { ChevronRight, User, Bell, Lock, HelpCircle, LogOut } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
-import { FooterNav } from '../components/FooterNav';
 
 export default function Settings() {
   const navigation = useNavigation<any>();
@@ -72,7 +71,6 @@ export default function Settings() {
           </View>
         </TouchableOpacity>
       </ScrollView>
-      <FooterNav />
     </SafeAreaView>
   );
 }

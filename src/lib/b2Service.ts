@@ -36,21 +36,30 @@ export async function uploadToB2(file: File, path?: string): Promise<UploadRespo
     // Get the Supabase URL from the client
     const supabaseUrl = (supabase as any).supabaseUrl;
 
-    // Call the Edge Function
+    // Call the Edge Function with explicit CORS handling
     const response = await fetch(`${supabaseUrl}/functions/v1/upload-to-b2`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${session.access_token}`,
       },
       body: formData,
+      mode: 'cors',
+      credentials: 'include'
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      throw new Error(data.error || 'Upload failed');
+      const errorText = await response.text();
+      let errorMessage = 'Upload failed';
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.error || errorMessage;
+      } catch {
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(`B2 upload failed: ${errorMessage}`);
     }
 
+    const data = await response.json();
     return data;
   } catch (error) {
     console.error('Error uploading to B2:', error);
