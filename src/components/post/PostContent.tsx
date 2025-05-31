@@ -1,8 +1,10 @@
 import { Feather } from '@expo/vector-icons';
-import { type AVPlaybackStatus, Audio, Video } from 'expo-av';
+import { type AudioStatus, useAudioPlayer } from 'expo-audio';
 import { Image } from 'expo-image';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import React from 'react';
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAudio } from '../../context/AudioContext';
 
 interface PostContentProps {
   content: string;
@@ -10,6 +12,8 @@ interface PostContentProps {
   mediaType: string;
   isExpanded: boolean;
   setIsExpanded: (expanded: boolean) => void;
+  postId?: string;
+  authorName?: string;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -22,11 +26,19 @@ export function PostContent({
   mediaType,
   isExpanded,
   setIsExpanded,
+  postId,
+  authorName,
 }: PostContentProps) {
-  const contentRef = React.useRef<Video>(null);
-  const [sound, setSound] = React.useState<Audio.Sound | null>(null);
-  const [audioStatus, setAudioStatus] = React.useState<AVPlaybackStatus | null>(null);
-  const [isPlaying, setIsPlaying] = React.useState(false);
+  const videoPlayer = useVideoPlayer(mediaType === 'video' ? content : '', (player) => {
+    player.loop = true;
+    player.play();
+  });
+  const audioPlayer = useAudioPlayer(mediaType === 'audio' ? content : '', {
+    shouldPrepare: mediaType === 'audio',
+  });
+  const [audioStatus, setAudioStatus] = React.useState<AudioStatus | null>(null);
+  
+  const { playTrack, currentTrack, isPlaying } = useAudio();
 
   const truncatedText = React.useMemo(() => {
     if (!caption || caption.length <= MAX_TEXT_LENGTH || isExpanded) {
@@ -35,53 +47,34 @@ export function PostContent({
     return caption.substring(0, MAX_TEXT_LENGTH) + '...';
   }, [caption, isExpanded]);
 
-  // Load audio when component mounts and media type is audio
+  // Monitor audio status
   React.useEffect(() => {
-    if (mediaType === 'audio' && content) {
-      loadAudio();
+    if (mediaType === 'audio' && audioPlayer) {
+      const subscription = audioPlayer.addListener('playbackStatusUpdate', (status) => {
+        setAudioStatus(status);
+      });
+
+      return () => {
+        subscription?.remove();
+      };
     }
-    
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-    };
-  }, [content, mediaType]);
-  
-  const loadAudio = async () => {
-    try {
-      const { sound: audioSound } = await Audio.Sound.createAsync(
-        { uri: content },
-        { shouldPlay: false },
-        onAudioStatusUpdate
-      );
-      setSound(audioSound);
-    } catch (error) {
-      console.error('Error loading audio:', error);
-    }
-  };
-  
-  const onAudioStatusUpdate = (status: AVPlaybackStatus) => {
-    setAudioStatus(status);
-    if (status.isLoaded) {
-      setIsPlaying(status.isPlaying);
-    }
-  };
+  }, [mediaType, audioPlayer]);
   
   const toggleAudio = async () => {
-    if (!sound) return;
+    if (mediaType !== 'audio' || !content || !postId) return;
 
     try {
-      const status = await sound.getStatusAsync();
-      if (status.isLoaded) {
-        if (status.isPlaying) {
-          await sound.pauseAsync();
-        } else {
-          await sound.playAsync();
-        }
-      }
+      await playTrack({
+        id: postId,
+        title: caption || 'Untitled Audio',
+        author: authorName || 'Unknown',
+        audioUrl: content,
+        waveformData: [],
+        duration: audioStatus?.duration ? audioStatus.duration * 1000 : undefined,
+        postId: postId, // 投稿IDを追加
+      });
     } catch (error) {
-      console.error('Error toggling audio:', error);
+      console.error('Error playing audio:', error);
     }
   };
 
@@ -100,36 +93,44 @@ export function PostContent({
       case 'video':
         return (
           <View style={styles.videoContainer}>
-            <Video
-              ref={contentRef}
-              source={{ uri: content }}
+            <VideoView
+              player={videoPlayer}
               style={styles.video}
-              useNativeControls
-              shouldPlay={false}
-              isLooping
-              resizeMode="cover"
+              nativeControls
+              contentFit="cover"
             />
           </View>
         );
 
       case 'audio':
+        const isCurrentTrack = currentTrack?.id === postId;
+        const isTrackPlaying = isCurrentTrack && isPlaying;
+        
         return (
           <View style={styles.audioContainer}>
-            <TouchableOpacity onPress={toggleAudio} style={styles.audioButton}>
-              <Feather name={isPlaying ? 'pause' : 'play'} size={24} color="#FFFFFF" />
+            <TouchableOpacity 
+              onPress={toggleAudio} 
+              style={[styles.audioButton, isTrackPlaying && styles.audioButtonPlaying]}
+            >
+              <Feather name={isTrackPlaying ? 'pause' : 'play'} size={24} color="#FFFFFF" />
             </TouchableOpacity>
             <View style={styles.audioWaveform}>
-              <View style={styles.waveformBar} />
-              <View style={[styles.waveformBar, styles.waveformBarTall]} />
-              <View style={styles.waveformBar} />
-              <View style={[styles.waveformBar, styles.waveformBarTall]} />
-              <View style={styles.waveformBar} />
+              <View style={[styles.waveformBar, isTrackPlaying && styles.waveformBarActive]} />
+              <View style={[styles.waveformBar, styles.waveformBarTall, isTrackPlaying && styles.waveformBarActive]} />
+              <View style={[styles.waveformBar, isTrackPlaying && styles.waveformBarActive]} />
+              <View style={[styles.waveformBar, styles.waveformBarTall, isTrackPlaying && styles.waveformBarActive]} />
+              <View style={[styles.waveformBar, isTrackPlaying && styles.waveformBarActive]} />
             </View>
-            <Text style={styles.audioDuration}>
-              {audioStatus && 'isLoaded' in audioStatus && audioStatus.isLoaded
-                ? `${Math.floor(audioStatus.positionMillis / 1000)}s / ${Math.floor(audioStatus.durationMillis / 1000)}s`
-                : '0s'}
-            </Text>
+            <View style={styles.audioInfo}>
+              {isCurrentTrack && (
+                <Text style={styles.nowPlayingIndicator}>再生中</Text>
+              )}
+              <Text style={styles.audioDuration}>
+                {audioStatus && audioStatus.currentTime !== undefined && audioStatus.duration !== undefined
+                  ? `${Math.floor(audioStatus.currentTime)}s / ${Math.floor(audioStatus.duration)}s`
+                  : '音声投稿'}
+              </Text>
+            </View>
           </View>
         );
 
@@ -199,6 +200,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
   },
+  audioButtonPlaying: {
+    backgroundColor: '#EF4444', // Red-500 for pause button
+  },
   audioWaveform: {
     flex: 1,
     flexDirection: 'row',
@@ -208,17 +212,28 @@ const styles = StyleSheet.create({
   waveformBar: {
     width: 3,
     height: 16,
-    backgroundColor: '#10B981', // Emerald-500
+    backgroundColor: '#94A3B8', // Slate-400
     marginHorizontal: 3,
     borderRadius: 3,
+  },
+  waveformBarActive: {
+    backgroundColor: '#10B981', // Emerald-500
   },
   waveformBarTall: {
     height: 24,
   },
+  audioInfo: {
+    alignItems: 'flex-end',
+  },
+  nowPlayingIndicator: {
+    fontSize: 12,
+    color: '#10B981',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
   audioDuration: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#64748B',
-    marginLeft: 16,
   },
   textContent: {
     padding: 16,

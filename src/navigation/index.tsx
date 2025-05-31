@@ -4,12 +4,16 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import React from 'react';
 import { Linking, View, StyleSheet } from 'react-native';
+import { GlobalAudioPlayer } from '../components/GlobalAudioPlayer';
+import { FullScreenAudioPlayer } from '../components/FullScreenAudioPlayer';
+import { FooterNav } from '../components/FooterNav';
 
 // Auth Screens
 import Login from '../screens/Login';
 import Register from '../screens/Register';
 
 import { useAuth } from '../context/AuthContext';
+import { AudioProvider } from '../context/AudioContext';
 import Discover from '../screens/Discover';
 import RegionDetail from '../screens/RegionDetail';
 import EventDetailScreen from '../screens/EventDetail';
@@ -29,6 +33,7 @@ import ProfileEdit from '../screens/ProfileEdit';
 import { Search } from '../screens/Search';
 import Shop from '../screens/Shop';
 import Market from '../screens/Market';
+import Cart from '../screens/Cart';
 import Settings from '../screens/Settings';
 import HitChart from '../screens/HitChart';
 import MyEvents from '../screens/MyEvents';
@@ -163,6 +168,7 @@ function MainStack() {
       <Stack.Screen name="Shop" component={Shop} />
       <Stack.Screen name="Market" component={Market} />
       <Stack.Screen name="ProductDetail" component={ProductDetail} />
+      <Stack.Screen name="Cart" component={Cart} />
       <Stack.Screen name="Orders" component={Orders} />
       <Stack.Screen name="OrderDetail" component={OrderDetail} />
       <Stack.Screen name="MyShop" component={MyShop} />
@@ -195,6 +201,30 @@ function DrawerNavigator() {
     </Drawer.Navigator>
   );
 }
+
+function MainLayout() {
+  return (
+    <AudioProvider>
+      <View style={mainLayoutStyles.container}>
+        <View style={mainLayoutStyles.content}>
+          <DrawerNavigator />
+        </View>
+        <GlobalAudioPlayer />
+        <FooterNav />
+        <FullScreenAudioPlayer visible={true} onClose={() => {}} />
+      </View>
+    </AudioProvider>
+  );
+}
+
+const mainLayoutStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+  },
+});
 
 // Deep Link configuration
 const linking = {
@@ -260,8 +290,8 @@ export default function Navigation() {
             <Stack.Screen name="Register" component={Register} />
           </>
         ) : (
-          // Main App Screens - All wrapped in DrawerNavigator
-          <Stack.Screen name="Home" component={DrawerNavigator} />
+          // Main App Screens - All wrapped in MainLayout
+          <Stack.Screen name="Home" component={MainLayout} />
         )}
       </Stack.Navigator>
     </NavigationContainer>

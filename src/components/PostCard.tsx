@@ -5,6 +5,7 @@ import AudioPlayer from './AudioPlayer';
 import DeleteConfirmDialog from './DeleteConfirmDialog';
 import { Card } from './ui/Card';
 import { theme } from '../lib/theme';
+import { useAudio } from '../context/AudioContext';
 
 interface PostCardProps {
   post: {
@@ -33,6 +34,7 @@ interface PostCardProps {
   onLike?: (postId: string) => void;
   onHighlight?: (postId: string, reason: string) => void;
   onComment?: (postId: string) => void;
+  onBookmark?: (postId: string) => void;
   onDelete?: (postId: string) => void;
 }
 
@@ -42,11 +44,13 @@ export function PostCard({
   onLike,
   onHighlight,
   onComment,
+  onBookmark,
   onDelete,
 }: PostCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showHighlightDialog, setShowHighlightDialog] = useState(false);
   const [highlightReason, setHighlightReason] = useState('');
+  const { playTrack, currentTrack, isPlaying } = useAudio();
 
   const isOwnPost = currentUserId === post.user.id;
 
@@ -70,6 +74,10 @@ export function PostCard({
     onComment?.(post.id);
   };
 
+  const handleBookmark = () => {
+    onBookmark?.(post.id);
+  };
+
   const handleDelete = () => {
     setShowDeleteDialog(true);
   };
@@ -77,6 +85,20 @@ export function PostCard({
   const confirmDelete = () => {
     onDelete?.(post.id);
     setShowDeleteDialog(false);
+  };
+
+  const handleAudioPlay = async () => {
+    if (post.contentType === 'audio' && post.mediaUrl) {
+      await playTrack({
+        id: post.id,
+        title: post.textContent || 'Untitled Audio',
+        author: post.user.displayName,
+        audioUrl: post.mediaUrl,
+        waveformData: [], // TODO: Parse waveform data if available
+        duration: post.durationSeconds ? post.durationSeconds * 1000 : undefined,
+        postId: post.id, // 投稿IDを追加
+      });
+    }
   };
 
   const renderContent = () => {
@@ -88,16 +110,66 @@ export function PostCard({
         return <Image source={{ uri: post.mediaUrl }} style={styles.image} resizeMode="cover" />;
 
       case 'audio':
+        const isCurrentTrack = currentTrack?.id === post.id;
+        const formatDuration = (seconds: number) => {
+          const minutes = Math.floor(seconds / 60);
+          const remainingSeconds = seconds % 60;
+          return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        };
+
         return (
-          <AudioPlayer
-            post={{
-              id: post.id,
-              mediaUrl: post.mediaUrl || '',
-              waveformUrl: post.waveformUrl,
-              durationSeconds: post.durationSeconds || 0,
-              aiMetadata: post.aiMetadata,
-            }}
-          />
+          <View style={styles.audioContainer}>
+            {/* Text content if available */}
+            {post.textContent && (
+              <Text style={styles.audioTextContent}>{post.textContent}</Text>
+            )}
+            
+            {/* Audio control */}
+            <TouchableOpacity 
+              style={styles.audioPlayer} 
+              onPress={handleAudioPlay}
+              testID="audio-play-button"
+            >
+              <View style={styles.audioControls}>
+                <View style={[styles.playButtonLarge, isCurrentTrack && isPlaying && styles.playingButton]}>
+                  <Feather 
+                    name={isCurrentTrack && isPlaying ? 'pause' : 'play'} 
+                    size={24} 
+                    color="#FFFFFF" 
+                  />
+                </View>
+                
+                <View style={styles.audioInfo}>
+                  <Text style={styles.audioTitle}>音声投稿</Text>
+                  {post.durationSeconds && (
+                    <Text style={styles.audioDuration}>
+                      {formatDuration(post.durationSeconds)}
+                    </Text>
+                  )}
+                  {isCurrentTrack && (
+                    <Text style={styles.nowPlayingText}>再生中</Text>
+                  )}
+                </View>
+              </View>
+              
+              {/* Waveform placeholder */}
+              {post.waveformUrl ? (
+                <Image source={{ uri: post.waveformUrl }} style={styles.waveformImage} />
+              ) : (
+                <View style={styles.waveformPlaceholder}>
+                  <Feather name="radio" size={20} color="#64748B" />
+                </View>
+              )}
+            </TouchableOpacity>
+
+            {/* AI Summary */}
+            {post.aiMetadata?.summary && (
+              <View style={styles.aiSummary}>
+                <Feather name="zap" size={16} color="#6366F1" />
+                <Text style={styles.aiSummaryText}>{post.aiMetadata.summary}</Text>
+              </View>
+            )}
+          </View>
         );
 
       default:
@@ -168,6 +240,18 @@ export function PostCard({
           <Text style={styles.actionText} testID="comment-count">
             {post.comments}
           </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleBookmark}
+          style={[styles.actionButton, post.isBookmarked && styles.bookmarkedButton]}
+          testID="bookmark-button"
+        >
+          <Feather 
+            name="bookmark" 
+            size={20} 
+            color={post.isBookmarked ? '#3B82F6' : '#64748B'} 
+          />
         </TouchableOpacity>
       </View>
 
@@ -289,6 +373,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 12,
   },
+  bookmarkedButton: {
+    backgroundColor: '#EBF4FF',
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
   actionText: {
     fontSize: 14,
     color: theme.colors.text.muted,
@@ -344,6 +433,89 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: theme.colors.text.inverse,
     fontWeight: '600',
+  },
+  audioContainer: {
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: 12,
+    padding: 16,
+  },
+  audioTextContent: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: theme.colors.text.primary,
+    marginBottom: 12,
+  },
+  audioPlayer: {
+    backgroundColor: theme.colors.background.primary,
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+  },
+  audioControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  playButtonLarge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: theme.colors.primary.main,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  playingButton: {
+    backgroundColor: theme.colors.secondary.main,
+  },
+  audioInfo: {
+    flex: 1,
+  },
+  audioTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: 2,
+  },
+  audioDuration: {
+    fontSize: 12,
+    color: theme.colors.text.muted,
+  },
+  nowPlayingText: {
+    fontSize: 12,
+    color: theme.colors.primary.main,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  waveformImage: {
+    width: '100%',
+    height: 40,
+    borderRadius: 4,
+    backgroundColor: theme.colors.background.secondary,
+  },
+  waveformPlaceholder: {
+    width: '100%',
+    height: 40,
+    borderRadius: 4,
+    backgroundColor: theme.colors.background.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  aiSummary: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 8,
+  },
+  aiSummaryText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#4C1D95',
+    marginLeft: 8,
+    lineHeight: 20,
   },
 });
 
