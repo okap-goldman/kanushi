@@ -1,4 +1,4 @@
-import { type AVPlaybackStatus, ResizeMode, Video } from 'expo-av';
+import { Audio, type AVPlaybackStatus, ResizeMode, Video } from 'expo-av';
 import { X } from 'lucide-react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -19,7 +19,10 @@ interface Story {
   userId: string;
   username: string;
   profileImage: string;
-  mediaUrl: string;
+  imageUrl: string; // 画像必須
+  audioUrl: string; // 音声必須
+  audioTranscript?: string; // 音声の文字起こし
+  mediaUrl: string; // 下位互換性のため残す
   contentType: 'image' | 'video';
   caption?: string;
   createdAt: string;
@@ -55,6 +58,12 @@ export default function StoryViewer({
   const [activeStoryIndex, setActiveStoryIndex] = useState(initialStoryIndex);
   const [isPaused, setIsPaused] = useState(false);
   const videoRef = useRef<Video>(null);
+  
+  // Audio states
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioPosition, setAudioPosition] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
 
   const activeUser = userStories[activeUserIndex];
   const activeStory = activeUser?.stories[activeStoryIndex];
@@ -74,6 +83,59 @@ export default function StoryViewer({
       onStoryView(activeStory.id);
     }
   }, [isOpen, activeStory, activeUserIndex, activeStoryIndex, onStoryView]);
+
+  // Audio management
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
+
+  // Load and play audio when story changes
+  useEffect(() => {
+    const loadAudio = async () => {
+      if (!isOpen || !activeStory?.audioUrl) return;
+
+      try {
+        // Stop and unload previous sound
+        if (sound) {
+          await sound.unloadAsync();
+          setSound(null);
+        }
+
+        // Load new audio
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri: activeStory.audioUrl },
+          { shouldPlay: true, isLooping: false }
+        );
+
+        setSound(newSound);
+        setIsPlaying(true);
+
+        // Set up status update listener
+        newSound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded) {
+            setAudioPosition(status.positionMillis || 0);
+            setAudioDuration(status.durationMillis || 0);
+            
+            if (status.didJustFinish) {
+              setIsPlaying(false);
+              setAudioPosition(0);
+              // Auto advance to next story when audio finishes
+              goToNextStory();
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Error loading audio:', error);
+      }
+    };
+
+    loadAudio();
+  }, [isOpen, activeStory?.audioUrl]);
+
 
   const goToNextStory = () => {
     if (!activeUser) return;
@@ -102,18 +164,6 @@ export default function StoryViewer({
     }
   };
 
-  const handlePress = (locationX: number) => {
-    if (locationX < screenWidth / 3) {
-      // Left side - go to previous story
-      goToPreviousStory();
-    } else if (locationX > (screenWidth * 2) / 3) {
-      // Right side - go to next story
-      goToNextStory();
-    } else {
-      // Middle - pause/play
-      setIsPaused(!isPaused);
-    }
-  };
 
   const handleVideoStatusUpdate = (status: AVPlaybackStatus) => {
     if (status.isLoaded && status.didJustFinish) {
@@ -136,7 +186,6 @@ export default function StoryViewer({
       onRequestClose={() => onOpenChange(false)}
     >
       <SafeAreaView style={styles.container}>
-        <TouchableWithoutFeedback onPress={(e) => handlePress(e.nativeEvent.locationX)}>
           <View style={styles.content}>
             {/* Close button */}
             <TouchableOpacity style={styles.closeButton} onPress={() => onOpenChange(false)}>
@@ -162,36 +211,67 @@ export default function StoryViewer({
               </View>
             </View>
 
-            {/* Story content */}
-            <View style={styles.mediaContainer}>
-              {activeStory.contentType === 'image' ? (
-                <Image
-                  source={{ uri: activeStory.mediaUrl }}
-                  style={styles.media}
-                  resizeMode="contain"
-                />
-              ) : (
-                <Video
-                  ref={videoRef}
-                  source={{ uri: activeStory.mediaUrl }}
-                  style={styles.media}
-                  useNativeControls={false}
-                  resizeMode={ResizeMode.CONTAIN}
-                  shouldPlay={!isPaused}
-                  isLooping={false}
-                  onPlaybackStatusUpdate={handleVideoStatusUpdate}
-                />
-              )}
+            {/* Story content - new layout with tap areas */}
+            <View style={styles.storyContainer}>
+              {/* Invisible tap areas */}
+              <TouchableOpacity 
+                style={styles.leftTapArea} 
+                onPress={() => {
+                  console.log('Left tap area pressed');
+                  goToPreviousStory();
+                }}
+                activeOpacity={1}
+              />
+              <TouchableOpacity 
+                style={styles.centerTapArea} 
+                onPress={() => {
+                  console.log('Center tap area pressed');
+                  setIsPaused(!isPaused);
+                  if (sound) {
+                    if (isPlaying) {
+                      sound.pauseAsync();
+                      setIsPlaying(false);
+                    } else {
+                      sound.playAsync();
+                      setIsPlaying(true);
+                    }
+                  }
+                }}
+                activeOpacity={1}
+              />
+              <TouchableOpacity 
+                style={styles.rightTapArea} 
+                onPress={() => {
+                  console.log('Right tap area pressed');
+                  goToNextStory();
+                }}
+                activeOpacity={1}
+              />
 
-              {/* Caption */}
-              {activeStory.caption && (
-                <View style={styles.captionContainer}>
-                  <Text style={styles.caption}>{activeStory.caption}</Text>
+              {/* Upper half - Square image */}
+              <View style={styles.imageSection}>
+                <View style={styles.squareImageContainer}>
+                  <Image
+                    source={{ uri: activeStory.imageUrl }}
+                    style={styles.squareImage}
+                    resizeMode="contain"
+                  />
                 </View>
-              )}
+              </View>
+
+              {/* Lower half - Audio transcript */}
+              <View style={styles.audioSection}>
+                {/* Audio transcript */}
+                {activeStory.audioTranscript && (
+                  <View style={styles.transcriptContainer}>
+                    <Text style={styles.transcriptText}>
+                      {activeStory.audioTranscript}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
-        </TouchableWithoutFeedback>
       </SafeAreaView>
     </Modal>
   );
@@ -246,30 +326,71 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.8,
   },
-  mediaContainer: {
+  storyContainer: {
+    flex: 1,
+    marginTop: 60,
+  },
+  leftTapArea: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: '30%',
+    zIndex: 10,
+    backgroundColor: 'transparent',
+  },
+  centerTapArea: {
+    position: 'absolute',
+    left: '30%',
+    top: 0,
+    bottom: 0,
+    width: '40%',
+    zIndex: 10,
+    backgroundColor: 'transparent',
+  },
+  rightTapArea: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: '30%',
+    zIndex: 10,
+    backgroundColor: 'transparent',
+  },
+  imageSection: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
   },
-  media: {
-    width: '100%',
-    height: '100%',
+  squareImageContainer: {
+    width: screenWidth,
+    height: screenWidth,
+    maxHeight: '100%',
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  captionContainer: {
-    position: 'absolute',
-    bottom: 32,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+  squareImage: {
+    width: screenWidth,
+    height: screenWidth,
+    maxHeight: '100%',
   },
-  caption: {
+  audioSection: {
+    flex: 1,
+    backgroundColor: '#000',
+    padding: 16,
+    justifyContent: 'flex-start',
+  },
+  transcriptContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  transcriptText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '500',
+    lineHeight: 24,
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
 });
